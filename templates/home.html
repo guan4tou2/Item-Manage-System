@@ -1,0 +1,55 @@
+{%extends 'template.html' %}
+{%block title%}home{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+
+
+{%block contain%}
+<h1>Navbar examples</h1>
+<p>This example is a quick exercise to illustrate how the navbar and its contents work. Some navbars
+  extend the width of the viewport, others are confined within a <code>.container</code>. For positioning
+  of navbars, checkout the <a href="../examples/navbar-static/">top</a> and <a href="../examples/navbar-fixed/">fixed
+    top</a> examples.</p>
+<p>At the smallest breakpoint, the collapse plugin is used to hide the links and show a menu button to
+  toggle the collapsed content.</p>
+{%endblock%}
+
+{%block card%}
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+  {%for item in items%}
+  <div class="col">
+    <div class="card">
+      <img src="..." class="card-img-top" alt="...">
+      <div class="card-body">
+        <h5 class="card-title">{{item.ItemName}}</h5>
+        <p class="card-text">{{item.ItemID}}</p>
+        {%if item.ItemState=="true"%}
+        <a href="#" class="btn btn-primary">Borrow</a>
+        {%else%}
+        <a href="#" class="btn btn-primary disabled">Borrow</a>
+        {%endif%}
+      </div>
+    </div>
+  </div>
+  {%endfor%}
+</div>
+{%endblock%}
+{%block page%}
+<nav aria-label="Page navigation example">
+  <ul class="pagination justify-content-center">
+    <li class="page-item">
+      <a class="page-link" href="#" aria-label="Previous">
+        <span aria-hidden="true">&laquo;</span>
+      </a>
+    </li>
+    <li class="page-item"><a class="page-link" href="#">1</a></li>
+    <li class="page-item"><a class="page-link" href="#">2</a></li>
+    <li class="page-item"><a class="page-link" href="#">3</a></li>
+    <li class="page-item">
+      <a class="page-link" href="#" aria-label="Next">
+        <span aria-hidden="true">&raquo;</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+{%endblock%}

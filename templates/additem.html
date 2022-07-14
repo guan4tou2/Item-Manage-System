@@ -1,0 +1,74 @@
+{%extends 'template.html' %}
+{%block title%}Add Item{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+
+
+{%block contain%}
+<h1>Navbar examples</h1>
+<p>This example is a quick exercise to illustrate how the navbar and its contents work. Some navbars
+    extend the width of the viewport, others are confined within a <code>.container</code>. For positioning
+    of navbars, checkout the <a href="../examples/navbar-static/">top</a> and <a href="../examples/navbar-fixed/">fixed
+        top</a> examples.</p>
+<p>At the smallest breakpoint, the collapse plugin is used to hide the links and show a menu button to
+    toggle the collapsed content.</p>
+{%endblock%}
+
+{%block body%}
+<form class="row g-3" action="#" method="post">
+    <div class="form-floating col-md-6">
+        <input type="text" class="form-control" id="ItemName" name="ItemName" placeholder="ItemName" required>
+        <label for="ItemName" class="form-label">Item Name</label>
+    </div>
+    <div class="col-md-6">
+        <input class="form-control form-control-sm" type="file" id="ItemPic">
+        <label for="ItemPic" class="form-label">Item Pic</label>
+    </div>
+    <div class="form-floating col-md-4">
+        <input type="text" class="form-control" id="ItemID" name="ItemID" placeholder="ItemID" required>
+        <label for="ItemID" class="form-label">Item ID</label>
+    </div>
+    <div class="form-floating col-md-4">
+        <input type="text" class="form-control" id="ItemAge" name="ItemAge" placeholder="ItemAge" value="1" required>
+        <label for="ItemAge" class="form-label">Item Age Limit</label>
+    </div>
+    <div class="form-floating col-md-4">
+        <input type="text" class="form-control" id="ItemGetDate" name="ItemGetDate" placeholder="ItemGetDate"
+            value="2000/1/1" required>
+        <label for="ItemGetDate" class="form-label">Item Get Date</label>
+    </div>
+    <div class="form-floating col-md-4">
+        <input type="text" class="form-control" id="ItemOwner" name="ItemOwner" placeholder="ItemOwner" required>
+        <label for="ItemOwner" class="form-label">Item Owner</label>
+    </div>
+    <div class="form-floating col-md-4">
+        <input type="text" class="form-control" id="ItemStorePlace" name="ItemStorePlace" placeholder="ItemStorePlace"
+            required>
+        <label for="ItemStorePlace" class="form-label">Item Store Place</label>
+    </div>
+    <div class="form-floating col-md-4">
+        <select id="ItemType" class="form-select" name="ItemType" placeholder="ItemType" required>
+            <option value="none" selected disabled hidden>請選擇選項</option>
+            {%for type in itemtype%}
+            <option value={{type.name}}>{{type.name}}</option>
+            {%endfor%}
+        </select>
+        <label for="ItemType" class="form-label">Item Type</label>
+    </div>
+    <div class="form-floating col-md-12">
+        <textarea class="form-control" id="ItemDesc" name="ItemDesc" style="height: 100px"
+            placeholder="ItemDesc"></textarea>
+        <label for="ItemDesc" class="form-label">Item Description</label>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Sign in</button>
+    </div>
+</form>
+{%endblock%}
+
+{%block js%}
+<script>
+    var Today = new Date();
+    document.getElementById("ItemGetDate").setAttribute("value",Today.getFullYear() + "/" + (Today.getMonth() + 1) + "/" + Today.getDate());
+</script>
+{%endblock%}

@@ -1,0 +1,41 @@
+{%extends 'template.html' %}
+{%block title%}Add Type{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<h1>Navbar examples</h1>
+<p>This example is a quick exercise to illustrate how the navbar and its contents work. Some navbars
+    extend the width of the viewport, others are confined within a <code>.container</code>. For positioning
+    of navbars, checkout the <a href="../examples/navbar-static/">top</a> and <a href="../examples/navbar-fixed/">fixed
+        top</a> examples.</p>
+<p>At the smallest breakpoint, the collapse plugin is used to hide the links and show a menu button to
+    toggle the collapsed content.</p>
+{%endblock%}
+
+{%block body%}
+<form class="row g-3" action="#" method="post">
+    <div class="col-md-12 ">
+        <table class="table table-striped  border border-dark" >
+            <thead>
+                <tr>
+                    <th scope="col">Type</th>
+                </tr>
+            </thead>
+            <tbody style="overflow-y: auto;height: 200px;display: block;">
+                {%for type in itemtype%}
+                <tr style="width: 100%;display: inline-table;">
+                    <td>{{type.name}}</td>
+                </tr>
+                {%endfor%}
+            </tbody>
+        </table>
+    </div>
+    <div class="col-md-12">
+        <label for="Type" class="form-label">Type</label>
+        <input type="text" class="form-control" id="Type" name="name" required>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Sign in</button>
+    </div>
+</form>
+{%endblock%}

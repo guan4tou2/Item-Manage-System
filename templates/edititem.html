@@ -1,0 +1,204 @@
+{%extends 'template.html' %}
+{%block title%}Edit Item{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+
+{%block contain%}
+<h1>Navbar examples</h1>
+<p>This example is a quick exercise to illustrate how the navbar and its contents work. Some navbars
+    extend the width of the viewport, others are confined within a <code>.container</code>. For positioning
+    of navbars, checkout the <a href="../examples/navbar-static/">top</a> and <a href="../examples/navbar-fixed/">fixed
+        top</a> examples.</p>
+<p>At the smallest breakpoint, the collapse plugin is used to hide the links and show a menu button to
+    toggle the collapsed content.</p>
+{%endblock%}
+
+{%block body%}
+<div class="modal modal-signin fade" tabindex="-1" role="dialog" id="modalEdit" aria-labelledby="exampleModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header p-6 pb-4 border-bottom-0">
+                <h2 class="fw-bold mb-0" id="modaltitle"></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-6 pt-0">
+                <form class="row g-2" action="#" method="post">
+                    <input type="hidden" id="Mode" name="Mode">
+                    <input type="hidden" id="_id" name="_id">
+                    <div class="form-floating mb-3 col-md-12">
+                        <input type="text" class="form-control rounded-3" id="ItemName" name="ItemName"
+                            placeholder="ItemName" required>
+                        <label for="ItemName">Item Name</label>
+                    </div>
+                    <div class="form-floating mb-3 col-md-4">
+                        <input type="text" class="form-control rounded-3" id="ItemID" name="ItemID" placeholder="ItemID"
+                            required>
+                        <label for="ItemID">Item ID</label>
+                    </div>
+                    <div class="form-floating mb-3 col-md-4">
+                        <input type="text" class="form-control rounded-3" id="ItemAge" name="ItemAge"
+                            placeholder="ItemAge" required>
+                        <label for="ItemAge">Item Age Limit</label>
+                    </div>
+                    <div class="form-floating mb-3 col-md-4">
+                        <input type="text" class="form-control rounded-3" id="ItemGetDate" name="ItemGetDate"
+                            placeholder="ItemGetDate" required>
+                        <label for="ItemGetDate">Item Get Date</label>
+                    </div>
+                    <div class="form-floating mb-3 col-md-4">
+                        <input type="text" class="form-control rounded-3" id="ItemOwner" name="ItemOwner"
+                            placeholder="ItemOwner" required>
+                        <label for="ItemOwner">Item Owner</label>
+                    </div>
+                    <div class="form-floating mb-3 col-md-4">
+                        <input type="text" class="form-control rounded-3" id="ItemStorePlace" name="ItemStorePlace"
+                            placeholder="ItemStorePlace" required>
+                        <label for="ItemStorePlace">Item Store Place</label>
+                    </div>
+
+                    <div class="form-floating mb-3 col-md-4">
+                        <select id="ItemType" class="form-select rounded-3" name="ItemType" placeholder="ItemType"
+                            required>
+                            <option value="none" selected disabled hidden>請選擇選項</option>
+                            {%for type in itemtype%}
+                            <option value={{type.name}}>{{type.name}}</option>
+                            {%endfor%}
+                        </select>
+                        <label for="ItemType">Item Type</label>
+                    </div>
+
+                    <div class="form-floating mb-3 col-md-12">
+                        <textarea class="form-control rounded-3" id="ItemDesc" name="ItemDesc" style="height: 100px"
+                            placeholder="ItemDesc"></textarea>
+                        <label for="ItemDesc">Item Description</label>
+                    </div>
+
+                    <button class="w-100 mb-2 btn btn-lg rounded-3 btn-primary" type="submit" id="modalbutton"></button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{%endblock%}
+{%block card%}
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+    {%for item in items%}
+    <div class="col">
+        <div class="card">
+            <img src="..." class="card-img-top" alt="...">
+            <div class="card-body">
+                <h5 class="card-title">{{item.ItemName}}</h5>
+                <p class="card-text">{{item.ItemID}}</p>
+                <button type="button" class="btn btn-primary" id="edit" value={{item._id}}
+                    onclick="edit(this.value)">Edit</button>
+                <button type="button" class="btn btn-primary" id="clone" value={{item._id}}
+                    onclick="clone(this.value)">Clone</button>
+                <button type="button" class="btn btn-primary" id="clone" value={{item._id}}
+                    onclick="del(this.value)">Detele</button>
+            </div>
+        </div>
+    </div>
+    {%endfor%}
+</div>
+{%endblock%}
+{%block page%}
+<nav aria-label="Page navigation example">
+    <ul class="pagination justify-content-center">
+        <li class="page-item">
+            <a class="page-link" href="#" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        <li class="page-item"><a class="page-link" href="#">1</a></li>
+        <li class="page-item"><a class="page-link" href="#">2</a></li>
+        <li class="page-item"><a class="page-link" href="#">3</a></li>
+        <li class="page-item">
+            <a class="page-link" href="#" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    </ul>
+</nav>
+{%endblock%}
+
+{%block js%}
+<script>
+    var myModal = new bootstrap.Modal(document.getElementById('modalEdit'));
+    // var myModal = new bootstrap.Modal(document.getElementById('modalClone'));
+    var items = '{{items}}'.replaceAll("&#39;", '"').replaceAll('[', '').replaceAll(']', '').replaceAll('}, {', '}; {');
+    console.log(items)
+    var items = items.split(';');
+    var itemtype = Array.from(document.getElementById("ItemType").options);
+    items.forEach((item, index) => { items[index] = (JSON.parse(item)); });
+    itemtype.forEach((type, index) => { itemtype[index] = type.innerText; });
+
+    function edit(value) {
+        document.getElementById("modaltitle").innerText = 'Edit Item';
+        document.getElementById("modalbutton").innerText = 'Edit';
+        document.getElementById("Mode").value = 'Edit';
+        items.forEach(i => {
+            if (i._id === value) {
+                document.getElementById("_id").value = i._id;
+                document.getElementById("ItemName").value = i.ItemName;
+                document.getElementById("ItemID").value = i.ItemID;
+                document.getElementById("ItemAge").value = i.ItemAge;
+                document.getElementById("ItemGetDate").value = i.ItemGetDate;
+                document.getElementById("ItemOwner").value = i.ItemOwner;
+                document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
+                document.getElementById("ItemType").options[itemtype.indexOf(i.ItemType)].selected = true;
+                document.getElementById("ItemDesc").value = i.ItemDesc;
+                myModal.toggle();
+            }
+        });
+    }
+    function clone(value) {
+        document.getElementById("modaltitle").innerText = 'Clone Item';
+        document.getElementById("modalbutton").innerText = 'Clone';
+        document.getElementById("Mode").value = 'Clone';
+
+        items.forEach(i => {
+            if (i._id === value) {
+                document.getElementById("ItemName").value = i.ItemName;
+                document.getElementById("ItemID").value = i.ItemID;
+                document.getElementById("ItemAge").value = i.ItemAge;
+                document.getElementById("ItemGetDate").value = i.ItemGetDate;
+                document.getElementById("ItemOwner").value = i.ItemOwner;
+                document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
+                document.getElementById("ItemType").options[itemtype.indexOf(i.ItemType)].selected = true;
+                document.getElementById("ItemDesc").value = i.ItemDesc;
+                myModal.toggle();
+            }
+        });
+    }
+    function del(value) {
+        document.getElementById("modaltitle").innerText = 'Delete Item';
+        document.getElementById("modalbutton").innerText = 'Delete';
+        document.getElementById("Mode").value = 'Delete';
+
+        items.forEach(i => {
+            if (i._id === value) {
+                document.getElementById("ItemName").value = i.ItemName;
+                document.getElementById("ItemName").setAttribute("readonly", true);
+                document.getElementById("ItemID").value = i.ItemID;
+                document.getElementById("ItemID").setAttribute("readonly", true);
+                document.getElementById("ItemAge").value = i.ItemAge;
+                document.getElementById("ItemAge").setAttribute("readonly", true);
+                document.getElementById("ItemGetDate").value = i.ItemGetDate;
+                document.getElementById("ItemGetDate").setAttribute("readonly", true);
+                document.getElementById("ItemOwner").value = i.ItemOwner;
+                document.getElementById("ItemOwner").setAttribute("readonly", true);
+                document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
+                document.getElementById("ItemStorePlace").setAttribute("readonly", true);
+                document.getElementById("ItemType").options[itemtype.indexOf(i.ItemType)].selected = true;
+                document.getElementById("ItemType").setAttribute("disabled", true);
+                document.getElementById("ItemDesc").value = i.ItemDesc;
+                document.getElementById("ItemDesc").setAttribute("readonly", true);
+                myModal.toggle();
+            }
+        });
+    }
+
+</script>
+{%endblock%}
