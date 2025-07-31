@@ -1,18 +1,36 @@
-<!doctype html>
-<html lang="en">
-
+<!DOCTYPE html>
+<html lang="zh-TW">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
-    <meta name="generator" content="Hugo 0.98.0">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="物品管理系統 - 輕鬆管理家中物品，記錄放置位置"
+    />
+    <meta name="author" content="物品管理系統" />
     <title>{%block title%}{%endblock%}</title>
 
-    <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/navbars/">
-    <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/sign-in/">
-    <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/modals/">
-    <link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet">
+    <link
+      rel="canonical"
+      href="https://getbootstrap.com/docs/5.2/examples/navbars/"
+    />
+    <link
+      rel="canonical"
+      href="https://getbootstrap.com/docs/5.2/examples/sign-in/"
+    />
+    <link
+      rel="canonical"
+      href="https://getbootstrap.com/docs/5.2/examples/modals/"
+    />
+    <link
+      href="{{url_for('static',filename='css/bootstrap.min.css')}}"
+      rel="stylesheet"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
 
     <style>
       .bd-placeholder-img {
@@ -31,10 +49,11 @@
 
       .b-example-divider {
         height: 3rem;
-        background-color: rgba(0, 0, 0, .1);
-        border: solid rgba(0, 0, 0, .15);
+        background-color: rgba(0, 0, 0, 0.1);
+        border: solid rgba(0, 0, 0, 0.15);
         border-width: 1px 0;
-        box-shadow: inset 0 .5em 1.5em rgba(0, 0, 0, .1), inset 0 .125em .5em rgba(0, 0, 0, .15);
+        box-shadow: inset 0 0.5em 1.5em rgba(0, 0, 0, 0.1),
+          inset 0 0.125em 0.5em rgba(0, 0, 0, 0.15);
       }
 
       .b-example-vr {
@@ -44,7 +63,7 @@
       }
 
       .bi {
-        vertical-align: -.125em;
+        vertical-align: -0.125em;
         fill: currentColor;
       }
 
@@ -65,90 +84,189 @@
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
       }
+
+      /* Flash 消息樣式 */
+      .alert {
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+      }
+
+      /* 卡片懸停效果 */
+      .card {
+        transition: transform 0.2s ease-in-out;
+      }
+
+      .card:hover {
+        transform: translateY(-5px);
+      }
     </style>
     <!-- Custom styles for this template -->
-    <link href="{{url_for('static',filename='css/navbar.css')}}" rel="stylesheet">
+    <link
+      href="{{url_for('static',filename='css/navbar.css')}}"
+      rel="stylesheet"
+    />
   </head>
 
   <body>
-
     <main>
-      <nav class="navbar navbar-expand-lg navbar-dark bg-dark" aria-label="Eighth navbar example">
+      <nav
+        class="navbar navbar-expand-lg navbar-dark bg-dark"
+        aria-label="物品管理系統導航"
+      >
         <div class="container">
-          <a class="navbar-brand" href="#">Container</a>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample07"
-            aria-controls="navbarsExample07" aria-expanded="false" aria-label="Toggle navigation">
+          <a class="navbar-brand" href="{{url_for('home')}}">
+            <i class="fas fa-home me-2"></i>物品管理系統
+          </a>
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarsExample07"
+            aria-controls="navbarsExample07"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="navbarsExample07">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="{{url_for('home')}}">Home</a>
-              </li>
-              <!-- <li class="nav-item">
-                <a class="nav-link" href="#">Link</a>
+                <a
+                  class="nav-link active"
+                  aria-current="page"
+                  href="{{url_for('home')}}"
+                >
+                  <i class="fas fa-home me-1"></i>首頁
+                </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link disabled">Disabled</a>
+                <a class="nav-link" href="{{url_for('search')}}">
+                  <i class="fas fa-search me-1"></i>搜尋
+                </a>
               </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="dropdown07" data-bs-toggle="dropdown"
-                  aria-expanded="false">Dropdown</a>
-                <ul class="dropdown-menu" aria-labelledby="dropdown07">
-                  <li><a class="dropdown-item" href="#">Action</a></li>
-                  <li><a class="dropdown-item" href="#">Another action</a></li>
-                  <li><a class="dropdown-item" href="#">Something else here</a></li>
-                </ul> -->
+              {%if User.admin%}
+              <li class="nav-item">
+                <a class="nav-link" href="{{url_for('additem')}}">
+                  <i class="fas fa-plus me-1"></i>新增物品
+                </a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{url_for('manageitem')}}">
+                  <i class="fas fa-cog me-1"></i>管理物品
+                </a>
+              </li>
+              {%endif%}
             </ul>
-            <form role="search" class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3">
-              <input class="form-control" type="search" placeholder="Search" aria-label="Search">
+            <form
+              role="search"
+              class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3"
+              action="{{url_for('search')}}"
+              method="GET"
+            >
+              <input
+                class="form-control"
+                type="search"
+                name="q"
+                placeholder="搜尋物品..."
+                aria-label="Search"
+              />
             </form>
             <div class="dropdown text-end">
-              <a href="#" class="d-block link-light text-decoration-none dropdown-toggle" id="dropdownUser1"
-                data-bs-toggle="dropdown" aria-expanded="false">
-                {%block user%}{%endblock%}
+              <a
+                href="#"
+                class="d-block link-light text-decoration-none dropdown-toggle"
+                id="dropdownUser1"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fas fa-user me-1"></i>{%block user%}{%endblock%}
               </a>
-              <ul class="dropdown-menu text-small" aria-labelledby="dropdownUser1">
-                <li><a class="dropdown-item" href="#">Settings</a></li>
-                <li><a class="dropdown-item" href="#">Item</a></li>
-                <!-- <li><a class="dropdown-item" href="#">Profile</a></li> -->
+              <ul
+                class="dropdown-menu text-small"
+                aria-labelledby="dropdownUser1"
+              >
+                <li>
+                  <a class="dropdown-item" href="{{url_for('home')}}">
+                    <i class="fas fa-home me-2"></i>首頁
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{url_for('search')}}">
+                    <i class="fas fa-search me-2"></i>搜尋物品
+                  </a>
+                </li>
                 {%if User.admin%}
-                <hr class="dropdown-divider">
-                <li><a class="dropdown-item" href="{{url_for('manageitem')}}">Manage Item</a></li>
-                <li><a class="dropdown-item" href="{{url_for('additem')}}">Add Item</a></li>
-                <li><a class="dropdown-item" href="{{url_for('edititem')}}">Edit Item</a></li>
-                <li><a class="dropdown-item" href="{{url_for('addtype')}}">Add Type</a></li>
+                <hr class="dropdown-divider" />
+                <li>
+                  <a class="dropdown-item" href="{{url_for('additem')}}">
+                    <i class="fas fa-plus me-2"></i>新增物品
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{url_for('manageitem')}}">
+                    <i class="fas fa-cog me-2"></i>管理物品
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{url_for('edititem')}}">
+                    <i class="fas fa-edit me-2"></i>編輯物品
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{url_for('addtype')}}">
+                    <i class="fas fa-tags me-2"></i>新增類型
+                  </a>
+                </li>
                 {%endif%}
                 <li>
-                  <hr class="dropdown-divider">
+                  <hr class="dropdown-divider" />
                 </li>
-                <li><a class="dropdown-item" href="{{url_for('signin')}}">Sign out</a></li>
+                <li>
+                  <a class="dropdown-item" href="{{url_for('signin')}}">
+                    <i class="fas fa-sign-out-alt me-2"></i>登出
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
         </div>
       </nav>
 
-      <div class="container">
+      <div class="container-fluid">
+        <!-- Flash 消息顯示 -->
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %} {% for category, message in messages %}
+        <div
+          class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show"
+          role="alert"
+        >
+          <i
+            class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' }} me-2"
+          ></i>
+          {{ message }}
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"
+          ></button>
+        </div>
+        {% endfor %} {% endif %} {% endwith %}
+
         <div>
           <div class="bg-light p-5 rounded">
             <div class="mx-auto">
-              {%block contain%}{%endblock%}
-              {%block body%}{%endblock%}
-              {%block card%}{%endblock%}
-              {%block modal%}{%endblock%}
+              {%block contain%}{%endblock%} {%block body%}{%endblock%} {%block
+              card%}{%endblock%} {%block modal%}{%endblock%}
             </div>
           </div>
-          <br>
+          <br />
           {%block page%}{%endblock%}
         </div>
       </div>
     </main>
 
-
     <script src="{{url_for('static',filename='js/bootstrap.bundle.min.js')}}"></script>
     {%block js%}{%endblock%}
   </body>
-
 </html>

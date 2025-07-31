@@ -1,16 +1,14 @@
-{%extends 'template.html' %} {%block title%}首頁 - 物品管理系統{%endblock%}
+{%extends 'template.html' %} {%block title%}搜尋物品 - 物品管理系統{%endblock%}
 {%block user%}{{User.User}}{%endblock%} {%block contain%}
 <div class="container-fluid">
   <div class="row">
     <div class="col-12">
-      <h1 class="display-4 text-center mb-4">🏠 我的物品管理系統</h1>
-      <p class="lead text-center mb-5">
-        輕鬆記錄家中物品位置，再也不怕找不到東西！
-      </p>
+      <h1 class="display-5 text-center mb-4">🔍 搜尋物品</h1>
+      <p class="lead text-center mb-5">快速找到您需要的物品</p>
     </div>
   </div>
 
-  <!-- 搜尋功能 -->
+  <!-- 搜尋表單 -->
   <div class="row mb-4">
     <div class="col-md-8 mx-auto">
       <form action="{{ url_for('search') }}" method="GET" class="d-flex">
@@ -19,63 +17,38 @@
           name="q"
           class="form-control me-2"
           placeholder="搜尋物品名稱..."
-          value="{{ request.args.get('q', '') }}"
+          value="{{ query }}"
         />
         <input
           type="text"
           name="place"
           class="form-control me-2"
           placeholder="搜尋放置地點..."
-          value="{{ request.args.get('place', '') }}"
+          value="{{ place }}"
         />
         <button type="submit" class="btn btn-primary">🔍 搜尋</button>
+        <a href="{{ url_for('home') }}" class="btn btn-secondary ms-2"
+          >🔙 返回首頁</a
+        >
       </form>
     </div>
   </div>
 
-  <!-- 統計資訊 -->
+  <!-- 搜尋結果 -->
+  {%if query or place%}
   <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="card text-center bg-primary text-white">
-        <div class="card-body">
-          <h5 class="card-title">總物品數</h5>
-          <h2 class="card-text">{{ items|length }}</h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-center bg-success text-white">
-        <div class="card-body">
-          <h5 class="card-title">有照片</h5>
-          <h2 class="card-text">
-            {{ items|selectattr('ItemPic', 'ne', '')|list|length }}
-          </h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-center bg-info text-white">
-        <div class="card-body">
-          <h5 class="card-title">有位置記錄</h5>
-          <h2 class="card-text">
-            {{ items|selectattr('ItemStorePlace', 'ne', '')|list|length }}
-          </h2>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card text-center bg-warning text-white">
-        <div class="card-body">
-          <h5 class="card-title">有分類</h5>
-          <h2 class="card-text">
-            {{ items|selectattr('ItemType', 'ne', '')|list|length }}
-          </h2>
-        </div>
-      </div>
+    <div class="col-12">
+      <h4>搜尋結果 ({{ items|length }} 項)</h4>
+      {%if query%}
+      <p class="text-muted">搜尋關鍵字: "{{ query }}"</p>
+      {%endif%} {%if place%}
+      <p class="text-muted">搜尋地點: "{{ place }}"</p>
+      {%endif%}
     </div>
   </div>
+  {%endif%}
 </div>
-{%endblock%} {%block card%}
+{%endblock%} {%block card%} {%if items%}
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
   {%for item in items%}
   <div class="col">
@@ -132,15 +105,20 @@
   </div>
   {%endfor%}
 </div>
-
-{%if not items%}
+{%elif query or place%}
 <div class="text-center py-5">
-  <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
-  <h3 class="text-muted">還沒有任何物品</h3>
-  <p class="text-muted">點擊下方按鈕開始記錄您的第一個物品吧！</p>
+  <i class="fas fa-search fa-5x text-muted mb-3"></i>
+  <h3 class="text-muted">沒有找到相關物品</h3>
+  <p class="text-muted">請嘗試其他關鍵字或地點</p>
   <a href="{{ url_for('additem') }}" class="btn btn-primary btn-lg"
     >➕ 新增物品</a
   >
+</div>
+{%else%}
+<div class="text-center py-5">
+  <i class="fas fa-search fa-5x text-muted mb-3"></i>
+  <h3 class="text-muted">開始搜尋您的物品</h3>
+  <p class="text-muted">在上方輸入物品名稱或放置地點進行搜尋</p>
 </div>
 {%endif%} {%endblock%} {%block page%} {%if items|length > 8%}
 <nav aria-label="Page navigation example">

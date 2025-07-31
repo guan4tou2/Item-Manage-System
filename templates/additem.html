@@ -1,74 +1,185 @@
-{%extends 'template.html' %}
-{%block title%}Add Item{%endblock%}
-{%block user%}{{User.User}}{%endblock%}
-
-
-
-{%block contain%}
-<h1>Navbar examples</h1>
-<p>This example is a quick exercise to illustrate how the navbar and its contents work. Some navbars
-    extend the width of the viewport, others are confined within a <code>.container</code>. For positioning
-    of navbars, checkout the <a href="../examples/navbar-static/">top</a> and <a href="../examples/navbar-fixed/">fixed
-        top</a> examples.</p>
-<p>At the smallest breakpoint, the collapse plugin is used to hide the links and show a menu button to
-    toggle the collapsed content.</p>
-{%endblock%}
-
-{%block body%}
-<form class="row g-3" action="#" method="post">
-    <div class="form-floating col-md-6">
-        <input type="text" class="form-control" id="ItemName" name="ItemName" placeholder="ItemName" required>
-        <label for="ItemName" class="form-label">Item Name</label>
-    </div>
-    <div class="col-md-6">
-        <input class="form-control form-control-sm" type="file" id="ItemPic">
-        <label for="ItemPic" class="form-label">Item Pic</label>
-    </div>
-    <div class="form-floating col-md-4">
-        <input type="text" class="form-control" id="ItemID" name="ItemID" placeholder="ItemID" required>
-        <label for="ItemID" class="form-label">Item ID</label>
-    </div>
-    <div class="form-floating col-md-4">
-        <input type="text" class="form-control" id="ItemAge" name="ItemAge" placeholder="ItemAge" value="1" required>
-        <label for="ItemAge" class="form-label">Item Age Limit</label>
-    </div>
-    <div class="form-floating col-md-4">
-        <input type="text" class="form-control" id="ItemGetDate" name="ItemGetDate" placeholder="ItemGetDate"
-            value="2000/1/1" required>
-        <label for="ItemGetDate" class="form-label">Item Get Date</label>
-    </div>
-    <div class="form-floating col-md-4">
-        <input type="text" class="form-control" id="ItemOwner" name="ItemOwner" placeholder="ItemOwner" required>
-        <label for="ItemOwner" class="form-label">Item Owner</label>
-    </div>
-    <div class="form-floating col-md-4">
-        <input type="text" class="form-control" id="ItemStorePlace" name="ItemStorePlace" placeholder="ItemStorePlace"
-            required>
-        <label for="ItemStorePlace" class="form-label">Item Store Place</label>
-    </div>
-    <div class="form-floating col-md-4">
-        <select id="ItemType" class="form-select" name="ItemType" placeholder="ItemType" required>
-            <option value="none" selected disabled hidden>請選擇選項</option>
-            {%for type in itemtype%}
-            <option value={{type.name}}>{{type.name}}</option>
-            {%endfor%}
-        </select>
-        <label for="ItemType" class="form-label">Item Type</label>
-    </div>
-    <div class="form-floating col-md-12">
-        <textarea class="form-control" id="ItemDesc" name="ItemDesc" style="height: 100px"
-            placeholder="ItemDesc"></textarea>
-        <label for="ItemDesc" class="form-label">Item Description</label>
-    </div>
+{%extends 'template.html' %} {%block title%}新增物品 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%} {%block contain%}
+<div class="container">
+  <div class="row">
     <div class="col-12">
-        <button type="submit" class="btn btn-primary">Sign in</button>
+      <h1 class="display-5 text-center mb-4">➕ 新增物品</h1>
+      <p class="lead text-center mb-5">記錄您的新物品，包含照片和放置地點</p>
     </div>
-</form>
-{%endblock%}
+  </div>
+</div>
+{%endblock%} {%block body%}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-body">
+          <form
+            class="row g-3"
+            action="{{ url_for('additem') }}"
+            method="post"
+            enctype="multipart/form-data"
+          >
+            <!-- 物品名稱 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                id="ItemName"
+                name="ItemName"
+                placeholder="物品名稱"
+                required
+              />
+              <label for="ItemName" class="form-label">📝 物品名稱</label>
+            </div>
 
-{%block js%}
+            <!-- 物品ID -->
+            <div class="form-floating col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                id="ItemID"
+                name="ItemID"
+                placeholder="物品ID"
+                required
+              />
+              <label for="ItemID" class="form-label">🏷️ 物品ID</label>
+            </div>
+
+            <!-- 照片上傳 -->
+            <div class="col-md-6">
+              <label for="ItemPic" class="form-label">📸 物品照片</label>
+              <input
+                class="form-control form-control-lg"
+                type="file"
+                id="ItemPic"
+                name="ItemPic"
+                accept="image/*"
+              />
+              <div class="form-text">支援 JPG, PNG, GIF 格式，最大 16MB</div>
+            </div>
+
+            <!-- 放置地點 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                id="ItemStorePlace"
+                name="ItemStorePlace"
+                placeholder="放置地點"
+                required
+              />
+              <label for="ItemStorePlace" class="form-label">📍 放置地點</label>
+            </div>
+
+            <!-- 物品類型 -->
+            <div class="form-floating col-md-6">
+              <select
+                id="ItemType"
+                class="form-select"
+                name="ItemType"
+                required
+              >
+                <option value="" selected disabled hidden>請選擇類型</option>
+                {%for type in itemtype%}
+                <option value="{{type.name}}">{{type.name}}</option>
+                {%endfor%}
+              </select>
+              <label for="ItemType" class="form-label">📂 物品類型</label>
+            </div>
+
+            <!-- 物品擁有者 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                id="ItemOwner"
+                name="ItemOwner"
+                placeholder="擁有者"
+                required
+              />
+              <label for="ItemOwner" class="form-label">👤 物品擁有者</label>
+            </div>
+
+            <!-- 取得日期 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="date"
+                class="form-control"
+                id="ItemGetDate"
+                name="ItemGetDate"
+                required
+              />
+              <label for="ItemGetDate" class="form-label">📅 取得日期</label>
+            </div>
+
+            <!-- 使用年限 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="number"
+                class="form-control"
+                id="ItemAge"
+                name="ItemAge"
+                placeholder="使用年限"
+                value="1"
+                min="1"
+                required
+              />
+              <label for="ItemAge" class="form-label">⏰ 使用年限 (年)</label>
+            </div>
+
+            <!-- 物品描述 -->
+            <div class="form-floating col-12">
+              <textarea
+                class="form-control"
+                id="ItemDesc"
+                name="ItemDesc"
+                style="height: 100px"
+                placeholder="物品描述"
+              ></textarea>
+              <label for="ItemDesc" class="form-label">📝 物品描述</label>
+            </div>
+
+            <!-- 提交按鈕 -->
+            <div class="col-12 text-center">
+              <button type="submit" class="btn btn-primary btn-lg">
+                💾 儲存物品
+              </button>
+              <a
+                href="{{ url_for('home') }}"
+                class="btn btn-secondary btn-lg ms-2"
+                >🔙 返回首頁</a
+              >
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%} {%block js%}
 <script>
-    var Today = new Date();
-    document.getElementById("ItemGetDate").setAttribute("value",Today.getFullYear() + "/" + (Today.getMonth() + 1) + "/" + Today.getDate());
+  // 設定今天的日期為預設值
+  var Today = new Date();
+  var todayString =
+    Today.getFullYear() +
+    "-" +
+    String(Today.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(Today.getDate()).padStart(2, "0");
+  document.getElementById("ItemGetDate").setAttribute("value", todayString);
+
+  // 圖片預覽功能
+  document.getElementById("ItemPic").addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        // 可以在這裡添加圖片預覽功能
+        console.log("圖片已選擇:", file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+  });
 </script>
 {%endblock%}

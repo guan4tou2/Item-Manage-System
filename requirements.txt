@@ -1,3 +1,5 @@
 Flask
 Flask-PyMongo
 flask_login
+Pillow
+Werkzeug
