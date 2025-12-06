@@ -1,1 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+venv/
+mongo_data/
 __pycache__/app.cpython-313.pyc
