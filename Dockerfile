@@ -1,0 +1,31 @@
+FROM python:3.13-slim
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libjpeg-dev \
+    zlib1g-dev \
+    curl \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Install uv (optional fast installer)
+RUN pip install --no-cache-dir uv
+
+COPY requirements.txt /workspace/requirements.txt
+# 使用 uv 安裝到系統環境（容器內不另建 venv）
+RUN uv pip install --system --no-cache-dir -r /workspace/requirements.txt
+
+COPY . /workspace
+
+ENV FLASK_ENV=development \
+    FLASK_APP=run.py \
+    MONGO_URI=mongodb://mongo:27017/myDB \
+    PORT=8080 \
+    HOST=0.0.0.0
+
+EXPOSE 8080
+
+CMD ["python", "run.py"]
+

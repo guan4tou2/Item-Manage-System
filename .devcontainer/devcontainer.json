@@ -1,0 +1,19 @@
+{
+  "name": "Item-Manage-System",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "uv pip install -r requirements.txt",
+  "portsAttributes": {
+    "8080": {
+      "label": "Flask App",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "remoteEnv": {
+    "MONGO_URI": "mongodb://mongo:27017/myDB",
+    "FLASK_ENV": "development"
+  }
+}
+

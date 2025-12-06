@@ -38,10 +38,12 @@
 
 ### 主要功能
 - ✅ **照片上傳** - 支援JPG, PNG, GIF格式
-- ✅ **放置地點管理** - 記錄物品位置
-- ✅ **搜尋功能** - 按名稱和地點搜尋
+- ✅ **位置管理** - 記錄樓層/房間/區域與放置地點
+- ✅ **搜尋功能** - 按名稱、地點、樓層/房間/區域搜尋
 - ✅ **統計資訊** - 物品數量統計
 - ✅ **分類管理** - 自定義物品類型
+- ✅ **保固/效期** - 記錄與排序保固、使用期限
+- ✅ **QR/條碼** - 下載標籤；掃描頁可直接搜尋
 
 ### 使用流程
 1. **登入系統** - 使用admin/admin
@@ -49,6 +51,21 @@
 3. **上傳照片** - 選擇物品照片
 4. **設定地點** - 記錄放置位置
 5. **搜尋物品** - 快速找到需要的物品
+
+## ⚙️ 安裝依賴（推薦 uv）
+```bash
+# 推薦：使用 uv（更快）
+uv venv venv
+source venv/bin/activate  # macOS/Linux
+# 或
+venv\Scripts\activate     # Windows
+uv pip install -r requirements.txt
+
+# 若未安裝 uv，使用 pip
+python3 -m venv venv
+source venv/bin/activate  # macOS/Linux
+pip install -r requirements.txt
+```
 
 ## 🛠️ 常用命令
 
