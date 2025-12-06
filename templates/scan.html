@@ -1,0 +1,71 @@
+{%extends 'template.html' %}
+{%block title%}掃描物品 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h1 class="display-6 text-center mb-4">📷 掃描 QR/條碼</h1>
+      <p class="text-center text-muted">允許相機權限後，掃描即可自動跳轉搜尋或顯示結果。</p>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container mb-4">
+  <div id="reader" style="width: 100%; max-width: 480px; margin: 0 auto;"></div>
+  <div class="text-center mt-3">
+    <button id="btn-stop" class="btn btn-outline-secondary btn-sm" disabled>停止掃描</button>
+  </div>
+</div>
+{%endblock%}
+
+{%block js%}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+  const readerElem = document.getElementById("reader");
+  const stopBtn = document.getElementById("btn-stop");
+  let html5Qrcode;
+
+  function onScanSuccess(decodedText) {
+    try {
+      // 假設內容為 item:<ItemID> 或直接是 ID / 文字
+      let itemId = decodedText.startsWith("item:") ? decodedText.substring(5) : decodedText;
+      const url = "{{ url_for('items.search') }}" + "?q=" + encodeURIComponent(itemId);
+      window.location.href = url;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function startScanner() {
+    html5Qrcode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: 250 };
+    html5Qrcode.start(
+      { facingMode: "environment" },
+      config,
+      onScanSuccess,
+      (error) => {}
+    ).then(() => {
+      stopBtn.disabled = false;
+    }).catch(err => {
+      console.error(err);
+      alert("無法啟動相機，請檢查權限。");
+    });
+  }
+
+  function stopScanner() {
+    if (html5Qrcode) {
+      html5Qrcode.stop().then(() => {
+        stopBtn.disabled = true;
+      });
+    }
+  }
+
+  stopBtn.addEventListener("click", stopScanner);
+  document.addEventListener("DOMContentLoaded", startScanner);
+</script>
+{%endblock%}
+

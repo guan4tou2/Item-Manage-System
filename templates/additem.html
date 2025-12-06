@@ -16,7 +16,7 @@
         <div class="card-body">
           <form
             class="row g-3"
-            action="{{ url_for('additem') }}"
+            action="{{ url_for('items.additem') }}"
             method="post"
             enctype="multipart/form-data"
           >
@@ -70,6 +70,35 @@
                 required
               />
               <label for="ItemStorePlace" class="form-label">📍 放置地點</label>
+            </div>
+
+            <!-- 樓層 / 房間 / 區域 -->
+            <div class="form-floating col-md-4">
+              <select id="ItemFloor" class="form-select" name="ItemFloor">
+                <option value="" selected>選擇樓層</option>
+                {% for f in floors %}
+                <option value="{{f}}">{{f}}</option>
+                {% endfor %}
+              </select>
+              <label for="ItemFloor" class="form-label">🏢 樓層</label>
+            </div>
+            <div class="form-floating col-md-4">
+              <select id="ItemRoom" class="form-select" name="ItemRoom">
+                <option value="" selected>選擇房間</option>
+                {% for r in rooms %}
+                <option value="{{r}}">{{r}}</option>
+                {% endfor %}
+              </select>
+              <label for="ItemRoom" class="form-label">🚪 房間</label>
+            </div>
+            <div class="form-floating col-md-4">
+              <select id="ItemZone" class="form-select" name="ItemZone">
+                <option value="" selected>選擇區域</option>
+                {% for z in zones %}
+                <option value="{{z}}">{{z}}</option>
+                {% endfor %}
+              </select>
+              <label for="ItemZone" class="form-label">🗄 區域/櫃位</label>
             </div>
 
             <!-- 物品類型 -->
@@ -140,13 +169,35 @@
               <label for="ItemDesc" class="form-label">📝 物品描述</label>
             </div>
 
+            <!-- 保固與使用期限 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="date"
+                class="form-control"
+                id="WarrantyExpiry"
+                name="WarrantyExpiry"
+                placeholder="保固截止"
+              />
+              <label for="WarrantyExpiry" class="form-label">🛡 保固截止</label>
+            </div>
+            <div class="form-floating col-md-6">
+              <input
+                type="date"
+                class="form-control"
+                id="UsageExpiry"
+                name="UsageExpiry"
+                placeholder="使用期限"
+              />
+              <label for="UsageExpiry" class="form-label">⌛ 使用期限</label>
+            </div>
+
             <!-- 提交按鈕 -->
             <div class="col-12 text-center">
               <button type="submit" class="btn btn-primary btn-lg">
                 💾 儲存物品
               </button>
               <a
-                href="{{ url_for('home') }}"
+                href="{{ url_for('items.home') }}"
                 class="btn btn-secondary btn-lg ms-2"
                 >🔙 返回首頁</a
               >

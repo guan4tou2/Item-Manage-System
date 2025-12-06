@@ -1,0 +1,67 @@
+{%extends 'template.html' %}
+{%block title%}位置設定 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h1 class="display-6 mb-3">🏠 位置設定</h1>
+      <p class="text-muted">維護樓層、房間、區域選單，供新增與搜尋使用。</p>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container">
+  <div class="row">
+    <div class="col-lg-6 mb-4">
+      <form class="card card-body" method="post" action="{{ url_for('locations.manage_locations') }}">
+        <h5 class="mb-3">新增位置選項</h5>
+        <div class="mb-2">
+          <label class="form-label">樓層</label>
+          <input type="text" class="form-control" name="floor" placeholder="例如：1F 或 B1">
+        </div>
+        <div class="mb-2">
+          <label class="form-label">房間</label>
+          <input type="text" class="form-control" name="room" placeholder="例如：客廳 / 書房">
+        </div>
+        <div class="mb-2">
+          <label class="form-label">區域/櫃位</label>
+          <input type="text" class="form-control" name="zone" placeholder="例如：衣櫃 / 工具櫃">
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">➕ 新增位置</button>
+      </form>
+    </div>
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">現有位置</h5>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>樓層</th>
+                  <th>房間</th>
+                  <th>區域/櫃位</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for loc in locations %}
+                <tr>
+                  <td>{{loc.floor}}</td>
+                  <td>{{loc.room}}</td>
+                  <td>{{loc.zone}}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%}
+

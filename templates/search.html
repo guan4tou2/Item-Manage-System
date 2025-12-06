@@ -11,25 +11,72 @@
   <!-- 搜尋表單 -->
   <div class="row mb-4">
     <div class="col-md-8 mx-auto">
-      <form action="{{ url_for('search') }}" method="GET" class="d-flex">
-        <input
-          type="text"
-          name="q"
-          class="form-control me-2"
-          placeholder="搜尋物品名稱..."
-          value="{{ query }}"
-        />
-        <input
-          type="text"
-          name="place"
-          class="form-control me-2"
-          placeholder="搜尋放置地點..."
-          value="{{ place }}"
-        />
-        <button type="submit" class="btn btn-primary">🔍 搜尋</button>
-        <a href="{{ url_for('home') }}" class="btn btn-secondary ms-2"
-          >🔙 返回首頁</a
-        >
+      <form action="{{ url_for('items.search') }}" method="GET" class="row g-2">
+        <div class="col-md-3">
+          <input
+            type="text"
+            name="q"
+            class="form-control"
+            placeholder="搜尋物品名稱..."
+            value="{{ query }}"
+          />
+        </div>
+        <div class="col-md-3">
+          <input
+            type="text"
+            name="place"
+            class="form-control"
+            placeholder="搜尋放置地點..."
+            value="{{ place }}"
+          />
+        </div>
+        <div class="col-md-2">
+          <select name="type" class="form-select">
+            <option value="">全部類型</option>
+            {% for type in itemtype %}
+            <option value="{{type.name}}" {% if selected_type==type.name %}selected{% endif %}>{{type.name}}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <select name="floor" class="form-select">
+            <option value="">樓層</option>
+            {% for f in floors %}
+            <option value="{{f}}" {% if request.args.get('floor','')==f %}selected{% endif %}>{{f}}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <select name="room" class="form-select">
+            <option value="">房間</option>
+            {% for r in rooms %}
+            <option value="{{r}}" {% if request.args.get('room','')==r %}selected{% endif %}>{{r}}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <select name="zone" class="form-select">
+            <option value="">區域</option>
+            {% for z in zones %}
+            <option value="{{z}}" {% if request.args.get('zone','')==z %}selected{% endif %}>{{z}}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <select name="sort" class="form-select">
+            <option value="">排序</option>
+            <option value="name" {% if selected_sort=='name' %}selected{% endif %}>名稱</option>
+            <option value="warranty" {% if selected_sort=='warranty' %}selected{% endif %}>保固到期</option>
+            <option value="usage" {% if selected_sort=='usage' %}selected{% endif %}>使用期限</option>
+          </select>
+        </div>
+        <div class="col-12 d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary me-2">🔍 搜尋</button>
+          <a href="{{ url_for('items.home') }}" class="btn btn-secondary me-2"
+            >🔙 返回首頁</a
+          >
+          <a href="{{ url_for('items.scan') }}" class="btn btn-outline-info">📷 掃描</a>
+        </div>
       </form>
     </div>
   </div>
@@ -55,7 +102,7 @@
     <div class="card h-100 shadow-sm">
       {%if item.ItemPic%}
       <img
-        src="{{ url_for('uploaded_file', filename=item.ItemPic) }}"
+        src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
         class="card-img-top"
         alt="{{ item.ItemName }}"
         style="height: 200px; object-fit: cover"
@@ -75,7 +122,13 @@
         <p class="card-text">
           <strong>📍 放置地點:</strong> {{item.ItemStorePlace}}
         </p>
-        {%endif%} {%if item.ItemType%}
+        {%endif%} 
+        {%if item.ItemFloor or item.ItemRoom or item.ItemZone%}
+        <p class="card-text">
+          <strong>🏠 位置層級:</strong> {{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}
+        </p>
+        {%endif%}
+        {%if item.ItemType%}
         <p class="card-text"><strong>📂 類型:</strong> {{item.ItemType}}</p>
         {%endif%} {%if item.ItemOwner%}
         <p class="card-text"><strong>👤 擁有者:</strong> {{item.ItemOwner}}</p>
@@ -83,22 +136,39 @@
         <p class="card-text">
           <strong>📅 取得日期:</strong> {{item.ItemGetDate}}
         </p>
-        {%endif%} {%if item.ItemDesc%}
+        {%endif%}
+        {%if item.WarrantyExpiry%}
+        <p class="card-text">
+          <strong>🛡 保固截止:</strong> {{item.WarrantyExpiry}}
+          {% if item.WarrantyStatus=='expired' %}<span class="badge bg-danger ms-1">到期</span>{% elif item.WarrantyStatus=='near' %}<span class="badge bg-warning text-dark ms-1">即將到期</span>{% endif %}
+        </p>
+        {%endif%}
+        {%if item.UsageExpiry%}
+        <p class="card-text">
+          <strong>⌛ 使用期限:</strong> {{item.UsageExpiry}}
+          {% if item.UsageStatus=='expired' %}<span class="badge bg-danger ms-1">到期</span>{% elif item.UsageStatus=='near' %}<span class="badge bg-warning text-dark ms-1">即將到期</span>{% endif %}
+        </p>
+        {%endif%}
+        {%if item.ItemDesc%}
         <p class="card-text">{{item.ItemDesc}}</p>
         {%endif%}
       </div>
       <div class="card-footer">
         <div class="d-flex justify-content-between">
           <a
-            href="{{ url_for('manageitem') }}?id={{item.ItemID}}"
+            href="{{ url_for('items.manageitem') }}?id={{item.ItemID}}"
             class="btn btn-primary btn-sm"
             >✏️ 編輯</a
           >
           <a
-            href="{{ url_for('search') }}?q={{item.ItemName}}"
+            href="{{ url_for('items.search') }}?q={{item.ItemName}}"
             class="btn btn-info btn-sm"
             >🔍 搜尋相似</a
           >
+          <div class="btn-group btn-group-sm">
+            <a class="btn btn-outline-secondary" href="{{ url_for('items.qrcode_image', item_id=item.ItemID) }}">QR</a>
+            <a class="btn btn-outline-secondary" href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}">條碼</a>
+          </div>
         </div>
       </div>
     </div>
@@ -110,7 +180,7 @@
   <i class="fas fa-search fa-5x text-muted mb-3"></i>
   <h3 class="text-muted">沒有找到相關物品</h3>
   <p class="text-muted">請嘗試其他關鍵字或地點</p>
-  <a href="{{ url_for('additem') }}" class="btn btn-primary btn-lg"
+  <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg"
     >➕ 新增物品</a
   >
 </div>

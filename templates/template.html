@@ -114,7 +114,7 @@
         aria-label="物品管理系統導航"
       >
         <div class="container">
-          <a class="navbar-brand" href="{{url_for('home')}}">
+           <a class="navbar-brand" href="{{url_for('items.home')}}">
             <i class="fas fa-home me-2"></i>物品管理系統
           </a>
           <button
@@ -131,27 +131,27 @@
           <div class="collapse navbar-collapse" id="navbarsExample07">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item">
-                <a
-                  class="nav-link active"
-                  aria-current="page"
-                  href="{{url_for('home')}}"
-                >
+                 <a
+                   class="nav-link active"
+                   aria-current="page"
+                   href="{{url_for('items.home')}}"
+                 >
                   <i class="fas fa-home me-1"></i>首頁
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('search')}}">
+                 <a class="nav-link" href="{{url_for('items.search')}}">
                   <i class="fas fa-search me-1"></i>搜尋
                 </a>
               </li>
               {%if User.admin%}
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('additem')}}">
+                 <a class="nav-link" href="{{url_for('items.additem')}}">
                   <i class="fas fa-plus me-1"></i>新增物品
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('manageitem')}}">
+                 <a class="nav-link" href="{{url_for('items.manageitem')}}">
                   <i class="fas fa-cog me-1"></i>管理物品
                 </a>
               </li>
@@ -160,7 +160,7 @@
             <form
               role="search"
               class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3"
-              action="{{url_for('search')}}"
+               action="{{url_for('items.search')}}"
               method="GET"
             >
               <input
@@ -185,44 +185,49 @@
                 class="dropdown-menu text-small"
                 aria-labelledby="dropdownUser1"
               >
-                <li>
-                  <a class="dropdown-item" href="{{url_for('home')}}">
+                 <li>
+                   <a class="dropdown-item" href="{{url_for('items.home')}}">
                     <i class="fas fa-home me-2"></i>首頁
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" href="{{url_for('search')}}">
+                   <a class="dropdown-item" href="{{url_for('items.search')}}">
                     <i class="fas fa-search me-2"></i>搜尋物品
                   </a>
                 </li>
                 {%if User.admin%}
                 <hr class="dropdown-divider" />
                 <li>
-                  <a class="dropdown-item" href="{{url_for('additem')}}">
+                   <a class="dropdown-item" href="{{url_for('items.additem')}}">
                     <i class="fas fa-plus me-2"></i>新增物品
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" href="{{url_for('manageitem')}}">
+                   <a class="dropdown-item" href="{{url_for('items.manageitem')}}">
                     <i class="fas fa-cog me-2"></i>管理物品
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" href="{{url_for('edititem')}}">
+                   <a class="dropdown-item" href="{{url_for('items.manageitem')}}">
                     <i class="fas fa-edit me-2"></i>編輯物品
                   </a>
                 </li>
                 <li>
-                  <a class="dropdown-item" href="{{url_for('addtype')}}">
+                  <a class="dropdown-item" href="{{url_for('types.addtype')}}">
                     <i class="fas fa-tags me-2"></i>新增類型
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{{url_for('locations.manage_locations')}}">
+                    <i class="fas fa-map me-2"></i>位置設定
                   </a>
                 </li>
                 {%endif%}
                 <li>
                   <hr class="dropdown-divider" />
                 </li>
-                <li>
-                  <a class="dropdown-item" href="{{url_for('signin')}}">
+                 <li>
+                   <a class="dropdown-item" href="{{url_for('auth.signout')}}">
                     <i class="fas fa-sign-out-alt me-2"></i>登出
                   </a>
                 </li>
@@ -233,25 +238,7 @@
       </nav>
 
       <div class="container-fluid">
-        <!-- Flash 消息顯示 -->
-        {% with messages = get_flashed_messages(with_categories=true) %} {% if
-        messages %} {% for category, message in messages %}
-        <div
-          class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show"
-          role="alert"
-        >
-          <i
-            class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' }} me-2"
-          ></i>
-          {{ message }}
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-            aria-label="Close"
-          ></button>
-        </div>
-        {% endfor %} {% endif %} {% endwith %}
+        {% include "partials/flash.html" %}
 
         <div>
           <div class="bg-light p-5 rounded">

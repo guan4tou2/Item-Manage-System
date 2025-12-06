@@ -3,17 +3,12 @@
 {%block user%}{{User.User}}{%endblock%}
 
 {%block contain%}
-<h1>Navbar examples</h1>
-<p>This example is a quick exercise to illustrate how the navbar and its contents work. Some navbars
-    extend the width of the viewport, others are confined within a <code>.container</code>. For positioning
-    of navbars, checkout the <a href="../examples/navbar-static/">top</a> and <a href="../examples/navbar-fixed/">fixed
-        top</a> examples.</p>
-<p>At the smallest breakpoint, the collapse plugin is used to hide the links and show a menu button to
-    toggle the collapsed content.</p>
+<h1 class="display-6 mb-3">新增物品類型</h1>
+<p class="text-muted">管理可選的物品分類，方便新增與搜尋。</p>
 {%endblock%}
 
 {%block body%}
-<form class="row g-3" action="#" method="post">
+<form class="row g-3" action="{{ url_for('types.addtype') }}" method="post">
     <div class="col-md-12 ">
         <table class="table table-striped  border border-dark" >
             <thead>
@@ -35,7 +30,7 @@
         <input type="text" class="form-control" id="Type" name="name" required>
     </div>
     <div class="col-12">
-        <button type="submit" class="btn btn-primary">Sign in</button>
+        <button type="submit" class="btn btn-primary">新增類型</button>
     </div>
 </form>
 {%endblock%}

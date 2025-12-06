@@ -15,7 +15,7 @@
     <div class="card h-100 shadow-sm">
       {%if item.ItemPic%}
       <img
-        src="{{ url_for('uploaded_file', filename=item.ItemPic) }}"
+        src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
         class="card-img-top"
         alt="{{ item.ItemName }}"
         style="height: 200px; object-fit: cover"
@@ -35,13 +35,31 @@
         <p class="card-text">
           <strong>📍 放置地點:</strong> {{item.ItemStorePlace}}
         </p>
-        {%endif%} {%if item.ItemType%}
+        {%endif%} 
+        {%if item.ItemFloor or item.ItemRoom or item.ItemZone%}
+        <p class="card-text">
+          <strong>🏠 位置層級:</strong> {{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}
+        </p>
+        {%endif%}
+        {%if item.ItemType%}
         <p class="card-text"><strong>📂 類型:</strong> {{item.ItemType}}</p>
         {%endif%} {%if item.ItemOwner%}
         <p class="card-text"><strong>👤 擁有者:</strong> {{item.ItemOwner}}</p>
         {%endif%} {%if item.ItemGetDate%}
         <p class="card-text">
           <strong>📅 取得日期:</strong> {{item.ItemGetDate}}
+        </p>
+        {%endif%}
+        {%if item.WarrantyExpiry%}
+        <p class="card-text">
+          <strong>🛡 保固截止:</strong> {{item.WarrantyExpiry}}
+          {% if item.WarrantyStatus=='expired' %}<span class="badge bg-danger ms-1">到期</span>{% elif item.WarrantyStatus=='near' %}<span class="badge bg-warning text-dark ms-1">即將到期</span>{% endif %}
+        </p>
+        {%endif%}
+        {%if item.UsageExpiry%}
+        <p class="card-text">
+          <strong>⌛ 使用期限:</strong> {{item.UsageExpiry}}
+          {% if item.UsageStatus=='expired' %}<span class="badge bg-danger ms-1">到期</span>{% elif item.UsageStatus=='near' %}<span class="badge bg-warning text-dark ms-1">即將到期</span>{% endif %}
         </p>
         {%endif%} {%if item.ItemDesc%}
         <p class="card-text">{{item.ItemDesc}}</p>
@@ -59,6 +77,26 @@
               style="width: 150px"
               placeholder="更新位置..."
             />
+            <div class="d-flex mt-1">
+              <select name="ItemFloor" class="form-select form-select-sm me-1">
+                <option value="">樓層</option>
+                {% for f in floors %}
+                <option value="{{f}}">{{f}}</option>
+                {% endfor %}
+              </select>
+              <select name="ItemRoom" class="form-select form-select-sm me-1">
+                <option value="">房間</option>
+                {% for r in rooms %}
+                <option value="{{r}}">{{r}}</option>
+                {% endfor %}
+              </select>
+              <select name="ItemZone" class="form-select form-select-sm">
+                <option value="">區域</option>
+                {% for z in zones %}
+                <option value="{{z}}">{{z}}</option>
+                {% endfor %}
+              </select>
+            </div>
             <button type="submit" class="btn btn-success btn-sm ms-1">
               📍 更新位置
             </button>
@@ -66,15 +104,19 @@
         </div>
         <div class="mt-2">
           <a
-            href="{{ url_for('edititem') }}?id={{item.ItemID}}"
+            href="{{ url_for('items.manageitem') }}?id={{item.ItemID}}"
             class="btn btn-primary btn-sm"
             >✏️ 編輯</a
           >
           <a
-            href="{{ url_for('search') }}?q={{item.ItemName}}"
+            href="{{ url_for('items.search') }}?q={{item.ItemName}}"
             class="btn btn-info btn-sm"
             >🔍 搜尋相似</a
           >
+          <div class="btn-group btn-group-sm">
+            <a class="btn btn-outline-secondary" href="{{ url_for('items.qrcode_image', item_id=item.ItemID) }}">QR</a>
+            <a class="btn btn-outline-secondary" href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}">條碼</a>
+          </div>
         </div>
       </div>
     </div>
@@ -87,7 +129,7 @@
   <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
   <h3 class="text-muted">還沒有任何物品</h3>
   <p class="text-muted">點擊下方按鈕開始記錄您的第一個物品吧！</p>
-  <a href="{{ url_for('additem') }}" class="btn btn-primary btn-lg"
+  <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg"
     >➕ 新增物品</a
   >
 </div>

@@ -3,3 +3,6 @@ Flask-PyMongo
 flask_login
 Pillow
 Werkzeug
+requests
+qrcode
+python-barcode
