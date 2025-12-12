@@ -78,20 +78,47 @@
 {%endblock%}
 
 {%block card%}
+<!-- 手機版批量選擇模式提示 -->
+<div class="mobile-select-hint d-md-none" id="mobileSelectHint">
+  <i class="fas fa-hand-pointer me-2"></i>長按物品卡片進入選擇模式
+</div>
+
 <!-- 批量操作工具列 -->
 <div class="batch-toolbar hidden" id="batchToolbar">
   <span><i class="fas fa-check-square me-2"></i>已選擇 <span class="batch-count" id="selectedCount">0</span> 項</span>
   <div class="btn-group btn-group-sm">
     <button type="button" class="btn btn-outline-light" onclick="batchMove()" title="批量移動">
-      <i class="fas fa-arrows-alt me-1"></i>移動
+      <i class="fas fa-arrows-alt me-1"></i><span class="d-none d-sm-inline">移動</span>
     </button>
     <button type="button" class="btn btn-outline-danger" onclick="batchDelete()" title="批量刪除">
-      <i class="fas fa-trash me-1"></i>刪除
+      <i class="fas fa-trash me-1"></i><span class="d-none d-sm-inline">刪除</span>
     </button>
   </div>
-  <button type="button" class="btn btn-sm btn-outline-light" onclick="clearSelection()">
+  <button type="button" class="btn btn-sm btn-outline-light" onclick="exitSelectMode()">
     <i class="fas fa-times"></i>
   </button>
+</div>
+
+<!-- 手機版底部操作欄（選擇模式時顯示） -->
+<div class="mobile-batch-bar d-md-none hidden" id="mobileBatchBar">
+  <div class="d-flex justify-content-between align-items-center px-3 py-2">
+    <div>
+      <button type="button" class="btn btn-sm btn-outline-light" onclick="selectAllMobile()">
+        <i class="fas fa-check-double me-1"></i>全選
+      </button>
+    </div>
+    <div>
+      <span class="text-white">已選 <strong id="mobileSelectedCount">0</strong></span>
+    </div>
+    <div class="btn-group btn-group-sm">
+      <button type="button" class="btn btn-light" onclick="batchMove()">
+        <i class="fas fa-arrows-alt"></i>
+      </button>
+      <button type="button" class="btn btn-danger" onclick="batchDelete()">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  </div>
 </div>
 
 <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
@@ -350,6 +377,12 @@
 <script>
 const batchToolbar = document.getElementById('batchToolbar');
 const selectedCount = document.getElementById('selectedCount');
+const mobileBatchBar = document.getElementById('mobileBatchBar');
+const mobileSelectedCount = document.getElementById('mobileSelectedCount');
+const mobileSelectHint = document.getElementById('mobileSelectHint');
+
+let isSelectMode = false;
+let longPressTimer = null;
 
 function getSelectedItems() {
   const items = [];
@@ -367,15 +400,80 @@ function updateSelection() {
   const selected = getSelectedItems();
   selectedCount.textContent = selected.length;
   
+  if (mobileSelectedCount) {
+    mobileSelectedCount.textContent = selected.length;
+  }
+  
   if (selected.length > 0) {
     batchToolbar.classList.remove('hidden');
+    if (window.innerWidth < 768 && mobileBatchBar) {
+      mobileBatchBar.classList.remove('hidden');
+    }
   } else {
     batchToolbar.classList.add('hidden');
+    if (mobileBatchBar) {
+      mobileBatchBar.classList.add('hidden');
+    }
+    if (isSelectMode) {
+      exitSelectMode();
+    }
   }
 }
 
 function clearSelection() {
   document.querySelectorAll('.item-checkbox:checked').forEach(cb => cb.checked = false);
+  updateSelection();
+}
+
+// 進入選擇模式
+function enterSelectMode() {
+  isSelectMode = true;
+  document.body.classList.add('select-mode');
+  
+  // 顯示所有勾選框
+  document.querySelectorAll('.batch-checkbox').forEach(el => {
+    el.classList.add('visible');
+  });
+  
+  // 隱藏手機提示
+  if (mobileSelectHint) {
+    mobileSelectHint.style.display = 'none';
+  }
+  
+  // 震動反饋
+  if (navigator.vibrate) {
+    navigator.vibrate(50);
+  }
+}
+
+// 退出選擇模式
+function exitSelectMode() {
+  isSelectMode = false;
+  document.body.classList.remove('select-mode');
+  
+  // 隱藏勾選框
+  document.querySelectorAll('.batch-checkbox').forEach(el => {
+    el.classList.remove('visible');
+  });
+  
+  // 清除選擇
+  clearSelection();
+  
+  // 顯示手機提示
+  if (mobileSelectHint && window.innerWidth < 768) {
+    mobileSelectHint.style.display = '';
+  }
+  
+  // 隱藏工具列
+  if (mobileBatchBar) {
+    mobileBatchBar.classList.add('hidden');
+  }
+  batchToolbar.classList.add('hidden');
+}
+
+// 手機全選
+function selectAllMobile() {
+  document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = true);
   updateSelection();
 }
 
@@ -402,7 +500,45 @@ function batchDelete() {
   new bootstrap.Modal(document.getElementById('batchDeleteModal')).show();
 }
 
-// Shift+Click 多選
+// 長按進入選擇模式（手機版）
+document.querySelectorAll('.batch-item').forEach(card => {
+  // 觸控開始
+  card.addEventListener('touchstart', function(e) {
+    if (!isSelectMode) {
+      longPressTimer = setTimeout(() => {
+        enterSelectMode();
+        // 選中當前卡片
+        const checkbox = card.querySelector('.item-checkbox');
+        if (checkbox) {
+          checkbox.checked = true;
+          updateSelection();
+        }
+      }, 500); // 500ms 長按
+    }
+  });
+  
+  // 觸控結束或取消
+  card.addEventListener('touchend', function() {
+    clearTimeout(longPressTimer);
+  });
+  
+  card.addEventListener('touchmove', function() {
+    clearTimeout(longPressTimer);
+  });
+  
+  // 選擇模式下點擊切換選中
+  card.addEventListener('click', function(e) {
+    if (isSelectMode && e.target.type !== 'checkbox') {
+      const checkbox = card.querySelector('.item-checkbox');
+      if (checkbox) {
+        checkbox.checked = !checkbox.checked;
+        updateSelection();
+      }
+    }
+  });
+});
+
+// Shift+Click 多選（桌面版）
 let lastChecked = null;
 document.querySelectorAll('.item-checkbox').forEach(checkbox => {
   checkbox.addEventListener('click', function(e) {
@@ -416,6 +552,17 @@ document.querySelectorAll('.item-checkbox').forEach(checkbox => {
     lastChecked = this;
     updateSelection();
   });
+});
+
+// 點擊空白處退出選擇模式（手機版）
+document.addEventListener('click', function(e) {
+  if (isSelectMode && 
+      !e.target.closest('.batch-item') && 
+      !e.target.closest('.batch-toolbar') &&
+      !e.target.closest('.mobile-batch-bar') &&
+      !e.target.closest('.modal')) {
+    exitSelectMode();
+  }
 });
 </script>
 {%endblock%}

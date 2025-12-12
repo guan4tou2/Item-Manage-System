@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>列印標籤 - 物品管理系統</title>
+  
+  <link href="{{url_for('static',filename='css/bootstrap.min.css')}}" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --label-small: 30mm;
+      --label-medium: 50mm;
+      --label-large: 70mm;
+    }
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: #f8fafc;
+      margin: 0;
+      padding: 20px;
+    }
+    
+    /* 列印控制區 - 只在螢幕顯示 */
+    .print-controls {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      z-index: 1000;
+      width: 280px;
+    }
+    
+    @media print {
+      .print-controls {
+        display: none !important;
+      }
+      
+      body {
+        background: white;
+        padding: 0;
+        margin: 0;
+      }
+      
+      .labels-container {
+        margin: 0;
+        padding: 0;
+      }
+    }
+    
+    .print-controls h5 {
+      margin: 0 0 1rem 0;
+      font-weight: 700;
+    }
+    
+    .print-controls .btn {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+    
+    .print-controls .info {
+      font-size: 0.85rem;
+      color: #64748b;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e2e8f0;
+    }
+    
+    /* 標籤容器 */
+    .labels-container {
+      max-width: 210mm; /* A4 寬度 */
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10mm;
+      justify-content: flex-start;
+      padding-right: 300px; /* 為控制面板留空間 */
+    }
+    
+    @media print {
+      .labels-container {
+        padding-right: 0;
+      }
+    }
+    
+    /* 標籤樣式 */
+    .label {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 3mm;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      page-break-inside: avoid;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    @media print {
+      .label {
+        border: 1px solid #000;
+        box-shadow: none;
+        border-radius: 0;
+      }
+    }
+    
+    /* 尺寸變體 */
+    .label.small {
+      width: var(--label-small);
+      height: var(--label-small);
+    }
+    
+    .label.medium {
+      width: var(--label-medium);
+      height: var(--label-medium);
+    }
+    
+    .label.large {
+      width: var(--label-large);
+      height: var(--label-large);
+    }
+    
+    .label .qr-code {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .label.small .qr-code img {
+      width: 20mm;
+      height: 20mm;
+    }
+    
+    .label.medium .qr-code img {
+      width: 35mm;
+      height: 35mm;
+    }
+    
+    .label.large .qr-code img {
+      width: 50mm;
+      height: 50mm;
+    }
+    
+    .label .label-text {
+      width: 100%;
+      overflow: hidden;
+      line-height: 1.2;
+    }
+    
+    .label.small .label-text {
+      font-size: 6pt;
+    }
+    
+    .label.medium .label-text {
+      font-size: 8pt;
+    }
+    
+    .label.large .label-text {
+      font-size: 10pt;
+    }
+    
+    .label .item-name {
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .label .item-id {
+      font-family: monospace;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .label .item-location {
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    /* 返回連結 */
+    .back-link {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: white;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      text-decoration: none;
+      color: #334155;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .back-link:hover {
+      background: #f1f5f9;
+      transform: translateX(-2px);
+    }
+    
+    @media print {
+      .back-link {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 返回連結 -->
+  <a href="{{ url_for('items.print_labels') }}" class="back-link">
+    <i class="fas fa-arrow-left me-2"></i>返回選擇
+  </a>
+  
+  <!-- 列印控制區 -->
+  <div class="print-controls">
+    <h5><i class="fas fa-print me-2"></i>列印預覽</h5>
+    
+    <button type="button" class="btn btn-primary btn-lg" onclick="window.print()">
+      <i class="fas fa-print me-2"></i>列印標籤
+    </button>
+    
+    <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+      <i class="fas fa-arrow-left me-1"></i>返回修改
+    </button>
+    
+    <div class="info">
+      <i class="fas fa-info-circle me-1"></i>
+      共 {{ items|length }} 個標籤<br>
+      尺寸：{{ '小 (30mm)' if label_size == 'small' else ('大 (70mm)' if label_size == 'large' else '中 (50mm)') }}<br>
+      <small class="text-muted">建議使用標籤紙列印</small>
+    </div>
+  </div>
+  
+  <!-- 標籤區域 -->
+  <div class="labels-container">
+    {% for item in items %}
+    <div class="label {{ label_size }}">
+      <div class="qr-code">
+        <img src="{{ item.qr_code }}" alt="QR Code">
+      </div>
+      <div class="label-text">
+        {% if show_name %}
+        <div class="item-name" title="{{ item.ItemName }}">{{ item.ItemName }}</div>
+        {% endif %}
+        {% if show_id %}
+        <div class="item-id">{{ item.ItemID }}</div>
+        {% endif %}
+        {% if show_location and item.ItemStorePlace %}
+        <div class="item-location">{{ item.ItemStorePlace }}</div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  
+  <script>
+    // 按 P 鍵快速列印
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'p' && !e.ctrlKey && !e.metaKey) {
+        window.print();
+      }
+    });
+  </script>
+</body>
+</html>
+

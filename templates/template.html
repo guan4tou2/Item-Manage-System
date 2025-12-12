@@ -104,10 +104,20 @@
                       <i class="fas fa-edit me-2 text-primary"></i>管理物品
                     </a>
                   </li>
+                  <li>
+                    <a class="dropdown-item" href="{{url_for('items.print_labels')}}">
+                      <i class="fas fa-print me-2 text-secondary"></i>列印標籤
+                    </a>
+                  </li>
                   <li><hr class="dropdown-divider" /></li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('types.addtype')}}">
                       <i class="fas fa-tags me-2 text-info"></i>新增類型
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{url_for('auth.admin_users')}}">
+                      <i class="fas fa-users me-2 text-warning"></i>用戶管理
                     </a>
                   </li>
                   <li>
@@ -151,16 +161,27 @@
               </div>
             </form>
             
-            <!-- 通知鈴鐺 -->
-            <div class="nav-item me-3">
-              <a href="{{url_for('items.notifications')}}" 
-                 class="nav-link position-relative notification-bell" 
-                 id="notificationBell"
-                 title="到期通知">
-                <i class="fas fa-bell fa-lg"></i>
-                <span class="notification-badge d-none" id="notificationBadge">0</span>
-              </a>
-            </div>
+                  <!-- 暗色模式切換 -->
+                  <div class="nav-item me-2">
+                    <button type="button" 
+                            class="btn btn-link nav-link theme-toggle" 
+                            id="themeToggle"
+                            title="切換深色/淺色模式"
+                            onclick="toggleTheme()">
+                      <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
+                  </div>
+                  
+                  <!-- 通知鈴鐺 -->
+                  <div class="nav-item me-3">
+                    <a href="{{url_for('items.notifications')}}" 
+                       class="nav-link position-relative notification-bell" 
+                       id="notificationBell"
+                       title="到期通知">
+                      <i class="fas fa-bell fa-lg"></i>
+                      <span class="notification-badge d-none" id="notificationBadge">0</span>
+                    </a>
+                  </div>
             
             <!-- 使用者選單 -->
             <div class="dropdown text-end">
@@ -382,6 +403,71 @@
     </div>
 
     <script src="{{url_for('static',filename='js/bootstrap.bundle.min.js')}}"></script>
+    
+    <script>
+      // ========================================
+      // 暗色模式切換
+      // ========================================
+      function getStoredTheme() {
+        return localStorage.getItem('theme');
+      }
+      
+      function getPreferredTheme() {
+        const storedTheme = getStoredTheme();
+        if (storedTheme) {
+          return storedTheme;
+        }
+        // 檢查系統偏好
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      
+      function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        updateThemeIcon(theme);
+      }
+      
+      function updateThemeIcon(theme) {
+        const icon = document.getElementById('themeIcon');
+        if (icon) {
+          if (theme === 'dark') {
+            icon.classList.remove('fa-moon');
+            icon.classList.add('fa-sun');
+          } else {
+            icon.classList.remove('fa-sun');
+            icon.classList.add('fa-moon');
+          }
+        }
+      }
+      
+      function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        
+        // 切換動畫
+        const btn = document.getElementById('themeToggle');
+        if (btn) {
+          btn.style.transform = 'rotate(360deg)';
+          setTimeout(() => {
+            btn.style.transform = '';
+          }, 300);
+        }
+      }
+      
+      // 頁面載入時套用主題
+      (function() {
+        const theme = getPreferredTheme();
+        setTheme(theme);
+      })();
+      
+      // 監聽系統主題變更
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!getStoredTheme()) {
+          setTheme(e.matches ? 'dark' : 'light');
+        }
+      });
+    </script>
     
     <script>
       // 操作提示系統

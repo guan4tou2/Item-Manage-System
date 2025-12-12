@@ -61,6 +61,121 @@
   /* 字體 */
   --font-sans: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-display: 'Noto Sans TC', sans-serif;
+  
+  /* 暗色模式額外變數 */
+  --bg-body: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-elevated: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border-color: #e2e8f0;
+}
+
+/* 暗色模式 */
+[data-theme="dark"] {
+  --primary: #60a5fa;
+  --primary-dark: #3b82f6;
+  --primary-light: #93c5fd;
+  
+  --gray-50: #1e293b;
+  --gray-100: #334155;
+  --gray-200: #475569;
+  --gray-300: #64748b;
+  --gray-400: #94a3b8;
+  --gray-500: #cbd5e1;
+  --gray-600: #e2e8f0;
+  --gray-700: #f1f5f9;
+  --gray-800: #f8fafc;
+  --gray-900: #ffffff;
+  
+  --bg-body: #0f172a;
+  --bg-card: #1e293b;
+  --bg-elevated: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border-color: #475569;
+  
+  --gradient-subtle: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] body {
+  background: var(--bg-body);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .bg-light {
+  background-color: var(--bg-card) !important;
+}
+
+[data-theme="dark"] .card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+  background-color: var(--bg-elevated);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+  background-color: var(--bg-card);
+  border-color: var(--primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .table {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .table-light {
+  background-color: var(--bg-elevated) !important;
+}
+
+[data-theme="dark"] .modal-content {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .dropdown-menu {
+  background-color: var(--bg-elevated);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .dropdown-item {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+  background-color: var(--bg-card);
+}
+
+[data-theme="dark"] .text-muted {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="dark"] .alert-info {
+  background-color: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+  color: #93c5fd;
+}
+
+[data-theme="dark"] .btn-outline-secondary {
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .btn-outline-secondary:hover {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
 }
 
 /* =========================================
@@ -1272,5 +1387,130 @@ body {
 .card .favorite-btn.active {
   opacity: 1;
   transform: scale(1);
+}
+
+/* =========================================
+   31. 暗色模式切換按鈕
+   ========================================= */
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: rotate(15deg);
+}
+
+.theme-toggle i {
+  font-size: 1.25rem;
+  transition: transform var(--transition-slow);
+}
+
+[data-theme="dark"] .theme-toggle i {
+  color: #fbbf24;
+}
+
+/* =========================================
+   32. 手機版批量選擇
+   ========================================= */
+.mobile-select-hint {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.mobile-batch-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+  z-index: 1050;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 選擇模式下的卡片樣式 */
+.select-mode .batch-item {
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.select-mode .batch-item:active {
+  transform: scale(0.98);
+}
+
+.select-mode .batch-item .item-checkbox:checked + * {
+  outline: 2px solid var(--primary);
+}
+
+/* 手機版勾選框 - 預設隱藏，選擇模式時顯示 */
+@media (max-width: 767.98px) {
+  .batch-checkbox {
+    opacity: 0;
+    transform: scale(0.8);
+    transition: var(--transition);
+    pointer-events: none;
+  }
+  
+  .batch-checkbox.visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+  
+  .select-mode .batch-checkbox {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+  
+  /* 選中的卡片樣式 */
+  .select-mode .batch-item:has(.item-checkbox:checked) {
+    background: rgba(102, 126, 234, 0.1);
+    border-color: var(--primary);
+  }
+  
+  /* 調整底部工具列的 padding */
+  .select-mode main {
+    padding-bottom: 80px;
+  }
+}
+
+/* 桌面版勾選框始終顯示 */
+@media (min-width: 768px) {
+  .batch-checkbox {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+  }
+  
+  .mobile-select-hint {
+    display: none !important;
+  }
 }
 

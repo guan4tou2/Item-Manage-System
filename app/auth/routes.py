@@ -118,3 +118,46 @@ def signout():
     session.pop("force_password_change", None)
     return redirect(url_for("auth.signin"))
 
+
+@bp.route("/admin/users")
+def admin_users():
+    """用戶管理頁面（僅管理員）"""
+    username = session.get("UserID")
+    if not username:
+        return redirect(url_for("auth.signin"))
+    
+    user = user_service.get_user(username)
+    if not user or not user.get("admin"):
+        flash("您沒有權限存取此頁面", "danger")
+        return redirect(url_for("items.home"))
+    
+    users = user_service.list_users()
+    
+    return render_template(
+        "admin_users.html",
+        User=user,
+        users=users,
+    )
+
+
+@bp.route("/admin/reset-password/<target_user>", methods=["POST"])
+def admin_reset_password(target_user):
+    """管理員重置用戶密碼"""
+    username = session.get("UserID")
+    if not username:
+        return redirect(url_for("auth.signin"))
+    
+    user = user_service.get_user(username)
+    if not user or not user.get("admin"):
+        flash("您沒有權限執行此操作", "danger")
+        return redirect(url_for("items.home"))
+    
+    ok, msg, new_password = user_service.admin_reset_password(target_user)
+    
+    if ok:
+        flash(f"{msg}，新密碼為：{new_password}", "success")
+    else:
+        flash(msg, "danger")
+    
+    return redirect(url_for("auth.admin_users"))
+

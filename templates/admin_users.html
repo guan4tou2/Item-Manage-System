@@ -1,0 +1,108 @@
+{%extends 'template.html' %}
+{%block title%}用戶管理 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>👥 用戶管理</h1>
+    <p class="lead">管理系統使用者帳號</p>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card animate-fadeInUp stagger-1">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-users me-2"></i>用戶列表</h5>
+          <span class="badge bg-primary">共 {{ users|length }} 個用戶</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>用戶名稱</th>
+                  <th>角色</th>
+                  <th>密碼狀態</th>
+                  <th class="text-end">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {%for u in users%}
+                <tr>
+                  <td>
+                    <i class="fas fa-user me-2 text-muted"></i>
+                    <strong>{{ u.User }}</strong>
+                    {%if u.User == User.User%}
+                    <span class="badge bg-info ms-2">您</span>
+                    {%endif%}
+                  </td>
+                  <td>
+                    {%if u.admin%}
+                    <span class="badge bg-danger">
+                      <i class="fas fa-shield-alt me-1"></i>管理員
+                    </span>
+                    {%else%}
+                    <span class="badge bg-secondary">
+                      <i class="fas fa-user me-1"></i>一般用戶
+                    </span>
+                    {%endif%}
+                  </td>
+                  <td>
+                    {%if u.password_changed%}
+                    <span class="text-success">
+                      <i class="fas fa-check-circle me-1"></i>已設定
+                    </span>
+                    {%else%}
+                    <span class="text-warning">
+                      <i class="fas fa-exclamation-triangle me-1"></i>使用預設
+                    </span>
+                    {%endif%}
+                  </td>
+                  <td class="text-end">
+                    {%if u.User != User.User%}
+                    <form action="{{ url_for('auth.admin_reset_password', target_user=u.User) }}" 
+                          method="POST" 
+                          class="d-inline"
+                          onsubmit="return confirm('確定要重置 {{ u.User }} 的密碼嗎？\n\n重置後將產生新的隨機密碼，用戶需要使用新密碼登入。');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <button type="submit" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-key me-1"></i>重置密碼
+                      </button>
+                    </form>
+                    {%else%}
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary btn-sm">
+                      <i class="fas fa-edit me-1"></i>修改密碼
+                    </a>
+                    {%endif%}
+                  </td>
+                </tr>
+                {%endfor%}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 說明 -->
+      <div class="card mt-4 animate-fadeInUp stagger-2">
+        <div class="card-body">
+          <h6><i class="fas fa-info-circle me-2 text-primary"></i>密碼重置說明</h6>
+          <ul class="small text-muted mb-0">
+            <li>重置密碼後，系統會產生一組隨機密碼（12 位英數混合）</li>
+            <li>請將新密碼提供給用戶，用戶登入後會被要求設定新密碼</li>
+            <li>管理員無法查看其他用戶的密碼</li>
+            <li>如需修改自己的密碼，請使用「修改密碼」功能</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%}
+

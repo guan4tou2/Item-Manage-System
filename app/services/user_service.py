@@ -150,3 +150,37 @@ def force_change_password(username: str, new_password: str) -> Tuple[bool, str]:
     user_repo.mark_password_changed(username)
     
     return True, "密碼設定成功"
+
+
+def admin_reset_password(target_username: str) -> Tuple[bool, str, str]:
+    """管理員重置用戶密碼
+    
+    Args:
+        target_username: 要重置密碼的使用者名稱
+    
+    Returns:
+        (成功與否, 訊息, 新密碼)
+    """
+    user = user_repo.find_by_username(target_username)
+    if not user:
+        return False, "找不到該用戶", ""
+    
+    # 生成隨機密碼
+    import secrets
+    import string
+    alphabet = string.ascii_letters + string.digits
+    new_password = ''.join(secrets.choice(alphabet) for _ in range(12))
+    
+    # 更新密碼
+    hashed = generate_password_hash(new_password)
+    user_repo.update_password(target_username, hashed)
+    
+    # 標記為需要修改密碼（下次登入時強制修改）
+    user_repo.mark_password_not_changed(target_username)
+    
+    return True, f"已重置 {target_username} 的密碼", new_password
+
+
+def list_users() -> list:
+    """取得所有使用者列表"""
+    return user_repo.list_all_users()

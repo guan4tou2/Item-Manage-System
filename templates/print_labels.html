@@ -1,0 +1,265 @@
+{%extends 'template.html' %}
+{%block title%}列印 QR 標籤 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>🏷️ 列印 QR 標籤</h1>
+    <p class="lead">選擇物品，批量生成可列印的 QR Code 標籤</p>
+  </div>
+  
+  <!-- 使用說明 -->
+  <div class="alert alert-info alert-dismissible fade show mb-4 animate-fadeInUp stagger-1" role="alert">
+    <div class="d-flex align-items-start">
+      <i class="fas fa-info-circle fa-2x me-3 mt-1"></i>
+      <div>
+        <strong>使用說明：</strong>
+        <ol class="mb-0 mt-2">
+          <li>勾選要列印的物品（可多選）</li>
+          <li>設定標籤樣式和顯示內容</li>
+          <li>點擊「產生標籤」預覽</li>
+          <li>使用瀏覽器列印功能 (Ctrl+P) 列印標籤</li>
+        </ol>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container-fluid">
+  <form method="POST" id="printForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <input type="hidden" name="item_ids" id="selectedItemIds"/>
+    
+    <div class="row">
+      <!-- 左側：物品選擇 -->
+      <div class="col-lg-8">
+        <div class="card mb-4 animate-fadeInUp stagger-2">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>選擇物品</h5>
+            <div class="btn-group btn-group-sm">
+              <button type="button" class="btn btn-outline-primary" onclick="selectAll()">
+                <i class="fas fa-check-double me-1"></i>全選
+              </button>
+              <button type="button" class="btn btn-outline-secondary" onclick="deselectAll()">
+                <i class="fas fa-times me-1"></i>取消全選
+              </button>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 50px;">
+                      <input type="checkbox" class="form-check-input" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
+                    </th>
+                    <th style="width: 80px;">圖片</th>
+                    <th>名稱</th>
+                    <th>ID</th>
+                    <th>位置</th>
+                    <th>類型</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {%for item in items%}
+                  <tr class="item-row" data-item-id="{{item.ItemID}}">
+                    <td>
+                      <input type="checkbox" class="form-check-input item-checkbox" 
+                             value="{{item.ItemID}}" onchange="updateSelection()">
+                    </td>
+                    <td>
+                      {%if item.ItemPic%}
+                      <img src="{{ url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic) }}" 
+                           alt="{{item.ItemName}}"
+                           class="rounded"
+                           style="width: 50px; height: 50px; object-fit: cover;">
+                      {%else%}
+                      <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                           style="width: 50px; height: 50px;">
+                        <i class="fas fa-image text-muted"></i>
+                      </div>
+                      {%endif%}
+                    </td>
+                    <td>
+                      <strong>{{item.ItemName}}</strong>
+                    </td>
+                    <td>
+                      <code class="small">{{item.ItemID}}</code>
+                    </td>
+                    <td>
+                      <small class="text-muted">
+                        {%if item.ItemStorePlace%}{{item.ItemStorePlace}}{%endif%}
+                        {%if item.ItemFloor%}<br>{{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}{%endif%}
+                      </small>
+                    </td>
+                    <td>
+                      {%if item.ItemType%}
+                      <span class="badge bg-secondary">{{item.ItemType}}</span>
+                      {%endif%}
+                    </td>
+                  </tr>
+                  {%endfor%}
+                </tbody>
+              </table>
+            </div>
+            
+            {%if not items%}
+            <div class="text-center py-5">
+              <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+              <p class="text-muted">沒有可選擇的物品</p>
+              <a href="{{ url_for('items.additem') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>新增物品
+              </a>
+            </div>
+            {%endif%}
+          </div>
+          
+          {%if items%}
+          <div class="card-footer">
+            {% include "partials/pagination.html" %}
+          </div>
+          {%endif%}
+        </div>
+      </div>
+      
+      <!-- 右側：設定面板 -->
+      <div class="col-lg-4">
+        <div class="card sticky-top animate-fadeInUp stagger-3" style="top: 100px;">
+          <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-cog me-2"></i>標籤設定</h5>
+          </div>
+          <div class="card-body">
+            <!-- 已選數量 -->
+            <div class="alert alert-primary d-flex align-items-center mb-4">
+              <i class="fas fa-check-circle fa-2x me-3"></i>
+              <div>
+                <strong>已選擇 <span id="selectedCount">0</span> 個物品</strong>
+                <div class="small">將產生對應數量的標籤</div>
+              </div>
+            </div>
+            
+            <!-- 標籤尺寸 -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">
+                <i class="fas fa-ruler me-1"></i>標籤尺寸
+              </label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="label_size" id="sizeSmall" value="small">
+                <label class="btn btn-outline-primary" for="sizeSmall">
+                  <i class="fas fa-compress me-1"></i>小
+                </label>
+                
+                <input type="radio" class="btn-check" name="label_size" id="sizeMedium" value="medium" checked>
+                <label class="btn btn-outline-primary" for="sizeMedium">
+                  <i class="fas fa-arrows-alt me-1"></i>中
+                </label>
+                
+                <input type="radio" class="btn-check" name="label_size" id="sizeLarge" value="large">
+                <label class="btn btn-outline-primary" for="sizeLarge">
+                  <i class="fas fa-expand me-1"></i>大
+                </label>
+              </div>
+              <small class="text-muted d-block mt-1">
+                小：30×30mm | 中：50×50mm | 大：70×70mm
+              </small>
+            </div>
+            
+            <!-- 顯示內容 -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">
+                <i class="fas fa-eye me-1"></i>顯示內容
+              </label>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="show_name" id="showName" checked>
+                <label class="form-check-label" for="showName">
+                  物品名稱
+                </label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="show_id" id="showId" checked>
+                <label class="form-check-label" for="showId">
+                  物品 ID
+                </label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="show_location" id="showLocation">
+                <label class="form-check-label" for="showLocation">
+                  放置位置
+                </label>
+              </div>
+            </div>
+            
+            <!-- 產生按鈕 -->
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-primary btn-lg" id="generateBtn" disabled>
+                <i class="fas fa-print me-2"></i>產生標籤
+              </button>
+              <a href="{{ url_for('items.manageitem') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>返回管理
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+const checkboxes = document.querySelectorAll('.item-checkbox');
+const selectedCountEl = document.getElementById('selectedCount');
+const selectedItemIdsEl = document.getElementById('selectedItemIds');
+const generateBtn = document.getElementById('generateBtn');
+const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+
+function updateSelection() {
+  const selected = Array.from(checkboxes).filter(cb => cb.checked);
+  const count = selected.length;
+  
+  selectedCountEl.textContent = count;
+  selectedItemIdsEl.value = selected.map(cb => cb.value).join(',');
+  generateBtn.disabled = count === 0;
+  
+  // 更新全選狀態
+  selectAllCheckbox.checked = count === checkboxes.length && count > 0;
+  selectAllCheckbox.indeterminate = count > 0 && count < checkboxes.length;
+}
+
+function selectAll() {
+  checkboxes.forEach(cb => cb.checked = true);
+  updateSelection();
+}
+
+function deselectAll() {
+  checkboxes.forEach(cb => cb.checked = false);
+  updateSelection();
+}
+
+function toggleSelectAll(master) {
+  checkboxes.forEach(cb => cb.checked = master.checked);
+  updateSelection();
+}
+
+// 點擊行選擇
+document.querySelectorAll('.item-row').forEach(row => {
+  row.addEventListener('click', (e) => {
+    if (e.target.type !== 'checkbox') {
+      const checkbox = row.querySelector('.item-checkbox');
+      checkbox.checked = !checkbox.checked;
+      updateSelection();
+    }
+  });
+});
+
+// 初始化
+updateSelection();
+</script>
+{%endblock%}
+

@@ -600,3 +600,62 @@ def favorites():
         items=items,
     )
 
+
+@bp.route("/print-labels", methods=["GET", "POST"])
+@admin_required
+def print_labels():
+    """批量列印 QR 標籤頁面"""
+    user = get_current_user()
+    
+    if request.method == "POST":
+        # 取得選中的物品 ID
+        item_ids = request.form.get("item_ids", "").split(",")
+        item_ids = [id.strip() for id in item_ids if id.strip()]
+        
+        if not item_ids:
+            flash("請選擇要列印的物品", "warning")
+            return redirect(url_for("items.print_labels"))
+        
+        # 取得物品資料
+        items = []
+        for item_id in item_ids:
+            item = item_service.get_item(item_id)
+            if item:
+                # 產生 QR 碼的 base64
+                img = qrcode.make(f"item:{item_id}")
+                buf = BytesIO()
+                img.save(buf, format="PNG")
+                buf.seek(0)
+                import base64
+                qr_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+                item['qr_code'] = f"data:image/png;base64,{qr_base64}"
+                items.append(item)
+        
+        # 取得列印設定
+        label_size = request.form.get("label_size", "medium")
+        show_name = request.form.get("show_name") == "on"
+        show_id = request.form.get("show_id") == "on"
+        show_location = request.form.get("show_location") == "on"
+        
+        return render_template(
+            "print_preview.html",
+            User=user,
+            items=items,
+            label_size=label_size,
+            show_name=show_name,
+            show_id=show_id,
+            show_location=show_location,
+        )
+    
+    # GET: 顯示選擇頁面
+    filters = {"q": "", "place": "", "type": "", "floor": "", "room": "", "zone": "", "sort": ""}
+    page = request.args.get("page", 1, type=int)
+    result = item_service.list_items(filters, page=page, page_size=50)
+    
+    return render_template(
+        "print_labels.html",
+        User=user,
+        items=result["items"],
+        pagination=result,
+    )
+

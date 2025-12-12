@@ -28,3 +28,16 @@ def mark_password_changed(username: str) -> None:
         {"User": username},
         {"$set": {"password_changed": True}}
     )
+
+
+def mark_password_not_changed(username: str) -> None:
+    """標記使用者需要修改密碼（用於密碼重置後）"""
+    mongo.db.user.update_one(
+        {"User": username},
+        {"$set": {"password_changed": False}}
+    )
+
+
+def list_all_users() -> list:
+    """取得所有使用者列表"""
+    return list(mongo.db.user.find({}, {"_id": 0, "Password": 0}))

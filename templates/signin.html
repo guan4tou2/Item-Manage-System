@@ -472,6 +472,13 @@
         <p style="text-align: center; margin-top: 1.5rem; color: var(--gray-500);">
           還沒有帳號？<a href="{{ url_for('auth.signup') }}" style="color: var(--primary); text-decoration: none; font-weight: 600;">立即註冊</a>
         </p>
+        
+        <!-- 忘記密碼 -->
+        <p style="text-align: center; margin-top: 0.5rem;">
+          <a href="#" onclick="showForgotPasswordHelp()" style="color: var(--gray-400); text-decoration: none; font-size: 0.9rem;">
+            <i class="fas fa-key me-1"></i>忘記密碼？
+          </a>
+        </p>
 
         <!-- 功能說明 -->
         <div class="features">
@@ -545,8 +552,78 @@
         </div>
       </div>
     </div>
+    
+    <!-- 忘記密碼說明 Modal -->
+    <div
+      class="modal fade"
+      id="forgotPasswordModal"
+      tabindex="-1"
+      aria-labelledby="forgotPasswordModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+            <h5 class="modal-title" id="forgotPasswordModalLabel" style="color: white;">
+              <i class="fas fa-key me-2"></i>忘記密碼
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+              style="filter: brightness(0) invert(1);"
+            ></button>
+          </div>
+          <div class="modal-body" style="padding: 2rem; text-align: center;">
+            <i class="fas fa-user-shield" style="font-size: 3rem; color: #0d6efd; margin-bottom: 1rem;"></i>
+            <h5>需要重置密碼？</h5>
+            <p class="text-muted mb-4">
+              為了確保帳戶安全，密碼重置需要由系統管理員協助處理。
+            </p>
+            
+            <div class="card bg-light mb-3">
+              <div class="card-body text-start">
+                <h6 class="card-title">
+                  <i class="fas fa-info-circle me-1 text-primary"></i>
+                  重置步驟：
+                </h6>
+                <ol class="small text-muted mb-0">
+                  <li>聯繫您的系統管理員</li>
+                  <li>提供您的帳號名稱</li>
+                  <li>管理員將為您重置密碼</li>
+                  <li>使用新密碼登入後請立即修改</li>
+                </ol>
+              </div>
+            </div>
+            
+            <div class="alert alert-warning small text-start mb-0">
+              <i class="fas fa-lightbulb me-1"></i>
+              <strong>提示：</strong>預設管理員帳號為 <code>admin</code>
+            </div>
+          </div>
+          <div class="modal-footer" style="justify-content: center; border: none; padding: 0 1.5rem 1.5rem;">
+            <button
+              type="button"
+              class="btn btn-primary"
+              data-bs-dismiss="modal"
+              style="padding: 0.75rem 2rem; border-radius: 10px; font-weight: 600;"
+            >
+              <i class="fas fa-check me-1"></i>我知道了
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="{{url_for('static',filename='js/bootstrap.bundle.min.js')}}"></script>
+    
+    <script>
+      function showForgotPasswordHelp() {
+        new bootstrap.Modal(document.getElementById('forgotPasswordModal')).show();
+      }
+    </script>
+    
     {%if error%}
     <script>
       var errorModal = new bootstrap.Modal(document.getElementById("errorModal"));
