@@ -24,6 +24,22 @@ def ensure_upload_folder(app: Flask) -> None:
     upload_path.mkdir(parents=True, exist_ok=True)
 
 
+def _ensure_default_admin() -> None:
+    """確保預設管理員帳號存在"""
+    try:
+        # 檢查是否已有 admin 帳號
+        existing_admin = mongo.db.user.find_one({"User": "admin"})
+        if not existing_admin:
+            mongo.db.user.insert_one({
+                "User": "admin",
+                "Password": "admin",  # 首次登入後會自動升級為雜湊密碼
+                "admin": True
+            })
+            print("✅ 已建立預設管理員帳號: admin / admin")
+    except Exception as e:
+        print(f"⚠️  無法建立預設管理員帳號: {e}")
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
@@ -63,6 +79,10 @@ def create_app() -> Flask:
     mongo.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
+
+    # 初始化預設管理員帳號
+    with app.app_context():
+        _ensure_default_admin()
 
     # Blueprint 註冊
     from app.auth.routes import bp as auth_bp
