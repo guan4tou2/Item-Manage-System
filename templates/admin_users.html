@@ -29,6 +29,7 @@
                   <th>用戶名稱</th>
                   <th>角色</th>
                   <th>密碼狀態</th>
+                  <th>登入資訊</th>
                   <th class="text-end">操作</th>
                 </tr>
               </thead>
@@ -64,22 +65,49 @@
                     </span>
                     {%endif%}
                   </td>
-                  <td class="text-end">
-                    {%if u.User != User.User%}
-                    <form action="{{ url_for('auth.admin_reset_password', target_user=u.User) }}" 
-                          method="POST" 
-                          class="d-inline"
-                          onsubmit="return confirm('確定要重置 {{ u.User }} 的密碼嗎？\n\n重置後將產生新的隨機密碼，用戶需要使用新密碼登入。');">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                      <button type="submit" class="btn btn-outline-warning btn-sm">
-                        <i class="fas fa-key me-1"></i>重置密碼
-                      </button>
-                    </form>
+                  <td>
+                    {%if u.locked_until%}
+                    <span class="text-danger">
+                      <i class="fas fa-lock me-1"></i>已鎖定
+                    </span>
+                    {%elif u.last_login%}
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>{{ u.last_login }}<br>
+                      <i class="fas fa-globe me-1"></i>{{ u.last_login_ip or 'N/A' }}
+                    </small>
                     {%else%}
-                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary btn-sm">
-                      <i class="fas fa-edit me-1"></i>修改密碼
-                    </a>
+                    <small class="text-muted">尚未登入</small>
                     {%endif%}
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      {%if u.locked_until and u.User != User.User%}
+                      <form action="{{ url_for('auth.admin_unlock_user', target_user=u.User) }}" 
+                            method="POST" 
+                            class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-outline-success" title="解鎖帳號">
+                          <i class="fas fa-unlock"></i>
+                        </button>
+                      </form>
+                      {%endif%}
+                      
+                      {%if u.User != User.User%}
+                      <form action="{{ url_for('auth.admin_reset_password', target_user=u.User) }}" 
+                            method="POST" 
+                            class="d-inline"
+                            onsubmit="return confirm('確定要重置 {{ u.User }} 的密碼嗎？');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-outline-warning" title="重置密碼">
+                          <i class="fas fa-key"></i>
+                        </button>
+                      </form>
+                      {%else%}
+                      <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary" title="修改密碼">
+                        <i class="fas fa-edit"></i>
+                      </a>
+                      {%endif%}
+                    </div>
                   </td>
                 </tr>
                 {%endfor%}

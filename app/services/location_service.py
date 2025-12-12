@@ -53,3 +53,14 @@ def update_location(loc_id: str, doc: Dict[str, Any]) -> None:
         return
     location_repo.update_location(oid, doc)
 
+
+def update_order(order_list: List[Dict[str, Any]]) -> None:
+    """更新位置排序"""
+    for item in order_list:
+        try:
+            oid = ObjectId(item.get("id"))
+            order = item.get("order", 0)
+            location_repo.update_order(oid, order)
+        except Exception:
+            continue
+

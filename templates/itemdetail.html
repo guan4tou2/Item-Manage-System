@@ -235,7 +235,101 @@
     </div>
   </div>
   {%endif%}
+  
+  <!-- 關聯物品 -->
+  <div class="row mt-5">
+    <div class="col-12 animate-fadeInUp stagger-3">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-link me-2"></i>關聯物品</h5>
+          {%if User.admin%}
+          <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addRelatedModal">
+            <i class="fas fa-plus me-1"></i>新增關聯
+          </button>
+          {%endif%}
+        </div>
+        <div class="card-body" id="relatedItemsContainer">
+          <div class="text-center py-3" id="relatedLoading">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <span class="ms-2 text-muted">載入中...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+
+<!-- 新增關聯 Modal -->
+{%if User.admin%}
+<div class="modal fade" id="addRelatedModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-link me-2"></i>新增關聯物品</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">關聯物品 ID</label>
+          <input type="text" class="form-control" id="relatedItemId" placeholder="輸入物品 ID">
+          <small class="text-muted">輸入要關聯的物品 ID</small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">關聯類型</label>
+          <select class="form-select" id="relationType">
+            <option value="配件">配件</option>
+            <option value="組合">組合</option>
+            <option value="替代品">替代品</option>
+            <option value="相關">相關</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="addRelatedItem()">
+          <i class="fas fa-plus me-1"></i>新增
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{%endif%}
+
+<style>
+.related-item-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.related-item-card:hover {
+  border-color: var(--primary);
+  background: var(--gray-50);
+}
+
+.related-item-card img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.related-item-card .info {
+  flex: 1;
+}
+
+.related-item-card .name {
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.related-item-card .type-badge {
+  font-size: 0.7rem;
+}
 
 <style>
 .item-detail-card {
@@ -345,6 +439,119 @@ function switchPhoto(src, thumbEl) {
   document.querySelectorAll('.photo-thumb').forEach(t => t.classList.remove('active'));
   thumbEl.classList.add('active');
 }
+
+// 載入關聯物品
+async function loadRelatedItems() {
+  const container = document.getElementById('relatedItemsContainer');
+  const loading = document.getElementById('relatedLoading');
+  
+  try {
+    const response = await fetch(`/api/related-items/{{item.ItemID}}`);
+    const data = await response.json();
+    
+    if (data.success && data.related_items.length > 0) {
+      container.innerHTML = `
+        <div class="row g-3">
+          ${data.related_items.map(item => `
+            <div class="col-md-6">
+              <div class="related-item-card">
+                ${item.ItemPic 
+                  ? `<img src="/uploads/${item.ItemThumb || item.ItemPic}" alt="${item.ItemName}">`
+                  : `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 8px;"><i class="fas fa-image text-muted"></i></div>`
+                }
+                <div class="info">
+                  <a href="/item/${item.ItemID}" class="name text-decoration-none">${item.ItemName}</a>
+                  <div class="small text-muted">${item.ItemID}</div>
+                </div>
+                <span class="badge bg-info type-badge">${item.relation_type}</span>
+                {%if User.admin%}
+                <button type="button" class="btn btn-link btn-sm text-danger p-0" onclick="removeRelatedItem('${item.ItemID}')" title="移除關聯">
+                  <i class="fas fa-times"></i>
+                </button>
+                {%endif%}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="text-center py-4 text-muted">
+          <i class="fas fa-link fa-2x mb-2 opacity-50"></i>
+          <p class="mb-0">尚無關聯物品</p>
+          {%if User.admin%}
+          <small>點擊「新增關聯」來建立物品間的關係</small>
+          {%endif%}
+        </div>
+      `;
+    }
+  } catch (error) {
+    container.innerHTML = `<div class="text-center text-muted py-3">載入失敗</div>`;
+  }
+}
+
+{%if User.admin%}
+async function addRelatedItem() {
+  const relatedId = document.getElementById('relatedItemId').value.trim();
+  const relationType = document.getElementById('relationType').value;
+  
+  if (!relatedId) {
+    alert('請輸入物品 ID');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`/api/related-items/{{item.ItemID}}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ related_id: relatedId, type: relationType })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      bootstrap.Modal.getInstance(document.getElementById('addRelatedModal')).hide();
+      document.getElementById('relatedItemId').value = '';
+      loadRelatedItems();
+    } else {
+      alert(data.message || '新增失敗');
+    }
+  } catch (error) {
+    alert('新增失敗');
+  }
+}
+
+async function removeRelatedItem(relatedId) {
+  if (!confirm('確定要移除此關聯？')) return;
+  
+  try {
+    const response = await fetch(`/api/related-items/{{item.ItemID}}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ related_id: relatedId })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      loadRelatedItems();
+    } else {
+      alert(data.message || '移除失敗');
+    }
+  } catch (error) {
+    alert('移除失敗');
+  }
+}
+{%endif%}
+
+// 頁面載入時載入關聯物品
+document.addEventListener('DOMContentLoaded', loadRelatedItems);
 </script>
 {%endblock%}
 

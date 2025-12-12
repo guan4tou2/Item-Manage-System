@@ -1,0 +1,200 @@
+{%extends 'template.html' %}
+{%block title%}備份與還原 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>💾 備份與還原</h1>
+    <p class="lead">匯出完整資料備份或從備份檔案還原系統</p>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container-fluid">
+  <div class="row g-4">
+    <!-- 左側：備份 -->
+    <div class="col-lg-6">
+      <div class="card h-100 animate-fadeInUp stagger-1">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-download me-2"></i>資料備份</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-4">
+            將系統中的所有資料匯出為 JSON 檔案，包含物品、類型、位置等所有設定。
+          </p>
+          
+          <!-- 目前資料統計 -->
+          <div class="row g-3 mb-4">
+            <div class="col-4">
+              <div class="p-3 bg-light rounded text-center">
+                <div class="fs-3 fw-bold text-primary">{{ stats.total }}</div>
+                <small class="text-muted">物品</small>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 bg-light rounded text-center">
+                <div class="fs-3 fw-bold text-success">{{ type_count }}</div>
+                <small class="text-muted">類型</small>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-3 bg-light rounded text-center">
+                <div class="fs-3 fw-bold text-info">{{ location_count }}</div>
+                <small class="text-muted">位置選項</small>
+              </div>
+            </div>
+          </div>
+          
+          <div class="alert alert-info small">
+            <i class="fas fa-info-circle me-1"></i>
+            備份檔案包含所有物品資料、類型設定和位置選項，但<strong>不包含</strong>圖片檔案。
+          </div>
+          
+          <a href="{{ url_for('items.full_backup') }}" class="btn btn-primary btn-lg w-100">
+            <i class="fas fa-download me-2"></i>下載完整備份
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 右側：還原 -->
+    <div class="col-lg-6">
+      <div class="card h-100 animate-fadeInUp stagger-2">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0"><i class="fas fa-upload me-2"></i>資料還原</h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-4">
+            從之前匯出的 JSON 備份檔案還原資料。請謹慎操作！
+          </p>
+          
+          <form id="restoreForm" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <!-- 檔案選擇 -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">選擇備份檔案</label>
+              <input type="file" class="form-control" name="backup_file" id="backupFile" accept=".json" required>
+              <small class="text-muted">只支援 JSON 格式的備份檔案</small>
+            </div>
+            
+            <!-- 還原模式 -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">還原模式</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="mode" id="modeMerge" value="merge" checked>
+                <label class="form-check-label" for="modeMerge">
+                  <strong>合併模式</strong>
+                  <span class="text-muted">- 保留現有資料，只新增或更新</span>
+                </label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="mode" id="modeReplace" value="replace">
+                <label class="form-check-label" for="modeReplace">
+                  <strong>覆蓋模式</strong>
+                  <span class="text-muted">- 刪除重複項目後重新匯入</span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="alert alert-warning small">
+              <i class="fas fa-exclamation-triangle me-1"></i>
+              <strong>警告：</strong>還原操作可能會覆蓋現有資料，請確保已備份目前資料。
+            </div>
+            
+            <button type="submit" class="btn btn-warning btn-lg w-100" id="restoreBtn">
+              <i class="fas fa-upload me-2"></i>開始還原
+            </button>
+          </form>
+          
+          <!-- 還原結果 -->
+          <div id="restoreResult" class="mt-4 d-none">
+            <div class="alert" id="restoreAlert">
+              <i class="fas fa-check-circle me-1"></i>
+              <span id="restoreMessage"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 說明 -->
+  <div class="card mt-4 animate-fadeInUp stagger-3">
+    <div class="card-body">
+      <h6><i class="fas fa-question-circle me-2 text-primary"></i>備份與還原說明</h6>
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="text-muted mt-3">備份內容</h6>
+          <ul class="small text-muted">
+            <li>所有物品資料（名稱、ID、描述、位置等）</li>
+            <li>所有類型設定</li>
+            <li>所有位置選項（樓層、房間、區域）</li>
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <h6 class="text-muted mt-3">注意事項</h6>
+          <ul class="small text-muted">
+            <li>圖片檔案不包含在備份中，需另行備份</li>
+            <li>使用者帳號資料不包含在備份中</li>
+            <li>建議定期執行備份以防資料遺失</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+document.getElementById('restoreForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const btn = document.getElementById('restoreBtn');
+  const resultDiv = document.getElementById('restoreResult');
+  const alertDiv = document.getElementById('restoreAlert');
+  const messageSpan = document.getElementById('restoreMessage');
+  
+  // 確認對話框
+  if (!confirm('確定要執行還原嗎？這可能會影響現有資料。')) {
+    return;
+  }
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>還原中...';
+  
+  const formData = new FormData(this);
+  
+  try {
+    const response = await fetch('{{ url_for("items.restore_backup") }}', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const data = await response.json();
+    
+    resultDiv.classList.remove('d-none');
+    
+    if (data.success) {
+      alertDiv.className = 'alert alert-success';
+      messageSpan.textContent = data.message;
+    } else {
+      alertDiv.className = 'alert alert-danger';
+      messageSpan.textContent = data.message || '還原失敗';
+    }
+  } catch (error) {
+    resultDiv.classList.remove('d-none');
+    alertDiv.className = 'alert alert-danger';
+    messageSpan.textContent = '還原過程發生錯誤';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-upload me-2"></i>開始還原';
+  }
+});
+</script>
+{%endblock%}
+

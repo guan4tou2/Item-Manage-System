@@ -24,6 +24,7 @@ ITEM_PROJECTION = {
     "UsageExpiry": 1,
     "move_history": 1,  # 移動歷史
     "favorites": 1,  # 收藏使用者列表
+    "related_items": 1,  # 關聯物品
 }
 
 
@@ -399,4 +400,53 @@ def get_favorites(user_id: str) -> List[Dict[str, Any]]:
 def is_favorite(item_id: str, user_id: str) -> bool:
     """檢查物品是否被使用者收藏"""
     return item_repo.is_favorite(item_id, user_id)
+
+
+def add_related_item(item_id: str, related_id: str, relation_type: str = "配件") -> Tuple[bool, str]:
+    """新增物品關聯
+    
+    relation_type: 配件、組合、替代品等
+    """
+    item = item_repo.find_item_by_id(item_id)
+    related = item_repo.find_item_by_id(related_id)
+    
+    if not item or not related:
+        return False, "找不到物品"
+    
+    if item_id == related_id:
+        return False, "不可關聯自己"
+    
+    # 新增關聯（雙向）
+    item_repo.add_related_item(item_id, related_id, relation_type)
+    item_repo.add_related_item(related_id, item_id, relation_type)
+    
+    return True, "已新增關聯"
+
+
+def remove_related_item(item_id: str, related_id: str) -> Tuple[bool, str]:
+    """移除物品關聯"""
+    item_repo.remove_related_item(item_id, related_id)
+    item_repo.remove_related_item(related_id, item_id)
+    return True, "已移除關聯"
+
+
+def get_related_items(item_id: str) -> List[Dict[str, Any]]:
+    """取得物品的關聯物品"""
+    item = item_repo.find_item_by_id(item_id)
+    if not item:
+        return []
+    
+    related_ids = item.get("related_items", [])
+    related_items = []
+    
+    for relation in related_ids:
+        rid = relation.get("id") if isinstance(relation, dict) else relation
+        rtype = relation.get("type", "配件") if isinstance(relation, dict) else "配件"
+        
+        related = item_repo.find_item_by_id(rid, ITEM_PROJECTION)
+        if related:
+            related["relation_type"] = rtype
+            related_items.append(related)
+    
+    return related_items
 

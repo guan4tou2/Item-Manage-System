@@ -135,3 +135,24 @@ def add_move_history(item_id: str, from_location: str, to_location: str) -> None
         {"$push": {"move_history": record}}
     )
 
+
+def add_related_item(item_id: str, related_id: str, relation_type: str) -> None:
+    """新增物品關聯"""
+    # 檢查是否已存在
+    item = mongo.db.item.find_one({"ItemID": item_id, "related_items.id": related_id})
+    if item:
+        return  # 已存在
+    
+    mongo.db.item.update_one(
+        {"ItemID": item_id},
+        {"$addToSet": {"related_items": {"id": related_id, "type": relation_type}}}
+    )
+
+
+def remove_related_item(item_id: str, related_id: str) -> None:
+    """移除物品關聯"""
+    mongo.db.item.update_one(
+        {"ItemID": item_id},
+        {"$pull": {"related_items": {"id": related_id}}}
+    )
+

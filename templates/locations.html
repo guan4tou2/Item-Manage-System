@@ -83,7 +83,12 @@
       <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0"><i class="fas fa-list me-2"></i>現有位置選項</h5>
-          <span class="badge bg-secondary">{{ locations|length }} 筆</span>
+          <div class="d-flex align-items-center gap-2">
+            <small class="text-muted d-none d-md-inline">
+              <i class="fas fa-grip-vertical me-1"></i>拖曳排序
+            </small>
+            <span class="badge bg-secondary">{{ locations|length }} 筆</span>
+          </div>
         </div>
         <div class="card-body p-0">
           {%if locations%}
@@ -91,15 +96,20 @@
             <table class="table table-hover mb-0 location-table">
               <thead>
                 <tr>
-                  <th style="width: 25%;">樓層</th>
-                  <th style="width: 25%;">房間</th>
-                  <th style="width: 25%;">區域/櫃位</th>
-                  <th style="width: 25%;" class="text-center">操作</th>
+                  <th style="width: 40px;" class="d-none d-md-table-cell"></th>
+                  <th style="width: 22%;">樓層</th>
+                  <th style="width: 22%;">房間</th>
+                  <th style="width: 22%;">區域/櫃位</th>
+                  <th style="width: 15%;" class="text-center">操作</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="locationTableBody">
                 {% for loc in locations %}
-                <tr class="location-row" id="row-{{loc._id}}">
+                <tr class="location-row" id="row-{{loc._id}}" draggable="true" data-id="{{loc._id}}">
+                  <!-- 拖曳手柄 -->
+                  <td class="drag-handle d-none d-md-table-cell" style="cursor: grab; color: var(--gray-400);">
+                    <i class="fas fa-grip-vertical"></i>
+                  </td>
                   <!-- 顯示模式 -->
                   <td class="view-mode">{{loc.floor or '-'}}</td>
                   <td class="view-mode">{{loc.room or '-'}}</td>
@@ -309,5 +319,110 @@ document.addEventListener('keydown', function(e) {
     }
   }
 });
+
+// ========================================
+// 拖放排序功能
+// ========================================
+let draggedRow = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+  const tbody = document.getElementById('locationTableBody');
+  if (!tbody) return;
+  
+  const rows = tbody.querySelectorAll('.location-row');
+  
+  rows.forEach(row => {
+    // 拖曳開始
+    row.addEventListener('dragstart', function(e) {
+      draggedRow = this;
+      this.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', this.innerHTML);
+    });
+    
+    // 拖曳結束
+    row.addEventListener('dragend', function() {
+      this.classList.remove('dragging');
+      draggedRow = null;
+      
+      // 移除所有拖曳相關樣式
+      rows.forEach(r => {
+        r.classList.remove('drag-over', 'drag-over-top', 'drag-over-bottom');
+      });
+      
+      // 儲存新順序
+      saveNewOrder();
+    });
+    
+    // 拖曳經過
+    row.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      
+      if (this === draggedRow) return;
+      
+      const rect = this.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      
+      rows.forEach(r => r.classList.remove('drag-over-top', 'drag-over-bottom'));
+      
+      if (e.clientY < midY) {
+        this.classList.add('drag-over-top');
+      } else {
+        this.classList.add('drag-over-bottom');
+      }
+    });
+    
+    // 拖曳離開
+    row.addEventListener('dragleave', function() {
+      this.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+    
+    // 放下
+    row.addEventListener('drop', function(e) {
+      e.preventDefault();
+      
+      if (this === draggedRow) return;
+      
+      const rect = this.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      
+      if (e.clientY < midY) {
+        this.parentNode.insertBefore(draggedRow, this);
+      } else {
+        this.parentNode.insertBefore(draggedRow, this.nextSibling);
+      }
+    });
+  });
+});
+
+function saveNewOrder() {
+  const tbody = document.getElementById('locationTableBody');
+  const rows = tbody.querySelectorAll('.location-row');
+  const order = [];
+  
+  rows.forEach((row, index) => {
+    order.push({
+      id: row.dataset.id,
+      order: index
+    });
+  });
+  
+  // 發送新順序到後端（如果有實作排序 API）
+  fetch('{{ url_for("locations.update_order") }}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify({ order: order })
+  }).then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        // 可選：顯示成功提示
+      }
+    })
+    .catch(err => console.log('排序儲存失敗'));
+}
 </script>
 {%endblock%}

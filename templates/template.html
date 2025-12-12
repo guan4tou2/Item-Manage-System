@@ -121,6 +121,11 @@
                     </a>
                   </li>
                   <li>
+                    <a class="dropdown-item" href="{{url_for('items.backup_page')}}">
+                      <i class="fas fa-database me-2 text-secondary"></i>備份還原
+                    </a>
+                  </li>
+                  <li>
                     <a class="dropdown-item" href="{{url_for('locations.manage_locations')}}">
                       <i class="fas fa-map-marker-alt me-2 text-warning"></i>位置設定
                     </a>
@@ -644,28 +649,117 @@
       }
       
       // 鍵盤快捷鍵
+      const shortcuts = {
+        'Ctrl+K / ⌘+K': '開啟搜尋',
+        'N': '新增物品',
+        'H': '返回首頁',
+        'S': '進入搜尋頁',
+        'F': '我的收藏',
+        'T': '切換主題',
+        '?': '顯示快捷鍵',
+        'Esc': '關閉彈窗'
+      };
+      
+      function showKeyboardShortcuts() {
+        const modal = document.createElement('div');
+        modal.id = 'shortcutsModal';
+        modal.className = 'shortcuts-modal';
+        modal.innerHTML = `
+          <div class="shortcuts-content">
+            <div class="shortcuts-header">
+              <h5><i class="fas fa-keyboard me-2"></i>鍵盤快捷鍵</h5>
+              <button type="button" onclick="closeShortcutsModal()">&times;</button>
+            </div>
+            <div class="shortcuts-body">
+              ${Object.entries(shortcuts).map(([key, desc]) => `
+                <div class="shortcut-item">
+                  <kbd>${key}</kbd>
+                  <span>${desc}</span>
+                </div>
+              `).join('')}
+            </div>
+            <div class="shortcuts-footer">
+              <small class="text-muted">按 Esc 關閉此視窗</small>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        setTimeout(() => modal.classList.add('show'), 10);
+      }
+      
+      function closeShortcutsModal() {
+        const modal = document.getElementById('shortcutsModal');
+        if (modal) {
+          modal.classList.remove('show');
+          setTimeout(() => modal.remove(), 200);
+        }
+      }
+      
       document.addEventListener('keydown', function(e) {
+        const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+        
         // Ctrl+K 或 Cmd+K 開啟搜尋
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
           e.preventDefault();
-          document.querySelector('.navbar input[type="search"]').focus();
+          const searchInput = document.querySelector('.navbar input[type="search"]');
+          if (searchInput) searchInput.focus();
+          return;
         }
         
-        // ? 顯示幫助
-        if (e.key === '?' && !e.shiftKey) {
-          showGuide();
-        }
-        
-        // N 新增物品 (需要在非輸入狀態)
-        if (e.key === 'n' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
-          const fabBtn = document.querySelector('.fab');
-          if (fabBtn) {
-            window.location.href = fabBtn.href;
+        // 輸入狀態下只處理 Escape
+        if (isTyping) {
+          if (e.key === 'Escape') {
+            document.activeElement.blur();
           }
+          return;
         }
         
-        // ESC 關閉指引
+        // ? 或 Shift+/ 顯示快捷鍵幫助
+        if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+          e.preventDefault();
+          const existing = document.getElementById('shortcutsModal');
+          if (existing) {
+            closeShortcutsModal();
+          } else {
+            showKeyboardShortcuts();
+          }
+          return;
+        }
+        
+        // N 新增物品
+        if (e.key === 'n' || e.key === 'N') {
+          const fabBtn = document.querySelector('.fab');
+          if (fabBtn) window.location.href = fabBtn.href;
+          return;
+        }
+        
+        // H 返回首頁
+        if (e.key === 'h' || e.key === 'H') {
+          window.location.href = '{{url_for("items.home")}}';
+          return;
+        }
+        
+        // S 搜尋頁
+        if (e.key === 's' || e.key === 'S') {
+          window.location.href = '{{url_for("items.search")}}';
+          return;
+        }
+        
+        // F 收藏頁
+        if (e.key === 'f' || e.key === 'F') {
+          window.location.href = '{{url_for("items.favorites")}}';
+          return;
+        }
+        
+        // T 切換主題
+        if (e.key === 't' || e.key === 'T') {
+          toggleTheme();
+          return;
+        }
+        
+        // ESC 關閉彈窗
         if (e.key === 'Escape') {
+          closeShortcutsModal();
           skipGuide();
         }
       });
@@ -712,8 +806,207 @@
           .catch(err => console.log('無法載入通知數量'));
       }
       
+      // ========================================
+      // 圖片燈箱功能
+      // ========================================
+      let lightboxImages = [];
+      let currentImageIndex = 0;
+      
+      function createLightbox() {
+        if (document.getElementById('lightbox')) return;
+        
+        const lightbox = document.createElement('div');
+        lightbox.id = 'lightbox';
+        lightbox.className = 'lightbox';
+        lightbox.innerHTML = `
+          <div class="lightbox-content">
+            <button type="button" class="lightbox-close" onclick="closeLightbox()">&times;</button>
+            <button type="button" class="lightbox-nav lightbox-prev" onclick="prevImage()">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <img src="" alt="放大圖片" id="lightboxImage">
+            <button type="button" class="lightbox-nav lightbox-next" onclick="nextImage()">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+          </div>
+        `;
+        document.body.appendChild(lightbox);
+        
+        // 點擊背景關閉
+        lightbox.addEventListener('click', function(e) {
+          if (e.target === lightbox) closeLightbox();
+        });
+      }
+      
+      function openLightbox(images, startIndex = 0, captions = []) {
+        createLightbox();
+        lightboxImages = Array.isArray(images) ? images : [images];
+        currentImageIndex = startIndex;
+        
+        const lightbox = document.getElementById('lightbox');
+        const img = document.getElementById('lightboxImage');
+        const caption = document.getElementById('lightboxCaption');
+        
+        img.src = lightboxImages[currentImageIndex];
+        caption.textContent = captions[currentImageIndex] || '';
+        
+        // 控制導航按鈕顯示
+        const prevBtn = lightbox.querySelector('.lightbox-prev');
+        const nextBtn = lightbox.querySelector('.lightbox-next');
+        if (lightboxImages.length <= 1) {
+          prevBtn.style.display = 'none';
+          nextBtn.style.display = 'none';
+        } else {
+          prevBtn.style.display = '';
+          nextBtn.style.display = '';
+        }
+        
+        setTimeout(() => lightbox.classList.add('show'), 10);
+        document.body.style.overflow = 'hidden';
+      }
+      
+      function closeLightbox() {
+        const lightbox = document.getElementById('lightbox');
+        if (lightbox) {
+          lightbox.classList.remove('show');
+          document.body.style.overflow = '';
+        }
+      }
+      
+      function prevImage() {
+        currentImageIndex = (currentImageIndex - 1 + lightboxImages.length) % lightboxImages.length;
+        document.getElementById('lightboxImage').src = lightboxImages[currentImageIndex];
+      }
+      
+      function nextImage() {
+        currentImageIndex = (currentImageIndex + 1) % lightboxImages.length;
+        document.getElementById('lightboxImage').src = lightboxImages[currentImageIndex];
+      }
+      
+      // 為所有物品圖片添加燈箱功能
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.card-img-top, .item-image, [data-lightbox]').forEach(img => {
+          if (img.tagName === 'IMG' && img.src && !img.src.includes('data:')) {
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              openLightbox(this.src, 0, [this.alt || '']);
+            });
+          }
+        });
+      });
+      
+      // 鍵盤控制燈箱
+      document.addEventListener('keydown', function(e) {
+        const lightbox = document.getElementById('lightbox');
+        if (!lightbox || !lightbox.classList.contains('show')) return;
+        
+        if (e.key === 'ArrowLeft') prevImage();
+        if (e.key === 'ArrowRight') nextImage();
+        if (e.key === 'Escape') closeLightbox();
+      });
+      
+      // ========================================
+      // 搜尋自動完成
+      // ========================================
+      let searchTimeout = null;
+      
+      function initSearchAutocomplete() {
+        const searchInput = document.querySelector('.navbar input[type="search"]');
+        if (!searchInput) return;
+        
+        // 創建建議容器
+        let suggestionsDiv = document.getElementById('searchSuggestions');
+        if (!suggestionsDiv) {
+          suggestionsDiv = document.createElement('div');
+          suggestionsDiv.id = 'searchSuggestions';
+          suggestionsDiv.className = 'search-suggestions';
+          searchInput.parentElement.appendChild(suggestionsDiv);
+        }
+        
+        searchInput.addEventListener('input', function() {
+          const query = this.value.trim();
+          
+          clearTimeout(searchTimeout);
+          
+          if (query.length < 2) {
+            suggestionsDiv.classList.remove('show');
+            return;
+          }
+          
+          searchTimeout = setTimeout(() => {
+            fetch(`{{url_for("items.search_suggestions")}}?q=${encodeURIComponent(query)}`)
+              .then(res => res.json())
+              .then(data => {
+                if (data.suggestions && data.suggestions.length > 0) {
+                  renderSuggestions(data.suggestions, suggestionsDiv, searchInput);
+                } else {
+                  suggestionsDiv.classList.remove('show');
+                }
+              })
+              .catch(err => console.log('搜尋建議載入失敗'));
+          }, 200);
+        });
+        
+        // 點擊外部關閉
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.search-suggestions') && e.target !== searchInput) {
+            suggestionsDiv.classList.remove('show');
+          }
+        });
+        
+        // 鍵盤導航
+        searchInput.addEventListener('keydown', function(e) {
+          const items = suggestionsDiv.querySelectorAll('.suggestion-item');
+          const active = suggestionsDiv.querySelector('.suggestion-item.active');
+          let index = Array.from(items).indexOf(active);
+          
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            index = (index + 1) % items.length;
+            items.forEach((item, i) => item.classList.toggle('active', i === index));
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            index = (index - 1 + items.length) % items.length;
+            items.forEach((item, i) => item.classList.toggle('active', i === index));
+          } else if (e.key === 'Enter' && active) {
+            e.preventDefault();
+            active.click();
+          }
+        });
+      }
+      
+      function renderSuggestions(suggestions, container, input) {
+        container.innerHTML = suggestions.map((s, i) => `
+          <div class="suggestion-item ${i === 0 ? 'active' : ''}" data-id="${s.id}">
+            <div class="suggestion-icon">
+              ${s.category === 'id' ? '<i class="fas fa-hashtag"></i>' : '<i class="fas fa-box"></i>'}
+            </div>
+            <div class="suggestion-content">
+              <div class="suggestion-text">${s.text}</div>
+              ${s.category === 'id' && s.name ? `<small class="text-muted">${s.name}</small>` : ''}
+              ${s.category === 'name' ? `<small class="text-muted">${s.id}</small>` : ''}
+            </div>
+            ${s.type ? `<span class="badge bg-secondary">${s.type}</span>` : ''}
+          </div>
+        `).join('');
+        
+        container.classList.add('show');
+        
+        // 點擊建議項
+        container.querySelectorAll('.suggestion-item').forEach(item => {
+          item.addEventListener('click', function() {
+            const id = this.dataset.id;
+            window.location.href = `{{url_for("items.search")}}?q=${encodeURIComponent(id)}`;
+          });
+        });
+      }
+      
       // 頁面載入時更新通知
       document.addEventListener('DOMContentLoaded', function() {
+        initSearchAutocomplete();
         updateNotificationBadge();
         
         // 每 5 分鐘自動更新一次

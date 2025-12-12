@@ -16,7 +16,14 @@ def signin():
             flash("請輸入帳號與密碼", "danger")
             return render_template("signin.html", error="請輸入帳號與密碼")
 
-        if user_service.authenticate(username, password):
+        # 取得用戶 IP
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+        if ip_address:
+            ip_address = ip_address.split(',')[0].strip()
+        
+        success, error_msg = user_service.authenticate(username, password, ip_address)
+        
+        if success:
             session["UserID"] = username
             
             # 檢查是否需要強制修改密碼
@@ -27,8 +34,7 @@ def signin():
             
             return redirect(url_for("items.home"))
         else:
-            error = "帳號或密碼錯誤"
-            return render_template("signin.html", error=error)
+            return render_template("signin.html", error=error_msg)
 
     return render_template("signin.html")
 
@@ -158,6 +164,26 @@ def admin_reset_password(target_user):
         flash(f"{msg}，新密碼為：{new_password}", "success")
     else:
         flash(msg, "danger")
+    
+    return redirect(url_for("auth.admin_users"))
+
+
+@bp.route("/admin/unlock-user/<target_user>", methods=["POST"])
+def admin_unlock_user(target_user):
+    """管理員解鎖用戶帳號"""
+    username = session.get("UserID")
+    if not username:
+        return redirect(url_for("auth.signin"))
+    
+    user = user_service.get_user(username)
+    if not user or not user.get("admin"):
+        flash("您沒有權限執行此操作", "danger")
+        return redirect(url_for("items.home"))
+    
+    if user_service.unlock_user(target_user):
+        flash(f"已解鎖 {target_user} 的帳號", "success")
+    else:
+        flash("解鎖失敗", "danger")
     
     return redirect(url_for("auth.admin_users"))
 

@@ -511,6 +511,107 @@ def generate_item_id():
     return jsonify({"item_id": item_id})
 
 
+@bp.route("/api/related-items/<item_id>", methods=["GET", "POST", "DELETE"])
+@login_required
+def manage_related_items(item_id: str):
+    """API: 管理物品關聯"""
+    user = get_current_user()
+    
+    if request.method == "GET":
+        # 取得關聯物品
+        related = item_service.get_related_items(item_id)
+        return jsonify({"success": True, "related_items": related})
+    
+    if not user.get("admin"):
+        return jsonify({"success": False, "message": "無權限"}), 403
+    
+    if request.method == "POST":
+        # 新增關聯
+        data = request.get_json()
+        related_id = data.get("related_id", "").strip()
+        relation_type = data.get("type", "配件")
+        
+        if not related_id:
+            return jsonify({"success": False, "message": "請選擇關聯物品"}), 400
+        
+        ok, msg = item_service.add_related_item(item_id, related_id, relation_type)
+        return jsonify({"success": ok, "message": msg})
+    
+    if request.method == "DELETE":
+        # 移除關聯
+        data = request.get_json()
+        related_id = data.get("related_id", "")
+        
+        ok, msg = item_service.remove_related_item(item_id, related_id)
+        return jsonify({"success": ok, "message": msg})
+
+
+@bp.route("/api/quick-update-location/<item_id>", methods=["POST"])
+@admin_required
+def quick_update_location(item_id: str):
+    """API: 快速更新物品位置"""
+    try:
+        data = request.get_json()
+        new_location = data.get("location", "").strip()
+        
+        if not new_location:
+            return jsonify({"success": False, "message": "位置不可為空"}), 400
+        
+        item_service.update_item_place(item_id, {"ItemStorePlace": new_location})
+        
+        return jsonify({"success": True, "message": "位置已更新"})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 400
+
+
+@bp.route("/api/search-suggestions")
+@login_required
+def search_suggestions():
+    """API: 搜尋自動完成建議"""
+    query = request.args.get("q", "").strip()
+    
+    if len(query) < 2:
+        return jsonify({"suggestions": []})
+    
+    # 搜尋物品名稱和 ID
+    from app import mongo
+    
+    suggestions = []
+    
+    # 搜尋名稱
+    name_results = mongo.db.item.find(
+        {"ItemName": {"$regex": query, "$options": "i"}},
+        {"ItemName": 1, "ItemID": 1, "ItemType": 1, "_id": 0}
+    ).limit(5)
+    
+    for item in name_results:
+        suggestions.append({
+            "text": item.get("ItemName", ""),
+            "id": item.get("ItemID", ""),
+            "type": item.get("ItemType", ""),
+            "category": "name"
+        })
+    
+    # 搜尋 ID
+    id_results = mongo.db.item.find(
+        {"ItemID": {"$regex": query, "$options": "i"}},
+        {"ItemName": 1, "ItemID": 1, "ItemType": 1, "_id": 0}
+    ).limit(3)
+    
+    for item in id_results:
+        # 避免重複
+        if not any(s["id"] == item.get("ItemID") for s in suggestions):
+            suggestions.append({
+                "text": item.get("ItemID", ""),
+                "id": item.get("ItemID", ""),
+                "name": item.get("ItemName", ""),
+                "type": item.get("ItemType", ""),
+                "category": "id"
+            })
+    
+    return jsonify({"suggestions": suggestions[:8]})
+
+
 @bp.route("/logs")
 @admin_required
 def activity_logs():
@@ -599,6 +700,118 @@ def favorites():
         User=user,
         items=items,
     )
+
+
+@bp.route("/backup")
+@admin_required
+def backup_page():
+    """備份與還原頁面"""
+    user = get_current_user()
+    stats = item_service.get_stats()
+    types = type_service.list_types()
+    floors, rooms, zones = location_service.list_choices()
+    
+    return render_template(
+        "backup.html",
+        User=user,
+        stats=stats,
+        type_count=len(types),
+        location_count=len(floors) + len(rooms) + len(zones),
+    )
+
+
+@bp.route("/api/backup/full")
+@admin_required
+def full_backup():
+    """API: 完整資料備份"""
+    from app import mongo
+    
+    backup_data = {
+        "version": "1.0",
+        "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "items": list(mongo.db.item.find({}, {"_id": 0})),
+        "types": list(mongo.db.type.find({}, {"_id": 0})),
+        "locations": list(mongo.db.locations.find({}, {"_id": 0})),
+    }
+    
+    # 建立 JSON 回應
+    response = Response(
+        json.dumps(backup_data, ensure_ascii=False, indent=2),
+        mimetype="application/json",
+        headers={
+            "Content-Disposition": f"attachment; filename=backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        }
+    )
+    
+    return response
+
+
+@bp.route("/api/backup/restore", methods=["POST"])
+@admin_required
+def restore_backup():
+    """API: 還原備份資料"""
+    from app import mongo
+    
+    if "backup_file" not in request.files:
+        return jsonify({"success": False, "message": "請選擇備份檔案"}), 400
+    
+    file = request.files["backup_file"]
+    if not file.filename.endswith(".json"):
+        return jsonify({"success": False, "message": "只支援 JSON 格式"}), 400
+    
+    try:
+        data = json.load(file)
+        
+        # 驗證資料格式
+        if "items" not in data:
+            return jsonify({"success": False, "message": "無效的備份檔案格式"}), 400
+        
+        restore_mode = request.form.get("mode", "merge")  # merge 或 replace
+        
+        stats = {"items": 0, "types": 0, "locations": 0}
+        
+        # 還原物品
+        for item in data.get("items", []):
+            if restore_mode == "replace":
+                mongo.db.item.delete_one({"ItemID": item.get("ItemID")})
+            
+            if not mongo.db.item.find_one({"ItemID": item.get("ItemID")}):
+                mongo.db.item.insert_one(item)
+                stats["items"] += 1
+            elif restore_mode == "merge":
+                mongo.db.item.update_one(
+                    {"ItemID": item.get("ItemID")},
+                    {"$set": item}
+                )
+                stats["items"] += 1
+        
+        # 還原類型
+        for t in data.get("types", []):
+            if not mongo.db.type.find_one({"name": t.get("name")}):
+                mongo.db.type.insert_one(t)
+                stats["types"] += 1
+        
+        # 還原位置
+        for loc in data.get("locations", []):
+            existing = mongo.db.locations.find_one({
+                "floor": loc.get("floor"),
+                "room": loc.get("room"),
+                "zone": loc.get("zone")
+            })
+            if not existing:
+                mongo.db.locations.insert_one(loc)
+                stats["locations"] += 1
+        
+        return jsonify({
+            "success": True,
+            "message": f"還原完成：{stats['items']} 物品、{stats['types']} 類型、{stats['locations']} 位置",
+            "stats": stats
+        })
+        
+    except json.JSONDecodeError:
+        return jsonify({"success": False, "message": "JSON 解析失敗"}), 400
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @bp.route("/print-labels", methods=["GET", "POST"])

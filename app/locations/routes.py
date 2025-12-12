@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 
 from app.services import location_service
 from app.utils.auth import admin_required, get_current_user
@@ -46,4 +46,20 @@ def manage_locations():
         rooms=rooms,
         zones=zones,
     )
+
+
+@bp.route("/locations/update-order", methods=["POST"])
+@admin_required
+def update_order():
+    """API: 更新位置排序"""
+    try:
+        data = request.get_json()
+        order_list = data.get("order", [])
+        
+        if order_list:
+            location_service.update_order(order_list)
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 400
 

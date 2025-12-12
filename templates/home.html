@@ -234,10 +234,18 @@
         </p>
         
         {%if item.ItemStorePlace%}
-        <p class="card-text small mb-1">
+        <div class="card-text small mb-1 quick-edit-container" data-item-id="{{item.ItemID}}">
           <i class="fas fa-map-marker-alt text-danger me-1"></i>
-          <strong>位置：</strong>{{item.ItemStorePlace}}
-        </p>
+          <strong>位置：</strong>
+          <span class="location-display">{{item.ItemStorePlace}}</span>
+          {%if User.admin%}
+          <button type="button" class="btn btn-link btn-sm p-0 ms-1 quick-edit-btn d-none" 
+                  onclick="startQuickEdit('{{item.ItemID}}', '{{item.ItemStorePlace}}')"
+                  title="快速編輯位置">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          {%endif%}
+        </div>
         {%endif%}
         
         {%if item.ItemFloor or item.ItemRoom or item.ItemZone%}
@@ -343,6 +351,101 @@ if (homeSearchInput) {
       clearHomeSearch();
     }
   });
+}
+
+// 快速位置編輯
+function startQuickEdit(itemId, currentLocation) {
+  const container = document.querySelector(`.quick-edit-container[data-item-id="${itemId}"]`);
+  if (!container) return;
+  
+  const display = container.querySelector('.location-display');
+  const editBtn = container.querySelector('.quick-edit-btn');
+  
+  // 建立編輯輸入框
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control form-control-sm d-inline-block';
+  input.style.width = 'calc(100% - 80px)';
+  input.value = currentLocation;
+  
+  // 建立儲存/取消按鈕
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.className = 'btn btn-success btn-sm ms-1';
+  saveBtn.innerHTML = '<i class="fas fa-check"></i>';
+  saveBtn.onclick = () => saveQuickEdit(itemId, input.value, container, currentLocation);
+  
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn btn-secondary btn-sm ms-1';
+  cancelBtn.innerHTML = '<i class="fas fa-times"></i>';
+  cancelBtn.onclick = () => cancelQuickEdit(container, currentLocation);
+  
+  // 隱藏原本顯示，顯示編輯
+  display.classList.add('d-none');
+  editBtn.classList.add('d-none');
+  
+  container.appendChild(input);
+  container.appendChild(saveBtn);
+  container.appendChild(cancelBtn);
+  
+  input.focus();
+  input.select();
+  
+  // Enter 鍵儲存，Escape 鍵取消
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      saveQuickEdit(itemId, input.value, container, currentLocation);
+    } else if (e.key === 'Escape') {
+      cancelQuickEdit(container, currentLocation);
+    }
+  });
+}
+
+async function saveQuickEdit(itemId, newLocation, container, oldLocation) {
+  try {
+    const response = await fetch(`/api/quick-update-location/${itemId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ location: newLocation })
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // 更新顯示
+      const display = container.querySelector('.location-display');
+      display.textContent = newLocation;
+      cancelQuickEdit(container, newLocation);
+    } else {
+      alert(data.message || '更新失敗');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('更新失敗');
+  }
+}
+
+function cancelQuickEdit(container, location) {
+  const display = container.querySelector('.location-display');
+  const editBtn = container.querySelector('.quick-edit-btn');
+  
+  // 移除編輯元件
+  const input = container.querySelector('input');
+  const saveBtn = container.querySelector('.btn-success');
+  const cancelBtn = container.querySelector('.btn-secondary');
+  
+  if (input) input.remove();
+  if (saveBtn) saveBtn.remove();
+  if (cancelBtn) cancelBtn.remove();
+  
+  // 顯示原本內容
+  display.textContent = location;
+  display.classList.remove('d-none');
+  editBtn.classList.add('d-none');
 }
 
 // 收藏功能

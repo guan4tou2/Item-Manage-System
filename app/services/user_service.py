@@ -1,5 +1,6 @@
 """使用者服務模組"""
 from typing import Optional, Tuple
+from datetime import datetime, timedelta
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -8,34 +9,84 @@ from app.repositories import user_repo
 # 預設密碼（用於檢測是否需要強制修改）
 DEFAULT_PASSWORD = "admin"
 
+# 登入失敗鎖定設定
+MAX_FAILED_ATTEMPTS = 5
+LOCKOUT_DURATION_MINUTES = 15
 
-def authenticate(username: str, password: str) -> bool:
+
+def is_account_locked(username: str) -> Tuple[bool, str]:
+    """檢查帳號是否被鎖定
+    
+    Returns:
+        (是否鎖定, 解鎖時間或訊息)
+    """
+    locked_until = user_repo.get_lock_status(username)
+    
+    if locked_until:
+        try:
+            lock_time = datetime.strptime(locked_until, "%Y-%m-%d %H:%M:%S")
+            if datetime.now() < lock_time:
+                remaining = (lock_time - datetime.now()).seconds // 60
+                return True, f"帳號已被鎖定，請在 {remaining + 1} 分鐘後重試"
+            else:
+                # 已過鎖定時間，解鎖
+                user_repo.unlock_account(username)
+        except Exception:
+            pass
+    
+    return False, ""
+
+
+def authenticate(username: str, password: str, ip_address: str = "") -> Tuple[bool, str]:
     """驗證使用者帳號密碼
     
     支援兩種模式：
     1. 雜湊密碼（安全模式）
     2. 明文密碼（僅供遷移期間使用，會自動升級為雜湊）
+    
+    Returns:
+        (是否成功, 錯誤訊息)
     """
+    # 檢查帳號是否被鎖定
+    locked, message = is_account_locked(username)
+    if locked:
+        return False, message
+    
     user = user_repo.find_by_username(username)
     if not user:
-        return False
+        return False, "帳號或密碼錯誤"
     
     if user.get("User") != username:
-        return False
+        return False, "帳號或密碼錯誤"
     
     stored_password = user.get("Password", "")
+    success = False
     
     # 檢查是否為雜湊密碼 (werkzeug 雜湊以特定格式開頭)
     if stored_password.startswith(("pbkdf2:", "scrypt:")):
-        return check_password_hash(stored_password, password)
+        success = check_password_hash(stored_password, password)
+    else:
+        # 明文密碼比對（向後相容）
+        if stored_password == password:
+            _upgrade_password(username, password)
+            success = True
     
-    # 明文密碼比對（向後相容）
-    # 如果驗證成功，自動升級為雜湊密碼
-    if stored_password == password:
-        _upgrade_password(username, password)
-        return True
+    # 記錄登入歷史
+    user_repo.record_login(username, ip_address, success)
     
-    return False
+    if success:
+        return True, ""
+    else:
+        # 檢查失敗次數
+        failed_attempts = user_repo.get_failed_attempts(username)
+        if failed_attempts >= MAX_FAILED_ATTEMPTS:
+            # 鎖定帳號
+            lock_until = (datetime.now() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
+            user_repo.lock_account(username, lock_until)
+            return False, f"登入失敗次數過多，帳號已被鎖定 {LOCKOUT_DURATION_MINUTES} 分鐘"
+        
+        remaining = MAX_FAILED_ATTEMPTS - failed_attempts
+        return False, f"帳號或密碼錯誤（還有 {remaining} 次機會）"
 
 
 def _upgrade_password(username: str, plain_password: str) -> None:
@@ -184,3 +235,17 @@ def admin_reset_password(target_username: str) -> Tuple[bool, str, str]:
 def list_users() -> list:
     """取得所有使用者列表"""
     return user_repo.list_all_users()
+
+
+def get_login_history(username: str) -> list:
+    """取得使用者登入歷史"""
+    return user_repo.get_login_history(username)
+
+
+def unlock_user(username: str) -> bool:
+    """解鎖使用者帳號"""
+    user = user_repo.find_by_username(username)
+    if not user:
+        return False
+    user_repo.unlock_account(username)
+    return True
