@@ -83,11 +83,18 @@ echo -e "${GREEN}   ✓ 目錄結構正常${NC}"
 if [ "$SKIP_INIT" = false ]; then
     echo -e "${BLUE}🔧 初始化資料庫...${NC}"
     
-    # 等待 MongoDB 就緒（如果使用 Docker）
+    # 等待 MongoDB 就緒（如果設定了 MONGO_URI）
     if [ -n "$MONGO_URI" ]; then
         echo "   等待 MongoDB 就緒..."
         for i in {1..30}; do
-            if python -c "from pymongo import MongoClient; MongoClient('$MONGO_URI').admin.command('ping')" 2>/dev/null; then
+            # 使用 os.environ.get() 避免 shell 變數展開問題
+            if python -c "
+import os
+from pymongo import MongoClient
+uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/myDB')
+MongoClient(uri, serverSelectionTimeoutMS=2000).admin.command('ping')
+" 2>/dev/null; then
+                echo -e "${GREEN}   ✓ MongoDB 已就緒${NC}"
                 break
             fi
             sleep 1
@@ -95,10 +102,10 @@ if [ "$SKIP_INIT" = false ]; then
     fi
     
     # 執行初始化
-    python scripts/init_db.py || {
+    if ! python scripts/init_db.py; then
         echo -e "${YELLOW}   ⚠️  初始化警告（可能 MongoDB 未啟動）${NC}"
         echo -e "${YELLOW}   💡 請確保 MongoDB 正在運行${NC}"
-    }
+    fi
 fi
 
 # ============================================================
