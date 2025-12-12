@@ -62,12 +62,63 @@ fi
 echo ""
 echo "🔧 初始化資料庫..."
 
-python scripts/init_db.py || {
-    echo "⚠️  初始化警告（非致命錯誤）"
-}
+if ! python scripts/init_db.py; then
+    echo "❌ 資料庫初始化失敗"
+    echo ""
+    echo "可能原因："
+    echo "  • MongoDB 服務未正常運行"
+    echo "  • 資料庫連接設定錯誤"
+    echo "  • 初始化腳本執行錯誤"
+    echo ""
+    echo "請檢查 MongoDB 狀態後重試"
+    exit 1
+fi
 
 # ============================================================
-# 3. 創建必要目錄
+# 3. 驗證初始化結果
+# ============================================================
+
+echo ""
+echo "🔍 驗證初始化..."
+
+if ! python -c "
+from pymongo import MongoClient
+import os
+import sys
+
+uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/myDB')
+client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+db = client.get_database()
+
+# 檢查管理員帳號是否存在
+admin = db.user.find_one({'User': 'admin'})
+if not admin:
+    print('❌ 管理員帳號不存在')
+    sys.exit(1)
+
+print('✓ 管理員帳號已就緒')
+sys.exit(0)
+" 2>/dev/null; then
+    echo "⚠️  驗證失敗，嘗試建立管理員帳號..."
+    python -c "
+from pymongo import MongoClient
+import os
+uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/myDB')
+client = MongoClient(uri)
+db = client.get_database()
+if not db.user.find_one({'User': 'admin'}):
+    db.user.insert_one({'User': 'admin', 'Password': 'admin', 'admin': True})
+    print('✓ 管理員帳號已建立')
+else:
+    print('✓ 管理員帳號已存在')
+" || {
+        echo "❌ 無法建立管理員帳號，應用程式可能無法正常登入"
+        exit 1
+    }
+fi
+
+# ============================================================
+# 4. 創建必要目錄
 # ============================================================
 
 echo ""
