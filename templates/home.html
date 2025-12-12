@@ -54,13 +54,19 @@
         <label class="form-label small text-muted mb-1">
           <i class="fas fa-font me-1"></i>物品名稱
         </label>
-        <input
-          type="text"
-          name="q"
-          class="form-control"
-          placeholder="輸入名稱搜尋..."
-          value="{{ request.args.get('q', '') }}"
-        />
+        <div class="input-group">
+          <input
+            type="text"
+            name="q"
+            id="homeSearchInput"
+            class="form-control"
+            placeholder="輸入名稱搜尋..."
+            value="{{ request.args.get('q', '') }}"
+          />
+          <button type="button" class="btn btn-outline-secondary clear-input-btn {% if not request.args.get('q', '') %}d-none{% endif %}" id="homeClearBtn" onclick="clearHomeSearch()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       </div>
       <div class="col-6 col-md-2">
         <label class="form-label small text-muted mb-1">
@@ -300,4 +306,35 @@
 
 {%block page%}
 {% include "partials/pagination.html" %}
+{%endblock%}
+
+{%block js%}
+<script>
+// 首頁搜尋框即時清除功能
+const homeSearchInput = document.getElementById('homeSearchInput');
+const homeClearBtn = document.getElementById('homeClearBtn');
+
+function clearHomeSearch() {
+  homeSearchInput.value = '';
+  homeSearchInput.focus();
+  homeClearBtn.classList.add('d-none');
+}
+
+if (homeSearchInput) {
+  homeSearchInput.addEventListener('input', function() {
+    if (this.value) {
+      homeClearBtn.classList.remove('d-none');
+    } else {
+      homeClearBtn.classList.add('d-none');
+    }
+  });
+  
+  // ESC 鍵清除輸入
+  homeSearchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      clearHomeSearch();
+    }
+  });
+}
+</script>
 {%endblock%}

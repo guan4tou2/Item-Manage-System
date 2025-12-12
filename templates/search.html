@@ -22,11 +22,15 @@
           <input
             type="text"
             name="q"
+            id="searchInput"
             class="form-control"
             placeholder="輸入名稱搜尋..."
             value="{{ query }}"
             autofocus
           />
+          <button type="button" class="btn btn-outline-secondary clear-input-btn {% if not query %}d-none{% endif %}" id="clearSearchBtn" onclick="clearSearchInput()">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
       </div>
       <div class="col-6 col-md-2">
@@ -258,4 +262,36 @@
 
 {%block page%}
 {% include "partials/pagination.html" %}
+{%endblock%}
+
+{%block js%}
+<script>
+// 搜尋框即時清除功能
+const searchInput = document.getElementById('searchInput');
+const clearBtn = document.getElementById('clearSearchBtn');
+
+function clearSearchInput() {
+  searchInput.value = '';
+  searchInput.focus();
+  clearBtn.classList.add('d-none');
+}
+
+// 監聽輸入變化
+if (searchInput) {
+  searchInput.addEventListener('input', function() {
+    if (this.value) {
+      clearBtn.classList.remove('d-none');
+    } else {
+      clearBtn.classList.add('d-none');
+    }
+  });
+  
+  // ESC 鍵清除輸入
+  searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      clearSearchInput();
+    }
+  });
+}
+</script>
 {%endblock%}

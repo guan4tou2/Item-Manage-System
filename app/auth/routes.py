@@ -18,6 +18,13 @@ def signin():
 
         if user_service.authenticate(username, password):
             session["UserID"] = username
+            
+            # 檢查是否需要強制修改密碼
+            if user_service.needs_password_change(username):
+                session["force_password_change"] = True
+                flash("首次登入請修改預設密碼以確保安全", "warning")
+                return redirect(url_for("auth.change_password"))
+            
             return redirect(url_for("items.home"))
         else:
             error = "帳號或密碼錯誤"
@@ -62,8 +69,52 @@ def signup():
     return render_template("signup.html")
 
 
+@bp.route("/change-password", methods=["GET", "POST"])
+def change_password():
+    """修改密碼頁面"""
+    # 檢查是否已登入
+    username = session.get("UserID")
+    if not username:
+        return redirect(url_for("auth.signin"))
+    
+    is_forced = session.get("force_password_change", False)
+    
+    if request.method == "POST":
+        new_password = request.form.get("NewPassword", "")
+        confirm_password = request.form.get("ConfirmPassword", "")
+        
+        if not new_password or not confirm_password:
+            flash("請填寫所有欄位", "danger")
+            return render_template("change_password.html", is_forced=is_forced)
+        
+        if new_password != confirm_password:
+            flash("兩次輸入的密碼不一致", "danger")
+            return render_template("change_password.html", is_forced=is_forced)
+        
+        # 強制修改時不需要舊密碼
+        if is_forced:
+            ok, msg = user_service.force_change_password(username, new_password)
+        else:
+            old_password = request.form.get("OldPassword", "")
+            if not old_password:
+                flash("請輸入舊密碼", "danger")
+                return render_template("change_password.html", is_forced=is_forced)
+            ok, msg = user_service.change_password(username, old_password, new_password)
+        
+        if ok:
+            session.pop("force_password_change", None)
+            flash(msg, "success")
+            return redirect(url_for("items.home"))
+        else:
+            flash(msg, "danger")
+            return render_template("change_password.html", is_forced=is_forced)
+    
+    return render_template("change_password.html", is_forced=is_forced)
+
+
 @bp.route("/signout")
 def signout():
     session.pop("UserID", None)
+    session.pop("force_password_change", None)
     return redirect(url_for("auth.signin"))
 

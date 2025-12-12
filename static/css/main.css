@@ -1184,3 +1184,37 @@ body {
   gap: 0.5rem;
 }
 
+/* =========================================
+   29. 搜尋清除按鈕
+   ========================================= */
+.clear-input-btn {
+  border-left: none;
+  background: var(--gray-50);
+  color: var(--gray-500);
+  transition: var(--transition);
+}
+
+.clear-input-btn:hover {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.input-group .clear-input-btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* 導航欄搜尋框清除按鈕 */
+.navbar .clear-input-btn,
+#navClearBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.navbar .clear-input-btn:hover,
+#navClearBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+

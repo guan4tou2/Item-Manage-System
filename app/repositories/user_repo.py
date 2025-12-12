@@ -20,3 +20,11 @@ def update_password(username: str, hashed_password: str) -> None:
         {"User": username},
         {"$set": {"Password": hashed_password}}
     )
+
+
+def mark_password_changed(username: str) -> None:
+    """標記使用者已修改密碼"""
+    mongo.db.user.update_one(
+        {"User": username},
+        {"$set": {"password_changed": True}}
+    )

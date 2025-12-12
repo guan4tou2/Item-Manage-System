@@ -133,9 +133,13 @@
                   class="form-control"
                   type="search"
                   name="q"
+                  id="navSearchInput"
                   placeholder="搜尋物品..."
                   aria-label="搜尋"
                 />
+                <button type="button" class="btn btn-outline-secondary d-none" id="navClearBtn" onclick="clearNavSearch()">
+                  <i class="fas fa-times"></i>
+                </button>
                 <button class="btn btn-outline-light" type="submit">
                   <i class="fas fa-search"></i>
                 </button>
@@ -623,7 +627,39 @@
         
         // 每 5 分鐘自動更新一次
         setInterval(updateNotificationBadge, 5 * 60 * 1000);
+        
+        // 導航欄搜尋框清除功能
+        const navSearchInput = document.getElementById('navSearchInput');
+        const navClearBtn = document.getElementById('navClearBtn');
+        
+        if (navSearchInput && navClearBtn) {
+          navSearchInput.addEventListener('input', function() {
+            if (this.value) {
+              navClearBtn.classList.remove('d-none');
+            } else {
+              navClearBtn.classList.add('d-none');
+            }
+          });
+          
+          navSearchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+              clearNavSearch();
+            }
+          });
+        }
       });
+      
+      function clearNavSearch() {
+        const input = document.getElementById('navSearchInput');
+        const btn = document.getElementById('navClearBtn');
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+        if (btn) {
+          btn.classList.add('d-none');
+        }
+      }
     </script>
     
     {%block js%}{%endblock%}
