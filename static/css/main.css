@@ -1218,3 +1218,59 @@ body {
   color: white;
 }
 
+/* =========================================
+   30. 收藏按鈕
+   ========================================= */
+.favorite-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--gray-400);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+
+.favorite-btn:hover {
+  background: white;
+  color: #ffc107;
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.favorite-btn.active {
+  color: #ffc107;
+  background: white;
+}
+
+.favorite-btn.active:hover {
+  color: #e0a800;
+}
+
+.favorite-btn i {
+  font-size: 1rem;
+  transition: var(--transition);
+}
+
+/* 卡片中的收藏按鈕位置 */
+.card .favorite-btn {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.card:hover .favorite-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.card .favorite-btn.active {
+  opacity: 1;
+  transform: scale(1);
+}
+

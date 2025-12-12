@@ -541,5 +541,150 @@
       })
       .catch(err => console.log('無法載入區域選項'));
   }
+  
+  // ========================================
+  // 即時表單驗證
+  // ========================================
+  
+  const validationRules = {
+    ItemName: {
+      required: true,
+      minLength: 1,
+      maxLength: 100,
+      message: '請輸入物品名稱（1-100 字元）'
+    },
+    ItemID: {
+      required: true,
+      pattern: /^[A-Za-z0-9\-_]+$/,
+      message: '物品 ID 只能包含英文、數字、底線和連字號'
+    },
+    ItemStorePlace: {
+      required: true,
+      minLength: 1,
+      message: '請輸入放置地點'
+    },
+    ItemType: {
+      required: true,
+      message: '請選擇物品類型'
+    },
+    ItemOwner: {
+      required: true,
+      minLength: 1,
+      message: '請輸入擁有者'
+    },
+    ItemGetDate: {
+      required: true,
+      message: '請選擇取得日期'
+    }
+  };
+  
+  function validateField(field) {
+    const rules = validationRules[field.name || field.id];
+    if (!rules) return true;
+    
+    const value = field.value.trim();
+    let isValid = true;
+    let message = '';
+    
+    // 必填檢查
+    if (rules.required && !value) {
+      isValid = false;
+      message = rules.message || '此欄位為必填';
+    }
+    
+    // 最小長度檢查
+    if (isValid && rules.minLength && value.length < rules.minLength) {
+      isValid = false;
+      message = rules.message || `至少需要 ${rules.minLength} 個字元`;
+    }
+    
+    // 最大長度檢查
+    if (isValid && rules.maxLength && value.length > rules.maxLength) {
+      isValid = false;
+      message = rules.message || `最多 ${rules.maxLength} 個字元`;
+    }
+    
+    // 正規表達式檢查
+    if (isValid && rules.pattern && value && !rules.pattern.test(value)) {
+      isValid = false;
+      message = rules.message || '格式不正確';
+    }
+    
+    // 更新 UI
+    updateFieldStatus(field, isValid, message);
+    
+    return isValid;
+  }
+  
+  function updateFieldStatus(field, isValid, message) {
+    const container = field.closest('.form-floating') || field.closest('.col-md-6') || field.parentElement;
+    
+    // 移除現有狀態
+    field.classList.remove('is-valid', 'is-invalid');
+    
+    // 移除現有錯誤訊息
+    const existingFeedback = container.querySelector('.invalid-feedback');
+    if (existingFeedback) {
+      existingFeedback.remove();
+    }
+    
+    if (field.value.trim()) {
+      if (isValid) {
+        field.classList.add('is-valid');
+      } else {
+        field.classList.add('is-invalid');
+        
+        // 新增錯誤訊息
+        const feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback';
+        feedback.textContent = message;
+        container.appendChild(feedback);
+      }
+    }
+  }
+  
+  // 為所有需要驗證的欄位加入事件監聽
+  document.querySelectorAll('#addItemForm input, #addItemForm select, #addItemForm textarea').forEach(field => {
+    // 失焦時驗證
+    field.addEventListener('blur', () => validateField(field));
+    
+    // 輸入時清除錯誤狀態
+    field.addEventListener('input', () => {
+      if (field.classList.contains('is-invalid')) {
+        validateField(field);
+      }
+    });
+  });
+  
+  // 表單提交前驗證
+  document.getElementById('addItemForm').addEventListener('submit', function(e) {
+    let allValid = true;
+    
+    // 驗證所有欄位
+    Object.keys(validationRules).forEach(fieldName => {
+      const field = document.getElementById(fieldName) || document.querySelector(`[name="${fieldName}"]`);
+      if (field && !validateField(field)) {
+        allValid = false;
+      }
+    });
+    
+    if (!allValid) {
+      e.preventDefault();
+      
+      // 滾動到第一個錯誤欄位
+      const firstError = document.querySelector('.is-invalid');
+      if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstError.focus();
+      }
+      
+      return false;
+    }
+    
+    // 防止重複提交
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>儲存中...';
+  });
 </script>
 {%endblock%}

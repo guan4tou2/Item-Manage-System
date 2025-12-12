@@ -107,10 +107,11 @@
         <div class="col-4">
           {%if item.ItemPic%}
           <img
-            src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
+            src="{{ url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic) }}"
             class="img-fluid rounded-start h-100"
             alt="{{ item.ItemName }}"
             style="object-fit: cover; min-height: 200px;"
+            loading="lazy"
           />
           {%else%}
           <div class="bg-light d-flex align-items-center justify-content-center h-100 rounded-start" style="min-height: 200px;">

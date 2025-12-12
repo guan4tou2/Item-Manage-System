@@ -11,6 +11,7 @@ ITEM_PROJECTION = {
     "ItemID": 1,
     "ItemDesc": 1,
     "ItemPic": 1,
+    "ItemThumb": 1,  # 縮圖
     "ItemPics": 1,  # 多圖支援
     "ItemStorePlace": 1,
     "ItemType": 1,
@@ -22,6 +23,7 @@ ITEM_PROJECTION = {
     "WarrantyExpiry": 1,
     "UsageExpiry": 1,
     "move_history": 1,  # 移動歷史
+    "favorites": 1,  # 收藏使用者列表
 }
 
 
@@ -144,6 +146,17 @@ def create_item(form_data: Dict[str, Any], file_storage) -> Tuple[bool, str]:
 
 
 def update_item_place(item_id: str, updates: Dict[str, Any]) -> None:
+    """更新物品位置，並記錄移動歷史"""
+    # 取得現有位置
+    existing = item_repo.find_item_by_id(item_id)
+    if existing:
+        old_location = existing.get("ItemStorePlace", "")
+        new_location = updates.get("ItemStorePlace", "")
+        
+        # 如果位置有變更，記錄移動歷史
+        if new_location and old_location != new_location:
+            item_repo.add_move_history(item_id, old_location, new_location)
+    
     item_repo.update_item_by_id(item_id, updates)
 
 
@@ -361,4 +374,29 @@ def count_by_type(item_type: str) -> int:
 def count_by_floor(floor: str) -> int:
     """依樓層計算物品數量"""
     return item_repo.count_items({"ItemFloor": floor})
+
+
+def toggle_favorite(item_id: str, user_id: str) -> Tuple[bool, bool]:
+    """切換收藏狀態
+    
+    回傳 (成功與否, 新的收藏狀態)
+    """
+    item = item_repo.find_item_by_id(item_id)
+    if not item:
+        return False, False
+    
+    is_now_favorite = item_repo.toggle_favorite(item_id, user_id)
+    return True, is_now_favorite
+
+
+def get_favorites(user_id: str) -> List[Dict[str, Any]]:
+    """取得使用者收藏的物品"""
+    items = item_repo.get_favorites(user_id, ITEM_PROJECTION)
+    _annotate_expiry(items)
+    return items
+
+
+def is_favorite(item_id: str, user_id: str) -> bool:
+    """檢查物品是否被使用者收藏"""
+    return item_repo.is_favorite(item_id, user_id)
 

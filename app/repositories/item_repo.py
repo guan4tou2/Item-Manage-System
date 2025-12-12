@@ -85,3 +85,53 @@ def get_all_items_for_export(projection: Optional[Dict[str, Any]] = None) -> Lis
         projection = {"_id": 0}
     return list(mongo.db.item.find({}, projection))
 
+
+def toggle_favorite(item_id: str, user_id: str) -> bool:
+    """切換收藏狀態，回傳新的收藏狀態"""
+    item = mongo.db.item.find_one({"ItemID": item_id})
+    if not item:
+        return False
+    
+    favorites = item.get("favorites", [])
+    if user_id in favorites:
+        # 取消收藏
+        mongo.db.item.update_one(
+            {"ItemID": item_id},
+            {"$pull": {"favorites": user_id}}
+        )
+        return False
+    else:
+        # 加入收藏
+        mongo.db.item.update_one(
+            {"ItemID": item_id},
+            {"$addToSet": {"favorites": user_id}}
+        )
+        return True
+
+
+def get_favorites(user_id: str, projection: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    """取得使用者收藏的物品"""
+    if projection is None:
+        projection = {"_id": 0}
+    return list(mongo.db.item.find({"favorites": user_id}, projection))
+
+
+def is_favorite(item_id: str, user_id: str) -> bool:
+    """檢查物品是否被收藏"""
+    item = mongo.db.item.find_one({"ItemID": item_id, "favorites": user_id})
+    return item is not None
+
+
+def add_move_history(item_id: str, from_location: str, to_location: str) -> None:
+    """新增移動歷史記錄"""
+    from datetime import datetime
+    record = {
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "from_location": from_location,
+        "to_location": to_location,
+    }
+    mongo.db.item.update_one(
+        {"ItemID": item_id},
+        {"$push": {"move_history": record}}
+    )
+

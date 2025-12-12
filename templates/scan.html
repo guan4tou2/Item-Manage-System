@@ -4,10 +4,47 @@
 
 {%block contain%}
 <div class="container">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="display-6 text-center mb-4">📷 掃描 QR/條碼</h1>
-      <p class="text-center text-muted">允許相機權限後，掃描即可自動跳轉搜尋或顯示結果。</p>
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp text-center">
+    <h1>📷 掃描 QR/條碼</h1>
+    <p class="lead">使用相機掃描物品上的 QR Code 或條碼，快速找到物品資訊</p>
+  </div>
+  
+  <!-- 使用說明 -->
+  <div class="row justify-content-center mb-4 animate-fadeInUp stagger-1">
+    <div class="col-lg-8">
+      <div class="scan-guide">
+        <h5 class="mb-3"><i class="fas fa-info-circle text-primary me-2"></i>使用說明</h5>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div class="guide-step">
+              <div class="step-icon">
+                <i class="fas fa-camera"></i>
+              </div>
+              <h6>1. 允許相機</h6>
+              <p class="small text-muted mb-0">首次使用請允許瀏覽器存取相機</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="guide-step">
+              <div class="step-icon">
+                <i class="fas fa-qrcode"></i>
+              </div>
+              <h6>2. 對準條碼</h6>
+              <p class="small text-muted mb-0">將物品的 QR Code 或條碼對準框框</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="guide-step">
+              <div class="step-icon">
+                <i class="fas fa-search"></i>
+              </div>
+              <h6>3. 自動搜尋</h6>
+              <p class="small text-muted mb-0">掃描成功後自動跳轉至物品詳情</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -15,11 +52,170 @@
 
 {%block body%}
 <div class="container mb-4">
-  <div id="reader" style="width: 100%; max-width: 480px; margin: 0 auto;"></div>
-  <div class="text-center mt-3">
-    <button id="btn-stop" class="btn btn-outline-secondary btn-sm" disabled>停止掃描</button>
+  <div class="row justify-content-center">
+    <div class="col-lg-6">
+      <!-- 掃描器容器 -->
+      <div class="scan-container animate-fadeInUp stagger-2">
+        <!-- 權限請求/錯誤提示區域 -->
+        <div id="permissionPrompt" class="permission-prompt">
+          <i class="fas fa-camera fa-4x mb-3"></i>
+          <h4>需要相機權限</h4>
+          <p class="text-muted">請允許瀏覽器存取您的相機以使用掃描功能</p>
+          <button type="button" class="btn btn-primary btn-lg" onclick="requestCameraPermission()">
+            <i class="fas fa-unlock me-2"></i>允許相機存取
+          </button>
+        </div>
+        
+        <!-- 錯誤訊息 -->
+        <div id="errorMessage" class="error-message d-none">
+          <i class="fas fa-exclamation-triangle fa-4x mb-3 text-warning"></i>
+          <h4 id="errorTitle">無法存取相機</h4>
+          <p id="errorDesc" class="text-muted">請確認您的裝置有相機，並允許瀏覽器存取。</p>
+          <div class="d-flex flex-column gap-2 align-items-center">
+            <button type="button" class="btn btn-outline-primary" onclick="retryCamera()">
+              <i class="fas fa-redo me-1"></i>重試
+            </button>
+            <a href="{{ url_for('items.search') }}" class="btn btn-link">
+              <i class="fas fa-keyboard me-1"></i>改用手動搜尋
+            </a>
+          </div>
+          <div class="mt-4 p-3 bg-light rounded text-start">
+            <h6><i class="fas fa-lightbulb me-1"></i>疑難排解</h6>
+            <ul class="small text-muted mb-0">
+              <li>確認您的裝置有可用的相機</li>
+              <li>檢查瀏覽器是否有相機存取權限</li>
+              <li>若使用桌機，可能需要外接 Webcam</li>
+              <li>嘗試使用 Chrome 或 Safari 瀏覽器</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- 掃描器 -->
+        <div id="reader" class="d-none"></div>
+        
+        <!-- 掃描成功動畫 -->
+        <div id="scanSuccess" class="scan-success d-none">
+          <i class="fas fa-check-circle fa-5x text-success mb-3"></i>
+          <h4>掃描成功！</h4>
+          <p class="text-muted">正在載入物品資訊...</p>
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">載入中...</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 控制按鈕 -->
+      <div class="text-center mt-4">
+        <div class="btn-group" id="scanControls" style="display: none;">
+          <button id="btn-stop" class="btn btn-outline-secondary" disabled>
+            <i class="fas fa-stop me-1"></i>停止掃描
+          </button>
+          <button id="btn-switch" class="btn btn-outline-primary">
+            <i class="fas fa-sync-alt me-1"></i>切換相機
+          </button>
+        </div>
+      </div>
+      
+      <!-- 掃描歷史 -->
+      <div class="scan-history mt-4" id="scanHistory" style="display: none;">
+        <h6><i class="fas fa-history me-2"></i>最近掃描</h6>
+        <ul class="list-group list-group-flush" id="historyList"></ul>
+      </div>
+    </div>
   </div>
 </div>
+
+<style>
+.scan-guide {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.guide-step {
+  text-align: center;
+  padding: 1rem;
+}
+
+.step-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--gradient-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.scan-container {
+  background: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-height: 350px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.permission-prompt,
+.error-message,
+.scan-success {
+  text-align: center;
+  color: white;
+  padding: 2rem;
+}
+
+.permission-prompt i,
+.error-message i {
+  opacity: 0.8;
+}
+
+#reader {
+  width: 100%;
+}
+
+#reader video {
+  border-radius: 0 !important;
+}
+
+.scan-history {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.scan-history .list-group-item {
+  background: transparent;
+  border: none;
+  padding: 0.5rem 0;
+}
+
+.scan-history .list-group-item + .list-group-item {
+  border-top: 1px solid var(--gray-200);
+}
+
+/* 掃描框動畫 */
+@keyframes scanLine {
+  0% { top: 0; }
+  50% { top: calc(100% - 2px); }
+  100% { top: 0; }
+}
+
+.scan-line {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--primary);
+  animation: scanLine 2s ease-in-out infinite;
+  z-index: 10;
+}
+</style>
 {%endblock%}
 
 {%block js%}
@@ -27,45 +223,185 @@
 <script>
   const readerElem = document.getElementById("reader");
   const stopBtn = document.getElementById("btn-stop");
+  const switchBtn = document.getElementById("btn-switch");
+  const scanControls = document.getElementById("scanControls");
+  const permissionPrompt = document.getElementById("permissionPrompt");
+  const errorMessage = document.getElementById("errorMessage");
+  const scanSuccess = document.getElementById("scanSuccess");
+  const historySection = document.getElementById("scanHistory");
+  const historyList = document.getElementById("historyList");
+  
   let html5Qrcode;
+  let currentCamera = "environment"; // 預設後置相機
+  let scanHistory = JSON.parse(localStorage.getItem('scanHistory') || '[]');
 
+  // 顯示掃描歷史
+  function renderHistory() {
+    if (scanHistory.length === 0) return;
+    
+    historySection.style.display = 'block';
+    historyList.innerHTML = scanHistory.slice(0, 5).map(item => `
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <a href="{{ url_for('items.search') }}?q=${encodeURIComponent(item.code)}" class="text-decoration-none">
+          <i class="fas fa-qrcode me-2 text-muted"></i>${item.code}
+        </a>
+        <small class="text-muted">${item.time}</small>
+      </li>
+    `).join('');
+  }
+
+  // 掃描成功處理
   function onScanSuccess(decodedText) {
+    // 震動反饋（如果裝置支援）
+    if (navigator.vibrate) {
+      navigator.vibrate(200);
+    }
+    
+    // 播放提示音
     try {
-      // 假設內容為 item:<ItemID> 或直接是 ID / 文字
+      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdH+Onp6QfW1laHmHlZ+fjXdpZGd4iJadnIx1aGRoeIqXnJqJc2ViZniKl5yZiHJlYmZ4ipecmYhyZWJmeIqXnJmIcmViZniKl5yZiHJlYmZ4ipecmYhyZWJmeIqXnJmIcmViZg==');
+      audio.play();
+    } catch (e) {}
+    
+    // 儲存到歷史
+    const now = new Date();
+    scanHistory.unshift({
+      code: decodedText,
+      time: now.toLocaleTimeString()
+    });
+    scanHistory = scanHistory.slice(0, 10);
+    localStorage.setItem('scanHistory', JSON.stringify(scanHistory));
+    
+    // 顯示成功動畫
+    readerElem.classList.add('d-none');
+    scanSuccess.classList.remove('d-none');
+    scanControls.style.display = 'none';
+    
+    // 停止掃描器
+    if (html5Qrcode) {
+      html5Qrcode.stop();
+    }
+    
+    // 解析內容並跳轉
+    setTimeout(() => {
       let itemId = decodedText.startsWith("item:") ? decodedText.substring(5) : decodedText;
-      const url = "{{ url_for('items.search') }}" + "?q=" + encodeURIComponent(itemId);
-      window.location.href = url;
-    } catch (e) {
-      console.error(e);
+      
+      // 檢查是否為物品 ID 格式（嘗試直接查看物品）
+      if (itemId.startsWith("ITEM-") || /^[A-Z0-9-]+$/i.test(itemId)) {
+        window.location.href = "{{ url_for('items.search') }}?q=" + encodeURIComponent(itemId);
+      } else {
+        window.location.href = "{{ url_for('items.search') }}?q=" + encodeURIComponent(itemId);
+      }
+    }, 1000);
+  }
+
+  // 請求相機權限
+  async function requestCameraPermission() {
+    permissionPrompt.classList.add('d-none');
+    
+    try {
+      // 先嘗試取得權限
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      startScanner();
+    } catch (err) {
+      showError(err);
     }
   }
 
+  // 顯示錯誤
+  function showError(err) {
+    permissionPrompt.classList.add('d-none');
+    readerElem.classList.add('d-none');
+    scanControls.style.display = 'none';
+    errorMessage.classList.remove('d-none');
+    
+    const errorTitle = document.getElementById('errorTitle');
+    const errorDesc = document.getElementById('errorDesc');
+    
+    if (err.name === 'NotAllowedError') {
+      errorTitle.textContent = '相機權限被拒絕';
+      errorDesc.textContent = '請在瀏覽器設定中允許此網站存取相機。';
+    } else if (err.name === 'NotFoundError') {
+      errorTitle.textContent = '找不到相機';
+      errorDesc.textContent = '您的裝置似乎沒有可用的相機。';
+    } else if (err.name === 'NotReadableError') {
+      errorTitle.textContent = '相機被佔用';
+      errorDesc.textContent = '相機可能正被其他應用程式使用中。';
+    } else {
+      errorTitle.textContent = '無法啟動相機';
+      errorDesc.textContent = err.message || '發生未知錯誤，請重試。';
+    }
+  }
+
+  // 重試
+  function retryCamera() {
+    errorMessage.classList.add('d-none');
+    permissionPrompt.classList.remove('d-none');
+  }
+
+  // 啟動掃描器
   function startScanner() {
     html5Qrcode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: 250 };
+    
+    const config = { 
+      fps: 10, 
+      qrbox: { width: 250, height: 250 },
+      aspectRatio: 1.0
+    };
+    
     html5Qrcode.start(
-      { facingMode: "environment" },
+      { facingMode: currentCamera },
       config,
       onScanSuccess,
-      (error) => {}
+      (error) => {} // 靜默處理掃描錯誤
     ).then(() => {
+      permissionPrompt.classList.add('d-none');
+      errorMessage.classList.add('d-none');
+      readerElem.classList.remove('d-none');
+      scanControls.style.display = 'flex';
       stopBtn.disabled = false;
     }).catch(err => {
-      console.error(err);
-      alert("無法啟動相機，請檢查權限。");
+      showError(err);
     });
   }
 
+  // 停止掃描器
   function stopScanner() {
     if (html5Qrcode) {
       html5Qrcode.stop().then(() => {
         stopBtn.disabled = true;
+        permissionPrompt.classList.remove('d-none');
+        readerElem.classList.add('d-none');
+        scanControls.style.display = 'none';
       });
     }
   }
 
+  // 切換相機
+  async function switchCamera() {
+    if (html5Qrcode) {
+      await html5Qrcode.stop();
+      currentCamera = currentCamera === "environment" ? "user" : "environment";
+      startScanner();
+    }
+  }
+
+  // 事件綁定
   stopBtn.addEventListener("click", stopScanner);
-  document.addEventListener("DOMContentLoaded", startScanner);
+  switchBtn.addEventListener("click", switchCamera);
+  
+  // 頁面載入時顯示歷史
+  document.addEventListener("DOMContentLoaded", () => {
+    renderHistory();
+    
+    // 檢查是否已有相機權限
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'camera' }).then(result => {
+        if (result.state === 'granted') {
+          requestCameraPermission();
+        }
+      }).catch(() => {});
+    }
+  });
 </script>
 {%endblock%}
-

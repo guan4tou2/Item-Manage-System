@@ -1,0 +1,183 @@
+{%extends 'template.html' %}
+{%block title%}我的收藏 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>⭐ 我的收藏</h1>
+    <p class="lead">快速存取您收藏的常用物品</p>
+  </div>
+  
+  <!-- 統計 -->
+  <div class="d-flex align-items-center gap-3 mb-4 animate-fadeInUp stagger-1">
+    <span class="badge bg-primary fs-6">
+      <i class="fas fa-star me-1"></i>{{ items|length }} 個收藏
+    </span>
+    <a href="{{ url_for('items.home') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-home me-1"></i>返回首頁
+    </a>
+  </div>
+</div>
+{%endblock%}
+
+{%block card%}
+{%if items%}
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
+  {%for item in items%}
+  <div class="col">
+    <div class="card h-100 favorite-card" data-item-id="{{item.ItemID}}">
+      <!-- 物品圖片 -->
+      <a href="{{ url_for('items.item_detail', item_id=item.ItemID) }}" class="card-img-link position-relative overflow-hidden d-block" style="height: 200px;">
+      {%if item.ItemPic%}
+      <img
+        src="{{ url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic) }}"
+        class="card-img-top h-100 w-100"
+        alt="{{ item.ItemName }}"
+        style="object-fit: cover"
+        loading="lazy"
+      />
+        {%else%}
+        <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center h-100" 
+             style="background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);">
+          <i class="fas fa-image fa-4x text-white opacity-50"></i>
+        </div>
+        {%endif%}
+        
+        <!-- 類型標籤 -->
+        {%if item.ItemType%}
+        <div class="position-absolute bottom-0 start-0 p-2">
+          <span class="badge bg-dark bg-opacity-75">
+            <i class="fas fa-tag me-1"></i>{{item.ItemType}}
+          </span>
+        </div>
+        {%endif%}
+      </a>
+      
+      <!-- 收藏按鈕 -->
+      <button type="button" 
+              class="favorite-btn active position-absolute top-0 end-0 m-2"
+              onclick="toggleFavorite('{{item.ItemID}}', this)"
+              title="取消收藏">
+        <i class="fas fa-star"></i>
+      </button>
+      
+      <!-- 卡片內容 -->
+      <div class="card-body">
+        <h5 class="card-title text-truncate" title="{{item.ItemName}}">
+          {{item.ItemName}}
+        </h5>
+        <p class="card-text text-muted small mb-2">
+          <i class="fas fa-hashtag me-1"></i>{{item.ItemID}}
+        </p>
+        
+        {%if item.ItemStorePlace%}
+        <p class="card-text small mb-1">
+          <i class="fas fa-map-marker-alt text-danger me-1"></i>
+          {{item.ItemStorePlace}}
+        </p>
+        {%endif%}
+        
+        {%if item.ItemFloor or item.ItemRoom or item.ItemZone%}
+        <p class="card-text small mb-1">
+          <i class="fas fa-home text-info me-1"></i>
+          {{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}
+        </p>
+        {%endif%}
+      </div>
+      
+      <!-- 卡片底部操作 -->
+      <div class="card-footer bg-transparent">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="btn-group btn-group-sm">
+            {%if User.admin%}
+            <a href="{{ url_for('items.edititem', item_id=item.ItemID) }}" 
+               class="btn btn-outline-primary"
+               data-tooltip="編輯物品">
+              <i class="fas fa-edit"></i>
+            </a>
+            {%endif%}
+            <a href="{{ url_for('items.item_detail', item_id=item.ItemID) }}" 
+               class="btn btn-outline-secondary"
+               data-tooltip="查看詳情">
+              <i class="fas fa-eye"></i>
+            </a>
+          </div>
+          <div class="btn-group btn-group-sm">
+            <a href="{{ url_for('items.qrcode_image', item_id=item.ItemID) }}" 
+               class="btn btn-outline-dark"
+               data-tooltip="QR Code">
+              <i class="fas fa-qrcode"></i>
+            </a>
+            <a href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}" 
+               class="btn btn-outline-dark"
+               data-tooltip="條碼">
+              <i class="fas fa-barcode"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {%endfor%}
+</div>
+{%else%}
+<div class="empty-state animate-fadeInUp">
+  <i class="fas fa-star"></i>
+  <h3>還沒有收藏任何物品</h3>
+  <p>在物品卡片上點擊星號按鈕即可加入收藏</p>
+  <a href="{{ url_for('items.home') }}" class="btn btn-primary btn-lg">
+    <i class="fas fa-home me-2"></i>前往首頁
+  </a>
+</div>
+{%endif%}
+{%endblock%}
+
+{%block js%}
+<script>
+async function toggleFavorite(itemId, btn) {
+  try {
+    const response = await fetch(`/api/favorite/${itemId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      if (!data.is_favorite) {
+        // 取消收藏，從頁面移除卡片
+        const card = btn.closest('.col');
+        card.style.transition = 'opacity 0.3s, transform 0.3s';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.8)';
+        setTimeout(() => {
+          card.remove();
+          // 更新計數
+          const countBadge = document.querySelector('.badge.bg-primary');
+          if (countBadge) {
+            const currentCount = parseInt(countBadge.textContent.match(/\d+/)[0]);
+            countBadge.innerHTML = `<i class="fas fa-star me-1"></i>${currentCount - 1} 個收藏`;
+          }
+          // 如果沒有收藏了，顯示空狀態
+          const remaining = document.querySelectorAll('.favorite-card').length;
+          if (remaining === 0) {
+            location.reload();
+          }
+        }, 300);
+      }
+    } else {
+      alert(data.message || '操作失敗');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('操作失敗');
+  }
+}
+</script>
+{%endblock%}
+

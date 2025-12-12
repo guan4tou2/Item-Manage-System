@@ -168,11 +168,19 @@
   {%for item in items%}
   <div class="col">
     <div class="card h-100">
+      <!-- 收藏按鈕 -->
+      <button type="button" 
+              class="favorite-btn position-absolute top-0 start-0 m-2 z-2 {% if User.User in (item.favorites or []) %}active{% endif %}"
+              onclick="event.stopPropagation(); toggleFavorite('{{item.ItemID}}', this)"
+              title="{% if User.User in (item.favorites or []) %}取消收藏{% else %}加入收藏{% endif %}">
+        <i class="{% if User.User in (item.favorites or []) %}fas{% else %}far{% endif %} fa-star"></i>
+      </button>
+      
       <!-- 物品圖片 - 點擊進入詳情頁 -->
       <a href="{{ url_for('items.item_detail', item_id=item.ItemID) }}" class="card-img-link position-relative overflow-hidden d-block" style="height: 200px;">
         {%if item.ItemPic%}
         <img
-          src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
+          src="{{ url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic) }}"
           class="card-img-top h-100 w-100"
           alt="{{ item.ItemName }}"
           style="object-fit: cover"
@@ -335,6 +343,47 @@ if (homeSearchInput) {
       clearHomeSearch();
     }
   });
+}
+
+// 收藏功能
+async function toggleFavorite(itemId, btn) {
+  try {
+    const response = await fetch(`/api/favorite/${itemId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      const icon = btn.querySelector('i');
+      if (data.is_favorite) {
+        btn.classList.add('active');
+        icon.classList.remove('far');
+        icon.classList.add('fas');
+        btn.title = '取消收藏';
+      } else {
+        btn.classList.remove('active');
+        icon.classList.remove('fas');
+        icon.classList.add('far');
+        btn.title = '加入收藏';
+      }
+      
+      // 小動畫效果
+      btn.style.transform = 'scale(1.3)';
+      setTimeout(() => {
+        btn.style.transform = '';
+      }, 200);
+    } else {
+      alert(data.message || '操作失敗');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('操作失敗');
+  }
 }
 </script>
 {%endblock%}

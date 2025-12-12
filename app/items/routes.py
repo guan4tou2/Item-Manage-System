@@ -562,3 +562,41 @@ def statistics():
         expiry_stats=expiry_stats,
     )
 
+
+@bp.route("/api/favorite/<item_id>", methods=["POST"])
+@login_required
+def toggle_favorite(item_id: str):
+    """API: 切換收藏狀態"""
+    user = get_current_user()
+    user_id = user.get("User", "")
+    
+    success, is_favorite = item_service.toggle_favorite(item_id, user_id)
+    
+    if success:
+        return jsonify({
+            "success": True,
+            "is_favorite": is_favorite,
+            "message": "已加入收藏" if is_favorite else "已取消收藏"
+        })
+    else:
+        return jsonify({
+            "success": False,
+            "message": "操作失敗"
+        }), 400
+
+
+@bp.route("/favorites")
+@login_required
+def favorites():
+    """收藏物品頁面"""
+    user = get_current_user()
+    user_id = user.get("User", "")
+    
+    items = item_service.get_favorites(user_id)
+    
+    return render_template(
+        "favorites.html",
+        User=user,
+        items=items,
+    )
+

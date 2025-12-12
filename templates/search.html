@@ -141,16 +141,16 @@
   {%for item in items%}
   <div class="col">
     <div class="card h-100">
-      <!-- 物品圖片 -->
-      <div class="position-relative overflow-hidden" style="height: 180px;">
-        {%if item.ItemPic%}
-        <img
-          src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
-          class="card-img-top h-100 w-100"
-          alt="{{ item.ItemName }}"
-          style="object-fit: cover"
-          loading="lazy"
-        />
+    <!-- 物品圖片 -->
+    <div class="position-relative overflow-hidden" style="height: 180px;">
+      {%if item.ItemPic%}
+      <img
+        src="{{ url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic) }}"
+        class="card-img-top h-100 w-100"
+        alt="{{ item.ItemName }}"
+        style="object-fit: cover"
+        loading="lazy"
+      />
         {%else%}
         <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center h-100" 
              style="background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);">
