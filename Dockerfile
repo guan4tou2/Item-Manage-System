@@ -19,6 +19,9 @@ RUN uv pip install --system --no-cache-dir -r /workspace/requirements.txt
 
 COPY . /workspace
 
+# 設定 entrypoint 腳本權限
+RUN chmod +x /workspace/scripts/docker-entrypoint.sh
+
 ENV FLASK_ENV=development \
     FLASK_APP=run.py \
     MONGO_URI=mongodb://mongo:27017/myDB \
@@ -27,5 +30,6 @@ ENV FLASK_ENV=development \
 
 EXPOSE 8080
 
+# 使用 entrypoint 腳本進行初始化
+ENTRYPOINT ["/workspace/scripts/docker-entrypoint.sh"]
 CMD ["python", "run.py"]
-
