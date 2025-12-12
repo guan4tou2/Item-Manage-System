@@ -1,4 +1,4 @@
-from . import item_repo, type_repo, user_repo, location_repo
+from . import item_repo, type_repo, user_repo, location_repo, log_repo
 from .item_repo import (
     list_items,
     insert_item,
@@ -13,6 +13,7 @@ __all__ = [
     "type_repo",
     "user_repo",
     "location_repo",
+    "log_repo",
     "list_items",
     "insert_item",
     "update_item_by_id",

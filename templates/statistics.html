@@ -1,0 +1,293 @@
+{%extends 'template.html' %}
+{%block title%}統計報表 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>📊 統計報表</h1>
+    <p class="lead">視覺化物品分佈與到期狀態</p>
+  </div>
+  
+  <!-- 概覽統計 -->
+  <div class="row g-4 mb-4 animate-fadeInUp stagger-1">
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-primary text-white">
+        <div class="icon"><i class="fas fa-box"></i></div>
+        <h2>{{ stats.total }}</h2>
+        <h5>總物品數</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-success text-white">
+        <div class="icon"><i class="fas fa-image"></i></div>
+        <h2>{{ stats.with_photo }}</h2>
+        <h5>有照片</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-danger text-white">
+        <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h2>{{ expiry_stats.expired }}</h2>
+        <h5>已過期</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-warning text-white">
+        <div class="icon"><i class="fas fa-clock"></i></div>
+        <h2>{{ expiry_stats.near }}</h2>
+        <h5>即將到期</h5>
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container-fluid">
+  <div class="row g-4">
+    <!-- 按類型分佈 -->
+    <div class="col-lg-6 animate-fadeInUp stagger-2">
+      <div class="chart-container">
+        <h5 class="chart-title">
+          <i class="fas fa-tags text-primary"></i>
+          按類型分佈
+        </h5>
+        
+        {%if type_stats%}
+        <div class="chart-bars">
+          {%for t in type_stats%}
+          {%set percentage = (t.count / stats.total * 100) if stats.total > 0 else 0%}
+          <div class="chart-bar-item mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-medium">{{t.name}}</span>
+              <span class="badge bg-primary">{{t.count}}</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar bg-primary" role="progressbar" 
+                   style="width: {{percentage}}%"
+                   aria-valuenow="{{percentage}}" aria-valuemin="0" aria-valuemax="100">
+              </div>
+            </div>
+          </div>
+          {%endfor%}
+        </div>
+        {%else%}
+        <p class="text-muted text-center py-4">尚無物品類型統計</p>
+        {%endif%}
+      </div>
+    </div>
+    
+    <!-- 按樓層分佈 -->
+    <div class="col-lg-6 animate-fadeInUp stagger-3">
+      <div class="chart-container">
+        <h5 class="chart-title">
+          <i class="fas fa-building text-success"></i>
+          按樓層分佈
+        </h5>
+        
+        {%if floor_stats%}
+        <div class="chart-bars">
+          {%for f in floor_stats%}
+          {%set percentage = (f.count / stats.total * 100) if stats.total > 0 else 0%}
+          <div class="chart-bar-item mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-medium">{{f.name}}</span>
+              <span class="badge bg-success">{{f.count}}</span>
+            </div>
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar bg-success" role="progressbar" 
+                   style="width: {{percentage}}%"
+                   aria-valuenow="{{percentage}}" aria-valuemin="0" aria-valuemax="100">
+              </div>
+            </div>
+          </div>
+          {%endfor%}
+        </div>
+        {%else%}
+        <p class="text-muted text-center py-4">尚無樓層統計</p>
+        {%endif%}
+      </div>
+    </div>
+    
+    <!-- 到期狀態圓餅圖 -->
+    <div class="col-lg-6 animate-fadeInUp stagger-4">
+      <div class="chart-container">
+        <h5 class="chart-title">
+          <i class="fas fa-chart-pie text-info"></i>
+          到期狀態分佈
+        </h5>
+        
+        <div class="row align-items-center">
+          <div class="col-6">
+            <div class="pie-chart-placeholder">
+              <canvas id="expiryChart" width="200" height="200"></canvas>
+            </div>
+          </div>
+          <div class="col-6">
+            <ul class="list-unstyled mb-0">
+              <li class="d-flex justify-content-between align-items-center mb-2">
+                <span><i class="fas fa-circle text-success me-2"></i>正常</span>
+                <strong>{{ stats.total - expiry_stats.total }}</strong>
+              </li>
+              <li class="d-flex justify-content-between align-items-center mb-2">
+                <span><i class="fas fa-circle text-warning me-2"></i>即將到期</span>
+                <strong>{{ expiry_stats.near }}</strong>
+              </li>
+              <li class="d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-circle text-danger me-2"></i>已過期</span>
+                <strong>{{ expiry_stats.expired }}</strong>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 資料完整度 -->
+    <div class="col-lg-6 animate-fadeInUp stagger-5">
+      <div class="chart-container">
+        <h5 class="chart-title">
+          <i class="fas fa-check-circle text-warning"></i>
+          資料完整度
+        </h5>
+        
+        {%if stats.total > 0%}
+        <div class="data-completeness">
+          <div class="completeness-item mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><i class="fas fa-image me-2 text-success"></i>有照片</span>
+              <span>{{ ((stats.with_photo / stats.total) * 100)|round(1) }}%</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar bg-success" style="width: {{ (stats.with_photo / stats.total) * 100 }}%"></div>
+            </div>
+          </div>
+          
+          <div class="completeness-item mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><i class="fas fa-map-marker-alt me-2 text-info"></i>有位置記錄</span>
+              <span>{{ ((stats.with_location / stats.total) * 100)|round(1) }}%</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar bg-info" style="width: {{ (stats.with_location / stats.total) * 100 }}%"></div>
+            </div>
+          </div>
+          
+          <div class="completeness-item">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span><i class="fas fa-tag me-2 text-warning"></i>有分類</span>
+              <span>{{ ((stats.with_type / stats.total) * 100)|round(1) }}%</span>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar bg-warning" style="width: {{ (stats.with_type / stats.total) * 100 }}%"></div>
+            </div>
+          </div>
+        </div>
+        {%else%}
+        <p class="text-muted text-center py-4">尚無物品資料</p>
+        {%endif%}
+      </div>
+    </div>
+  </div>
+  
+  <!-- 快速操作 -->
+  <div class="row mt-4 animate-fadeInUp stagger-6">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body d-flex flex-wrap gap-3 justify-content-center">
+          <a href="{{ url_for('items.home') }}" class="btn btn-outline-primary">
+            <i class="fas fa-home me-1"></i>返回首頁
+          </a>
+          <a href="{{ url_for('items.notifications') }}" class="btn btn-outline-warning">
+            <i class="fas fa-bell me-1"></i>到期通知
+          </a>
+          {%if User.admin%}
+          <a href="{{ url_for('items.activity_logs') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-history me-1"></i>操作日誌
+          </a>
+          <a href="{{ url_for('items.export_items', format='json') }}" class="btn btn-outline-success">
+            <i class="fas fa-download me-1"></i>匯出資料
+          </a>
+          {%endif%}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.pie-chart-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>
+{%endblock%}
+
+{%block js%}
+<script>
+// 簡易圓餅圖繪製
+document.addEventListener('DOMContentLoaded', function() {
+  const canvas = document.getElementById('expiryChart');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const total = {{ stats.total }};
+  const expired = {{ expiry_stats.expired }};
+  const near = {{ expiry_stats.near }};
+  const normal = total - expired - near;
+  
+  if (total === 0) {
+    // 沒有資料
+    ctx.beginPath();
+    ctx.arc(100, 100, 80, 0, 2 * Math.PI);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fill();
+    ctx.fillStyle = '#64748b';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('無資料', 100, 105);
+    return;
+  }
+  
+  const data = [
+    { value: normal, color: '#198754' },
+    { value: near, color: '#ffc107' },
+    { value: expired, color: '#dc3545' },
+  ];
+  
+  let startAngle = -0.5 * Math.PI; // 從頂部開始
+  
+  data.forEach(item => {
+    const sliceAngle = (item.value / total) * 2 * Math.PI;
+    
+    ctx.beginPath();
+    ctx.moveTo(100, 100);
+    ctx.arc(100, 100, 80, startAngle, startAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fillStyle = item.color;
+    ctx.fill();
+    
+    startAngle += sliceAngle;
+  });
+  
+  // 中心白色圓
+  ctx.beginPath();
+  ctx.arc(100, 100, 50, 0, 2 * Math.PI);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  
+  // 中心數字
+  ctx.fillStyle = '#1e293b';
+  ctx.font = 'bold 24px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(total, 100, 105);
+  ctx.font = '12px sans-serif';
+  ctx.fillStyle = '#64748b';
+  ctx.fillText('總數', 100, 120);
+});
+</script>
+{%endblock%}
+

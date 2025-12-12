@@ -1,0 +1,134 @@
+{%extends 'template.html' %}
+{%block title%}操作日誌 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h1>📋 操作日誌</h1>
+        <p class="lead mb-0">查看系統操作記錄和變更歷史</p>
+      </div>
+      <a href="{{ url_for('items.manageitem') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>返回管理
+      </a>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container-fluid">
+  {%if logs%}
+  <div class="card animate-fadeInUp stagger-1">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-history me-2"></i>最近操作</h5>
+      <span class="badge bg-secondary">共 {{ pagination.total }} 筆記錄</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="activity-log">
+        {%for log in logs%}
+        <div class="activity-item">
+          <!-- 操作圖標 -->
+          <div class="activity-icon {{log.action}}">
+            {%if log.action == 'create'%}
+            <i class="fas fa-plus"></i>
+            {%elif log.action == 'update'%}
+            <i class="fas fa-edit"></i>
+            {%elif log.action == 'delete'%}
+            <i class="fas fa-trash"></i>
+            {%elif log.action == 'move'%}
+            <i class="fas fa-arrows-alt"></i>
+            {%elif log.action == 'import'%}
+            <i class="fas fa-upload"></i>
+            {%elif log.action == 'export'%}
+            <i class="fas fa-download"></i>
+            {%else%}
+            <i class="fas fa-circle"></i>
+            {%endif%}
+          </div>
+          
+          <!-- 操作內容 -->
+          <div class="activity-content">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <strong>{{log.details.message if log.details else log.action}}</strong>
+                {%if log.item_name%}
+                <span class="text-muted">- {{log.item_name}}</span>
+                {%endif%}
+              </div>
+              <span class="activity-time">
+                {{log.created_at|datetime_format if log.created_at else ''}}
+              </span>
+            </div>
+            <p class="text-muted small mb-0 mt-1">
+              <i class="fas fa-user me-1"></i>{{log.user}}
+              {%if log.item_id%}
+              <span class="ms-3"><i class="fas fa-hashtag me-1"></i>{{log.item_id}}</span>
+              {%endif%}
+            </p>
+            
+            {%if log.details and log.action == 'move'%}
+            <p class="small mt-2 mb-0">
+              <span class="text-muted">{{log.details.from or '(未知)'}}</span>
+              <i class="fas fa-arrow-right mx-2 text-primary"></i>
+              <strong>{{log.details.to}}</strong>
+            </p>
+            {%endif%}
+          </div>
+        </div>
+        {%endfor%}
+      </div>
+    </div>
+  </div>
+  
+  <!-- 分頁 -->
+  {%if pagination.total_pages > 1%}
+  <nav aria-label="日誌分頁" class="mt-4">
+    <ul class="pagination justify-content-center">
+      <li class="page-item {%if not pagination.has_prev%}disabled{%endif%}">
+        <a class="page-link" href="?page={{pagination.page - 1}}">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+      </li>
+      
+      {%for p in range(1, pagination.total_pages + 1)%}
+        {%if p == pagination.page%}
+        <li class="page-item active"><a class="page-link" href="#">{{p}}</a></li>
+        {%elif p == 1 or p == pagination.total_pages or (p >= pagination.page - 2 and p <= pagination.page + 2)%}
+        <li class="page-item"><a class="page-link" href="?page={{p}}">{{p}}</a></li>
+        {%elif p == pagination.page - 3 or p == pagination.page + 3%}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        {%endif%}
+      {%endfor%}
+      
+      <li class="page-item {%if not pagination.has_next%}disabled{%endif%}">
+        <a class="page-link" href="?page={{pagination.page + 1}}">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  {%endif%}
+  
+  {%else%}
+  <div class="empty-state animate-fadeInUp">
+    <i class="fas fa-clipboard-list"></i>
+    <h3>尚無操作記錄</h3>
+    <p>系統會在您操作物品時自動記錄</p>
+    <a href="{{ url_for('items.additem') }}" class="btn btn-primary">
+      <i class="fas fa-plus me-1"></i>新增物品
+    </a>
+  </div>
+  {%endif%}
+</div>
+
+<style>
+.activity-item {
+  padding: 1.25rem 1.5rem;
+}
+</style>
+{%endblock%}
+

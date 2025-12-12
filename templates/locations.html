@@ -4,65 +4,310 @@
 
 {%block contain%}
 <div class="container">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="display-6 mb-3">🏠 位置設定</h1>
-      <p class="text-muted">維護樓層、房間、區域選單，供新增與搜尋使用。</p>
-    </div>
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>🏠 位置設定</h1>
+    <p class="lead">維護樓層、房間、區域選單，供新增與搜尋使用</p>
   </div>
 </div>
 {%endblock%}
 
 {%block body%}
 <div class="container">
-  <div class="row">
-    <div class="col-lg-6 mb-4">
-      <form class="card card-body" method="post" action="{{ url_for('locations.manage_locations') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <h5 class="mb-3">新增位置選項</h5>
-        <div class="mb-2">
-          <label class="form-label">樓層</label>
-          <input type="text" class="form-control" name="floor" placeholder="例如：1F 或 B1">
-        </div>
-        <div class="mb-2">
-          <label class="form-label">房間</label>
-          <input type="text" class="form-control" name="room" placeholder="例如：客廳 / 書房">
-        </div>
-        <div class="mb-2">
-          <label class="form-label">區域/櫃位</label>
-          <input type="text" class="form-control" name="zone" placeholder="例如：衣櫃 / 工具櫃">
-        </div>
-        <button type="submit" class="btn btn-primary mt-2">➕ 新增位置</button>
-      </form>
-    </div>
-    <div class="col-lg-6">
+  <div class="row g-4">
+    <!-- 左側：新增位置 -->
+    <div class="col-lg-5 animate-fadeInUp stagger-1">
       <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>新增位置選項</h5>
+        </div>
         <div class="card-body">
-          <h5 class="mb-3">現有位置</h5>
+          <form method="post" action="{{ url_for('locations.manage_locations') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="action" value="create"/>
+            
+            <div class="mb-3">
+              <label class="form-label"><i class="fas fa-building me-1"></i>樓層</label>
+              <input type="text" class="form-control" name="floor" placeholder="例如：1F、2F、B1">
+              <small class="text-muted">輸入樓層名稱</small>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label"><i class="fas fa-door-open me-1"></i>房間</label>
+              <input type="text" class="form-control" name="room" placeholder="例如：客廳、主臥、書房">
+              <small class="text-muted">輸入房間名稱</small>
+            </div>
+            
+            <div class="mb-3">
+              <label class="form-label"><i class="fas fa-th-large me-1"></i>區域/櫃位</label>
+              <input type="text" class="form-control" name="zone" placeholder="例如：衣櫃、書櫃、抽屜">
+              <small class="text-muted">輸入區域或櫃位名稱</small>
+            </div>
+            
+            <div class="alert alert-info small">
+              <i class="fas fa-info-circle me-1"></i>
+              可以只填寫其中一個欄位，系統會自動新增到對應的選項列表中
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-plus me-2"></i>新增位置選項
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- 快速統計 -->
+      <div class="card mt-4">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">位置選項統計</h6>
+          <div class="row text-center">
+            <div class="col-4">
+              <div class="fs-3 fw-bold text-primary">{{ floors|length }}</div>
+              <small class="text-muted">樓層</small>
+            </div>
+            <div class="col-4">
+              <div class="fs-3 fw-bold text-success">{{ rooms|length }}</div>
+              <small class="text-muted">房間</small>
+            </div>
+            <div class="col-4">
+              <div class="fs-3 fw-bold text-info">{{ zones|length }}</div>
+              <small class="text-muted">區域</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 右側：現有位置列表 -->
+    <div class="col-lg-7 animate-fadeInUp stagger-2">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-list me-2"></i>現有位置選項</h5>
+          <span class="badge bg-secondary">{{ locations|length }} 筆</span>
+        </div>
+        <div class="card-body p-0">
+          {%if locations%}
           <div class="table-responsive">
-            <table class="table table-sm align-middle">
+            <table class="table table-hover mb-0 location-table">
               <thead>
                 <tr>
-                  <th>樓層</th>
-                  <th>房間</th>
-                  <th>區域/櫃位</th>
+                  <th style="width: 25%;">樓層</th>
+                  <th style="width: 25%;">房間</th>
+                  <th style="width: 25%;">區域/櫃位</th>
+                  <th style="width: 25%;" class="text-center">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {% for loc in locations %}
-                <tr>
-                  <td>{{loc.floor}}</td>
-                  <td>{{loc.room}}</td>
-                  <td>{{loc.zone}}</td>
+                <tr class="location-row" id="row-{{loc._id}}">
+                  <!-- 顯示模式 -->
+                  <td class="view-mode">{{loc.floor or '-'}}</td>
+                  <td class="view-mode">{{loc.room or '-'}}</td>
+                  <td class="view-mode">{{loc.zone or '-'}}</td>
+                  <td class="view-mode text-center">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-outline-primary btn-action" onclick="startEdit('{{loc._id}}', '{{loc.floor or ''}}', '{{loc.room or ''}}', '{{loc.zone or ''}}')" title="編輯">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger btn-action" onclick="confirmDelete('{{loc._id}}', '{{loc.floor or ''}} {{loc.room or ''}} {{loc.zone or ''}}')" title="刪除">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                  
+                  <!-- 編輯模式 (隱藏) -->
+                  <td class="edit-mode d-none">
+                    <input type="text" class="form-control form-control-sm" id="edit-floor-{{loc._id}}" value="{{loc.floor or ''}}">
+                  </td>
+                  <td class="edit-mode d-none">
+                    <input type="text" class="form-control form-control-sm" id="edit-room-{{loc._id}}" value="{{loc.room or ''}}">
+                  </td>
+                  <td class="edit-mode d-none">
+                    <input type="text" class="form-control form-control-sm" id="edit-zone-{{loc._id}}" value="{{loc.zone or ''}}">
+                  </td>
+                  <td class="edit-mode d-none text-center">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-success btn-action" onclick="saveEdit('{{loc._id}}')" title="儲存">
+                        <i class="fas fa-check"></i>
+                      </button>
+                      <button type="button" class="btn btn-secondary btn-action" onclick="cancelEdit('{{loc._id}}')" title="取消">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
                 {% endfor %}
               </tbody>
             </table>
+          </div>
+          {%else%}
+          <div class="text-center py-5">
+            <i class="fas fa-map-marker-alt fa-4x text-muted mb-3"></i>
+            <h5 class="text-muted">尚無位置選項</h5>
+            <p class="text-muted">使用左側表單新增第一個位置吧！</p>
+          </div>
+          {%endif%}
+        </div>
+      </div>
+      
+      <!-- 位置選項預覽 -->
+      <div class="row g-3 mt-3">
+        <div class="col-md-4">
+          <div class="card border-primary">
+            <div class="card-header bg-primary text-white py-2">
+              <small><i class="fas fa-building me-1"></i>可用樓層</small>
+            </div>
+            <div class="card-body p-2">
+              <div class="d-flex flex-wrap gap-1">
+                {%for f in floors%}
+                <span class="badge bg-light text-dark">{{f}}</span>
+                {%endfor%}
+                {%if not floors%}
+                <span class="text-muted small">尚無樓層</span>
+                {%endif%}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-success">
+            <div class="card-header bg-success text-white py-2">
+              <small><i class="fas fa-door-open me-1"></i>可用房間</small>
+            </div>
+            <div class="card-body p-2">
+              <div class="d-flex flex-wrap gap-1">
+                {%for r in rooms%}
+                <span class="badge bg-light text-dark">{{r}}</span>
+                {%endfor%}
+                {%if not rooms%}
+                <span class="text-muted small">尚無房間</span>
+                {%endif%}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-info">
+            <div class="card-header bg-info text-white py-2">
+              <small><i class="fas fa-th-large me-1"></i>可用區域</small>
+            </div>
+            <div class="card-body p-2">
+              <div class="d-flex flex-wrap gap-1">
+                {%for z in zones%}
+                <span class="badge bg-light text-dark">{{z}}</span>
+                {%endfor%}
+                {%if not zones%}
+                <span class="text-muted small">尚無區域</span>
+                {%endif%}
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- 刪除確認 Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>確認刪除</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="fas fa-trash-alt fa-3x text-danger mb-3"></i>
+        <p>確定要刪除位置選項「<strong id="delete-location-name"></strong>」嗎？</p>
+        <p class="text-muted small">此操作無法復原</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <form id="deleteForm" method="post" action="{{ url_for('locations.manage_locations') }}" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <input type="hidden" name="action" value="delete"/>
+          <input type="hidden" name="loc_id" id="delete-loc-id"/>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-1"></i>確認刪除
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 隱藏的編輯表單 -->
+<form id="editForm" method="post" action="{{ url_for('locations.manage_locations') }}" class="d-none">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+  <input type="hidden" name="action" value="update"/>
+  <input type="hidden" name="loc_id" id="edit-form-loc-id"/>
+  <input type="hidden" name="floor" id="edit-form-floor"/>
+  <input type="hidden" name="room" id="edit-form-room"/>
+  <input type="hidden" name="zone" id="edit-form-zone"/>
+</form>
 {%endblock%}
 
+{%block js%}
+<script>
+let currentEditId = null;
+
+function startEdit(id, floor, room, zone) {
+  // 如果已有其他正在編輯的行，先取消
+  if (currentEditId && currentEditId !== id) {
+    cancelEdit(currentEditId);
+  }
+  
+  currentEditId = id;
+  const row = document.getElementById('row-' + id);
+  row.classList.add('editing');
+  
+  // 隱藏顯示模式，顯示編輯模式
+  row.querySelectorAll('.view-mode').forEach(el => el.classList.add('d-none'));
+  row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('d-none'));
+  
+  // 聚焦第一個輸入框
+  document.getElementById('edit-floor-' + id).focus();
+}
+
+function cancelEdit(id) {
+  currentEditId = null;
+  const row = document.getElementById('row-' + id);
+  row.classList.remove('editing');
+  
+  // 顯示顯示模式，隱藏編輯模式
+  row.querySelectorAll('.view-mode').forEach(el => el.classList.remove('d-none'));
+  row.querySelectorAll('.edit-mode').forEach(el => el.classList.add('d-none'));
+}
+
+function saveEdit(id) {
+  const floor = document.getElementById('edit-floor-' + id).value;
+  const room = document.getElementById('edit-room-' + id).value;
+  const zone = document.getElementById('edit-zone-' + id).value;
+  
+  // 填入隱藏表單並提交
+  document.getElementById('edit-form-loc-id').value = id;
+  document.getElementById('edit-form-floor').value = floor;
+  document.getElementById('edit-form-room').value = room;
+  document.getElementById('edit-form-zone').value = zone;
+  document.getElementById('editForm').submit();
+}
+
+function confirmDelete(id, name) {
+  document.getElementById('delete-loc-id').value = id;
+  document.getElementById('delete-location-name').textContent = name.trim() || '(空白)';
+  new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// 按 Enter 儲存，按 Esc 取消
+document.addEventListener('keydown', function(e) {
+  if (currentEditId) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEdit(currentEditId);
+    } else if (e.key === 'Escape') {
+      cancelEdit(currentEditId);
+    }
+  }
+});
+</script>
+{%endblock%}

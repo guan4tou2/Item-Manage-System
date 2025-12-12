@@ -1,7 +1,94 @@
+/* 導航列額外樣式 */
+
 body {
   padding-bottom: 20px;
 }
 
 .navbar {
-  margin-bottom: 20px;
+  margin-bottom: 0;
+}
+
+/* 使用者頭像 */
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+/* 下拉選單美化 */
+.dropdown-menu {
+  border: none;
+  border-radius: 12px;
+  padding: 0.5rem;
+  min-width: 200px;
+}
+
+.dropdown-item {
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+
+.dropdown-item.text-danger:hover {
+  background: rgba(220, 53, 69, 0.1);
+}
+
+.dropdown-header {
+  color: #64748b;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 1rem;
+}
+
+.dropdown-divider {
+  margin: 0.25rem 0;
+}
+
+/* 搜尋框增強 */
+.navbar .input-group {
+  width: 250px;
+}
+
+.navbar .input-group .form-control {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.navbar .input-group .btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* 響應式調整 */
+@media (max-width: 991.98px) {
+  .navbar .input-group {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .navbar .dropdown {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .navbar .dropdown-toggle {
+    justify-content: center;
+  }
+  
+  .navbar .dropdown-menu {
+    position: static !important;
+    transform: none !important;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
 }

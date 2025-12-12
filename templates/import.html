@@ -1,0 +1,230 @@
+{%extends 'template.html' %}
+{%block title%}匯入物品 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container">
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>📥 匯入物品</h1>
+    <p class="lead">從 JSON 或 CSV 檔案匯入物品資料</p>
+  </div>
+  
+  <!-- 麵包屑導航 -->
+  <nav aria-label="breadcrumb" class="mb-4 animate-fadeInUp stagger-1">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{url_for('items.home')}}"><i class="fas fa-home"></i> 首頁</a></li>
+      <li class="breadcrumb-item"><a href="{{url_for('items.manageitem')}}">管理物品</a></li>
+      <li class="breadcrumb-item active">匯入物品</li>
+    </ol>
+  </nav>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card animate-fadeInUp stagger-2">
+        <div class="card-body p-4">
+          <!-- 匯入表單 -->
+          <form action="{{ url_for('items.import_items') }}" method="post" enctype="multipart/form-data" id="importForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="upload-area" id="uploadArea">
+              <input type="file" name="file" id="fileInput" accept=".json,.csv" class="d-none" required/>
+              <div class="upload-placeholder" id="uploadPlaceholder">
+                <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
+                <h4>拖曳檔案到此處或點擊選擇</h4>
+                <p class="text-muted mb-0">支援 JSON 或 CSV 格式</p>
+              </div>
+              <div class="upload-preview d-none" id="uploadPreview">
+                <i class="fas fa-file-alt fa-4x text-success mb-3"></i>
+                <h4 id="fileName">已選擇檔案</h4>
+                <p class="text-muted mb-0" id="fileInfo">-</p>
+                <button type="button" class="btn btn-sm btn-outline-danger mt-3" onclick="clearFile()">
+                  <i class="fas fa-times me-1"></i>移除檔案
+                </button>
+              </div>
+            </div>
+            
+            <div class="d-flex gap-2 justify-content-center mt-4">
+              <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                <i class="fas fa-upload me-2"></i>開始匯入
+              </button>
+              <a href="{{ url_for('items.manageitem') }}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i>返回
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      <!-- 說明卡片 -->
+      <div class="row g-4 mt-4 animate-fadeInUp stagger-3">
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0"><i class="fas fa-file-code me-2"></i>JSON 格式</h5>
+            </div>
+            <div class="card-body">
+              <p class="small text-muted mb-3">JSON 陣列格式，每個物件代表一個物品：</p>
+              <pre class="bg-light p-3 rounded small mb-0"><code>[
+  {
+    "ItemID": "ITEM-001",
+    "ItemName": "物品名稱",
+    "ItemType": "電子產品",
+    "ItemStorePlace": "客廳電視櫃",
+    "ItemFloor": "1F",
+    "ItemRoom": "客廳",
+    "ItemZone": "電視櫃",
+    "ItemOwner": "擁有者",
+    "ItemGetDate": "2024-01-01",
+    "WarrantyExpiry": "2025-01-01",
+    "UsageExpiry": "",
+    "ItemDesc": "描述內容"
+  }
+]</code></pre>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header bg-success text-white">
+              <h5 class="mb-0"><i class="fas fa-file-csv me-2"></i>CSV 格式</h5>
+            </div>
+            <div class="card-body">
+              <p class="small text-muted mb-3">第一行為欄位名稱：</p>
+              <pre class="bg-light p-3 rounded small mb-0"><code>ItemID,ItemName,ItemType,...
+ITEM-001,物品名稱,電子產品,...
+ITEM-002,另一個物品,文具,...
+</code></pre>
+              <div class="alert alert-info small mt-3 mb-0">
+                <i class="fas fa-info-circle me-1"></i>
+                可以先匯出現有資料作為範本
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 匯出連結 -->
+      <div class="card mt-4 animate-fadeInUp stagger-4">
+        <div class="card-body">
+          <h5><i class="fas fa-download me-2"></i>需要範本？</h5>
+          <p class="text-muted mb-3">可以先匯出現有資料作為範本，或直接下載空白範本：</p>
+          <div class="import-export-group">
+            <a href="{{ url_for('items.export_items', format='json') }}" class="btn btn-outline-primary">
+              <i class="fas fa-file-code me-1"></i>匯出 JSON
+            </a>
+            <a href="{{ url_for('items.export_items', format='csv') }}" class="btn btn-outline-success">
+              <i class="fas fa-file-csv me-1"></i>匯出 CSV
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.upload-area {
+  border: 3px dashed var(--gray-300);
+  border-radius: var(--radius-xl);
+  padding: 4rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+  border-color: var(--primary);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.upload-area.has-file {
+  border-color: var(--success);
+  background: rgba(25, 135, 84, 0.05);
+}
+</style>
+{%endblock%}
+
+{%block js%}
+<script>
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+const uploadPreview = document.getElementById('uploadPreview');
+const fileName = document.getElementById('fileName');
+const fileInfo = document.getElementById('fileInfo');
+const submitBtn = document.getElementById('submitBtn');
+
+// 點擊上傳區域
+uploadArea.addEventListener('click', () => fileInput.click());
+
+// 拖曳事件
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+  uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    const file = files[0];
+    if (file.name.match(/\.(json|csv)$/i)) {
+      fileInput.files = files;
+      showFileInfo(file);
+    } else {
+      alert('請選擇 JSON 或 CSV 格式的檔案');
+    }
+  }
+});
+
+// 檔案選擇變更
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    showFileInfo(file);
+  }
+});
+
+function showFileInfo(file) {
+  fileName.textContent = file.name;
+  const size = file.size < 1024 
+    ? file.size + ' bytes'
+    : (file.size / 1024).toFixed(1) + ' KB';
+  fileInfo.textContent = `檔案大小：${size}`;
+  
+  uploadPlaceholder.classList.add('d-none');
+  uploadPreview.classList.remove('d-none');
+  uploadArea.classList.add('has-file');
+  submitBtn.disabled = false;
+}
+
+function clearFile() {
+  fileInput.value = '';
+  uploadPlaceholder.classList.remove('d-none');
+  uploadPreview.classList.add('d-none');
+  uploadArea.classList.remove('has-file');
+  submitBtn.disabled = true;
+}
+
+// 表單提交
+document.getElementById('importForm').addEventListener('submit', function() {
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>匯入中...';
+});
+</script>
+{%endblock%}
+

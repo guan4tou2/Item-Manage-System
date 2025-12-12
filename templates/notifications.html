@@ -1,0 +1,329 @@
+{%extends "template.html"%}
+
+{%block title%}到期通知 - 物品管理系統{%endblock%}
+
+{%block user%}{{User.name}}{%endblock%}
+
+{%block contain%}
+<div class="row">
+  <!-- 頁面標題 -->
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-bell text-warning me-2"></i>到期通知
+        </h2>
+        <p class="text-muted mb-0">追蹤物品的保固和使用期限狀態</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{url_for('items.home')}}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回首頁
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 統計卡片 -->
+  <div class="col-12 mb-4">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+          <div class="card-body text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-white-50 mb-1">已過期</h6>
+                <h2 class="mb-0 fw-bold">{{ expired_count }}</h2>
+              </div>
+              <div class="opacity-50">
+                <i class="fas fa-exclamation-circle fa-3x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+          <div class="card-body text-dark">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-dark opacity-75 mb-1">即將到期</h6>
+                <h2 class="mb-0 fw-bold">{{ near_count }}</h2>
+              </div>
+              <div class="opacity-50">
+                <i class="fas fa-clock fa-3x"></i>
+              </div>
+            </div>
+            <small class="opacity-75">30 天內到期</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);">
+          <div class="card-body text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-white-50 mb-1">總警報</h6>
+                <h2 class="mb-0 fw-bold">{{ total_alerts }}</h2>
+              </div>
+              <div class="opacity-50">
+                <i class="fas fa-bell fa-3x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if total_alerts == 0 %}
+  <!-- 無通知狀態 -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <div class="mb-4">
+          <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+        </div>
+        <h4 class="text-success">太棒了！沒有到期通知</h4>
+        <p class="text-muted mb-4">所有物品的保固和使用期限都在有效範圍內</p>
+        <a href="{{url_for('items.home')}}" class="btn btn-primary">
+          <i class="fas fa-home me-1"></i>返回首頁
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+
+  <!-- 已過期物品 -->
+  {% if expired_items %}
+  <div class="col-12 mb-4">
+    <div class="card border-danger border-0 shadow-sm">
+      <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-exclamation-triangle me-2"></i>已過期物品
+        </h5>
+        <span class="badge bg-white text-danger">{{ expired_count }} 項</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>物品名稱</th>
+                <th>位置</th>
+                <th>保固到期</th>
+                <th>使用期限</th>
+                <th>到期類型</th>
+                <th class="text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in expired_items %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    {% if item.ItemPic %}
+                    <img src="{{url_for('items.uploaded_file', filename=item.ItemPic)}}" 
+                         class="rounded me-2" 
+                         style="width: 40px; height: 40px; object-fit: cover;">
+                    {% else %}
+                    <div class="rounded me-2 bg-secondary d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                      <i class="fas fa-box text-white"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                      <strong>{{ item.ItemName }}</strong>
+                      <br><small class="text-muted">{{ item.ItemType }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <small>
+                    {% if item.ItemFloor %}{{ item.ItemFloor }}{% endif %}
+                    {% if item.ItemRoom %} / {{ item.ItemRoom }}{% endif %}
+                    {% if item.ItemZone %} / {{ item.ItemZone }}{% endif %}
+                  </small>
+                  <br><small class="text-muted">{{ item.ItemStorePlace }}</small>
+                </td>
+                <td>
+                  {% if item.WarrantyExpiry %}
+                    {% if item.WarrantyStatus == 'expired' %}
+                    <span class="badge bg-danger">
+                      <i class="fas fa-times-circle me-1"></i>{{ item.WarrantyExpiry }}
+                    </span>
+                    {% elif item.WarrantyStatus == 'near' %}
+                    <span class="badge bg-warning text-dark">{{ item.WarrantyExpiry }}</span>
+                    {% else %}
+                    <span class="text-muted">{{ item.WarrantyExpiry }}</span>
+                    {% endif %}
+                  {% else %}
+                  <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if item.UsageExpiry %}
+                    {% if item.UsageStatus == 'expired' %}
+                    <span class="badge bg-danger">
+                      <i class="fas fa-times-circle me-1"></i>{{ item.UsageExpiry }}
+                    </span>
+                    {% elif item.UsageStatus == 'near' %}
+                    <span class="badge bg-warning text-dark">{{ item.UsageExpiry }}</span>
+                    {% else %}
+                    <span class="text-muted">{{ item.UsageExpiry }}</span>
+                    {% endif %}
+                  {% else %}
+                  <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% for expiry_type in item.expiry_types %}
+                    {% if expiry_type == 'warranty_expired' %}
+                    <span class="badge bg-danger mb-1">保固過期</span>
+                    {% elif expiry_type == 'usage_expired' %}
+                    <span class="badge bg-danger mb-1">超過使用期限</span>
+                    {% endif %}
+                  {% endfor %}
+                </td>
+                <td class="text-center">
+                  {% if User.admin %}
+                  <a href="{{url_for('items.edititem', item_id=item.ItemID)}}" 
+                     class="btn btn-sm btn-outline-primary" 
+                     title="編輯物品">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 即將到期物品 -->
+  {% if near_expiry_items %}
+  <div class="col-12 mb-4">
+    <div class="card border-warning border-0 shadow-sm">
+      <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-clock me-2"></i>即將到期物品
+        </h5>
+        <span class="badge bg-dark">{{ near_count }} 項</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>物品名稱</th>
+                <th>位置</th>
+                <th>保固到期</th>
+                <th>使用期限</th>
+                <th>剩餘天數</th>
+                <th class="text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in near_expiry_items %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    {% if item.ItemPic %}
+                    <img src="{{url_for('items.uploaded_file', filename=item.ItemPic)}}" 
+                         class="rounded me-2" 
+                         style="width: 40px; height: 40px; object-fit: cover;">
+                    {% else %}
+                    <div class="rounded me-2 bg-secondary d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                      <i class="fas fa-box text-white"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                      <strong>{{ item.ItemName }}</strong>
+                      <br><small class="text-muted">{{ item.ItemType }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <small>
+                    {% if item.ItemFloor %}{{ item.ItemFloor }}{% endif %}
+                    {% if item.ItemRoom %} / {{ item.ItemRoom }}{% endif %}
+                    {% if item.ItemZone %} / {{ item.ItemZone }}{% endif %}
+                  </small>
+                  <br><small class="text-muted">{{ item.ItemStorePlace }}</small>
+                </td>
+                <td>
+                  {% if item.WarrantyExpiry %}
+                    {% if item.WarrantyStatus == 'near' %}
+                    <span class="badge bg-warning text-dark">
+                      <i class="fas fa-exclamation me-1"></i>{{ item.WarrantyExpiry }}
+                    </span>
+                    {% else %}
+                    <span class="text-muted">{{ item.WarrantyExpiry }}</span>
+                    {% endif %}
+                  {% else %}
+                  <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if item.UsageExpiry %}
+                    {% if item.UsageStatus == 'near' %}
+                    <span class="badge bg-warning text-dark">
+                      <i class="fas fa-exclamation me-1"></i>{{ item.UsageExpiry }}
+                    </span>
+                    {% else %}
+                    <span class="text-muted">{{ item.UsageExpiry }}</span>
+                    {% endif %}
+                  {% else %}
+                  <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% for expiry_type in item.expiry_types %}
+                    {% if expiry_type == 'warranty_near' %}
+                    <span class="badge bg-warning text-dark mb-1">
+                      <i class="fas fa-shield-alt me-1"></i>保固即將到期
+                    </span>
+                    {% elif expiry_type == 'usage_near' %}
+                    <span class="badge bg-warning text-dark mb-1">
+                      <i class="fas fa-hourglass-half me-1"></i>使用期限將至
+                    </span>
+                    {% endif %}
+                  {% endfor %}
+                </td>
+                <td class="text-center">
+                  {% if User.admin %}
+                  <a href="{{url_for('items.edititem', item_id=item.ItemID)}}" 
+                     class="btn btn-sm btn-outline-primary" 
+                     title="編輯物品">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+
+<style>
+  .table th {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge {
+    font-weight: 500;
+  }
+</style>
+{%endblock%}
+

@@ -1,180 +1,420 @@
-{%extends 'template.html' %} {%block title%}管理物品 - 物品管理系統{%endblock%}
-{%block user%}{{User.User}}{%endblock%} {%block contain%}
+{%extends 'template.html' %}
+{%block title%}管理物品 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
 <div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="display-5 text-center mb-4">📦 管理物品</h1>
-      <p class="lead text-center mb-5">管理您的物品資訊和位置記錄</p>
-            </div>
-        </div>
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h1>📦 管理物品</h1>
+        <p class="lead mb-0">編輯物品資訊、更新位置或刪除物品</p>
+      </div>
+      <div class="import-export-group">
+        <a href="{{ url_for('items.export_items', format='json') }}" class="btn btn-outline-primary">
+          <i class="fas fa-download me-1"></i>匯出 JSON
+        </a>
+        <a href="{{ url_for('items.export_items', format='csv') }}" class="btn btn-outline-success">
+          <i class="fas fa-file-csv me-1"></i>匯出 CSV
+        </a>
+        <a href="{{ url_for('items.import_items') }}" class="btn btn-warning">
+          <i class="fas fa-upload me-1"></i>匯入
+        </a>
+      </div>
     </div>
-{%endblock%} {%block card%}
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-    {%for item in items%}
-    <div class="col">
-    <div class="card h-100 shadow-sm">
-      {%if item.ItemPic%}
-      <img
-        src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
-        class="card-img-top"
-        alt="{{ item.ItemName }}"
-        style="height: 200px; object-fit: cover"
-      />
-      {%else%}
-      <div
-        class="card-img-top bg-light d-flex align-items-center justify-content-center"
-        style="height: 200px"
-      >
-        <i class="fas fa-image fa-3x text-muted"></i>
+  </div>
+  
+  <!-- 快速操作提示 -->
+  <div class="alert alert-info alert-dismissible fade show mb-4 animate-fadeInUp stagger-1" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="fas fa-info-circle fa-2x me-3"></i>
+      <div>
+        <strong>管理提示：</strong>
+        <ul class="mb-0 mt-1">
+          <li>點擊「編輯」可修改物品完整資訊</li>
+          <li>使用下方的位置選單可快速更新物品位置</li>
+          <li>下載 QR Code 貼在物品上方便識別</li>
+        </ul>
       </div>
-      {%endif%}
-            <div class="card-body">
-        <h5 class="card-title">{{item.ItemName}}</h5>
-        <p class="card-text text-muted">ID: {{item.ItemID}}</p>
-        {%if item.ItemStorePlace%}
-        <p class="card-text">
-          <strong>📍 放置地點:</strong> {{item.ItemStorePlace}}
-        </p>
-        {%endif%} 
-        {%if item.ItemFloor or item.ItemRoom or item.ItemZone%}
-        <p class="card-text">
-          <strong>🏠 位置層級:</strong> {{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}
-        </p>
-        {%endif%}
-        {%if item.ItemType%}
-        <p class="card-text"><strong>📂 類型:</strong> {{item.ItemType}}</p>
-        {%endif%} {%if item.ItemOwner%}
-        <p class="card-text"><strong>👤 擁有者:</strong> {{item.ItemOwner}}</p>
-        {%endif%} {%if item.ItemGetDate%}
-        <p class="card-text">
-          <strong>📅 取得日期:</strong> {{item.ItemGetDate}}
-        </p>
-        {%endif%}
-        {%if item.WarrantyExpiry%}
-        <p class="card-text">
-          <strong>🛡 保固截止:</strong> {{item.WarrantyExpiry}}
-          {% if item.WarrantyStatus=='expired' %}<span class="badge bg-danger ms-1">到期</span>{% elif item.WarrantyStatus=='near' %}<span class="badge bg-warning text-dark ms-1">即將到期</span>{% endif %}
-        </p>
-        {%endif%}
-        {%if item.UsageExpiry%}
-        <p class="card-text">
-          <strong>⌛ 使用期限:</strong> {{item.UsageExpiry}}
-          {% if item.UsageStatus=='expired' %}<span class="badge bg-danger ms-1">到期</span>{% elif item.UsageStatus=='near' %}<span class="badge bg-warning text-dark ms-1">即將到期</span>{% endif %}
-        </p>
-        {%endif%} {%if item.ItemDesc%}
-        <p class="card-text">{{item.ItemDesc}}</p>
-        {%endif%}
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
+  </div>
+  
+  <!-- 統計摘要 -->
+  <div class="row g-3 mb-4 animate-fadeInUp stagger-2">
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-primary text-white">
+        <div class="icon"><i class="fas fa-box"></i></div>
+        <h2>{{ pagination.total if pagination else items|length }}</h2>
+        <h5>總物品數</h5>
       </div>
-      <div class="card-footer">
-        <div class="d-flex justify-content-between align-items-center">
-          <span class="badge bg-primary">📦 物品</span>
-          <form method="POST" style="display: inline">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="item_id" value="{{item.ItemID}}" />
-            <input
-              type="text"
-              name="new_place"
-              class="form-control form-control-sm d-inline-block"
-              style="width: 150px"
-              placeholder="更新位置..."
-            />
-            <div class="d-flex mt-1">
-              <select name="ItemFloor" class="form-select form-select-sm me-1">
-                <option value="">樓層</option>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-danger text-white">
+        <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <h2>{{ items|selectattr('WarrantyStatus', 'eq', 'expired')|list|length }}</h2>
+        <h5>保固過期</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-warning text-white">
+        <div class="icon"><i class="fas fa-clock"></i></div>
+        <h2>{{ items|selectattr('WarrantyStatus', 'eq', 'near')|list|length }}</h2>
+        <h5>即將到期</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <a href="{{ url_for('items.additem') }}" class="text-decoration-none">
+        <div class="stats-card bg-success text-white">
+          <div class="icon"><i class="fas fa-plus"></i></div>
+          <h2>+</h2>
+          <h5>新增物品</h5>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block card%}
+<!-- 批量操作工具列 -->
+<div class="batch-toolbar hidden" id="batchToolbar">
+  <span><i class="fas fa-check-square me-2"></i>已選擇 <span class="batch-count" id="selectedCount">0</span> 項</span>
+  <div class="btn-group btn-group-sm">
+    <button type="button" class="btn btn-outline-light" onclick="batchMove()" title="批量移動">
+      <i class="fas fa-arrows-alt me-1"></i>移動
+    </button>
+    <button type="button" class="btn btn-outline-danger" onclick="batchDelete()" title="批量刪除">
+      <i class="fas fa-trash me-1"></i>刪除
+    </button>
+  </div>
+  <button type="button" class="btn btn-sm btn-outline-light" onclick="clearSelection()">
+    <i class="fas fa-times"></i>
+  </button>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+  {%for item in items%}
+  <div class="col">
+    <div class="card h-100 batch-item" data-item-id="{{item.ItemID}}" data-item-name="{{item.ItemName}}">
+      <div class="row g-0">
+        <!-- 批量選擇勾選框 -->
+        <div class="batch-checkbox position-absolute top-0 start-0 m-2 z-1">
+          <input type="checkbox" class="form-check-input item-checkbox" onchange="updateSelection()" style="width: 20px; height: 20px;">
+        </div>
+        <!-- 物品圖片 (左側) -->
+        <div class="col-4">
+          {%if item.ItemPic%}
+          <img
+            src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
+            class="img-fluid rounded-start h-100"
+            alt="{{ item.ItemName }}"
+            style="object-fit: cover; min-height: 200px;"
+          />
+          {%else%}
+          <div class="bg-light d-flex align-items-center justify-content-center h-100 rounded-start" style="min-height: 200px;">
+            <i class="fas fa-image fa-3x text-muted"></i>
+          </div>
+          {%endif%}
+        </div>
+        
+        <!-- 物品資訊 (右側) -->
+        <div class="col-8">
+          <div class="card-body py-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h5 class="card-title mb-0 text-truncate" style="max-width: 70%;" title="{{item.ItemName}}">
+                {{item.ItemName}}
+              </h5>
+              <!-- 狀態標籤 -->
+              <div class="d-flex gap-1">
+                {% if item.WarrantyStatus=='expired' %}
+                <span class="badge bg-danger" data-tooltip="保固已過期">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </span>
+                {% elif item.WarrantyStatus=='near' %}
+                <span class="badge bg-warning" data-tooltip="保固即將到期">
+                  <i class="fas fa-clock"></i>
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            
+            <p class="card-text small text-muted mb-2">
+              <i class="fas fa-hashtag me-1"></i>{{item.ItemID}}
+              {%if item.ItemType%}
+              <span class="badge bg-secondary ms-2">{{item.ItemType}}</span>
+              {%endif%}
+            </p>
+            
+            {%if item.ItemStorePlace%}
+            <p class="card-text small mb-1">
+              <i class="fas fa-map-marker-alt text-danger me-1"></i>{{item.ItemStorePlace}}
+            </p>
+            {%endif%}
+            
+            {%if item.ItemFloor or item.ItemRoom or item.ItemZone%}
+            <p class="card-text small text-muted mb-2">
+              <i class="fas fa-home me-1"></i>{{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}
+            </p>
+            {%endif%}
+            
+            <!-- 快速操作按鈕 -->
+            <div class="d-flex gap-2 mt-3">
+              <a href="{{ url_for('items.edititem', item_id=item.ItemID) }}" 
+                 class="btn btn-primary btn-sm flex-grow-1">
+                <i class="fas fa-edit me-1"></i>編輯
+              </a>
+              <button type="button" 
+                      class="btn btn-outline-secondary btn-sm"
+                      data-bs-toggle="collapse" 
+                      data-bs-target="#location-{{loop.index}}"
+                      aria-expanded="false">
+                <i class="fas fa-map-marker-alt"></i>
+              </button>
+              <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('items.qrcode_image', item_id=item.ItemID) }}" 
+                   class="btn btn-outline-dark" data-tooltip="QR Code">
+                  <i class="fas fa-qrcode"></i>
+                </a>
+                <a href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}" 
+                   class="btn btn-outline-dark" data-tooltip="條碼">
+                  <i class="fas fa-barcode"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 快速更新位置 (折疊區) -->
+          <div class="collapse" id="location-{{loop.index}}">
+            <div class="card-footer bg-light">
+              <form method="POST" class="row g-2">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="item_id" value="{{item.ItemID}}" />
+                
+                <div class="col-12">
+                  <input
+                    type="text"
+                    name="new_place"
+                    class="form-control form-control-sm"
+                    placeholder="輸入新的放置地點..."
+                  />
+                </div>
+                
+                <div class="col-4">
+                  <select name="ItemFloor" class="form-select form-select-sm">
+                    <option value="">樓層</option>
+                    {% for f in floors %}
+                    <option value="{{f}}" {% if item.ItemFloor == f %}selected{% endif %}>{{f}}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-4">
+                  <select name="ItemRoom" class="form-select form-select-sm">
+                    <option value="">房間</option>
+                    {% for r in rooms %}
+                    <option value="{{r}}" {% if item.ItemRoom == r %}selected{% endif %}>{{r}}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="col-4">
+                  <select name="ItemZone" class="form-select form-select-sm">
+                    <option value="">區域</option>
+                    {% for z in zones %}
+                    <option value="{{z}}" {% if item.ItemZone == z %}selected{% endif %}>{{z}}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                
+                <div class="col-12">
+                  <button type="submit" class="btn btn-success btn-sm w-100">
+                    <i class="fas fa-check me-1"></i>更新位置
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {%endfor%}
+</div>
+
+{%if not items%}
+<div class="empty-state animate-fadeInUp">
+  <i class="fas fa-box-open"></i>
+  <h3>還沒有任何物品</h3>
+  <p>點擊下方按鈕開始記錄您的第一個物品吧！</p>
+  <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg">
+    <i class="fas fa-plus me-2"></i>新增物品
+  </a>
+</div>
+{%endif%}
+{%endblock%}
+
+{%block page%}
+{% include "partials/pagination.html" %}
+{%endblock%}
+
+{%block modal%}
+<!-- 批量移動 Modal -->
+<div class="modal fade" id="batchMoveModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title"><i class="fas fa-arrows-alt me-2"></i>批量移動物品</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="batchMoveForm" method="post" action="{{ url_for('items.batch_move') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="item_ids" id="batchMoveItemIds"/>
+        <div class="modal-body">
+          <p>將移動 <strong id="batchMoveCount">0</strong> 個物品到新位置</p>
+          <div class="mb-3">
+            <label class="form-label">新放置地點</label>
+            <input type="text" class="form-control" name="new_place" placeholder="輸入新的放置地點...">
+          </div>
+          <div class="row g-2">
+            <div class="col-4">
+              <label class="form-label">樓層</label>
+              <select name="ItemFloor" class="form-select">
+                <option value="">選擇...</option>
                 {% for f in floors %}
                 <option value="{{f}}">{{f}}</option>
                 {% endfor %}
               </select>
-              <select name="ItemRoom" class="form-select form-select-sm me-1">
-                <option value="">房間</option>
+            </div>
+            <div class="col-4">
+              <label class="form-label">房間</label>
+              <select name="ItemRoom" class="form-select">
+                <option value="">選擇...</option>
                 {% for r in rooms %}
                 <option value="{{r}}">{{r}}</option>
                 {% endfor %}
               </select>
-              <select name="ItemZone" class="form-select form-select-sm">
-                <option value="">區域</option>
+            </div>
+            <div class="col-4">
+              <label class="form-label">區域</label>
+              <select name="ItemZone" class="form-select">
+                <option value="">選擇...</option>
                 {% for z in zones %}
                 <option value="{{z}}">{{z}}</option>
                 {% endfor %}
               </select>
             </div>
-            <button type="submit" class="btn btn-success btn-sm ms-1">
-              📍 更新位置
-            </button>
-          </form>
-        </div>
-        <div class="mt-2">
-          <a
-            href="{{ url_for('items.edititem', item_id=item.ItemID) }}"
-            class="btn btn-primary btn-sm"
-            >✏️ 編輯</a
-          >
-          <a
-            href="{{ url_for('items.search') }}?q={{item.ItemName}}"
-            class="btn btn-info btn-sm"
-            >🔍 搜尋相似</a
-          >
-          <div class="btn-group btn-group-sm">
-            <a class="btn btn-outline-secondary" href="{{ url_for('items.qrcode_image', item_id=item.ItemID) }}">QR</a>
-            <a class="btn btn-outline-secondary" href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}">條碼</a>
           </div>
         </div>
-            </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check me-1"></i>確認移動
+          </button>
         </div>
+      </form>
     </div>
-    {%endfor%}
+  </div>
 </div>
 
-{%if not items%}
-<div class="text-center py-5">
-  <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
-  <h3 class="text-muted">還沒有任何物品</h3>
-  <p class="text-muted">點擊下方按鈕開始記錄您的第一個物品吧！</p>
-  <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg"
-    >➕ 新增物品</a
-  >
+<!-- 批量刪除 Modal -->
+<div class="modal fade" id="batchDeleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>確認批量刪除</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="batchDeleteForm" method="post" action="{{ url_for('items.batch_delete') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="item_ids" id="batchDeleteItemIds"/>
+        <div class="modal-body text-center py-4">
+          <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+          <h4>確定要刪除 <span id="batchDeleteCount">0</span> 個物品嗎？</h4>
+          <p class="text-muted">此操作無法復原，所有選中的物品將被永久刪除。</p>
+          <div id="batchDeleteList" class="text-start mt-3 p-3 bg-light rounded" style="max-height: 200px; overflow-y: auto;"></div>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash me-1"></i>確認刪除
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
-{%endif%} {%endblock%} {%block page%}
-{% include "partials/pagination.html" %}
-{%endblock%} {%block js%}
+{%endblock%}
+
+{%block js%}
 <script>
-  var myModal = new bootstrap.Modal(document.getElementById("modalEdit"));
-    // var myModal = new bootstrap.Modal(document.getElementById('modalClone'));
-  var items = "{{items}}"
-    .replaceAll("&#39;", '"')
-    .replaceAll("[", "")
-    .replaceAll("]", "")
-    .replaceAll("}, {", "}; {");
-  console.log(items);
-  var items = items.split(";");
-    var itemtype = Array.from(document.getElementById("ItemType").options);
-  items.forEach((item, index) => {
-    items[index] = JSON.parse(item);
-  });
-  itemtype.forEach((type, index) => {
-    itemtype[index] = type.innerText;
-  });
+const batchToolbar = document.getElementById('batchToolbar');
+const selectedCount = document.getElementById('selectedCount');
 
-    function edit(value) {
-    document.getElementById("modaltitle").innerText = "Edit Item";
-    document.getElementById("modalbutton").innerText = "Edit";
-    document.getElementById("Mode").value = "Edit";
-    items.forEach((i) => {
-            if (i._id === value) {
-                document.getElementById("_id").value = i._id;
-                document.getElementById("ItemName").value = i.ItemName;
-                document.getElementById("ItemID").value = i.ItemID;
-                document.getElementById("ItemAge").value = i.ItemAge;
-                document.getElementById("ItemGetDate").value = i.ItemGetDate;
-                document.getElementById("ItemOwner").value = i.ItemOwner;
-                document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
-        document.getElementById("ItemType").options[
-          itemtype.indexOf(i.ItemType)
-        ].selected = true;
-                document.getElementById("ItemDesc").value = i.ItemDesc;
-                myModal.toggle();
-            }
-        });
+function getSelectedItems() {
+  const items = [];
+  document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {
+    const card = checkbox.closest('.batch-item');
+    items.push({
+      id: card.dataset.itemId,
+      name: card.dataset.itemName
+    });
+  });
+  return items;
+}
+
+function updateSelection() {
+  const selected = getSelectedItems();
+  selectedCount.textContent = selected.length;
+  
+  if (selected.length > 0) {
+    batchToolbar.classList.remove('hidden');
+  } else {
+    batchToolbar.classList.add('hidden');
+  }
+}
+
+function clearSelection() {
+  document.querySelectorAll('.item-checkbox:checked').forEach(cb => cb.checked = false);
+  updateSelection();
+}
+
+function batchMove() {
+  const selected = getSelectedItems();
+  if (selected.length === 0) return;
+  
+  document.getElementById('batchMoveItemIds').value = selected.map(i => i.id).join(',');
+  document.getElementById('batchMoveCount').textContent = selected.length;
+  
+  new bootstrap.Modal(document.getElementById('batchMoveModal')).show();
+}
+
+function batchDelete() {
+  const selected = getSelectedItems();
+  if (selected.length === 0) return;
+  
+  document.getElementById('batchDeleteItemIds').value = selected.map(i => i.id).join(',');
+  document.getElementById('batchDeleteCount').textContent = selected.length;
+  
+  const listEl = document.getElementById('batchDeleteList');
+  listEl.innerHTML = selected.map(i => `<div class="small"><i class="fas fa-box me-2 text-muted"></i>${i.name}</div>`).join('');
+  
+  new bootstrap.Modal(document.getElementById('batchDeleteModal')).show();
+}
+
+// Shift+Click 多選
+let lastChecked = null;
+document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+  checkbox.addEventListener('click', function(e) {
+    if (e.shiftKey && lastChecked) {
+      const checkboxes = Array.from(document.querySelectorAll('.item-checkbox'));
+      const start = checkboxes.indexOf(lastChecked);
+      const end = checkboxes.indexOf(this);
+      const range = checkboxes.slice(Math.min(start, end), Math.max(start, end) + 1);
+      range.forEach(cb => cb.checked = lastChecked.checked);
     }
+    lastChecked = this;
+    updateSelection();
+  });
+});
 </script>
 {%endblock%}

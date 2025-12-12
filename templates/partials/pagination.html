@@ -1,56 +1,101 @@
 {% if pagination and pagination.total_pages > 1 %}
 <nav aria-label="分頁導航" class="mt-4">
-  <ul class="pagination justify-content-center">
-    {# 上一頁 #}
-    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-      <a class="page-link" 
-         href="{% if pagination.has_prev %}{{ url_for(request.endpoint, **dict(request.args, page=pagination.page - 1)) }}{% else %}#{% endif %}" 
-         aria-label="上一頁">
-        <span aria-hidden="true">&laquo;</span>
-      </a>
-    </li>
+  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3">
+    <!-- 頁碼資訊 -->
+    <p class="text-muted mb-0 small">
+      <i class="fas fa-list me-1"></i>
+      共 <strong>{{ pagination.total }}</strong> 項，
+      顯示第 {{ ((pagination.page - 1) * pagination.page_size) + 1 }}-{{ [pagination.page * pagination.page_size, pagination.total]|min }} 項
+    </p>
     
-    {# 頁碼 #}
-    {% set start_page = [1, pagination.page - 2]|max %}
-    {% set end_page = [pagination.total_pages, pagination.page + 2]|min %}
+    <!-- 分頁控制 -->
+    <ul class="pagination mb-0">
+      {# 首頁 #}
+      <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        <a class="page-link" 
+           href="{% if pagination.has_prev %}{{ url_for(request.endpoint, **dict(request.args, page=1)) }}{% else %}#{% endif %}" 
+           aria-label="首頁"
+           data-tooltip="首頁">
+          <i class="fas fa-angle-double-left"></i>
+        </a>
+      </li>
+      
+      {# 上一頁 #}
+      <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        <a class="page-link" 
+           href="{% if pagination.has_prev %}{{ url_for(request.endpoint, **dict(request.args, page=pagination.page - 1)) }}{% else %}#{% endif %}" 
+           aria-label="上一頁"
+           data-tooltip="上一頁">
+          <i class="fas fa-angle-left"></i>
+        </a>
+      </li>
+      
+      {# 頁碼 #}
+      {% set start_page = [1, pagination.page - 2]|max %}
+      {% set end_page = [pagination.total_pages, pagination.page + 2]|min %}
+      
+      {% if start_page > 1 %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=1)) }}">1</a>
+      </li>
+      {% if start_page > 2 %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+      {% endif %}
+      
+      {% for p in range(start_page, end_page + 1) %}
+      <li class="page-item {% if p == pagination.page %}active{% endif %}">
+        <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=p)) }}">{{ p }}</a>
+      </li>
+      {% endfor %}
+      
+      {% if end_page < pagination.total_pages %}
+      {% if end_page < pagination.total_pages - 1 %}
+      <li class="page-item disabled"><span class="page-link">…</span></li>
+      {% endif %}
+      <li class="page-item">
+        <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=pagination.total_pages)) }}">{{ pagination.total_pages }}</a>
+      </li>
+      {% endif %}
+      
+      {# 下一頁 #}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a class="page-link" 
+           href="{% if pagination.has_next %}{{ url_for(request.endpoint, **dict(request.args, page=pagination.page + 1)) }}{% else %}#{% endif %}" 
+           aria-label="下一頁"
+           data-tooltip="下一頁">
+          <i class="fas fa-angle-right"></i>
+        </a>
+      </li>
+      
+      {# 末頁 #}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a class="page-link" 
+           href="{% if pagination.has_next %}{{ url_for(request.endpoint, **dict(request.args, page=pagination.total_pages)) }}{% else %}#{% endif %}" 
+           aria-label="末頁"
+           data-tooltip="末頁">
+          <i class="fas fa-angle-double-right"></i>
+        </a>
+      </li>
+    </ul>
     
-    {% if start_page > 1 %}
-    <li class="page-item">
-      <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=1)) }}">1</a>
-    </li>
-    {% if start_page > 2 %}
-    <li class="page-item disabled"><span class="page-link">...</span></li>
-    {% endif %}
-    {% endif %}
-    
-    {% for p in range(start_page, end_page + 1) %}
-    <li class="page-item {% if p == pagination.page %}active{% endif %}">
-      <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=p)) }}">{{ p }}</a>
-    </li>
-    {% endfor %}
-    
-    {% if end_page < pagination.total_pages %}
-    {% if end_page < pagination.total_pages - 1 %}
-    <li class="page-item disabled"><span class="page-link">...</span></li>
-    {% endif %}
-    <li class="page-item">
-      <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=pagination.total_pages)) }}">{{ pagination.total_pages }}</a>
-    </li>
-    {% endif %}
-    
-    {# 下一頁 #}
-    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-      <a class="page-link" 
-         href="{% if pagination.has_next %}{{ url_for(request.endpoint, **dict(request.args, page=pagination.page + 1)) }}{% else %}#{% endif %}" 
-         aria-label="下一頁">
-        <span aria-hidden="true">&raquo;</span>
-      </a>
-    </li>
-  </ul>
-  
-  <p class="text-center text-muted">
-    共 {{ pagination.total }} 項，第 {{ pagination.page }} / {{ pagination.total_pages }} 頁
-  </p>
+    <!-- 頁數選擇 -->
+    <div class="d-flex align-items-center gap-2">
+      <span class="text-muted small">前往</span>
+      <select class="form-select form-select-sm" style="width: auto;" onchange="goToPage(this.value)">
+        {% for p in range(1, pagination.total_pages + 1) %}
+        <option value="{{ p }}" {% if p == pagination.page %}selected{% endif %}>第 {{ p }} 頁</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
 </nav>
-{% endif %}
 
+<script>
+function goToPage(page) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('page', page);
+  window.location.href = url.toString();
+}
+</script>
+{% endif %}

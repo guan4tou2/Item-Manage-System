@@ -94,5 +94,34 @@ def create_app() -> Flask:
     app.register_blueprint(items_bp)
     app.register_blueprint(types_bp)
     app.register_blueprint(locations_bp)
+    
+    # 註冊自定義過濾器
+    import re
+    from markupsafe import Markup, escape
+    
+    @app.template_filter('highlight')
+    def highlight_filter(text, query):
+        """搜尋關鍵字高亮過濾器"""
+        if not query or not text:
+            return text
+        
+        text = str(text)
+        # 轉義 HTML
+        text = str(escape(text))
+        
+        # 不區分大小寫匹配
+        pattern = re.compile(f'({re.escape(query)})', re.IGNORECASE)
+        result = pattern.sub(r'<span class="search-highlight">\1</span>', text)
+        
+        return Markup(result)
+    
+    @app.template_filter('datetime_format')
+    def datetime_format_filter(value, format='%Y-%m-%d %H:%M'):
+        """日期時間格式化過濾器"""
+        if not value:
+            return ''
+        if isinstance(value, str):
+            return value
+        return value.strftime(format)
 
     return app

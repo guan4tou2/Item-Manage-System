@@ -1,202 +1,281 @@
-{%extends 'template.html' %} {%block title%}首頁 - 物品管理系統{%endblock%}
-{%block user%}{{User.User}}{%endblock%} {%block contain%}
+{%extends 'template.html' %}
+{%block title%}首頁 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
 <div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="display-4 text-center mb-4">🏠 我的物品管理系統</h1>
-      <p class="lead text-center mb-5">
-        輕鬆記錄家中物品位置，再也不怕找不到東西！
-      </p>
-    </div>
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>🏠 我的物品管理</h1>
+    <p class="lead">輕鬆記錄家中物品位置，再也不怕找不到東西！</p>
   </div>
 
-  <!-- 搜尋功能 -->
-  <div class="row mb-4">
-    <div class="col-md-8 mx-auto">
-      <form action="{{ url_for('items.search') }}" method="GET" class="row g-2">
-        <div class="col-md-3">
-          <input
-            type="text"
-            name="q"
-            class="form-control"
-            placeholder="搜尋物品名稱..."
-            value="{{ request.args.get('q', '') }}"
-          />
+  <!-- 快速入門指引 (首次使用者或物品為空時顯示) -->
+  {%if not items%}
+  <div class="quick-start animate-fadeInUp stagger-1">
+    <h3><i class="fas fa-rocket text-primary"></i> 快速開始</h3>
+    <div class="quick-start-steps">
+      <a href="{{url_for('locations.manage_locations')}}" class="quick-start-step text-decoration-none">
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h4>設定位置</h4>
+          <p>建立樓層、房間、區域等位置選項</p>
         </div>
-        <div class="col-md-3">
-          <input
-            type="text"
-            name="place"
-            class="form-control"
-            placeholder="搜尋放置地點..."
-            value="{{ request.args.get('place', '') }}"
-          />
+      </a>
+      <a href="{{url_for('types.addtype')}}" class="quick-start-step text-decoration-none">
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h4>建立類型</h4>
+          <p>新增物品分類，如電子產品、文具等</p>
         </div>
-        <div class="col-md-2">
-          <select name="type" class="form-select">
-            <option value="">全部類型</option>
-            {% for type in itemtype %}
-            <option value="{{type.name}}" {% if request.args.get('type','')==type.name %}selected{% endif %}>{{type.name}}</option>
-            {% endfor %}
-          </select>
+      </a>
+      <a href="{{url_for('items.additem')}}" class="quick-start-step text-decoration-none">
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h4>新增物品</h4>
+          <p>拍照並記錄物品資訊和放置位置</p>
         </div>
-        <div class="col-md-1">
-          <select name="floor" class="form-select">
-            <option value="">樓層</option>
-            {% for f in floors %}
-            <option value="{{f}}" {% if request.args.get('floor','')==f %}selected{% endif %}>{{f}}</option>
-            {% endfor %}
-          </select>
+      </a>
+      <a href="{{url_for('items.search')}}" class="quick-start-step text-decoration-none">
+        <div class="step-number">4</div>
+        <div class="step-content">
+          <h4>開始使用</h4>
+          <p>搜尋物品，快速找到您需要的東西</p>
         </div>
-        <div class="col-md-1">
-          <select name="room" class="form-select">
-            <option value="">房間</option>
-            {% for r in rooms %}
-            <option value="{{r}}" {% if request.args.get('room','')==r %}selected{% endif %}>{{r}}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-1">
-          <select name="zone" class="form-select">
-            <option value="">區域</option>
-            {% for z in zones %}
-            <option value="{{z}}" {% if request.args.get('zone','')==z %}selected{% endif %}>{{z}}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-1">
-          <select name="sort" class="form-select">
-            <option value="">排序</option>
-            <option value="name" {% if selected_sort=='name' %}selected{% endif %}>名稱</option>
-            <option value="warranty" {% if selected_sort=='warranty' %}selected{% endif %}>保固到期</option>
-            <option value="usage" {% if selected_sort=='usage' %}selected{% endif %}>使用期限</option>
-          </select>
-        </div>
-        <div class="col-12 d-flex justify-content-end">
-          <button type="submit" class="btn btn-primary me-2">🔍 搜尋</button>
-          <a href="{{ url_for('items.scan') }}" class="btn btn-outline-info">📷 掃描</a>
-        </div>
-      </form>
+      </a>
     </div>
+  </div>
+  {%endif%}
+
+  <!-- 搜尋功能 -->
+  <div class="search-form animate-fadeInUp stagger-2">
+    <form action="{{ url_for('items.search') }}" method="GET" class="row g-3 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label small text-muted mb-1">
+          <i class="fas fa-font me-1"></i>物品名稱
+        </label>
+        <input
+          type="text"
+          name="q"
+          class="form-control"
+          placeholder="輸入名稱搜尋..."
+          value="{{ request.args.get('q', '') }}"
+        />
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label small text-muted mb-1">
+          <i class="fas fa-map-marker-alt me-1"></i>地點
+        </label>
+        <input
+          type="text"
+          name="place"
+          class="form-control"
+          placeholder="放置地點..."
+          value="{{ request.args.get('place', '') }}"
+        />
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label small text-muted mb-1">
+          <i class="fas fa-tag me-1"></i>類型
+        </label>
+        <select name="type" class="form-select">
+          <option value="">全部類型</option>
+          {% for type in itemtype %}
+          <option value="{{type.name}}" {% if request.args.get('type','')==type.name %}selected{% endif %}>{{type.name}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-4 col-md-1">
+        <label class="form-label small text-muted mb-1">樓層</label>
+        <select name="floor" class="form-select">
+          <option value="">全部</option>
+          {% for f in floors %}
+          <option value="{{f}}" {% if request.args.get('floor','')==f %}selected{% endif %}>{{f}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-4 col-md-1">
+        <label class="form-label small text-muted mb-1">房間</label>
+        <select name="room" class="form-select">
+          <option value="">全部</option>
+          {% for r in rooms %}
+          <option value="{{r}}" {% if request.args.get('room','')==r %}selected{% endif %}>{{r}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-4 col-md-1">
+        <label class="form-label small text-muted mb-1">區域</label>
+        <select name="zone" class="form-select">
+          <option value="">全部</option>
+          {% for z in zones %}
+          <option value="{{z}}" {% if request.args.get('zone','')==z %}selected{% endif %}>{{z}}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-2 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-grow-1">
+          <i class="fas fa-search me-1"></i>搜尋
+        </button>
+        <a href="{{ url_for('items.scan') }}" class="btn btn-outline-info" data-tooltip="掃描條碼">
+          <i class="fas fa-qrcode"></i>
+        </a>
+      </div>
+    </form>
   </div>
 
   <!-- 統計資訊 -->
-  <div class="row mb-4">
-    <div class="col-md-3">
-      <div class="card text-center bg-primary text-white">
-        <div class="card-body">
-          <h5 class="card-title">總物品數</h5>
-          <h2 class="card-text">{{ pagination.total if pagination else items|length }}</h2>
-        </div>
+  <div class="row g-3 mb-4 animate-fadeInUp stagger-3">
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-primary text-white">
+        <div class="icon"><i class="fas fa-box"></i></div>
+        <h2>{{ stats.total if stats else (pagination.total if pagination else items|length) }}</h2>
+        <h5>總物品數</h5>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-center bg-success text-white">
-        <div class="card-body">
-          <h5 class="card-title">有照片</h5>
-          <h2 class="card-text">
-            {{ items|selectattr('ItemPic', 'ne', '')|list|length }}
-          </h2>
-        </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-success text-white">
+        <div class="icon"><i class="fas fa-image"></i></div>
+        <h2>{{ stats.with_photo if stats else 0 }}</h2>
+        <h5>有照片</h5>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-center bg-info text-white">
-        <div class="card-body">
-          <h5 class="card-title">有位置記錄</h5>
-          <h2 class="card-text">
-            {{ items|selectattr('ItemStorePlace', 'ne', '')|list|length }}
-          </h2>
-        </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-info text-white">
+        <div class="icon"><i class="fas fa-map-pin"></i></div>
+        <h2>{{ stats.with_location if stats else 0 }}</h2>
+        <h5>有位置記錄</h5>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="card text-center bg-warning text-white">
-        <div class="card-body">
-          <h5 class="card-title">有分類</h5>
-          <h2 class="card-text">
-            {{ items|selectattr('ItemType', 'ne', '')|list|length }}
-          </h2>
-        </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-warning text-white">
+        <div class="icon"><i class="fas fa-folder"></i></div>
+        <h2>{{ stats.with_type if stats else 0 }}</h2>
+        <h5>有分類</h5>
       </div>
     </div>
   </div>
 </div>
-{%endblock%} {%block card%}
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+{%endblock%}
+
+{%block card%}
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
   {%for item in items%}
   <div class="col">
-    <div class="card h-100 shadow-sm">
-      {%if item.ItemPic%}
-      <img
-        src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
-        class="card-img-top"
-        alt="{{ item.ItemName }}"
-        style="height: 200px; object-fit: cover"
-      />
-      {%else%}
-      <div
-        class="card-img-top bg-light d-flex align-items-center justify-content-center"
-        style="height: 200px"
-      >
-        <i class="fas fa-image fa-3x text-muted"></i>
-      </div>
-      {%endif%}
-      <div class="card-body">
-        <h5 class="card-title">{{item.ItemName}}</h5>
-        <p class="card-text text-muted">ID: {{item.ItemID}}</p>
-        {%if item.ItemStorePlace%}
-          <p class="card-text">
-            <strong>📍 放置地點:</strong> {{item.ItemStorePlace}}
-          </p>
+    <div class="card h-100">
+      <!-- 物品圖片 - 點擊進入詳情頁 -->
+      <a href="{{ url_for('items.item_detail', item_id=item.ItemID) }}" class="card-img-link position-relative overflow-hidden d-block" style="height: 200px;">
+        {%if item.ItemPic%}
+        <img
+          src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
+          class="card-img-top h-100 w-100"
+          alt="{{ item.ItemName }}"
+          style="object-fit: cover"
+          loading="lazy"
+        />
+        {%else%}
+        <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center h-100" 
+             style="background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);">
+          <i class="fas fa-image fa-4x text-white opacity-50"></i>
+        </div>
         {%endif%}
-        {%if item.ItemFloor or item.ItemRoom or item.ItemZone%}
-          <p class="card-text">
-            <strong>🏠 位置層級:</strong> {{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}
-          </p>
-        {%endif%}
+        
+        <!-- 狀態標籤 -->
+        <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1">
+          {% if item.WarrantyStatus=='expired' %}
+          <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>保固過期</span>
+          {% elif item.WarrantyStatus=='near' %}
+          <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>即將到期</span>
+          {% endif %}
+          {% if item.UsageStatus=='expired' %}
+          <span class="badge bg-danger"><i class="fas fa-hourglass-end me-1"></i>使用過期</span>
+          {% elif item.UsageStatus=='near' %}
+          <span class="badge bg-warning text-dark"><i class="fas fa-hourglass-half me-1"></i>即將到期</span>
+          {% endif %}
+        </div>
+        
+        <!-- 類型標籤 -->
         {%if item.ItemType%}
-          <p class="card-text"><strong>📂 類型:</strong> {{item.ItemType}}</p>
-        {%endif%} {%if item.ItemOwner%}
-          <p class="card-text"><strong>👤 擁有者:</strong> {{item.ItemOwner}}</p>
-        {%endif%} {%if item.ItemGetDate%}
-          <p class="card-text">
-            <strong>📅 取得日期:</strong> {{item.ItemGetDate}}
-          </p>
+        <div class="position-absolute bottom-0 start-0 p-2">
+          <span class="badge bg-dark bg-opacity-75">
+            <i class="fas fa-tag me-1"></i>{{item.ItemType}}
+          </span>
+        </div>
         {%endif%}
+        
+        <!-- 懸停提示 -->
+        <div class="card-img-overlay d-flex align-items-center justify-content-center opacity-0 hover-overlay">
+          <span class="badge bg-white text-dark fs-6">
+            <i class="fas fa-eye me-1"></i>查看詳情
+          </span>
+        </div>
+      </a>
+      
+      <!-- 卡片內容 -->
+      <div class="card-body">
+        <h5 class="card-title text-truncate" title="{{item.ItemName}}">
+          {{item.ItemName}}
+        </h5>
+        <p class="card-text text-muted small mb-2">
+          <i class="fas fa-hashtag me-1"></i>{{item.ItemID}}
+        </p>
+        
+        {%if item.ItemStorePlace%}
+        <p class="card-text small mb-1">
+          <i class="fas fa-map-marker-alt text-danger me-1"></i>
+          <strong>位置：</strong>{{item.ItemStorePlace}}
+        </p>
+        {%endif%}
+        
+        {%if item.ItemFloor or item.ItemRoom or item.ItemZone%}
+        <p class="card-text small mb-1">
+          <i class="fas fa-home text-info me-1"></i>
+          {{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}
+        </p>
+        {%endif%}
+        
+        {%if item.ItemOwner%}
+        <p class="card-text small mb-1">
+          <i class="fas fa-user text-secondary me-1"></i>
+          {{item.ItemOwner}}
+        </p>
+        {%endif%}
+        
         {%if item.WarrantyExpiry%}
-          <p class="card-text">
-            <strong>🛡 保固截止:</strong> {{item.WarrantyExpiry}}
-            {% if item.WarrantyStatus=='expired' %}<span class="badge bg-danger ms-1">到期</span>{% elif item.WarrantyStatus=='near' %}<span class="badge bg-warning text-dark ms-1">即將到期</span>{% endif %}
-          </p>
-        {%endif%}
-        {%if item.UsageExpiry%}
-          <p class="card-text">
-            <strong>⌛ 使用期限:</strong> {{item.UsageExpiry}}
-            {% if item.UsageStatus=='expired' %}<span class="badge bg-danger ms-1">到期</span>{% elif item.UsageStatus=='near' %}<span class="badge bg-warning text-dark ms-1">即將到期</span>{% endif %}
-          </p>
-        {%endif%}
-        {%if item.ItemDesc%}
-          <p class="card-text">{{item.ItemDesc}}</p>
+        <p class="card-text small mb-1">
+          <i class="fas fa-shield-alt text-success me-1"></i>
+          保固至 {{item.WarrantyExpiry}}
+        </p>
         {%endif%}
       </div>
-      <div class="card-footer">
-        <div class="d-flex justify-content-between">
-          {%if User.admin%}
-          <a
-            href="{{ url_for('items.edititem', item_id=item.ItemID) }}"
-            class="btn btn-primary btn-sm"
-            >✏️ 編輯</a
-          >
-          {%endif%}
-          <a
-            href="{{ url_for('items.search') }}?q={{item.ItemName}}"
-            class="btn btn-info btn-sm"
-            >🔍 搜尋相似</a
-          >
+      
+      <!-- 卡片底部操作 -->
+      <div class="card-footer bg-transparent">
+        <div class="d-flex justify-content-between align-items-center">
           <div class="btn-group btn-group-sm">
-            <a class="btn btn-outline-secondary" href="{{ url_for('items.qrcode_image', item_id=item.ItemID) }}">QR</a>
-            <a class="btn btn-outline-secondary" href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}">條碼</a>
+            {%if User.admin%}
+            <a href="{{ url_for('items.edititem', item_id=item.ItemID) }}" 
+               class="btn btn-outline-primary"
+               data-tooltip="編輯物品">
+              <i class="fas fa-edit"></i>
+            </a>
+            {%endif%}
+            <a href="{{ url_for('items.search') }}?q={{item.ItemName}}" 
+               class="btn btn-outline-secondary"
+               data-tooltip="搜尋相似">
+              <i class="fas fa-search"></i>
+            </a>
+          </div>
+          <div class="btn-group btn-group-sm">
+            <a href="{{ url_for('items.qrcode_image', item_id=item.ItemID) }}" 
+               class="btn btn-outline-dark"
+               data-tooltip="下載 QR Code">
+              <i class="fas fa-qrcode"></i>
+            </a>
+            <a href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}" 
+               class="btn btn-outline-dark"
+               data-tooltip="下載條碼">
+              <i class="fas fa-barcode"></i>
+            </a>
           </div>
         </div>
       </div>
@@ -206,14 +285,19 @@
 </div>
 
 {%if not items%}
-<div class="text-center py-5">
-  <i class="fas fa-box-open fa-5x text-muted mb-3"></i>
-  <h3 class="text-muted">還沒有任何物品</h3>
-  <p class="text-muted">點擊下方按鈕開始記錄您的第一個物品吧！</p>
-  <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg"
-    >➕ 新增物品</a
-  >
+<div class="empty-state animate-fadeInUp">
+  <i class="fas fa-box-open"></i>
+  <h3>還沒有任何物品</h3>
+  <p>點擊下方按鈕開始記錄您的第一個物品吧！</p>
+  {%if User.admin%}
+  <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg">
+    <i class="fas fa-plus me-2"></i>新增第一個物品
+  </a>
+  {%endif%}
 </div>
-{%endif%} {%endblock%} {%block page%}
+{%endif%}
+{%endblock%}
+
+{%block page%}
 {% include "partials/pagination.html" %}
 {%endblock%}

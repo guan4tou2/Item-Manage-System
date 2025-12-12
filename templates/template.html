@@ -10,18 +10,7 @@
     <meta name="author" content="物品管理系統" />
     <title>{%block title%}{%endblock%}</title>
 
-    <link
-      rel="canonical"
-      href="https://getbootstrap.com/docs/5.2/examples/navbars/"
-    />
-    <link
-      rel="canonical"
-      href="https://getbootstrap.com/docs/5.2/examples/sign-in/"
-    />
-    <link
-      rel="canonical"
-      href="https://getbootstrap.com/docs/5.2/examples/modals/"
-    />
+    <!-- Bootstrap CSS -->
     <link
       href="{{url_for('static',filename='css/bootstrap.min.css')}}"
       rel="stylesheet"
@@ -31,76 +20,14 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
-
-    <style>
-      .bd-placeholder-img {
-        font-size: 1.125rem;
-        text-anchor: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
-      }
-
-      @media (min-width: 768px) {
-        .bd-placeholder-img-lg {
-          font-size: 3.5rem;
-        }
-      }
-
-      .b-example-divider {
-        height: 3rem;
-        background-color: rgba(0, 0, 0, 0.1);
-        border: solid rgba(0, 0, 0, 0.15);
-        border-width: 1px 0;
-        box-shadow: inset 0 0.5em 1.5em rgba(0, 0, 0, 0.1),
-          inset 0 0.125em 0.5em rgba(0, 0, 0, 0.15);
-      }
-
-      .b-example-vr {
-        flex-shrink: 0;
-        width: 1.5rem;
-        height: 100vh;
-      }
-
-      .bi {
-        vertical-align: -0.125em;
-        fill: currentColor;
-      }
-
-      .nav-scroller {
-        position: relative;
-        z-index: 2;
-        height: 2.75rem;
-        overflow-y: hidden;
-      }
-
-      .nav-scroller .nav {
-        display: flex;
-        flex-wrap: nowrap;
-        padding-bottom: 1rem;
-        margin-top: -1px;
-        overflow-x: auto;
-        text-align: center;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      /* Flash 消息樣式 */
-      .alert {
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-      }
-
-      /* 卡片懸停效果 */
-      .card {
-        transition: transform 0.2s ease-in-out;
-      }
-
-      .card:hover {
-        transform: translateY(-5px);
-      }
-    </style>
-    <!-- Custom styles for this template -->
+    <!-- Google Fonts - Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- 主要樣式 -->
+    <link
+      href="{{url_for('static',filename='css/main.css')}}"
+      rel="stylesheet"
+    />
+    <!-- 導航列樣式 -->
     <link
       href="{{url_for('static',filename='css/navbar.css')}}"
       rel="stylesheet"
@@ -109,125 +36,161 @@
 
   <body>
     <main>
+      <!-- 導航列 -->
       <nav
-        class="navbar navbar-expand-lg navbar-dark bg-dark"
+        class="navbar navbar-expand-lg navbar-dark"
         aria-label="物品管理系統導航"
       >
         <div class="container">
-           <a class="navbar-brand" href="{{url_for('items.home')}}">
-            <i class="fas fa-home me-2"></i>物品管理系統
+          <a class="navbar-brand" href="{{url_for('items.home')}}">
+            <i class="fas fa-box-open me-2"></i>物品管理系統
           </a>
           <button
             class="navbar-toggler"
             type="button"
             data-bs-toggle="collapse"
-            data-bs-target="#navbarsExample07"
-            aria-controls="navbarsExample07"
+            data-bs-target="#mainNavbar"
+            aria-controls="mainNavbar"
             aria-expanded="false"
-            aria-label="Toggle navigation"
+            aria-label="切換導航"
           >
             <span class="navbar-toggler-icon"></span>
           </button>
-          <div class="collapse navbar-collapse" id="navbarsExample07">
+          <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item">
-                 <a
-                   class="nav-link active"
-                   aria-current="page"
-                   href="{{url_for('items.home')}}"
-                 >
+                <a
+                  class="nav-link active"
+                  aria-current="page"
+                  href="{{url_for('items.home')}}"
+                  data-tooltip="查看所有物品"
+                >
                   <i class="fas fa-home me-1"></i>首頁
                 </a>
               </li>
               <li class="nav-item">
-                 <a class="nav-link" href="{{url_for('items.search')}}">
+                <a class="nav-link" href="{{url_for('items.search')}}" data-tooltip="搜尋物品">
                   <i class="fas fa-search me-1"></i>搜尋
                 </a>
               </li>
-              {%if User.admin%}
               <li class="nav-item">
-                 <a class="nav-link" href="{{url_for('items.additem')}}">
-                  <i class="fas fa-plus me-1"></i>新增物品
+                <a class="nav-link" href="{{url_for('items.scan')}}" data-tooltip="掃描條碼或QR碼">
+                  <i class="fas fa-qrcode me-1"></i>掃描
                 </a>
               </li>
               <li class="nav-item">
-                 <a class="nav-link" href="{{url_for('items.manageitem')}}">
-                  <i class="fas fa-cog me-1"></i>管理物品
+                <a class="nav-link" href="{{url_for('items.statistics')}}" data-tooltip="查看統計報表">
+                  <i class="fas fa-chart-bar me-1"></i>統計
                 </a>
+              </li>
+              {%if User.admin%}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fas fa-cog me-1"></i>管理
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                  <li>
+                    <a class="dropdown-item" href="{{url_for('items.additem')}}">
+                      <i class="fas fa-plus me-2 text-success"></i>新增物品
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{url_for('items.manageitem')}}">
+                      <i class="fas fa-edit me-2 text-primary"></i>管理物品
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a class="dropdown-item" href="{{url_for('types.addtype')}}">
+                      <i class="fas fa-tags me-2 text-info"></i>新增類型
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{url_for('locations.manage_locations')}}">
+                      <i class="fas fa-map-marker-alt me-2 text-warning"></i>位置設定
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li>
+                    <a class="dropdown-item" href="{{url_for('items.activity_logs')}}">
+                      <i class="fas fa-history me-2 text-secondary"></i>操作日誌
+                    </a>
+                  </li>
+                </ul>
               </li>
               {%endif%}
             </ul>
+            
+            <!-- 搜尋框 -->
             <form
               role="search"
               class="col-12 col-lg-auto mb-3 mb-lg-0 me-lg-3"
-               action="{{url_for('items.search')}}"
+              action="{{url_for('items.search')}}"
               method="GET"
             >
-              <input
-                class="form-control"
-                type="search"
-                name="q"
-                placeholder="搜尋物品..."
-                aria-label="Search"
-              />
+              <div class="input-group">
+                <input
+                  class="form-control"
+                  type="search"
+                  name="q"
+                  placeholder="搜尋物品..."
+                  aria-label="搜尋"
+                />
+                <button class="btn btn-outline-light" type="submit">
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
             </form>
+            
+            <!-- 通知鈴鐺 -->
+            <div class="nav-item me-3">
+              <a href="{{url_for('items.notifications')}}" 
+                 class="nav-link position-relative notification-bell" 
+                 id="notificationBell"
+                 title="到期通知">
+                <i class="fas fa-bell fa-lg"></i>
+                <span class="notification-badge d-none" id="notificationBadge">0</span>
+              </a>
+            </div>
+            
+            <!-- 使用者選單 -->
             <div class="dropdown text-end">
               <a
                 href="#"
-                class="d-block link-light text-decoration-none dropdown-toggle"
-                id="dropdownUser1"
+                class="d-flex align-items-center link-light text-decoration-none dropdown-toggle"
+                id="userDropdown"
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
               >
-                <i class="fas fa-user me-1"></i>{%block user%}{%endblock%}
+                <div class="user-avatar me-2">
+                  <i class="fas fa-user"></i>
+                </div>
+                <span>{%block user%}{%endblock%}</span>
               </a>
-              <ul
-                class="dropdown-menu text-small"
-                aria-labelledby="dropdownUser1"
-              >
-                 <li>
-                   <a class="dropdown-item" href="{{url_for('items.home')}}">
+              <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                <li class="dropdown-header">
+                  <i class="fas fa-user-circle me-1"></i> 
+                  {%if User.admin%}管理員{%else%}使用者{%endif%}
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item" href="{{url_for('items.home')}}">
                     <i class="fas fa-home me-2"></i>首頁
                   </a>
                 </li>
                 <li>
-                   <a class="dropdown-item" href="{{url_for('items.search')}}">
+                  <a class="dropdown-item" href="{{url_for('items.search')}}">
                     <i class="fas fa-search me-2"></i>搜尋物品
                   </a>
                 </li>
-                {%if User.admin%}
-                <hr class="dropdown-divider" />
                 <li>
-                   <a class="dropdown-item" href="{{url_for('items.additem')}}">
-                    <i class="fas fa-plus me-2"></i>新增物品
+                  <a class="dropdown-item" href="#" onclick="showGuide()">
+                    <i class="fas fa-question-circle me-2"></i>操作指引
                   </a>
                 </li>
+                <li><hr class="dropdown-divider" /></li>
                 <li>
-                   <a class="dropdown-item" href="{{url_for('items.manageitem')}}">
-                    <i class="fas fa-cog me-2"></i>管理物品
-                  </a>
-                </li>
-                <li>
-                   <a class="dropdown-item" href="{{url_for('items.manageitem')}}">
-                    <i class="fas fa-edit me-2"></i>編輯物品
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{url_for('types.addtype')}}">
-                    <i class="fas fa-tags me-2"></i>新增類型
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{{url_for('locations.manage_locations')}}">
-                    <i class="fas fa-map me-2"></i>位置設定
-                  </a>
-                </li>
-                {%endif%}
-                <li>
-                  <hr class="dropdown-divider" />
-                </li>
-                 <li>
-                   <a class="dropdown-item" href="{{url_for('auth.signout')}}">
+                  <a class="dropdown-item text-danger" href="{{url_for('auth.signout')}}">
                     <i class="fas fa-sign-out-alt me-2"></i>登出
                   </a>
                 </li>
@@ -237,23 +200,432 @@
         </div>
       </nav>
 
-      <div class="container-fluid">
+      <!-- 主內容區 -->
+      <div class="container-fluid py-4">
         {% include "partials/flash.html" %}
 
-        <div>
-          <div class="bg-light p-5 rounded">
-            <div class="mx-auto">
-              {%block contain%}{%endblock%} {%block body%}{%endblock%} {%block
-              card%}{%endblock%} {%block modal%}{%endblock%}
-            </div>
+        <div class="bg-light p-4 p-md-5 rounded-4">
+          <div class="mx-auto">
+            {%block contain%}{%endblock%}
+            {%block body%}{%endblock%}
+            {%block card%}{%endblock%}
+            {%block modal%}{%endblock%}
           </div>
-          <br />
+        </div>
+        
+        <div class="mt-4">
           {%block page%}{%endblock%}
+        </div>
+      </div>
+
+      <!-- 快速操作提示 -->
+      <div class="quick-tip" id="quickTip">
+        <i class="fas fa-lightbulb"></i>
+        <span id="tipContent">提示：使用搜尋功能快速找到物品</span>
+        <button class="close-tip" onclick="closeTip()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- 浮動操作按鈕 (管理員) -->
+      {%if User.admin%}
+      <a href="{{url_for('items.additem')}}" class="fab btn btn-primary" data-tooltip="新增物品">
+        <i class="fas fa-plus"></i>
+      </a>
+      {%endif%}
+
+      <!-- 操作指引覆蓋層 -->
+      <div class="guide-overlay" id="guideOverlay"></div>
+      
+      <!-- 操作指引提示框 -->
+      <div class="guide-tooltip" id="guideTooltip">
+        <div class="guide-progress" id="guideProgress"></div>
+        <h4 id="guideTitle">歡迎使用</h4>
+        <p id="guideContent">讓我們開始了解系統功能吧！</p>
+        <div class="guide-actions">
+          <button class="btn btn-sm btn-outline-secondary" onclick="skipGuide()">跳過</button>
+          <button class="btn btn-sm btn-primary" onclick="nextGuideStep()">下一步</button>
         </div>
       </div>
     </main>
 
+    <!-- 幫助 Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h5 class="modal-title" id="helpModalLabel">
+              <i class="fas fa-question-circle me-2"></i>操作指引
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4">
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <span class="badge bg-primary rounded-circle p-3">
+                      <i class="fas fa-plus fa-lg"></i>
+                    </span>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h5>新增物品</h5>
+                    <p class="text-muted mb-0">點擊右下角的「+」按鈕或從管理選單中選擇「新增物品」，填寫物品資訊和照片即可。</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <span class="badge bg-info rounded-circle p-3">
+                      <i class="fas fa-search fa-lg"></i>
+                    </span>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h5>搜尋物品</h5>
+                    <p class="text-muted mb-0">使用頂部搜尋欄或進入搜尋頁面，可依名稱、位置、類型等條件篩選。</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <span class="badge bg-success rounded-circle p-3">
+                      <i class="fas fa-qrcode fa-lg"></i>
+                    </span>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h5>掃描條碼</h5>
+                    <p class="text-muted mb-0">進入掃描頁面，使用相機掃描物品的 QR Code 或條碼，快速查看詳情。</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <span class="badge bg-warning rounded-circle p-3">
+                      <i class="fas fa-map-marker-alt fa-lg"></i>
+                    </span>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h5>位置管理</h5>
+                    <p class="text-muted mb-0">先在「位置設定」中建立樓層、房間、區域，方便記錄物品存放位置。</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <span class="badge bg-secondary rounded-circle p-3">
+                      <i class="fas fa-tags fa-lg"></i>
+                    </span>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h5>類型分類</h5>
+                    <p class="text-muted mb-0">建立物品類型（如：電子產品、文具、工具等），方便分類管理。</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-start">
+                  <div class="flex-shrink-0">
+                    <span class="badge bg-danger rounded-circle p-3">
+                      <i class="fas fa-clock fa-lg"></i>
+                    </span>
+                  </div>
+                  <div class="flex-grow-1 ms-3">
+                    <h5>到期提醒</h5>
+                    <p class="text-muted mb-0">設定保固截止和使用期限，系統會自動標記即將到期或已過期的物品。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <h6 class="mb-3"><i class="fas fa-keyboard me-2"></i>快捷操作</h6>
+            <div class="row g-2">
+              <div class="col-auto">
+                <span class="badge bg-light text-dark border">
+                  <kbd>Ctrl</kbd> + <kbd>K</kbd> 快速搜尋
+                </span>
+              </div>
+              <div class="col-auto">
+                <span class="badge bg-light text-dark border">
+                  <kbd>N</kbd> 新增物品
+                </span>
+              </div>
+              <div class="col-auto">
+                <span class="badge bg-light text-dark border">
+                  <kbd>?</kbd> 顯示說明
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            <button type="button" class="btn btn-primary" onclick="startGuide()">
+              <i class="fas fa-play me-1"></i>開始導覽
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="{{url_for('static',filename='js/bootstrap.bundle.min.js')}}"></script>
+    
+    <script>
+      // 操作提示系統
+      const tips = [
+        '使用搜尋功能快速找到物品',
+        '點擊卡片可以查看物品詳情',
+        '設定保固期限，系統會提醒您到期',
+        '使用 QR Code 方便識別物品',
+        '可以依樓層、房間、區域篩選物品',
+      ];
+      
+      let currentTip = 0;
+      const tipElement = document.getElementById('quickTip');
+      const tipContent = document.getElementById('tipContent');
+      
+      // 顯示隨機提示
+      function showRandomTip() {
+        const shown = localStorage.getItem('tipShown');
+        if (shown) return;
+        
+        currentTip = Math.floor(Math.random() * tips.length);
+        tipContent.textContent = '提示：' + tips[currentTip];
+        
+        setTimeout(() => {
+          tipElement.classList.add('show');
+        }, 2000);
+        
+        setTimeout(() => {
+          closeTip();
+        }, 10000);
+      }
+      
+      function closeTip() {
+        tipElement.classList.remove('show');
+        localStorage.setItem('tipShown', 'true');
+      }
+      
+      // 操作指引系統
+      const guideSteps = [
+        {
+          title: '歡迎使用物品管理系統！',
+          content: '這個系統幫助您記錄和追蹤家中物品的位置，再也不怕找不到東西。',
+          target: null
+        },
+        {
+          title: '首頁概覽',
+          content: '在首頁可以看到所有物品的卡片視圖，包含照片、位置和基本資訊。',
+          target: '.navbar-brand'
+        },
+        {
+          title: '快速搜尋',
+          content: '使用頂部搜尋欄快速找到您需要的物品，支援名稱和位置搜尋。',
+          target: '.navbar form'
+        },
+        {
+          title: '管理功能',
+          content: '管理員可以新增、編輯、刪除物品，以及設定位置和類型選項。',
+          target: '#adminDropdown'
+        },
+        {
+          title: '新增物品',
+          content: '點擊右下角的「+」按鈕快速新增物品，記得上傳照片方便識別！',
+          target: '.fab'
+        }
+      ];
+      
+      let currentGuideStep = 0;
+      const guideOverlay = document.getElementById('guideOverlay');
+      const guideTooltip = document.getElementById('guideTooltip');
+      const guideTitle = document.getElementById('guideTitle');
+      const guideContent = document.getElementById('guideContent');
+      const guideProgress = document.getElementById('guideProgress');
+      
+      function showGuide() {
+        const helpModal = bootstrap.Modal.getInstance(document.getElementById('helpModal'));
+        if (helpModal) helpModal.hide();
+        
+        new bootstrap.Modal(document.getElementById('helpModal')).show();
+      }
+      
+      function startGuide() {
+        const helpModal = bootstrap.Modal.getInstance(document.getElementById('helpModal'));
+        if (helpModal) helpModal.hide();
+        
+        currentGuideStep = 0;
+        showGuideStep();
+      }
+      
+      function showGuideStep() {
+        const step = guideSteps[currentGuideStep];
+        
+        // 更新進度指示器
+        guideProgress.innerHTML = '';
+        for (let i = 0; i < guideSteps.length; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'guide-progress-dot' + (i === currentGuideStep ? ' active' : '');
+          guideProgress.appendChild(dot);
+        }
+        
+        // 更新內容
+        guideTitle.textContent = step.title;
+        guideContent.textContent = step.content;
+        
+        // 顯示覆蓋層和提示框
+        guideOverlay.classList.add('active');
+        guideTooltip.classList.add('active');
+        
+        // 定位提示框
+        if (step.target) {
+          const targetEl = document.querySelector(step.target);
+          if (targetEl) {
+            const rect = targetEl.getBoundingClientRect();
+            guideTooltip.style.top = (rect.bottom + 20) + 'px';
+            guideTooltip.style.left = Math.max(20, rect.left) + 'px';
+            guideTooltip.className = 'guide-tooltip active bottom';
+            
+            // 高亮目標元素
+            targetEl.style.position = 'relative';
+            targetEl.style.zIndex = '9999';
+            targetEl.style.background = 'white';
+            targetEl.style.borderRadius = '8px';
+            targetEl.style.padding = '8px';
+          }
+        } else {
+          // 置中顯示
+          guideTooltip.style.top = '50%';
+          guideTooltip.style.left = '50%';
+          guideTooltip.style.transform = 'translate(-50%, -50%)';
+          guideTooltip.className = 'guide-tooltip active';
+        }
+        
+        // 更新按鈕文字
+        const nextBtn = guideTooltip.querySelector('.btn-primary');
+        if (currentGuideStep === guideSteps.length - 1) {
+          nextBtn.textContent = '完成';
+        } else {
+          nextBtn.textContent = '下一步';
+        }
+      }
+      
+      function nextGuideStep() {
+        // 清除上一步的高亮
+        document.querySelectorAll('[style*="z-index: 9999"]').forEach(el => {
+          el.style.position = '';
+          el.style.zIndex = '';
+          el.style.background = '';
+          el.style.borderRadius = '';
+          el.style.padding = '';
+        });
+        
+        currentGuideStep++;
+        
+        if (currentGuideStep >= guideSteps.length) {
+          skipGuide();
+          localStorage.setItem('guideCompleted', 'true');
+        } else {
+          showGuideStep();
+        }
+      }
+      
+      function skipGuide() {
+        guideOverlay.classList.remove('active');
+        guideTooltip.classList.remove('active');
+        guideTooltip.style.transform = '';
+        
+        // 清除高亮
+        document.querySelectorAll('[style*="z-index: 9999"]').forEach(el => {
+          el.style.position = '';
+          el.style.zIndex = '';
+          el.style.background = '';
+          el.style.borderRadius = '';
+          el.style.padding = '';
+        });
+      }
+      
+      // 鍵盤快捷鍵
+      document.addEventListener('keydown', function(e) {
+        // Ctrl+K 或 Cmd+K 開啟搜尋
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+          e.preventDefault();
+          document.querySelector('.navbar input[type="search"]').focus();
+        }
+        
+        // ? 顯示幫助
+        if (e.key === '?' && !e.shiftKey) {
+          showGuide();
+        }
+        
+        // N 新增物品 (需要在非輸入狀態)
+        if (e.key === 'n' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+          const fabBtn = document.querySelector('.fab');
+          if (fabBtn) {
+            window.location.href = fabBtn.href;
+          }
+        }
+        
+        // ESC 關閉指引
+        if (e.key === 'Escape') {
+          skipGuide();
+        }
+      });
+      
+      // 首次訪問顯示提示
+      document.addEventListener('DOMContentLoaded', function() {
+        showRandomTip();
+        
+        // 首次使用顯示歡迎
+        if (!localStorage.getItem('guideCompleted') && !localStorage.getItem('welcomeShown')) {
+          localStorage.setItem('welcomeShown', 'true');
+          setTimeout(() => {
+            showGuide();
+          }, 1000);
+        }
+      });
+      
+      // 點擊覆蓋層跳過
+      guideOverlay.addEventListener('click', skipGuide);
+      
+      // 通知數量更新
+      function updateNotificationBadge() {
+        const badge = document.getElementById('notificationBadge');
+        if (!badge) return;
+        
+        fetch('{{url_for("items.notification_count")}}')
+          .then(response => response.json())
+          .then(data => {
+            const total = data.total || 0;
+            if (total > 0) {
+              badge.textContent = total > 99 ? '99+' : total;
+              badge.classList.remove('d-none');
+              
+              // 如果有過期的，使用紅色；只有即將過期的使用黃色
+              if (data.expired > 0) {
+                badge.classList.remove('warning');
+              } else {
+                badge.classList.add('warning');
+              }
+            } else {
+              badge.classList.add('d-none');
+            }
+          })
+          .catch(err => console.log('無法載入通知數量'));
+      }
+      
+      // 頁面載入時更新通知
+      document.addEventListener('DOMContentLoaded', function() {
+        updateNotificationBadge();
+        
+        // 每 5 分鐘自動更新一次
+        setInterval(updateNotificationBadge, 5 * 60 * 1000);
+      });
+    </script>
+    
     {%block js%}{%endblock%}
   </body>
 </html>

@@ -11,6 +11,7 @@ ITEM_PROJECTION = {
     "ItemID": 1,
     "ItemDesc": 1,
     "ItemPic": 1,
+    "ItemPics": 1,  # 多圖支援
     "ItemStorePlace": 1,
     "ItemType": 1,
     "ItemOwner": 1,
@@ -20,6 +21,7 @@ ITEM_PROJECTION = {
     "ItemZone": 1,
     "WarrantyExpiry": 1,
     "UsageExpiry": 1,
+    "move_history": 1,  # 移動歷史
 }
 
 
@@ -220,4 +222,143 @@ def _annotate_expiry(items: List[Dict[str, Any]]) -> None:
                 except Exception:
                     status = "invalid"
             it[key] = status
+
+
+def get_expiring_items(days_threshold: int = 30) -> Dict[str, Any]:
+    """
+    取得即將到期和已過期的物品
+    
+    回傳格式:
+    {
+        "expired": [...],       # 已過期物品
+        "near_expiry": [...],   # 即將到期物品（30天內）
+        "expired_count": 數量,
+        "near_count": 數量,
+        "total_alerts": 總警報數量,
+    }
+    """
+    today = date.today()
+    today_str = today.strftime("%Y-%m-%d")
+    
+    # 計算 N 天後的日期
+    from datetime import timedelta
+    threshold_date = today + timedelta(days=days_threshold)
+    threshold_str = threshold_date.strftime("%Y-%m-%d")
+    
+    projection = ITEM_PROJECTION.copy()
+    
+    # 查詢所有有設定到期日的物品
+    all_items = list(item_repo.list_items({}, projection))
+    _annotate_expiry(all_items)
+    
+    expired_items = []
+    near_expiry_items = []
+    
+    for item in all_items:
+        warranty_status = item.get("WarrantyStatus", "none")
+        usage_status = item.get("UsageStatus", "none")
+        
+        # 標記到期類型
+        item["expiry_types"] = []
+        
+        if warranty_status == "expired":
+            item["expiry_types"].append("warranty_expired")
+        elif warranty_status == "near":
+            item["expiry_types"].append("warranty_near")
+            
+        if usage_status == "expired":
+            item["expiry_types"].append("usage_expired")
+        elif usage_status == "near":
+            item["expiry_types"].append("usage_near")
+        
+        # 分類
+        if warranty_status == "expired" or usage_status == "expired":
+            expired_items.append(item)
+        elif warranty_status == "near" or usage_status == "near":
+            near_expiry_items.append(item)
+    
+    # 按到期日期排序
+    def get_earliest_expiry(item):
+        dates = []
+        for field in ["WarrantyExpiry", "UsageExpiry"]:
+            val = item.get(field)
+            if val:
+                try:
+                    dates.append(val)
+                except:
+                    pass
+        return min(dates) if dates else "9999-12-31"
+    
+    expired_items.sort(key=get_earliest_expiry)
+    near_expiry_items.sort(key=get_earliest_expiry)
+    
+    return {
+        "expired": expired_items,
+        "near_expiry": near_expiry_items,
+        "expired_count": len(expired_items),
+        "near_count": len(near_expiry_items),
+        "total_alerts": len(expired_items) + len(near_expiry_items),
+    }
+
+
+def get_notification_count() -> Dict[str, int]:
+    """
+    快速取得通知數量（用於導航欄顯示）
+    """
+    result = get_expiring_items()
+    return {
+        "expired": result["expired_count"],
+        "near": result["near_count"],
+        "total": result["total_alerts"],
+    }
+
+
+def get_stats() -> Dict[str, int]:
+    """取得物品統計資訊"""
+    return item_repo.get_stats()
+
+
+def get_all_items_for_export() -> List[Dict[str, Any]]:
+    """取得所有物品用於匯出"""
+    return item_repo.get_all_items_for_export()
+
+
+def import_items(items: List[Dict[str, Any]]) -> Tuple[int, int]:
+    """匯入物品
+    
+    回傳 (成功數, 失敗數)
+    """
+    success = 0
+    failed = 0
+    
+    for item_data in items:
+        try:
+            # 確保有必要欄位
+            if not item_data.get("ItemID") or not item_data.get("ItemName"):
+                failed += 1
+                continue
+            
+            # 檢查是否已存在
+            existing = item_repo.find_item_by_id(item_data["ItemID"])
+            if existing:
+                # 更新現有物品
+                item_repo.update_item_by_id(item_data["ItemID"], item_data)
+            else:
+                # 新增物品
+                item_repo.insert_item(item_data)
+            success += 1
+        except Exception:
+            failed += 1
+    
+    return success, failed
+
+
+def count_by_type(item_type: str) -> int:
+    """依類型計算物品數量"""
+    return item_repo.count_items({"ItemType": item_type})
+
+
+def count_by_floor(floor: str) -> int:
+    """依樓層計算物品數量"""
+    return item_repo.count_items({"ItemFloor": floor})
 

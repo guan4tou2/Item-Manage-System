@@ -11,6 +11,7 @@ bp = Blueprint("locations", __name__)
 def manage_locations():
     user = get_current_user()
     locations = location_service.list_locations()
+    floors, rooms, zones = location_service.list_choices()
 
     if request.method == "POST":
         action = request.form.get("action", "create")
@@ -37,5 +38,12 @@ def manage_locations():
             flash(msg, "success" if ok else "danger")
         return redirect(url_for("locations.manage_locations"))
 
-    return render_template("locations.html", User=user, locations=locations)
+    return render_template(
+        "locations.html", 
+        User=user, 
+        locations=locations,
+        floors=floors,
+        rooms=rooms,
+        zones=zones,
+    )
 

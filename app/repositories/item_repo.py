@@ -63,3 +63,25 @@ def ensure_indexes() -> None:
     mongo.db.item.create_index("WarrantyExpiry", background=True)
     mongo.db.item.create_index("UsageExpiry", background=True)
 
+
+def get_stats() -> Dict[str, int]:
+    """取得物品統計資訊"""
+    total = mongo.db.item.count_documents({})
+    with_photo = mongo.db.item.count_documents({"ItemPic": {"$ne": "", "$exists": True}})
+    with_location = mongo.db.item.count_documents({"ItemStorePlace": {"$ne": "", "$exists": True}})
+    with_type = mongo.db.item.count_documents({"ItemType": {"$ne": "", "$exists": True}})
+    
+    return {
+        "total": total,
+        "with_photo": with_photo,
+        "with_location": with_location,
+        "with_type": with_type,
+    }
+
+
+def get_all_items_for_export(projection: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    """取得所有物品用於匯出"""
+    if projection is None:
+        projection = {"_id": 0}
+    return list(mongo.db.item.find({}, projection))
+

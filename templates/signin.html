@@ -1,146 +1,527 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="" />
-    <meta
-      name="author"
-      content="Mark Otto, Jacob Thornton, and Bootstrap contributors"
-    />
-    <meta name="generator" content="Hugo 0.98.0" />
-    <title>Signin</title>
-
-    <link
-      rel="canonical"
-      href="https://getbootstrap.com/docs/5.2/examples/sign-in/"
-    />
-    <link
-      rel="canonical"
-      href="https://getbootstrap.com/docs/5.2/examples/modals/"
-    />
+    <meta name="description" content="物品管理系統 - 登入" />
+    <title>登入 - 物品管理系統</title>
 
     <link
       href="{{url_for('static',filename='css/bootstrap.min.css')}}"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 
     <style>
-      .bd-placeholder-img {
-        font-size: 1.125rem;
-        text-anchor: middle;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        user-select: none;
+      :root {
+        --primary: #667eea;
+        --primary-dark: #5a67d8;
+        --accent: #764ba2;
+        --gray-50: #f8fafc;
+        --gray-100: #f1f5f9;
+        --gray-200: #e2e8f0;
+        --gray-500: #64748b;
+        --gray-700: #334155;
+        --gray-800: #1e293b;
+        --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
       }
 
-      @media (min-width: 768px) {
-        .bd-placeholder-img-lg {
-          font-size: 3.5rem;
+      * {
+        box-sizing: border-box;
+      }
+
+      html, body {
+        height: 100%;
+      }
+
+      body {
+        font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        margin: 0;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* 背景動畫圖形 */
+      .bg-shapes {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .bg-shape {
+        position: absolute;
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 50%;
+      }
+
+      .bg-shape-1 {
+        width: 600px;
+        height: 600px;
+        top: -200px;
+        right: -100px;
+        animation: float 20s ease-in-out infinite;
+      }
+
+      .bg-shape-2 {
+        width: 400px;
+        height: 400px;
+        bottom: -100px;
+        left: -100px;
+        animation: float 25s ease-in-out infinite reverse;
+      }
+
+      .bg-shape-3 {
+        width: 300px;
+        height: 300px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation: pulse 10s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        50% { transform: translateY(-30px) rotate(5deg); }
+      }
+
+      @keyframes pulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+        50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.1; }
+      }
+
+      /* 登入卡片 */
+      .signin-container {
+        width: 100%;
+        max-width: 420px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .signin-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border-radius: 24px;
+        padding: 3rem 2.5rem;
+        box-shadow: var(--shadow-xl);
+        animation: slideUp 0.6s ease forwards;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
       }
 
-      .b-example-divider {
-        height: 3rem;
-        background-color: rgba(0, 0, 0, 0.1);
-        border: solid rgba(0, 0, 0, 0.15);
-        border-width: 1px 0;
-        box-shadow: inset 0 0.5em 1.5em rgba(0, 0, 0, 0.1),
-          inset 0 0.125em 0.5em rgba(0, 0, 0, 0.15);
-      }
-
-      .b-example-vr {
-        flex-shrink: 0;
-        width: 1.5rem;
-        height: 100vh;
-      }
-
-      .bi {
-        vertical-align: -0.125em;
-        fill: currentColor;
-      }
-
-      .nav-scroller {
-        position: relative;
-        z-index: 2;
-        height: 2.75rem;
-        overflow-y: hidden;
-      }
-
-      .nav-scroller .nav {
-        display: flex;
-        flex-wrap: nowrap;
-        padding-bottom: 1rem;
-        margin-top: -1px;
-        overflow-x: auto;
+      /* Logo 區域 */
+      .signin-logo {
         text-align: center;
-        white-space: nowrap;
-        -webkit-overflow-scrolling: touch;
+        margin-bottom: 2rem;
+      }
+
+      .logo-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--gradient-primary);
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        animation: bounce 2s ease infinite;
+      }
+
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+      }
+
+      .logo-icon i {
+        font-size: 2.5rem;
+        color: #fff;
+      }
+
+      .signin-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--gray-800);
+        margin-bottom: 0.5rem;
+      }
+
+      .signin-subtitle {
+        color: var(--gray-500);
+        font-size: 0.95rem;
+      }
+
+      /* 表單樣式 */
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-label {
+        display: block;
+        font-weight: 600;
+        color: var(--gray-700);
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+      }
+
+      .input-wrapper {
+        position: relative;
+      }
+
+      .input-wrapper i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray-500);
+        transition: color 0.2s ease;
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 0.9rem 1rem 0.9rem 3rem;
+        font-size: 1rem;
+        border: 2px solid var(--gray-200);
+        border-radius: 12px;
+        background: var(--gray-50);
+        transition: all 0.2s ease;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+      }
+
+      .form-control:focus + i,
+      .input-wrapper:focus-within i {
+        color: var(--primary);
+      }
+
+      .form-control::placeholder {
+        color: var(--gray-500);
+      }
+
+      /* 登入按鈕 */
+      .btn-signin {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #fff;
+        background: var(--gradient-primary);
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+      }
+
+      .btn-signin:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+      }
+
+      .btn-signin:active {
+        transform: translateY(0);
+      }
+
+      .btn-signin i {
+        font-size: 1.2rem;
+      }
+
+      /* 功能說明 */
+      .features {
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--gray-200);
+      }
+
+      .features-title {
+        font-size: 0.85rem;
+        color: var(--gray-500);
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+
+      .feature-list {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+      }
+
+      .feature-item {
+        text-align: center;
+      }
+
+      .feature-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--gray-100);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.5rem;
+        transition: all 0.2s ease;
+      }
+
+      .feature-item:hover .feature-icon {
+        background: var(--gradient-primary);
+        transform: scale(1.1);
+      }
+
+      .feature-item:hover .feature-icon i {
+        color: #fff;
+      }
+
+      .feature-icon i {
+        color: var(--gray-500);
+        font-size: 1.1rem;
+        transition: color 0.2s ease;
+      }
+
+      .feature-text {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+      }
+
+      /* 版權資訊 */
+      .copyright {
+        text-align: center;
+        margin-top: 2rem;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.85rem;
+      }
+
+      /* 錯誤訊息 Modal */
+      .modal-content {
+        border-radius: 20px;
+        border: none;
+        overflow: hidden;
+      }
+
+      .modal-header {
+        background: var(--gradient-primary);
+        border: none;
+        padding: 1.25rem 1.5rem;
+      }
+
+      .modal-title {
+        color: #fff;
+        font-weight: 700;
+      }
+
+      .btn-close {
+        filter: brightness(0) invert(1);
+      }
+
+      .modal-body {
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .modal-body i {
+        font-size: 3rem;
+        color: #dc3545;
+        margin-bottom: 1rem;
+      }
+
+      .modal-body p {
+        font-size: 1.1rem;
+        color: var(--gray-700);
+        margin: 0;
+      }
+
+      .modal-footer {
+        border: none;
+        padding: 0 1.5rem 1.5rem;
+        justify-content: center;
+      }
+
+      .modal-footer .btn {
+        padding: 0.75rem 2rem;
+        border-radius: 10px;
+        font-weight: 600;
+      }
+
+      /* 操作提示 */
+      .hint-text {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background: rgba(102, 126, 234, 0.1);
+        border-radius: 10px;
+        font-size: 0.85rem;
+        color: var(--gray-600);
+      }
+
+      .hint-text strong {
+        color: var(--primary);
+      }
+
+      /* 響應式 */
+      @media (max-width: 480px) {
+        .signin-card {
+          padding: 2rem 1.5rem;
+        }
+
+        .signin-title {
+          font-size: 1.5rem;
+        }
+
+        .feature-list {
+          gap: 1rem;
+        }
       }
     </style>
-
-    <!-- Custom styles for this template -->
-    <link
-      href="{{url_for('static',filename='css/signin.css')}}"
-      rel="stylesheet"
-    />
-    <link
-      href="{{url_for('static',filename='css/modals.css')}}"
-      rel="stylesheet"
-    />
   </head>
-  <body class="text-center">
-    <main class="form-signin w-100 m-auto">
-      <form action="{{ url_for('auth.signin') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <!-- <img class="mb-4" src="{{url_for('static',filename='brand/bootstrap-logo.svg')}}" alt="" width="72" height="57"> -->
-        <h1 class="h3 mb-3 fw-normal">請登入</h1>
+  <body>
+    <!-- 背景裝飾 -->
+    <div class="bg-shapes">
+      <div class="bg-shape bg-shape-1"></div>
+      <div class="bg-shape bg-shape-2"></div>
+      <div class="bg-shape bg-shape-3"></div>
+    </div>
 
-        <div class="form-floating">
-          <input
-            type="text"
-            class="form-control"
-            id="floatingInput"
-            placeholder="UserID"
-            name="UserID"
-          />
-          <label for="floatingInput">User ID</label>
-        </div>
-        <div class="form-floating">
-          <input
-            type="password"
-            class="form-control"
-            id="floatingPassword"
-            placeholder="Password"
-            name="Password"
-          />
-          <label for="floatingPassword">Password</label>
+    <div class="signin-container">
+      <div class="signin-card">
+        <!-- Logo 區域 -->
+        <div class="signin-logo">
+          <div class="logo-icon">
+            <i class="fas fa-box-open"></i>
+          </div>
+          <h1 class="signin-title">物品管理系統</h1>
+          <p class="signin-subtitle">輕鬆管理家中物品，記錄放置位置</p>
         </div>
 
-        <!-- <div class="checkbox mb-3">
-      <label>
-        <input type="checkbox" value="remember-me"> Remember me
-      </label>
-    </div> -->
-        <button class="w-100 btn btn-lg btn-primary" type="submit">
-          Sign in
-        </button>
-        <p class="mt-5 mb-3 text-muted">&copy; guantou 2022</p>
-      </form>
-    </main>
+        <!-- 登入表單 -->
+        <form action="{{ url_for('auth.signin') }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          
+          <div class="form-group">
+            <label class="form-label">帳號</label>
+            <div class="input-wrapper">
+              <input
+                type="text"
+                class="form-control"
+                name="UserID"
+                placeholder="請輸入您的帳號"
+                required
+                autocomplete="username"
+              />
+              <i class="fas fa-user"></i>
+            </div>
+          </div>
 
-    <!-- Modal -->
+          <div class="form-group">
+            <label class="form-label">密碼</label>
+            <div class="input-wrapper">
+              <input
+                type="password"
+                class="form-control"
+                name="Password"
+                placeholder="請輸入您的密碼"
+                required
+                autocomplete="current-password"
+              />
+              <i class="fas fa-lock"></i>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-signin">
+            <i class="fas fa-sign-in-alt"></i>
+            登入系統
+          </button>
+        </form>
+
+        <!-- 操作提示 -->
+        <div class="hint-text">
+          <i class="fas fa-lightbulb me-1"></i>
+          首次使用？預設帳號為 <strong>admin</strong>，密碼為 <strong>admin</strong>
+        </div>
+        
+        <!-- 註冊連結 -->
+        <p style="text-align: center; margin-top: 1.5rem; color: var(--gray-500);">
+          還沒有帳號？<a href="{{ url_for('auth.signup') }}" style="color: var(--primary); text-decoration: none; font-weight: 600;">立即註冊</a>
+        </p>
+
+        <!-- 功能說明 -->
+        <div class="features">
+          <p class="features-title">系統功能</p>
+          <div class="feature-list">
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fas fa-camera"></i>
+              </div>
+              <p class="feature-text">拍照記錄</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fas fa-map-marker-alt"></i>
+              </div>
+              <p class="feature-text">位置追蹤</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fas fa-search"></i>
+              </div>
+              <p class="feature-text">快速搜尋</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">
+                <i class="fas fa-qrcode"></i>
+              </div>
+              <p class="feature-text">條碼掃描</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="copyright">&copy; 2024 物品管理系統</p>
+    </div>
+
+    <!-- 錯誤訊息 Modal -->
     <div
       class="modal fade"
-      id="exampleModal"
+      id="errorModal"
       tabindex="-1"
-      aria-labelledby="exampleModalLabel"
+      aria-labelledby="errorModalLabel"
       aria-hidden="true"
     >
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="exampleModalLabel">Signin Error!!</h5>
+            <h5 class="modal-title" id="errorModalLabel">
+              <i class="fas fa-exclamation-circle me-2"></i>登入失敗
+            </h5>
             <button
               type="button"
               class="btn-close"
@@ -148,14 +529,17 @@
               aria-label="Close"
             ></button>
           </div>
-          <div class="modal-body">{{error}}</div>
+          <div class="modal-body">
+            <i class="fas fa-times-circle"></i>
+            <p>{{error}}</p>
+          </div>
           <div class="modal-footer">
             <button
               type="button"
               class="btn btn-primary"
               data-bs-dismiss="modal"
             >
-              Close
+              <i class="fas fa-redo me-1"></i>重新輸入
             </button>
           </div>
         </div>
@@ -165,10 +549,8 @@
     <script src="{{url_for('static',filename='js/bootstrap.bundle.min.js')}}"></script>
     {%if error%}
     <script>
-      var myModal = new bootstrap.Modal(
-        document.getElementById("exampleModal")
-      );
-      myModal.toggle();
+      var errorModal = new bootstrap.Modal(document.getElementById("errorModal"));
+      errorModal.toggle();
     </script>
     {%endif%}
   </body>

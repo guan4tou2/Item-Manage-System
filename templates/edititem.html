@@ -4,31 +4,48 @@
 
 {%block contain%}
 <div class="container">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="display-5 text-center mb-4">✏️ 編輯物品</h1>
-      <p class="lead text-center mb-5">修改物品資訊</p>
-    </div>
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>✏️ 編輯物品</h1>
+    <p class="lead">修改「{{item.ItemName}}」的資訊</p>
   </div>
+  
+  <!-- 麵包屑導航 -->
+  <nav aria-label="breadcrumb" class="mb-4 animate-fadeInUp stagger-1">
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="{{url_for('items.home')}}"><i class="fas fa-home"></i> 首頁</a></li>
+      <li class="breadcrumb-item"><a href="{{url_for('items.manageitem')}}">管理物品</a></li>
+      <li class="breadcrumb-item active" aria-current="page">編輯：{{item.ItemName}}</li>
+    </ol>
+  </nav>
 </div>
 {%endblock%}
 
 {%block body%}
 <div class="container">
   <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card shadow">
-        <div class="card-body">
-          <form
-            class="row g-3"
-            action="{{ url_for('items.edititem', item_id=item.ItemID) }}"
-            method="post"
-            enctype="multipart/form-data"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            
-            <!-- 物品名稱 -->
-            <div class="form-floating col-md-6">
+    <div class="col-lg-10">
+      <div class="form-container animate-fadeInUp stagger-2">
+        <form
+          class="row g-4"
+          action="{{ url_for('items.edititem', item_id=item.ItemID) }}"
+          method="post"
+          enctype="multipart/form-data"
+          id="editItemForm"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          
+          <!-- 基本資訊區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title">
+              <i class="fas fa-info-circle text-primary"></i>
+              基本資訊
+            </h5>
+          </div>
+          
+          <!-- 物品名稱 -->
+          <div class="col-md-6">
+            <div class="form-floating">
               <input
                 type="text"
                 class="form-control"
@@ -38,53 +55,85 @@
                 value="{{ item.ItemName }}"
                 required
               />
-              <label for="ItemName" class="form-label">📝 物品名稱</label>
+              <label for="ItemName">
+                <i class="fas fa-font me-1"></i>物品名稱 <span class="text-danger">*</span>
+              </label>
             </div>
+          </div>
 
-            <!-- 物品ID (唯讀) -->
-            <div class="form-floating col-md-6">
+          <!-- 物品ID (唯讀) -->
+          <div class="col-md-6">
+            <div class="form-floating">
               <input
                 type="text"
-                class="form-control"
+                class="form-control bg-light"
                 id="ItemID"
                 name="ItemID"
-                placeholder="物品ID"
                 value="{{ item.ItemID }}"
                 readonly
               />
-              <label for="ItemID" class="form-label">🏷️ 物品ID (不可修改)</label>
+              <label for="ItemID">
+                <i class="fas fa-hashtag me-1"></i>物品 ID（不可修改）
+              </label>
             </div>
+          </div>
 
-            <!-- 目前照片 -->
-            {%if item.ItemPic%}
-            <div class="col-12">
-              <label class="form-label">📸 目前照片</label>
-              <div>
-                <img
-                  src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
-                  alt="{{ item.ItemName }}"
-                  class="img-thumbnail"
-                  style="max-height: 200px"
-                />
+          <!-- 照片區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-camera text-success"></i>
+              物品照片
+            </h5>
+          </div>
+          
+          <!-- 目前照片 -->
+          <div class="col-12">
+            <div class="row align-items-center">
+              <div class="col-md-4">
+                {%if item.ItemPic%}
+                <div class="current-photo mb-3 mb-md-0">
+                  <label class="form-label small text-muted mb-2">目前照片</label>
+                  <img
+                    src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
+                    alt="{{ item.ItemName }}"
+                    class="img-fluid rounded shadow-sm"
+                    style="max-height: 200px; width: 100%; object-fit: cover;"
+                  />
+                </div>
+                {%else%}
+                <div class="no-photo text-center p-4 bg-light rounded">
+                  <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                  <p class="text-muted mb-0">尚未上傳照片</p>
+                </div>
+                {%endif%}
               </div>
-                    </div>
-            {%endif%}
+              <div class="col-md-8">
+                <label for="ItemPic" class="form-label">
+                  <i class="fas fa-upload me-1"></i>{%if item.ItemPic%}更換照片{%else%}上傳照片{%endif%}
+                </label>
+                <input
+                  class="form-control"
+                  type="file"
+                  id="ItemPic"
+                  name="ItemPic"
+                  accept="image/*"
+                />
+                <small class="text-muted">{%if item.ItemPic%}留空則保留原有照片{%else%}選擇一張物品照片{%endif%}</small>
+              </div>
+            </div>
+          </div>
 
-            <!-- 照片上傳 -->
-            <div class="col-md-6">
-              <label for="ItemPic" class="form-label">📸 更換照片</label>
-              <input
-                class="form-control form-control-lg"
-                type="file"
-                id="ItemPic"
-                name="ItemPic"
-                accept="image/*"
-              />
-              <div class="form-text">留空則保留原有照片</div>
-                    </div>
+          <!-- 位置資訊區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-map-marker-alt text-danger"></i>
+              放置位置
+            </h5>
+          </div>
 
-            <!-- 放置地點 -->
-            <div class="form-floating col-md-6">
+          <!-- 放置地點 -->
+          <div class="col-md-6">
+            <div class="form-floating">
               <input
                 type="text"
                 class="form-control"
@@ -94,70 +143,91 @@
                 value="{{ item.ItemStorePlace }}"
                 required
               />
-              <label for="ItemStorePlace" class="form-label">📍 放置地點</label>
-                    </div>
+              <label for="ItemStorePlace">
+                <i class="fas fa-map-pin me-1"></i>放置地點 <span class="text-danger">*</span>
+              </label>
+            </div>
+          </div>
 
-            <!-- 樓層 / 房間 / 區域 -->
-            <div class="form-floating col-md-4">
+          <!-- 樓層 / 房間 / 區域 -->
+          <div class="col-md-2">
+            <div class="form-floating">
               <select id="ItemFloor" class="form-select" name="ItemFloor">
-                <option value="">選擇樓層</option>
+                <option value="">選擇...</option>
                 {% for f in floors %}
                 <option value="{{f}}" {% if item.ItemFloor == f %}selected{% endif %}>{{f}}</option>
                 {% endfor %}
               </select>
-              <label for="ItemFloor" class="form-label">🏢 樓層</label>
-                    </div>
-            <div class="form-floating col-md-4">
+              <label for="ItemFloor">樓層</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
               <select id="ItemRoom" class="form-select" name="ItemRoom">
-                <option value="">選擇房間</option>
+                <option value="">選擇...</option>
                 {% for r in rooms %}
                 <option value="{{r}}" {% if item.ItemRoom == r %}selected{% endif %}>{{r}}</option>
                 {% endfor %}
               </select>
-              <label for="ItemRoom" class="form-label">🚪 房間</label>
-                    </div>
-            <div class="form-floating col-md-4">
+              <label for="ItemRoom">房間</label>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
               <select id="ItemZone" class="form-select" name="ItemZone">
-                <option value="">選擇區域</option>
+                <option value="">選擇...</option>
                 {% for z in zones %}
                 <option value="{{z}}" {% if item.ItemZone == z %}selected{% endif %}>{{z}}</option>
                 {% endfor %}
               </select>
-              <label for="ItemZone" class="form-label">🗄 區域/櫃位</label>
-                    </div>
+              <label for="ItemZone">區域</label>
+            </div>
+          </div>
 
-            <!-- 物品類型 -->
-            <div class="form-floating col-md-6">
+          <!-- 分類資訊區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-tags text-info"></i>
+              分類與擁有者
+            </h5>
+          </div>
+
+          <!-- 物品類型 -->
+          <div class="col-md-4">
+            <div class="form-floating">
               <select
                 id="ItemType"
                 class="form-select"
                 name="ItemType"
                 required
               >
-                <option value="" disabled hidden>請選擇類型</option>
-                            {%for type in itemtype%}
+                <option value="" disabled hidden>選擇類型</option>
+                {%for type in itemtype%}
                 <option value="{{type.name}}" {% if item.ItemType == type.name %}selected{% endif %}>{{type.name}}</option>
-                            {%endfor%}
-                        </select>
-              <label for="ItemType" class="form-label">📂 物品類型</label>
-                    </div>
+                {%endfor%}
+              </select>
+              <label for="ItemType">物品類型 <span class="text-danger">*</span></label>
+            </div>
+          </div>
 
-            <!-- 物品擁有者 -->
-            <div class="form-floating col-md-6">
+          <!-- 物品擁有者 -->
+          <div class="col-md-4">
+            <div class="form-floating">
               <input
                 type="text"
                 class="form-control"
                 id="ItemOwner"
                 name="ItemOwner"
-                placeholder="擁有者"
                 value="{{ item.ItemOwner }}"
                 required
               />
-              <label for="ItemOwner" class="form-label">👤 物品擁有者</label>
-                    </div>
+              <label for="ItemOwner">擁有者 <span class="text-danger">*</span></label>
+            </div>
+          </div>
 
-            <!-- 取得日期 -->
-            <div class="form-floating col-md-6">
+          <!-- 取得日期 -->
+          <div class="col-md-4">
+            <div class="form-floating">
               <input
                 type="date"
                 class="form-control"
@@ -166,70 +236,150 @@
                 value="{{ item.ItemGetDate }}"
                 required
               />
-              <label for="ItemGetDate" class="form-label">📅 取得日期</label>
+              <label for="ItemGetDate">取得日期 <span class="text-danger">*</span></label>
             </div>
+          </div>
 
-            <!-- 物品描述 -->
-            <div class="form-floating col-12">
-              <textarea
-                class="form-control"
-                id="ItemDesc"
-                name="ItemDesc"
-                style="height: 100px"
-                placeholder="物品描述"
-              >{{ item.ItemDesc or '' }}</textarea>
-              <label for="ItemDesc" class="form-label">📝 物品描述</label>
-        </div>
+          <!-- 期限資訊區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-clock text-warning"></i>
+              保固與期限
+            </h5>
+          </div>
 
-            <!-- 保固與使用期限 -->
-            <div class="form-floating col-md-6">
+          <!-- 保固與使用期限 -->
+          <div class="col-md-6">
+            <div class="form-floating">
               <input
                 type="date"
                 class="form-control"
                 id="WarrantyExpiry"
                 name="WarrantyExpiry"
                 value="{{ item.WarrantyExpiry or '' }}"
-                placeholder="保固截止"
               />
-              <label for="WarrantyExpiry" class="form-label">🛡 保固截止</label>
-    </div>
-            <div class="form-floating col-md-6">
+              <label for="WarrantyExpiry"><i class="fas fa-shield-alt me-1"></i>保固截止</label>
+            </div>
+            {% if item.WarrantyStatus == 'expired' %}
+            <small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>已過期</small>
+            {% elif item.WarrantyStatus == 'near' %}
+            <small class="text-warning"><i class="fas fa-clock me-1"></i>即將到期</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
               <input
                 type="date"
                 class="form-control"
                 id="UsageExpiry"
                 name="UsageExpiry"
                 value="{{ item.UsageExpiry or '' }}"
-                placeholder="使用期限"
               />
-              <label for="UsageExpiry" class="form-label">⌛ 使用期限</label>
-</div>
-
-            <!-- 提交按鈕 -->
-            <div class="col-12 text-center">
-              <button type="submit" class="btn btn-primary btn-lg">
-                💾 儲存變更
-              </button>
-              <a
-                href="{{ url_for('items.home') }}"
-                class="btn btn-secondary btn-lg ms-2"
-              >🔙 返回首頁</a>
+              <label for="UsageExpiry"><i class="fas fa-hourglass-half me-1"></i>使用期限</label>
             </div>
-          </form>
-          
-          <!-- 刪除按鈕 -->
-          <div class="mt-4 pt-4 border-top text-center">
-            <form action="{{ url_for('items.deleteitem', item_id=item.ItemID) }}" method="post" 
-                  onsubmit="return confirm('確定要刪除這個物品嗎？此操作無法復原！');">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-              <button type="submit" class="btn btn-danger">
-                🗑️ 刪除物品
-              </button>
-            </form>
+            {% if item.UsageStatus == 'expired' %}
+            <small class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>已過期</small>
+            {% elif item.UsageStatus == 'near' %}
+            <small class="text-warning"><i class="fas fa-clock me-1"></i>即將到期</small>
+            {% endif %}
           </div>
+
+          <!-- 描述 -->
+          <div class="col-12">
+            <div class="form-floating">
+              <textarea
+                class="form-control"
+                id="ItemDesc"
+                name="ItemDesc"
+                style="height: 120px"
+              >{{ item.ItemDesc or '' }}</textarea>
+              <label for="ItemDesc"><i class="fas fa-align-left me-1"></i>物品描述</label>
             </div>
+          </div>
+
+          <!-- 提交按鈕 -->
+          <div class="col-12">
+            <hr class="my-4">
+            <div class="d-flex flex-wrap gap-2 justify-content-between">
+              <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary btn-lg">
+                  <i class="fas fa-save me-2"></i>儲存變更
+                </button>
+                <a href="{{ url_for('items.home') }}" class="btn btn-secondary btn-lg">
+                  <i class="fas fa-arrow-left me-2"></i>返回
+                </a>
+              </div>
+              
+              <!-- 刪除按鈕 -->
+              <button type="button" class="btn btn-outline-danger btn-lg" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="fas fa-trash-alt me-2"></i>刪除物品
+              </button>
+            </div>
+          </div>
+        </form>
+        
+        <!-- QR Code 和條碼 -->
+        <div class="row mt-4 pt-4 border-top">
+          <div class="col-12">
+            <h5 class="form-section-title">
+              <i class="fas fa-qrcode text-dark"></i>
+              識別碼
+            </h5>
+          </div>
+          <div class="col-auto">
+            <a href="{{ url_for('items.qrcode_image', item_id=item.ItemID) }}" class="btn btn-outline-dark">
+              <i class="fas fa-qrcode me-2"></i>下載 QR Code
+            </a>
+          </div>
+          <div class="col-auto">
+            <a href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}" class="btn btn-outline-dark">
+              <i class="fas fa-barcode me-2"></i>下載條碼
+            </a>
+          </div>
         </div>
+      </div>
     </div>
   </div>
 </div>
+
+<!-- 刪除確認 Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteModalLabel">
+          <i class="fas fa-exclamation-triangle me-2"></i>確認刪除
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center py-4">
+        <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+        <h4>確定要刪除「{{item.ItemName}}」嗎？</h4>
+        <p class="text-muted">此操作無法復原，物品資料將永久刪除。</p>
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>取消
+        </button>
+        <form action="{{ url_for('items.deleteitem', item_id=item.ItemID) }}" method="post" class="d-inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="btn btn-danger">
+            <i class="fas fa-trash-alt me-1"></i>確認刪除
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+  // 防止表單重複提交
+  document.getElementById('editItemForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>儲存中...';
+  });
+</script>
 {%endblock%}

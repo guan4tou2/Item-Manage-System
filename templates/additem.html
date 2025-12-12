@@ -1,237 +1,545 @@
-{%extends 'template.html' %} {%block title%}新增物品 - 物品管理系統{%endblock%}
-{%block user%}{{User.User}}{%endblock%} {%block contain%}
+{%extends 'template.html' %}
+{%block title%}新增物品 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
 <div class="container">
-  <div class="row">
-    <div class="col-12">
-      <h1 class="display-5 text-center mb-4">➕ 新增物品</h1>
-      <p class="lead text-center mb-5">記錄您的新物品，包含照片和放置地點</p>
-    </div>
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <h1>➕ 新增物品</h1>
+    <p class="lead">記錄您的新物品，包含照片和放置地點</p>
+  </div>
+  
+  <!-- 操作提示 -->
+  <div class="alert alert-info alert-dismissible fade show mb-4 animate-fadeInUp stagger-1" role="alert">
+    <i class="fas fa-lightbulb me-2"></i>
+    <strong>小提示：</strong>
+    拍攝清晰的物品照片，並記錄詳細的放置位置，之後會更容易找到！
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="關閉"></button>
   </div>
 </div>
-{%endblock%} {%block body%}
+{%endblock%}
+
+{%block body%}
 <div class="container">
   <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card shadow">
-        <div class="card-body">
-          <form
-            class="row g-3"
-            action="{{ url_for('items.additem') }}"
-            method="post"
-            enctype="multipart/form-data"
-          >
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <!-- 物品名稱 -->
-            <div class="form-floating col-md-6">
+    <div class="col-lg-10">
+      <div class="form-container animate-fadeInUp stagger-2">
+        <form
+          class="row g-4"
+          action="{{ url_for('items.additem') }}"
+          method="post"
+          enctype="multipart/form-data"
+          id="addItemForm"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          
+          <!-- 基本資訊區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title">
+              <i class="fas fa-info-circle text-primary"></i>
+              基本資訊
+            </h5>
+          </div>
+          
+          <!-- 物品名稱 -->
+          <div class="col-md-6">
+            <div class="form-floating">
               <input
                 type="text"
                 class="form-control"
                 id="ItemName"
                 name="ItemName"
                 placeholder="物品名稱"
+                value="{{ form.ItemName if form else '' }}"
                 required
               />
-              <label for="ItemName" class="form-label">📝 物品名稱</label>
+              <label for="ItemName">
+                <i class="fas fa-font me-1"></i>物品名稱 <span class="text-danger">*</span>
+              </label>
             </div>
+            <small class="text-muted">輸入物品的名稱或描述性標題</small>
+          </div>
 
-            <!-- 物品ID -->
-            <div class="form-floating col-md-6">
+          <!-- 物品ID -->
+          <div class="col-md-6">
+            <div class="form-floating">
               <input
                 type="text"
                 class="form-control"
                 id="ItemID"
                 name="ItemID"
                 placeholder="物品ID"
+                value="{{ form.ItemID if form else '' }}"
                 required
               />
-              <label for="ItemID" class="form-label">🏷️ 物品ID</label>
+              <label for="ItemID">
+                <i class="fas fa-hashtag me-1"></i>物品 ID <span class="text-danger">*</span>
+              </label>
             </div>
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <small class="text-muted">唯一識別碼，如：SKU、序號等</small>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="generateItemId()">
+                <i class="fas fa-magic me-1"></i>自動產生
+              </button>
+            </div>
+          </div>
 
-            <!-- 照片上傳 -->
-            <div class="col-md-6">
-              <label for="ItemPic" class="form-label">📸 物品照片</label>
+          <!-- 照片上傳區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-camera text-success"></i>
+              物品照片
+            </h5>
+          </div>
+          
+          <div class="col-12">
+            <div class="upload-area" id="uploadArea">
               <input
-                class="form-control form-control-lg"
+                class="form-control d-none"
                 type="file"
                 id="ItemPic"
                 name="ItemPic"
                 accept="image/*"
+                multiple
               />
-              <div class="form-text">支援 JPG, PNG, GIF 格式，最大 16MB</div>
+              <div class="upload-placeholder" id="uploadPlaceholder">
+                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                <p class="mb-1">點擊或拖曳照片到此處上傳</p>
+                <small class="text-muted">支援 JPG, PNG, GIF 格式，最大 16MB，可選擇多張</small>
+              </div>
+              <div class="upload-preview d-none" id="uploadPreview">
+                <div class="d-flex flex-wrap gap-2 justify-content-center" id="previewContainer"></div>
+                <button type="button" class="btn btn-sm btn-danger mt-3" onclick="clearUpload()">
+                  <i class="fas fa-times me-1"></i>移除所有照片
+                </button>
+              </div>
             </div>
+          </div>
 
-            <!-- 放置地點 -->
-            <div class="form-floating col-md-6">
+          <!-- 位置資訊區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-map-marker-alt text-danger"></i>
+              放置位置
+            </h5>
+          </div>
+
+          <!-- 放置地點 -->
+          <div class="col-md-6">
+            <div class="form-floating">
               <input
                 type="text"
                 class="form-control"
                 id="ItemStorePlace"
                 name="ItemStorePlace"
                 placeholder="放置地點"
+                value="{{ form.ItemStorePlace if form else '' }}"
                 required
               />
-              <label for="ItemStorePlace" class="form-label">📍 放置地點</label>
+              <label for="ItemStorePlace">
+                <i class="fas fa-map-pin me-1"></i>放置地點 <span class="text-danger">*</span>
+              </label>
             </div>
+            <small class="text-muted">例如：客廳電視櫃、書房書架第二層</small>
+          </div>
 
-            <!-- 樓層 / 房間 / 區域 -->
-            <div class="form-floating col-md-4">
-              <select id="ItemFloor" class="form-select" name="ItemFloor">
-                <option value="" selected>選擇樓層</option>
+          <!-- 樓層 / 房間 / 區域 (級聯選擇) -->
+          <div class="col-md-2">
+            <div class="form-floating">
+              <select id="ItemFloor" class="form-select" name="ItemFloor" onchange="onFloorChange()">
+                <option value="">選擇...</option>
                 {% for f in floors %}
-                <option value="{{f}}">{{f}}</option>
+                <option value="{{f}}" {% if form and form.ItemFloor == f %}selected{% endif %}>{{f}}</option>
                 {% endfor %}
               </select>
-              <label for="ItemFloor" class="form-label">🏢 樓層</label>
+              <label for="ItemFloor"><i class="fas fa-building me-1"></i>樓層</label>
             </div>
-            <div class="form-floating col-md-4">
-              <select id="ItemRoom" class="form-select" name="ItemRoom">
-                <option value="" selected>選擇房間</option>
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
+              <select id="ItemRoom" class="form-select" name="ItemRoom" onchange="onRoomChange()">
+                <option value="">選擇...</option>
                 {% for r in rooms %}
-                <option value="{{r}}">{{r}}</option>
+                <option value="{{r}}" {% if form and form.ItemRoom == r %}selected{% endif %}>{{r}}</option>
                 {% endfor %}
               </select>
-              <label for="ItemRoom" class="form-label">🚪 房間</label>
+              <label for="ItemRoom"><i class="fas fa-door-open me-1"></i>房間</label>
             </div>
-            <div class="form-floating col-md-4">
+          </div>
+          <div class="col-md-2">
+            <div class="form-floating">
               <select id="ItemZone" class="form-select" name="ItemZone">
-                <option value="" selected>選擇區域</option>
+                <option value="">選擇...</option>
                 {% for z in zones %}
-                <option value="{{z}}">{{z}}</option>
+                <option value="{{z}}" {% if form and form.ItemZone == z %}selected{% endif %}>{{z}}</option>
                 {% endfor %}
               </select>
-              <label for="ItemZone" class="form-label">🗄 區域/櫃位</label>
+              <label for="ItemZone"><i class="fas fa-th-large me-1"></i>區域</label>
             </div>
+          </div>
 
-            <!-- 物品類型 -->
-            <div class="form-floating col-md-6">
+          <!-- 分類資訊區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-tags text-info"></i>
+              分類與擁有者
+            </h5>
+          </div>
+
+          <!-- 物品類型 -->
+          <div class="col-md-4">
+            <div class="form-floating">
               <select
                 id="ItemType"
                 class="form-select"
                 name="ItemType"
                 required
               >
-                <option value="" selected disabled hidden>請選擇類型</option>
+                <option value="" disabled selected hidden>選擇類型</option>
                 {%for type in itemtype%}
-                <option value="{{type.name}}">{{type.name}}</option>
+                <option value="{{type.name}}" {% if form and form.ItemType == type.name %}selected{% endif %}>{{type.name}}</option>
                 {%endfor%}
               </select>
-              <label for="ItemType" class="form-label">📂 物品類型</label>
+              <label for="ItemType">
+                <i class="fas fa-folder me-1"></i>物品類型 <span class="text-danger">*</span>
+              </label>
             </div>
+          </div>
 
-            <!-- 物品擁有者 -->
-            <div class="form-floating col-md-6">
+          <!-- 物品擁有者 -->
+          <div class="col-md-4">
+            <div class="form-floating">
               <input
                 type="text"
                 class="form-control"
                 id="ItemOwner"
                 name="ItemOwner"
                 placeholder="擁有者"
+                value="{{ form.ItemOwner if form else User.User }}"
                 required
               />
-              <label for="ItemOwner" class="form-label">👤 物品擁有者</label>
+              <label for="ItemOwner">
+                <i class="fas fa-user me-1"></i>擁有者 <span class="text-danger">*</span>
+              </label>
             </div>
+          </div>
 
-            <!-- 取得日期 -->
-            <div class="form-floating col-md-6">
+          <!-- 取得日期 -->
+          <div class="col-md-4">
+            <div class="form-floating">
               <input
                 type="date"
                 class="form-control"
                 id="ItemGetDate"
                 name="ItemGetDate"
+                value="{{ form.ItemGetDate if form else '' }}"
                 required
               />
-              <label for="ItemGetDate" class="form-label">📅 取得日期</label>
+              <label for="ItemGetDate">
+                <i class="fas fa-calendar-alt me-1"></i>取得日期 <span class="text-danger">*</span>
+              </label>
             </div>
+          </div>
 
-            <!-- 使用年限 -->
-            <div class="form-floating col-md-6">
+          <!-- 期限資訊區塊 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-clock text-warning"></i>
+              保固與期限（選填）
+            </h5>
+          </div>
+
+          <!-- 保固與使用期限 -->
+          <div class="col-md-4">
+            <div class="form-floating">
+              <input
+                type="date"
+                class="form-control"
+                id="WarrantyExpiry"
+                name="WarrantyExpiry"
+                value="{{ form.WarrantyExpiry if form else '' }}"
+                placeholder="保固截止"
+              />
+              <label for="WarrantyExpiry"><i class="fas fa-shield-alt me-1"></i>保固截止</label>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-floating">
+              <input
+                type="date"
+                class="form-control"
+                id="UsageExpiry"
+                name="UsageExpiry"
+                value="{{ form.UsageExpiry if form else '' }}"
+                placeholder="使用期限"
+              />
+              <label for="UsageExpiry"><i class="fas fa-hourglass-half me-1"></i>使用期限</label>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-floating">
               <input
                 type="number"
                 class="form-control"
                 id="ItemAge"
                 name="ItemAge"
                 placeholder="使用年限"
-                value="1"
+                value="{{ form.ItemAge if form else 1 }}"
                 min="1"
-                required
               />
-              <label for="ItemAge" class="form-label">⏰ 使用年限 (年)</label>
+              <label for="ItemAge"><i class="fas fa-history me-1"></i>使用年限 (年)</label>
             </div>
+          </div>
 
-            <!-- 物品描述 -->
-            <div class="form-floating col-12">
+          <!-- 描述 -->
+          <div class="col-12">
+            <div class="form-floating">
               <textarea
                 class="form-control"
                 id="ItemDesc"
                 name="ItemDesc"
-                style="height: 100px"
+                style="height: 120px"
                 placeholder="物品描述"
-              ></textarea>
-              <label for="ItemDesc" class="form-label">📝 物品描述</label>
+              >{{ form.ItemDesc if form else '' }}</textarea>
+              <label for="ItemDesc"><i class="fas fa-align-left me-1"></i>物品描述（選填）</label>
             </div>
+            <small class="text-muted">可記錄購買資訊、規格、備註等</small>
+          </div>
 
-            <!-- 保固與使用期限 -->
-            <div class="form-floating col-md-6">
-              <input
-                type="date"
-                class="form-control"
-                id="WarrantyExpiry"
-                name="WarrantyExpiry"
-                placeholder="保固截止"
-              />
-              <label for="WarrantyExpiry" class="form-label">🛡 保固截止</label>
-            </div>
-            <div class="form-floating col-md-6">
-              <input
-                type="date"
-                class="form-control"
-                id="UsageExpiry"
-                name="UsageExpiry"
-                placeholder="使用期限"
-              />
-              <label for="UsageExpiry" class="form-label">⌛ 使用期限</label>
-            </div>
-
-            <!-- 提交按鈕 -->
-            <div class="col-12 text-center">
+          <!-- 提交按鈕 -->
+          <div class="col-12">
+            <hr class="my-4">
+            <div class="d-flex flex-wrap gap-2 justify-content-center">
               <button type="submit" class="btn btn-primary btn-lg">
-                💾 儲存物品
+                <i class="fas fa-save me-2"></i>儲存物品
               </button>
-              <a
-                href="{{ url_for('items.home') }}"
-                class="btn btn-secondary btn-lg ms-2"
-                >🔙 返回首頁</a
-              >
+              <button type="reset" class="btn btn-outline-secondary btn-lg">
+                <i class="fas fa-undo me-2"></i>重設表單
+              </button>
+              <a href="{{ url_for('items.home') }}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i>返回首頁
+              </a>
             </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </div>
-{%endblock%} {%block js%}
+
+<style>
+.upload-area {
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+  border-color: var(--primary);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.upload-placeholder {
+  pointer-events: none;
+}
+
+.upload-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+</style>
+{%endblock%}
+
+{%block js%}
 <script>
   // 設定今天的日期為預設值
-  var Today = new Date();
-  var todayString =
-    Today.getFullYear() +
-    "-" +
-    String(Today.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(Today.getDate()).padStart(2, "0");
-  document.getElementById("ItemGetDate").setAttribute("value", todayString);
+  const today = new Date();
+  const todayString = today.getFullYear() + '-' + 
+    String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+    String(today.getDate()).padStart(2, '0');
+  
+  if (!document.getElementById('ItemGetDate').value) {
+    document.getElementById('ItemGetDate').value = todayString;
+  }
 
-  // 圖片預覽功能
-  document.getElementById("ItemPic").addEventListener("change", function (e) {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        // 可以在這裡添加圖片預覽功能
-        console.log("圖片已選擇:", file.name);
-      };
-      reader.readAsDataURL(file);
+  // 照片上傳預覽 (支援多圖)
+  const uploadArea = document.getElementById('uploadArea');
+  const fileInput = document.getElementById('ItemPic');
+  const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+  const uploadPreview = document.getElementById('uploadPreview');
+  const previewContainer = document.getElementById('previewContainer');
+
+  // 點擊上傳區域觸發檔案選擇
+  uploadArea.addEventListener('click', (e) => {
+    if (e.target === uploadArea || e.target.closest('.upload-placeholder')) {
+      fileInput.click();
     }
   });
+
+  // 拖曳事件
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    
+    const files = e.dataTransfer.files;
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length > 0) {
+      // 將拖曳的檔案設定到 input
+      const dt = new DataTransfer();
+      imageFiles.forEach(f => dt.items.add(f));
+      fileInput.files = dt.files;
+      showPreview(imageFiles);
+    }
+  });
+
+  // 檔案選擇變更
+  fileInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      showPreview(files);
+    }
+  });
+
+  // 顯示預覽 (多圖)
+  function showPreview(files) {
+    previewContainer.innerHTML = '';
+    
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'preview-item position-relative';
+        wrapper.innerHTML = `
+          <img src="${e.target.result}" alt="預覽 ${index + 1}" 
+               class="img-fluid rounded shadow-sm" 
+               style="max-height: 150px; max-width: 150px; object-fit: cover;">
+          ${index === 0 ? '<span class="badge bg-primary position-absolute top-0 start-0 m-1">主圖</span>' : ''}
+        `;
+        previewContainer.appendChild(wrapper);
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    uploadPlaceholder.classList.add('d-none');
+    uploadPreview.classList.remove('d-none');
+  }
+
+  // 清除上傳
+  function clearUpload() {
+    fileInput.value = '';
+    previewContainer.innerHTML = '';
+    uploadPreview.classList.add('d-none');
+    uploadPlaceholder.classList.remove('d-none');
+  }
+
+  // 防止表單重複提交
+  document.getElementById('addItemForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>儲存中...';
+  });
+  
+  // 自動產生物品 ID
+  function generateItemId() {
+    fetch('{{ url_for("items.generate_item_id") }}')
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('ItemID').value = data.item_id;
+      })
+      .catch(err => {
+        console.error('無法產生 ID:', err);
+        alert('無法產生 ID，請手動輸入');
+      });
+  }
+  
+  // 儲存原始選項供級聯選擇使用
+  const allRooms = [...document.getElementById('ItemRoom').options].map(o => o.value).filter(v => v);
+  const allZones = [...document.getElementById('ItemZone').options].map(o => o.value).filter(v => v);
+  
+  // 樓層變更時篩選房間
+  function onFloorChange() {
+    const floor = document.getElementById('ItemFloor').value;
+    if (!floor) return;
+    
+    fetch(`{{ url_for("items.get_cascade_locations") }}?floor=${encodeURIComponent(floor)}`)
+      .then(response => response.json())
+      .then(data => {
+        const roomSelect = document.getElementById('ItemRoom');
+        const currentRoom = roomSelect.value;
+        
+        // 保留「選擇...」選項和符合篩選的房間
+        roomSelect.innerHTML = '<option value="">選擇...</option>';
+        
+        if (data.rooms && data.rooms.length > 0) {
+          data.rooms.forEach(room => {
+            const option = document.createElement('option');
+            option.value = room;
+            option.textContent = room;
+            if (room === currentRoom) option.selected = true;
+            roomSelect.appendChild(option);
+          });
+        } else {
+          // 如果沒有篩選結果，顯示所有房間
+          allRooms.forEach(room => {
+            const option = document.createElement('option');
+            option.value = room;
+            option.textContent = room;
+            if (room === currentRoom) option.selected = true;
+            roomSelect.appendChild(option);
+          });
+        }
+      })
+      .catch(err => console.log('無法載入房間選項'));
+  }
+  
+  // 房間變更時篩選區域
+  function onRoomChange() {
+    const room = document.getElementById('ItemRoom').value;
+    if (!room) return;
+    
+    fetch(`{{ url_for("items.get_cascade_locations") }}?room=${encodeURIComponent(room)}`)
+      .then(response => response.json())
+      .then(data => {
+        const zoneSelect = document.getElementById('ItemZone');
+        const currentZone = zoneSelect.value;
+        
+        zoneSelect.innerHTML = '<option value="">選擇...</option>';
+        
+        if (data.zones && data.zones.length > 0) {
+          data.zones.forEach(zone => {
+            const option = document.createElement('option');
+            option.value = zone;
+            option.textContent = zone;
+            if (zone === currentZone) option.selected = true;
+            zoneSelect.appendChild(option);
+          });
+        } else {
+          allZones.forEach(zone => {
+            const option = document.createElement('option');
+            option.value = zone;
+            option.textContent = zone;
+            if (zone === currentZone) option.selected = true;
+            zoneSelect.appendChild(option);
+          });
+        }
+      })
+      .catch(err => console.log('無法載入區域選項'));
+  }
 </script>
 {%endblock%}
