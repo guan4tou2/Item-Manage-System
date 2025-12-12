@@ -18,6 +18,7 @@
   <div class="row">
     <div class="col-lg-6 mb-4">
       <form class="card card-body" method="post" action="{{ url_for('locations.manage_locations') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <h5 class="mb-3">新增位置選項</h5>
         <div class="mb-2">
           <label class="form-label">樓層</label>

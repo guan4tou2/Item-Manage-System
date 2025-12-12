@@ -86,7 +86,7 @@
       <div class="card text-center bg-primary text-white">
         <div class="card-body">
           <h5 class="card-title">總物品數</h5>
-          <h2 class="card-text">{{ items|length }}</h2>
+          <h2 class="card-text">{{ pagination.total if pagination else items|length }}</h2>
         </div>
       </div>
     </div>
@@ -182,11 +182,13 @@
       </div>
       <div class="card-footer">
         <div class="d-flex justify-content-between">
+          {%if User.admin%}
           <a
-            href="{{ url_for('items.manageitem') }}?id={{item.ItemID}}"
+            href="{{ url_for('items.edititem', item_id=item.ItemID) }}"
             class="btn btn-primary btn-sm"
             >✏️ 編輯</a
           >
+          {%endif%}
           <a
             href="{{ url_for('items.search') }}?q={{item.ItemName}}"
             class="btn btn-info btn-sm"
@@ -212,22 +214,6 @@
     >➕ 新增物品</a
   >
 </div>
-{%endif%} {%endblock%} {%block page%} {%if items|length > 8%}
-<nav aria-label="Page navigation example">
-  <ul class="pagination justify-content-center">
-    <li class="page-item">
-      <a class="page-link" href="#" aria-label="Previous">
-        <span aria-hidden="true">&laquo;</span>
-      </a>
-    </li>
-    <li class="page-item"><a class="page-link" href="#">1</a></li>
-    <li class="page-item"><a class="page-link" href="#">2</a></li>
-    <li class="page-item"><a class="page-link" href="#">3</a></li>
-    <li class="page-item">
-      <a class="page-link" href="#" aria-label="Next">
-        <span aria-hidden="true">&raquo;</span>
-      </a>
-    </li>
-  </ul>
-</nav>
-{%endif%} {%endblock%}
+{%endif%} {%endblock%} {%block page%}
+{% include "partials/pagination.html" %}
+{%endblock%}

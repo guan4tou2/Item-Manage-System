@@ -1,204 +1,235 @@
 {%extends 'template.html' %}
-{%block title%}Edit Item{%endblock%}
+{%block title%}編輯物品 - 物品管理系統{%endblock%}
 {%block user%}{{User.User}}{%endblock%}
 
-
 {%block contain%}
-<h1>Navbar examples</h1>
-<p>This example is a quick exercise to illustrate how the navbar and its contents work. Some navbars
-    extend the width of the viewport, others are confined within a <code>.container</code>. For positioning
-    of navbars, checkout the <a href="../examples/navbar-static/">top</a> and <a href="../examples/navbar-fixed/">fixed
-        top</a> examples.</p>
-<p>At the smallest breakpoint, the collapse plugin is used to hide the links and show a menu button to
-    toggle the collapsed content.</p>
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <h1 class="display-5 text-center mb-4">✏️ 編輯物品</h1>
+      <p class="lead text-center mb-5">修改物品資訊</p>
+    </div>
+  </div>
+</div>
 {%endblock%}
 
 {%block body%}
-<div class="modal modal-signin fade" tabindex="-1" role="dialog" id="modalEdit" aria-labelledby="exampleModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content rounded-4 shadow">
-            <div class="modal-header p-6 pb-4 border-bottom-0">
-                <h2 class="fw-bold mb-0" id="modaltitle"></h2>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card shadow">
+        <div class="card-body">
+          <form
+            class="row g-3"
+            action="{{ url_for('items.edititem', item_id=item.ItemID) }}"
+            method="post"
+            enctype="multipart/form-data"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <!-- 物品名稱 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                id="ItemName"
+                name="ItemName"
+                placeholder="物品名稱"
+                value="{{ item.ItemName }}"
+                required
+              />
+              <label for="ItemName" class="form-label">📝 物品名稱</label>
             </div>
 
-            <div class="modal-body p-6 pt-0">
-                <form class="row g-2" action="#" method="post">
-                    <input type="hidden" id="Mode" name="Mode">
-                    <input type="hidden" id="_id" name="_id">
-                    <div class="form-floating mb-3 col-md-12">
-                        <input type="text" class="form-control rounded-3" id="ItemName" name="ItemName"
-                            placeholder="ItemName" required>
-                        <label for="ItemName">Item Name</label>
+            <!-- 物品ID (唯讀) -->
+            <div class="form-floating col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                id="ItemID"
+                name="ItemID"
+                placeholder="物品ID"
+                value="{{ item.ItemID }}"
+                readonly
+              />
+              <label for="ItemID" class="form-label">🏷️ 物品ID (不可修改)</label>
+            </div>
+
+            <!-- 目前照片 -->
+            {%if item.ItemPic%}
+            <div class="col-12">
+              <label class="form-label">📸 目前照片</label>
+              <div>
+                <img
+                  src="{{ url_for('items.uploaded_file', filename=item.ItemPic) }}"
+                  alt="{{ item.ItemName }}"
+                  class="img-thumbnail"
+                  style="max-height: 200px"
+                />
+              </div>
                     </div>
-                    <div class="form-floating mb-3 col-md-4">
-                        <input type="text" class="form-control rounded-3" id="ItemID" name="ItemID" placeholder="ItemID"
-                            required>
-                        <label for="ItemID">Item ID</label>
-                    </div>
-                    <div class="form-floating mb-3 col-md-4">
-                        <input type="text" class="form-control rounded-3" id="ItemAge" name="ItemAge"
-                            placeholder="ItemAge" required>
-                        <label for="ItemAge">Item Age Limit</label>
-                    </div>
-                    <div class="form-floating mb-3 col-md-4">
-                        <input type="text" class="form-control rounded-3" id="ItemGetDate" name="ItemGetDate"
-                            placeholder="ItemGetDate" required>
-                        <label for="ItemGetDate">Item Get Date</label>
-                    </div>
-                    <div class="form-floating mb-3 col-md-4">
-                        <input type="text" class="form-control rounded-3" id="ItemOwner" name="ItemOwner"
-                            placeholder="ItemOwner" required>
-                        <label for="ItemOwner">Item Owner</label>
-                    </div>
-                    <div class="form-floating mb-3 col-md-4">
-                        <input type="text" class="form-control rounded-3" id="ItemStorePlace" name="ItemStorePlace"
-                            placeholder="ItemStorePlace" required>
-                        <label for="ItemStorePlace">Item Store Place</label>
+            {%endif%}
+
+            <!-- 照片上傳 -->
+            <div class="col-md-6">
+              <label for="ItemPic" class="form-label">📸 更換照片</label>
+              <input
+                class="form-control form-control-lg"
+                type="file"
+                id="ItemPic"
+                name="ItemPic"
+                accept="image/*"
+              />
+              <div class="form-text">留空則保留原有照片</div>
                     </div>
 
-                    <div class="form-floating mb-3 col-md-4">
-                        <select id="ItemType" class="form-select rounded-3" name="ItemType" placeholder="ItemType"
-                            required>
-                            <option value="none" selected disabled hidden>請選擇選項</option>
+            <!-- 放置地點 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                id="ItemStorePlace"
+                name="ItemStorePlace"
+                placeholder="放置地點"
+                value="{{ item.ItemStorePlace }}"
+                required
+              />
+              <label for="ItemStorePlace" class="form-label">📍 放置地點</label>
+                    </div>
+
+            <!-- 樓層 / 房間 / 區域 -->
+            <div class="form-floating col-md-4">
+              <select id="ItemFloor" class="form-select" name="ItemFloor">
+                <option value="">選擇樓層</option>
+                {% for f in floors %}
+                <option value="{{f}}" {% if item.ItemFloor == f %}selected{% endif %}>{{f}}</option>
+                {% endfor %}
+              </select>
+              <label for="ItemFloor" class="form-label">🏢 樓層</label>
+                    </div>
+            <div class="form-floating col-md-4">
+              <select id="ItemRoom" class="form-select" name="ItemRoom">
+                <option value="">選擇房間</option>
+                {% for r in rooms %}
+                <option value="{{r}}" {% if item.ItemRoom == r %}selected{% endif %}>{{r}}</option>
+                {% endfor %}
+              </select>
+              <label for="ItemRoom" class="form-label">🚪 房間</label>
+                    </div>
+            <div class="form-floating col-md-4">
+              <select id="ItemZone" class="form-select" name="ItemZone">
+                <option value="">選擇區域</option>
+                {% for z in zones %}
+                <option value="{{z}}" {% if item.ItemZone == z %}selected{% endif %}>{{z}}</option>
+                {% endfor %}
+              </select>
+              <label for="ItemZone" class="form-label">🗄 區域/櫃位</label>
+                    </div>
+
+            <!-- 物品類型 -->
+            <div class="form-floating col-md-6">
+              <select
+                id="ItemType"
+                class="form-select"
+                name="ItemType"
+                required
+              >
+                <option value="" disabled hidden>請選擇類型</option>
                             {%for type in itemtype%}
-                            <option value={{type.name}}>{{type.name}}</option>
+                <option value="{{type.name}}" {% if item.ItemType == type.name %}selected{% endif %}>{{type.name}}</option>
                             {%endfor%}
                         </select>
-                        <label for="ItemType">Item Type</label>
+              <label for="ItemType" class="form-label">📂 物品類型</label>
                     </div>
 
-                    <div class="form-floating mb-3 col-md-12">
-                        <textarea class="form-control rounded-3" id="ItemDesc" name="ItemDesc" style="height: 100px"
-                            placeholder="ItemDesc"></textarea>
-                        <label for="ItemDesc">Item Description</label>
+            <!-- 物品擁有者 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="text"
+                class="form-control"
+                id="ItemOwner"
+                name="ItemOwner"
+                placeholder="擁有者"
+                value="{{ item.ItemOwner }}"
+                required
+              />
+              <label for="ItemOwner" class="form-label">👤 物品擁有者</label>
                     </div>
 
-                    <button class="w-100 mb-2 btn btn-lg rounded-3 btn-primary" type="submit" id="modalbutton"></button>
-                </form>
+            <!-- 取得日期 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="date"
+                class="form-control"
+                id="ItemGetDate"
+                name="ItemGetDate"
+                value="{{ item.ItemGetDate }}"
+                required
+              />
+              <label for="ItemGetDate" class="form-label">📅 取得日期</label>
+            </div>
+
+            <!-- 物品描述 -->
+            <div class="form-floating col-12">
+              <textarea
+                class="form-control"
+                id="ItemDesc"
+                name="ItemDesc"
+                style="height: 100px"
+                placeholder="物品描述"
+              >{{ item.ItemDesc or '' }}</textarea>
+              <label for="ItemDesc" class="form-label">📝 物品描述</label>
+        </div>
+
+            <!-- 保固與使用期限 -->
+            <div class="form-floating col-md-6">
+              <input
+                type="date"
+                class="form-control"
+                id="WarrantyExpiry"
+                name="WarrantyExpiry"
+                value="{{ item.WarrantyExpiry or '' }}"
+                placeholder="保固截止"
+              />
+              <label for="WarrantyExpiry" class="form-label">🛡 保固截止</label>
+    </div>
+            <div class="form-floating col-md-6">
+              <input
+                type="date"
+                class="form-control"
+                id="UsageExpiry"
+                name="UsageExpiry"
+                value="{{ item.UsageExpiry or '' }}"
+                placeholder="使用期限"
+              />
+              <label for="UsageExpiry" class="form-label">⌛ 使用期限</label>
+</div>
+
+            <!-- 提交按鈕 -->
+            <div class="col-12 text-center">
+              <button type="submit" class="btn btn-primary btn-lg">
+                💾 儲存變更
+              </button>
+              <a
+                href="{{ url_for('items.home') }}"
+                class="btn btn-secondary btn-lg ms-2"
+              >🔙 返回首頁</a>
+            </div>
+          </form>
+          
+          <!-- 刪除按鈕 -->
+          <div class="mt-4 pt-4 border-top text-center">
+            <form action="{{ url_for('items.deleteitem', item_id=item.ItemID) }}" method="post" 
+                  onsubmit="return confirm('確定要刪除這個物品嗎？此操作無法復原！');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" class="btn btn-danger">
+                🗑️ 刪除物品
+              </button>
+            </form>
+          </div>
             </div>
         </div>
     </div>
+  </div>
 </div>
-{%endblock%}
-{%block card%}
-<div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-    {%for item in items%}
-    <div class="col">
-        <div class="card">
-            <img src="..." class="card-img-top" alt="...">
-            <div class="card-body">
-                <h5 class="card-title">{{item.ItemName}}</h5>
-                <p class="card-text">{{item.ItemID}}</p>
-                <button type="button" class="btn btn-primary" id="edit" value={{item._id}}
-                    onclick="edit(this.value)">Edit</button>
-                <button type="button" class="btn btn-primary" id="clone" value={{item._id}}
-                    onclick="clone(this.value)">Clone</button>
-                <button type="button" class="btn btn-primary" id="clone" value={{item._id}}
-                    onclick="del(this.value)">Detele</button>
-            </div>
-        </div>
-    </div>
-    {%endfor%}
-</div>
-{%endblock%}
-{%block page%}
-<nav aria-label="Page navigation example">
-    <ul class="pagination justify-content-center">
-        <li class="page-item">
-            <a class="page-link" href="#" aria-label="Previous">
-                <span aria-hidden="true">&laquo;</span>
-            </a>
-        </li>
-        <li class="page-item"><a class="page-link" href="#">1</a></li>
-        <li class="page-item"><a class="page-link" href="#">2</a></li>
-        <li class="page-item"><a class="page-link" href="#">3</a></li>
-        <li class="page-item">
-            <a class="page-link" href="#" aria-label="Next">
-                <span aria-hidden="true">&raquo;</span>
-            </a>
-        </li>
-    </ul>
-</nav>
-{%endblock%}
-
-{%block js%}
-<script>
-    var myModal = new bootstrap.Modal(document.getElementById('modalEdit'));
-    // var myModal = new bootstrap.Modal(document.getElementById('modalClone'));
-    var items = '{{items}}'.replaceAll("&#39;", '"').replaceAll('[', '').replaceAll(']', '').replaceAll('}, {', '}; {');
-    console.log(items)
-    var items = items.split(';');
-    var itemtype = Array.from(document.getElementById("ItemType").options);
-    items.forEach((item, index) => { items[index] = (JSON.parse(item)); });
-    itemtype.forEach((type, index) => { itemtype[index] = type.innerText; });
-
-    function edit(value) {
-        document.getElementById("modaltitle").innerText = 'Edit Item';
-        document.getElementById("modalbutton").innerText = 'Edit';
-        document.getElementById("Mode").value = 'Edit';
-        items.forEach(i => {
-            if (i._id === value) {
-                document.getElementById("_id").value = i._id;
-                document.getElementById("ItemName").value = i.ItemName;
-                document.getElementById("ItemID").value = i.ItemID;
-                document.getElementById("ItemAge").value = i.ItemAge;
-                document.getElementById("ItemGetDate").value = i.ItemGetDate;
-                document.getElementById("ItemOwner").value = i.ItemOwner;
-                document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
-                document.getElementById("ItemType").options[itemtype.indexOf(i.ItemType)].selected = true;
-                document.getElementById("ItemDesc").value = i.ItemDesc;
-                myModal.toggle();
-            }
-        });
-    }
-    function clone(value) {
-        document.getElementById("modaltitle").innerText = 'Clone Item';
-        document.getElementById("modalbutton").innerText = 'Clone';
-        document.getElementById("Mode").value = 'Clone';
-
-        items.forEach(i => {
-            if (i._id === value) {
-                document.getElementById("ItemName").value = i.ItemName;
-                document.getElementById("ItemID").value = i.ItemID;
-                document.getElementById("ItemAge").value = i.ItemAge;
-                document.getElementById("ItemGetDate").value = i.ItemGetDate;
-                document.getElementById("ItemOwner").value = i.ItemOwner;
-                document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
-                document.getElementById("ItemType").options[itemtype.indexOf(i.ItemType)].selected = true;
-                document.getElementById("ItemDesc").value = i.ItemDesc;
-                myModal.toggle();
-            }
-        });
-    }
-    function del(value) {
-        document.getElementById("modaltitle").innerText = 'Delete Item';
-        document.getElementById("modalbutton").innerText = 'Delete';
-        document.getElementById("Mode").value = 'Delete';
-
-        items.forEach(i => {
-            if (i._id === value) {
-                document.getElementById("ItemName").value = i.ItemName;
-                document.getElementById("ItemName").setAttribute("readonly", true);
-                document.getElementById("ItemID").value = i.ItemID;
-                document.getElementById("ItemID").setAttribute("readonly", true);
-                document.getElementById("ItemAge").value = i.ItemAge;
-                document.getElementById("ItemAge").setAttribute("readonly", true);
-                document.getElementById("ItemGetDate").value = i.ItemGetDate;
-                document.getElementById("ItemGetDate").setAttribute("readonly", true);
-                document.getElementById("ItemOwner").value = i.ItemOwner;
-                document.getElementById("ItemOwner").setAttribute("readonly", true);
-                document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
-                document.getElementById("ItemStorePlace").setAttribute("readonly", true);
-                document.getElementById("ItemType").options[itemtype.indexOf(i.ItemType)].selected = true;
-                document.getElementById("ItemType").setAttribute("disabled", true);
-                document.getElementById("ItemDesc").value = i.ItemDesc;
-                document.getElementById("ItemDesc").setAttribute("readonly", true);
-                myModal.toggle();
-            }
-        });
-    }
-
-</script>
 {%endblock%}

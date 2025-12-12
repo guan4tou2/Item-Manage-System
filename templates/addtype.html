@@ -9,6 +9,7 @@
 
 {%block body%}
 <form class="row g-3" action="{{ url_for('types.addtype') }}" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="col-md-12 ">
         <table class="table table-striped  border border-dark" >
             <thead>

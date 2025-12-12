@@ -1,0 +1,56 @@
+{% if pagination and pagination.total_pages > 1 %}
+<nav aria-label="分頁導航" class="mt-4">
+  <ul class="pagination justify-content-center">
+    {# 上一頁 #}
+    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+      <a class="page-link" 
+         href="{% if pagination.has_prev %}{{ url_for(request.endpoint, **dict(request.args, page=pagination.page - 1)) }}{% else %}#{% endif %}" 
+         aria-label="上一頁">
+        <span aria-hidden="true">&laquo;</span>
+      </a>
+    </li>
+    
+    {# 頁碼 #}
+    {% set start_page = [1, pagination.page - 2]|max %}
+    {% set end_page = [pagination.total_pages, pagination.page + 2]|min %}
+    
+    {% if start_page > 1 %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=1)) }}">1</a>
+    </li>
+    {% if start_page > 2 %}
+    <li class="page-item disabled"><span class="page-link">...</span></li>
+    {% endif %}
+    {% endif %}
+    
+    {% for p in range(start_page, end_page + 1) %}
+    <li class="page-item {% if p == pagination.page %}active{% endif %}">
+      <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=p)) }}">{{ p }}</a>
+    </li>
+    {% endfor %}
+    
+    {% if end_page < pagination.total_pages %}
+    {% if end_page < pagination.total_pages - 1 %}
+    <li class="page-item disabled"><span class="page-link">...</span></li>
+    {% endif %}
+    <li class="page-item">
+      <a class="page-link" href="{{ url_for(request.endpoint, **dict(request.args, page=pagination.total_pages)) }}">{{ pagination.total_pages }}</a>
+    </li>
+    {% endif %}
+    
+    {# 下一頁 #}
+    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+      <a class="page-link" 
+         href="{% if pagination.has_next %}{{ url_for(request.endpoint, **dict(request.args, page=pagination.page + 1)) }}{% else %}#{% endif %}" 
+         aria-label="下一頁">
+        <span aria-hidden="true">&raquo;</span>
+      </a>
+    </li>
+  </ul>
+  
+  <p class="text-center text-muted">
+    共 {{ pagination.total }} 項，第 {{ pagination.page }} / {{ pagination.total_pages }} 頁
+  </p>
+</nav>
+{% endif %}
+

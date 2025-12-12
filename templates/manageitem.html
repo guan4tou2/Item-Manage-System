@@ -5,13 +5,13 @@
     <div class="col-12">
       <h1 class="display-5 text-center mb-4">📦 管理物品</h1>
       <p class="lead text-center mb-5">管理您的物品資訊和位置記錄</p>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 {%endblock%} {%block card%}
 <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-  {%for item in items%}
-  <div class="col">
+    {%for item in items%}
+    <div class="col">
     <div class="card h-100 shadow-sm">
       {%if item.ItemPic%}
       <img
@@ -28,7 +28,7 @@
         <i class="fas fa-image fa-3x text-muted"></i>
       </div>
       {%endif%}
-      <div class="card-body">
+            <div class="card-body">
         <h5 class="card-title">{{item.ItemName}}</h5>
         <p class="card-text text-muted">ID: {{item.ItemID}}</p>
         {%if item.ItemStorePlace%}
@@ -69,6 +69,7 @@
         <div class="d-flex justify-content-between align-items-center">
           <span class="badge bg-primary">📦 物品</span>
           <form method="POST" style="display: inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="item_id" value="{{item.ItemID}}" />
             <input
               type="text"
@@ -104,7 +105,7 @@
         </div>
         <div class="mt-2">
           <a
-            href="{{ url_for('items.manageitem') }}?id={{item.ItemID}}"
+            href="{{ url_for('items.edititem', item_id=item.ItemID) }}"
             class="btn btn-primary btn-sm"
             >✏️ 編輯</a
           >
@@ -118,10 +119,10 @@
             <a class="btn btn-outline-secondary" href="{{ url_for('items.barcode_image', item_id=item.ItemID) }}">條碼</a>
           </div>
         </div>
-      </div>
+            </div>
+        </div>
     </div>
-  </div>
-  {%endfor%}
+    {%endfor%}
 </div>
 
 {%if not items%}
@@ -133,28 +134,12 @@
     >➕ 新增物品</a
   >
 </div>
-{%endif%} {%endblock%} {%block page%} {%if items|length > 8%}
-<nav aria-label="Page navigation example">
-  <ul class="pagination justify-content-center">
-    <li class="page-item">
-      <a class="page-link" href="#" aria-label="Previous">
-        <span aria-hidden="true">&laquo;</span>
-      </a>
-    </li>
-    <li class="page-item"><a class="page-link" href="#">1</a></li>
-    <li class="page-item"><a class="page-link" href="#">2</a></li>
-    <li class="page-item"><a class="page-link" href="#">3</a></li>
-    <li class="page-item">
-      <a class="page-link" href="#" aria-label="Next">
-        <span aria-hidden="true">&raquo;</span>
-      </a>
-    </li>
-  </ul>
-</nav>
-{%endif%} {%endblock%} {%block js%}
+{%endif%} {%endblock%} {%block page%}
+{% include "partials/pagination.html" %}
+{%endblock%} {%block js%}
 <script>
   var myModal = new bootstrap.Modal(document.getElementById("modalEdit"));
-  // var myModal = new bootstrap.Modal(document.getElementById('modalClone'));
+    // var myModal = new bootstrap.Modal(document.getElementById('modalClone'));
   var items = "{{items}}"
     .replaceAll("&#39;", '"')
     .replaceAll("[", "")
@@ -162,7 +147,7 @@
     .replaceAll("}, {", "}; {");
   console.log(items);
   var items = items.split(";");
-  var itemtype = Array.from(document.getElementById("ItemType").options);
+    var itemtype = Array.from(document.getElementById("ItemType").options);
   items.forEach((item, index) => {
     items[index] = JSON.parse(item);
   });
@@ -170,26 +155,26 @@
     itemtype[index] = type.innerText;
   });
 
-  function edit(value) {
+    function edit(value) {
     document.getElementById("modaltitle").innerText = "Edit Item";
     document.getElementById("modalbutton").innerText = "Edit";
     document.getElementById("Mode").value = "Edit";
     items.forEach((i) => {
-      if (i._id === value) {
-        document.getElementById("_id").value = i._id;
-        document.getElementById("ItemName").value = i.ItemName;
-        document.getElementById("ItemID").value = i.ItemID;
-        document.getElementById("ItemAge").value = i.ItemAge;
-        document.getElementById("ItemGetDate").value = i.ItemGetDate;
-        document.getElementById("ItemOwner").value = i.ItemOwner;
-        document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
+            if (i._id === value) {
+                document.getElementById("_id").value = i._id;
+                document.getElementById("ItemName").value = i.ItemName;
+                document.getElementById("ItemID").value = i.ItemID;
+                document.getElementById("ItemAge").value = i.ItemAge;
+                document.getElementById("ItemGetDate").value = i.ItemGetDate;
+                document.getElementById("ItemOwner").value = i.ItemOwner;
+                document.getElementById("ItemStorePlace").value = i.ItemStorePlace;
         document.getElementById("ItemType").options[
           itemtype.indexOf(i.ItemType)
         ].selected = true;
-        document.getElementById("ItemDesc").value = i.ItemDesc;
-        myModal.toggle();
-      }
-    });
-  }
+                document.getElementById("ItemDesc").value = i.ItemDesc;
+                myModal.toggle();
+            }
+        });
+    }
 </script>
 {%endblock%}

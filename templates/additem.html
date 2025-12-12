@@ -20,6 +20,7 @@
             method="post"
             enctype="multipart/form-data"
           >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <!-- 物品名稱 -->
             <div class="form-floating col-md-6">
               <input

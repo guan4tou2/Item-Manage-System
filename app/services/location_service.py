@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 
 from app.repositories import location_repo
 from bson import ObjectId
@@ -20,9 +20,22 @@ def list_choices() -> Tuple[List[str], List[str], List[str]]:
     return floors, rooms, zones
 
 
-def create_location(doc: Dict[str, Any]) -> None:
-    # simple dedup check
+def create_location(doc: Dict[str, Any]) -> Tuple[bool, str]:
+    """建立新位置選項，回傳 (成功, 訊息)"""
+    # 檢查是否有至少一個欄位
+    if not any([doc.get("floor"), doc.get("room"), doc.get("zone")]):
+        return False, "請至少填寫一個欄位"
+    
+    # 重複檢查
+    existing = list_locations()
+    for loc in existing:
+        if (loc.get("floor") == doc.get("floor") and 
+            loc.get("room") == doc.get("room") and 
+            loc.get("zone") == doc.get("zone")):
+            return False, "該位置選項已存在"
+    
     location_repo.insert_location(doc)
+    return True, "位置選項已新增"
 
 
 def delete_location(loc_id: str) -> None:

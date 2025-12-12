@@ -1,5 +1,3 @@
-import os
-from typing import Dict, Any
 from io import BytesIO
 
 from flask import (
@@ -8,7 +6,6 @@ from flask import (
     request,
     redirect,
     url_for,
-    session,
     flash,
     send_from_directory,
     send_file,
@@ -17,10 +14,10 @@ from flask import (
 
 from app.services import (
     item_service,
-    user_service,
     type_service,
     location_service,
 )
+from app.utils.auth import login_required, admin_required, get_current_user
 import qrcode
 import barcode
 from barcode.writer import ImageWriter
@@ -28,29 +25,15 @@ from barcode.writer import ImageWriter
 bp = Blueprint("items", __name__)
 
 
-def _require_login():
-    if "UserID" not in session:
-        return redirect(url_for("auth.signin"))
-    return None
-
-
-def _current_user() -> Dict[str, Any]:
-    user_id = session.get("UserID")
-    user = user_service.get_user(user_id) if user_id else None
-    return user or {"User": user_id, "admin": False}
-
-
 @bp.route("/uploads/<filename>")
+@login_required
 def uploaded_file(filename):
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
 
 
 @bp.route("/home")
+@login_required
 def home():
-    need = _require_login()
-    if need:
-        return need
-
     filters = {
         "q": request.args.get("q", ""),
         "place": request.args.get("place", ""),
@@ -60,29 +43,28 @@ def home():
         "zone": request.args.get("zone", ""),
         "sort": request.args.get("sort", ""),
     }
-    items = item_service.list_items(filters)
-    user = _current_user()
+    page = request.args.get("page", 1, type=int)
+    result = item_service.list_items(filters, page=page)
+    user = get_current_user()
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
     return render_template(
         "home.html",
         User=user,
-        items=items,
+        items=result["items"],
         itemtype=types,
         floors=floors,
         rooms=rooms,
         zones=zones,
         selected_sort=filters["sort"],
+        pagination=result,
     )
 
 
 @bp.route("/additem", methods=["GET", "POST"])
+@admin_required
 def additem():
-    need = _require_login()
-    if need:
-        return need
-
-    user = _current_user()
+    user = get_current_user()
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
 
@@ -115,12 +97,9 @@ def additem():
 
 
 @bp.route("/manageitem", methods=["GET", "POST"])
+@admin_required
 def manageitem():
-    need = _require_login()
-    if need:
-        return need
-
-    user = _current_user()
+    user = get_current_user()
 
     if request.method == "POST":
         item_id = request.form.get("item_id")
@@ -145,18 +124,65 @@ def manageitem():
         return redirect(url_for("items.manageitem"))
 
     filters = {"q": "", "place": "", "type": "", "floor": "", "room": "", "zone": "", "sort": ""}
-    items = item_service.list_items(filters)
+    page = request.args.get("page", 1, type=int)
+    result = item_service.list_items(filters, page=page)
     floors, rooms, zones = location_service.list_choices()
-    return render_template("manageitem.html", User=user, items=items, floors=floors, rooms=rooms, zones=zones)
+    return render_template(
+        "manageitem.html",
+        User=user,
+        items=result["items"],
+        floors=floors,
+        rooms=rooms,
+        zones=zones,
+        pagination=result,
+    )
+
+
+@bp.route("/edititem/<item_id>", methods=["GET", "POST"])
+@admin_required
+def edititem(item_id: str):
+    user = get_current_user()
+    item = item_service.get_item(item_id)
+    
+    if not item:
+        flash("找不到該物品", "danger")
+        return redirect(url_for("items.home"))
+    
+    types = type_service.list_types()
+    floors, rooms, zones = location_service.list_choices()
+    
+    if request.method == "POST":
+        form = dict(request.form)
+        ok, msg = item_service.update_item(item_id, form, request.files.get("ItemPic"))
+        if ok:
+            flash(msg, "success")
+            return redirect(url_for("items.home"))
+        else:
+            flash(msg, "danger")
+    
+    return render_template(
+        "edititem.html",
+        User=user,
+        item=item,
+        itemtype=types,
+        floors=floors,
+        rooms=rooms,
+        zones=zones,
+    )
+
+
+@bp.route("/deleteitem/<item_id>", methods=["POST"])
+@admin_required
+def deleteitem(item_id: str):
+    ok, msg = item_service.delete_item(item_id)
+    flash(msg, "success" if ok else "danger")
+    return redirect(url_for("items.manageitem"))
 
 
 @bp.route("/search")
+@login_required
 def search():
-    need = _require_login()
-    if need:
-        return need
-
-    user = _current_user()
+    user = get_current_user()
     query = request.args.get("q", "")
     place = request.args.get("place", "")
     item_type = request.args.get("type", "")
@@ -164,7 +190,9 @@ def search():
     room = request.args.get("room", "")
     zone = request.args.get("zone", "")
     sort = request.args.get("sort", "")
-    items = item_service.list_items(
+    page = request.args.get("page", 1, type=int)
+    
+    result = item_service.list_items(
         {
             "q": query,
             "place": place,
@@ -173,14 +201,15 @@ def search():
             "room": room,
             "zone": zone,
             "sort": sort,
-        }
+        },
+        page=page,
     )
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
     return render_template(
         "search.html",
         User=user,
-        items=items,
+        items=result["items"],
         query=query,
         place=place,
         itemtype=types,
@@ -189,19 +218,19 @@ def search():
         rooms=rooms,
         zones=zones,
         selected_sort=sort,
+        pagination=result,
     )
 
 
 @bp.route("/scan")
+@login_required
 def scan():
-    need = _require_login()
-    if need:
-        return need
-    user = _current_user()
+    user = get_current_user()
     return render_template("scan.html", User=user)
 
 
 @bp.route("/items/<item_id>/qrcode")
+@login_required
 def qrcode_image(item_id: str):
     item = item_service.get_item(item_id)
     if not item:
@@ -216,6 +245,7 @@ def qrcode_image(item_id: str):
 
 
 @bp.route("/items/<item_id>/barcode")
+@login_required
 def barcode_image(item_id: str):
     item = item_service.get_item(item_id)
     if not item:

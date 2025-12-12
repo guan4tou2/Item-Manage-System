@@ -1,33 +1,30 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 
-from app.services import type_service, user_service
+from app.services import type_service
+from app.utils.auth import admin_required, get_current_user
 
 bp = Blueprint("types", __name__)
 
 
-def _require_login():
-    if "UserID" not in session:
-        return redirect(url_for("auth.signin"))
-    return None
-
-
-def _current_user():
-    user_id = session.get("UserID")
-    user = user_service.get_user(user_id) if user_id else None
-    return user or {"User": user_id, "admin": False}
-
-
 @bp.route("/addtype", methods=["GET", "POST"])
+@admin_required
 def addtype():
-    need = _require_login()
-    if need:
-        return need
-
-    user = _current_user()
+    user = get_current_user()
     types = type_service.list_types()
 
     if request.method == "POST":
-        type_service.create_type(dict(request.form))
+        type_name = request.form.get("name", "").strip()
+        if not type_name:
+            flash("類型名稱不能為空", "danger")
+            return render_template("addtype.html", User=user, itemtype=types)
+        
+        # 檢查是否已存在
+        existing_names = [t.get("name") for t in types]
+        if type_name in existing_names:
+            flash("該類型已存在", "danger")
+            return render_template("addtype.html", User=user, itemtype=types)
+        
+        type_service.create_type({"name": type_name})
         flash("類型新增成功！", "success")
         return redirect(url_for("types.addtype"))
 
