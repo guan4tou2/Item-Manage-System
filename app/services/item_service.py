@@ -186,6 +186,12 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None) -> T
     if file_storage and file_storage.filename:
         filename = storage.save_upload(file_storage)
         if filename:
+            # 刪除舊圖片與縮圖
+            if existing.get("ItemPic"):
+                storage.delete_file(existing["ItemPic"])
+            if existing.get("ItemThumb"):
+                storage.delete_file(existing["ItemThumb"])
+                
             thumb = image.create_thumbnail(filename)
             form_data["ItemPic"] = filename
             if thumb:
@@ -204,6 +210,12 @@ def delete_item(item_id: str) -> Tuple[bool, str]:
     existing = item_repo.find_item_by_id(item_id)
     if not existing:
         return False, "找不到該物品"
+    
+    # 刪除圖片檔案
+    if existing.get("ItemPic"):
+        storage.delete_file(existing["ItemPic"])
+    if existing.get("ItemThumb"):
+        storage.delete_file(existing["ItemThumb"])
     
     if item_repo.delete_item_by_id(item_id):
         return True, "物品已刪除"
@@ -449,4 +461,69 @@ def get_related_items(item_id: str) -> List[Dict[str, Any]]:
             related_items.append(related)
     
     return related_items
+
+
+def bulk_delete_items(item_ids: List[str]) -> Tuple[int, List[str]]:
+    """批量刪除物品
+    
+    Returns:
+        (成功的數量, 失敗的 ID 列表)
+    """
+    success_count = 0
+    failed_ids = []
+    
+    for item_id in item_ids:
+        # 這裡的 delete_item 已經包含了刪除檔案的邏輯
+        success, _ = delete_item(item_id)
+        if success:
+            success_count += 1
+        else:
+            failed_ids.append(item_id)
+            
+    return success_count, failed_ids
+
+
+def bulk_move_items(item_ids: List[str], target_location: str) -> Tuple[int, List[str]]:
+    """批量移動物品
+    
+    Returns:
+        (成功的數量, 失敗的 ID 列表)
+    """
+    success_count = 0
+    failed_ids = []
+    
+    # 避免在此處引用 log_service 造成循環引用 (如果 routes 也引用了 item_service)
+    # 但為了完整性，我們先確保可以運行 (通常 service 層互相引用要小心)
+    from app.services import log_service
+    
+    for item_id in item_ids:
+        # 重用 update_item 邏輯，或者直接調用 quick_update_location (如果有的話)
+        # 這裡簡單調用 repo 更新，因為 update_item 比較重
+        # 但為了保持一致性，我們還是模擬 update_item 的一部分邏輯 (如記錄歷史)
+        
+        # 取得舊資料
+        old_item = item_repo.find_item_by_id(item_id)
+        if not old_item:
+            failed_ids.append(item_id)
+            continue
+            
+        old_loc = old_item.get("ItemStorePlace", "")
+        
+        # 如果位置沒變，直接算成功
+        if old_loc == target_location:
+            success_count += 1
+            continue
+            
+        # 更新位置
+        success = item_repo.update_item_field(item_id, "ItemStorePlace", target_location)
+        if success:
+            success_count += 1
+            # 記錄移動日誌
+            item_repo.add_move_history(item_id, old_loc, target_location)
+            # 記錄操作日誌
+            log_service.log_move(item_id, old_item.get("ItemName", ""), old_loc, target_location)
+        else:
+            failed_ids.append(item_id)
+            
+    return success_count, failed_ids
 

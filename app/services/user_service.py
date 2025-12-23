@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.repositories import user_repo
+from app.services import log_service
 
 # 預設密碼（用於檢測是否需要強制修改）
 DEFAULT_PASSWORD = "admin"
@@ -83,6 +84,14 @@ def authenticate(username: str, password: str, ip_address: str = "") -> Tuple[bo
             # 鎖定帳號
             lock_until = (datetime.now() + timedelta(minutes=LOCKOUT_DURATION_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
             user_repo.lock_account(username, lock_until)
+            
+            # 記錄安全性事件
+            log_service.log_action("security", "SYSTEM", details={
+                "message": f"帳號 {username} 因登入失敗次數過多被鎖定",
+                "username": username,
+                "ip": ip_address
+            })
+            
             return False, f"登入失敗次數過多，帳號已被鎖定 {LOCKOUT_DURATION_MINUTES} 分鐘"
         
         remaining = MAX_FAILED_ATTEMPTS - failed_attempts
@@ -107,9 +116,23 @@ def get_user(username: str) -> Optional[dict]:
 
 def create_user(username: str, password: str, admin: bool = False) -> bool:
     """建立新使用者"""
+    # 檢查是否已存在（區分大小寫）
     if user_repo.find_by_username(username):
         return False
     
+    # 檢查是否已存在（不區分大小寫，防止混淆）
+    from app import mongo
+    existing_case_insensitive = mongo.db.user.find_one({
+        "User": {"$regex": f"^{username}$", "$options": "i"}
+    })
+    if existing_case_insensitive:
+        return False
+
+    # 驗證新密碼強度
+    ok, msg = validate_new_password(password)
+    if not ok:
+        return False
+
     user_repo.insert_user({
         "User": username,
         "Password": generate_password_hash(password),
@@ -117,6 +140,18 @@ def create_user(username: str, password: str, admin: bool = False) -> bool:
         "password_changed": True,  # 新用戶已自行設定密碼
     })
     return True
+
+
+def validate_new_password(password: str) -> Tuple[bool, str]:
+    """驗證新密碼是否符合強度要求"""
+    if len(password) < 8:
+        return False, "密碼至少需要 8 個字元"
+    
+    import re
+    if not re.search(r"[A-Za-z]", password) or not re.search(r"\d", password):
+        return False, "密碼必須包含至少一個字母與一個數字"
+    
+    return True, ""
 
 
 def needs_password_change(username: str) -> bool:
@@ -157,8 +192,9 @@ def change_password(username: str, old_password: str, new_password: str) -> Tupl
         return False, "舊密碼錯誤"
     
     # 驗證新密碼
-    if len(new_password) < 6:
-        return False, "新密碼至少需要 6 個字元"
+    ok, msg = validate_new_password(new_password)
+    if not ok:
+        return False, msg
     
     if new_password == old_password:
         return False, "新密碼不可與舊密碼相同"
@@ -172,6 +208,9 @@ def change_password(username: str, old_password: str, new_password: str) -> Tupl
     
     # 標記為已修改密碼
     user_repo.mark_password_changed(username)
+    
+    # 記錄操作
+    log_service.log_action("update", username, details={"message": "修改個人密碼"})
     
     return True, "密碼修改成功"
 
@@ -187,8 +226,9 @@ def force_change_password(username: str, new_password: str) -> Tuple[bool, str]:
         (成功與否, 訊息)
     """
     # 驗證新密碼
-    if len(new_password) < 6:
-        return False, "新密碼至少需要 6 個字元"
+    ok, msg = validate_new_password(new_password)
+    if not ok:
+        return False, msg
     
     if new_password == DEFAULT_PASSWORD:
         return False, "不可使用預設密碼"
@@ -199,6 +239,9 @@ def force_change_password(username: str, new_password: str) -> Tuple[bool, str]:
     
     # 標記為已修改密碼
     user_repo.mark_password_changed(username)
+    
+    # 記錄操作
+    log_service.log_action("update", username, details={"message": "首次登入設定密碼"})
     
     return True, "密碼設定成功"
 
@@ -228,6 +271,13 @@ def admin_reset_password(target_username: str) -> Tuple[bool, str, str]:
     
     # 標記為需要修改密碼（下次登入時強制修改）
     user_repo.mark_password_not_changed(target_username)
+    
+    # 記錄安全性事件
+    from flask import session
+    admin_user = session.get("UserID", "ADMIN")
+    log_service.log_action("security", admin_user, target_username, details={
+        "message": f"管理員重置了使用者 {target_username} 的密碼"
+    })
     
     return True, f"已重置 {target_username} 的密碼", new_password
 

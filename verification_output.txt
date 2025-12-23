@@ -1,0 +1,17 @@
+
+--- Testing Resource Cleanup ---
+⚠️  警告：未設定 SECRET_KEY 環境變數，使用隨機值（不建議用於生產環境）
+⚠️  無法建立預設管理員帳號: localhost:27017: [Errno 61] Connection refused (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms), Timeout: 30s, Topology Description: <TopologyDescription id: 694aa686d581708422f1b923, topology_type: Unknown, servers: [<ServerDescription ('localhost', 27017) server_type: Unknown, rtt: None, error=AutoReconnect('localhost:27017: [Errno 61] Connection refused (configured timeouts: socketTimeoutMS: 20000.0ms, connectTimeoutMS: 20000.0ms)')>]>
+Traceback (most recent call last):
+  File "/Users/guantou/Desktop/Item-Manage-System/scripts/verify_recommendations.py", line 89, in <module>
+    test_resource_cleanup()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/guantou/Desktop/Item-Manage-System/scripts/verify_recommendations.py", line 14, in test_resource_cleanup
+    app = create_app()
+  File "/Users/guantou/Desktop/Item-Manage-System/app/__init__.py", line 89, in create_app
+    from app.items.routes import bp as items_bp
+  File "/Users/guantou/Desktop/Item-Manage-System/app/items/routes.py", line 28, in <module>
+    import barcode
+  File "/Users/guantou/Desktop/Item-Manage-System/venv/lib/python3.13/site-packages/barcode/__init__.py", line 1, in <module>
+    from pkg_resources import get_distribution
+ModuleNotFoundError: No module named 'pkg_resources'

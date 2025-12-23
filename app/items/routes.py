@@ -564,6 +564,50 @@ def quick_update_location(item_id: str):
         return jsonify({"success": False, "message": str(e)}), 400
 
 
+@bp.route("/api/bulk/delete", methods=["POST"])
+@admin_required
+def bulk_delete():
+    """批量刪除物品 API"""
+    data = request.get_json() or {}
+    item_ids = data.get("item_ids", [])
+    
+    if not item_ids:
+        return jsonify({"success": False, "message": "未選擇任何物品"})
+    
+    success_count, failed_ids = item_service.bulk_delete_items(item_ids)
+    
+    return jsonify({
+        "success": True,
+        "success_count": success_count,
+        "failed_ids": failed_ids,
+        "message": f"成功刪除 {success_count} 個物品"
+    })
+
+
+@bp.route("/api/bulk/move", methods=["POST"])
+@admin_required
+def bulk_move():
+    """批量移動物品 API"""
+    data = request.get_json() or {}
+    item_ids = data.get("item_ids", [])
+    target_location = data.get("location", "").strip()
+    
+    if not item_ids:
+        return jsonify({"success": False, "message": "未選擇任何物品"})
+    
+    if not target_location:
+         return jsonify({"success": False, "message": "未指定目標位置"})
+    
+    success_count, failed_ids = item_service.bulk_move_items(item_ids, target_location)
+    
+    return jsonify({
+        "success": True,
+        "success_count": success_count,
+        "failed_ids": failed_ids,
+        "message": f"成功移動 {success_count} 個物品至 {target_location}"
+    })
+
+
 @bp.route("/api/search-suggestions")
 @login_required
 def search_suggestions():

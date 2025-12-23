@@ -30,3 +30,21 @@ def save_upload(file_storage) -> Optional[str]:
     file_storage.save(filepath)
     return filename
 
+
+def delete_file(filename: str) -> bool:
+    """Safely delete a file from the upload folder."""
+    if not filename:
+        return False
+    
+    upload_folder = current_app.config["UPLOAD_FOLDER"]
+    filepath = os.path.join(upload_folder, filename)
+    
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            return True
+    except Exception as e:
+        current_app.logger.error(f"Error deleting file {filename}: {e}")
+    
+    return False
+
