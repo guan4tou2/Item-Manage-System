@@ -1,16 +1,87 @@
 services:
   app:
     build: .
-    command: python run.py
     ports:
       - "8080:8080"
     environment:
+      - DB_TYPE=${DB_TYPE:-postgres}
       - MONGO_URI=mongodb://mongo:27017/myDB
-      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-itemman}:${POSTGRES_PASSWORD:-itemman_pass}@postgres:5432/${POSTGRES_DB:-itemman}
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=redis://redis:6379/0
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
     volumes:
-      - .:/workspace
+      - static_uploads:/workspace/static/uploads
     depends_on:
-      - mongo
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - postgres
+
+  worker:
+    build: .
+    environment:
+      - DB_TYPE=${DB_TYPE:-postgres}
+      - MONGO_URI=mongodb://mongo:27017/myDB
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-itemman}:${POSTGRES_PASSWORD:-itemman_pass}@postgres:5432/${POSTGRES_DB:-itemman}
+      - REDIS_URL=redis://redis:6379/0
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+    command: ["python", "run_worker.py"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    profiles:
+      - postgres
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-itemman}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-itemman_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-itemman}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-itemman}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - postgres
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - postgres
 
   mongo:
     image: mongo:7
@@ -19,7 +90,16 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - mongo
 
 volumes:
+  postgres_data:
+  redis_data:
   mongo_data:
-
+  static_uploads:

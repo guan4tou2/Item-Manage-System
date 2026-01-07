@@ -22,14 +22,16 @@ COPY . /workspace
 # 設定 entrypoint 腳本權限
 RUN chmod +x /workspace/scripts/docker-entrypoint.sh
 
-ENV FLASK_ENV=development \
-    FLASK_APP=run.py \
+ENV FLASK_APP=run.py \
     MONGO_URI=mongodb://mongo:27017/myDB \
     PORT=8080 \
-    HOST=0.0.0.0
+    HOST=0.0.0.0 \
+    GUNICORN_WORKERS=4 \
+    GUNICORN_THREADS=2
 
 EXPOSE 8080
 
 # 使用 entrypoint 腳本進行初始化
 ENTRYPOINT ["/workspace/scripts/docker-entrypoint.sh"]
-CMD ["python", "run.py"]
+# 根據 WORKER_MODE 選擇運行 web 或 worker
+CMD ["sh", "-c", "if [ \"$WORKER_MODE\" = \"scheduler\" ]; then python -c 'from app.utils.scheduler import init_scheduler; init_scheduler()'; else gunicorn -w ${GUNICORN_WORKERS} --threads ${GUNICORN_THREADS} --bind ${HOST}:${PORT} --access-logfile - --error-logfile - run:app; fi"]
