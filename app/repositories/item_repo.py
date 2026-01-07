@@ -1,7 +1,8 @@
 """物品資料存取模組"""
 from typing import Dict, Any, Iterable, Optional, List, Tuple
-from datetime import datetime
+from datetime import datetime, date, timedelta
 
+from sqlalchemy import or_, and_
 from app import mongo, db, get_db_type
 from app.models.item import Item
 
@@ -288,3 +289,67 @@ def update_item_field(item_id: str, field: str, value: Any) -> bool:
         {"$set": {field: value}}
     )
     return result.modified_count > 0
+
+
+def get_expiring_items(days_threshold: int = 30) -> List[Dict[str, Any]]:
+    """Get items expiring within the specified number of days
+
+    This query is optimized to filter at the database level instead of
+    loading all items and filtering in Python.
+    """
+    db_type = get_db_type()
+    today = date.today()
+    threshold_date = today + timedelta(days=days_threshold)
+
+    if db_type == "postgres":
+        expired_items = Item.query.filter(
+            or_(
+                Item.WarrantyExpiry < today,
+                Item.UsageExpiry < today
+            )
+        ).all()
+
+        near_expiry_items = Item.query.filter(
+            and_(
+                Item.WarrantyExpiry >= today,
+                Item.WarrantyExpiry <= threshold_date
+            )
+        ).union(
+            Item.query.filter(
+                and_(
+                    Item.UsageExpiry >= today,
+                    Item.UsageExpiry <= threshold_date
+                )
+            )
+        ).all()
+
+        items = expired_items + near_expiry_items
+        return [item.to_dict() for item in items]
+    else:
+        from pymongo import ASCENDING
+
+        expired_items = list(mongo.db.item.find({
+            "$or": [
+                {"WarrantyExpiry": {"$lt": today.strftime("%Y-%m-%d")}},
+                {"UsageExpiry": {"$lt": today.strftime("%Y-%m-%d")}}
+            ]
+        }))
+
+        threshold_str = threshold_date.strftime("%Y-%m-%d")
+        today_str = today.strftime("%Y-%m-%d")
+
+        near_expiry_items = list(mongo.db.item.find({
+            "$or": [
+                {
+                    "WarrantyExpiry": {"$gte": today_str, "$lte": threshold_str}
+                },
+                {
+                    "UsageExpiry": {"$gte": today_str, "$lte": threshold_str}
+                }
+            ]
+        }))
+
+        items = expired_items + near_expiry_items
+        for item in items:
+            item["_id"] = str(item["_id"])
+        return items

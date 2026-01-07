@@ -1,22 +1,32 @@
 """位置資料存取模組"""
 from typing import List, Generator, Dict, Any, Optional
+from flask import current_app
 
-from app import mongo, db, get_db_type
+from app import mongo, db, get_db_type, cache
 
 
 def list_locations() -> Generator[Dict[str, Any], None, None]:
     """列出所有位置"""
     db_type = get_db_type()
+    cache_key = f"locations_list_{db_type}"
+
+    cached = cache.get(cache_key)
+    if cached:
+        for loc in cached:
+            yield loc
+        return
 
     if db_type == "postgres":
         from app.models.location import Location
 
         locations = db.session.query(Location).order_by(Location.order).all()
-        for loc in locations:
-            yield loc.to_dict()
+        result = [loc.to_dict() for loc in locations]
     else:
-        for loc in mongo.db.locations.find().sort("order", 1):
-            yield loc
+        result = list(mongo.db.locations.find().sort("order", 1))
+
+    cache.set(cache_key, result, timeout=300)  # 5 minutes cache
+    for loc in result:
+        yield loc
 
 
 def insert_location(doc: Dict[str, Any]) -> None:
