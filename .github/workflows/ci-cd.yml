@@ -1,0 +1,287 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: '3.12'
+  DOCKER_IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  # Job 1: Code Quality & Security
+  lint-security:
+    name: Lint & Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pipenv
+        pipenv install --dev
+
+    - name: Run linter (flake8)
+      run: |
+        pipenv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        pipenv run flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run security check (bandit)
+      run: |
+        pip install bandit
+        bandit -r app/ -f json -o bandit-report.json || true
+        bandit -r app/ --exit-zero
+
+    - name: Upload security report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-report
+        path: bandit-report.json
+
+    - name: Run dependency check (safety)
+      run: |
+        pip install safety
+        safety check --json > safety-report.json || true
+        safety check --exit-zero
+
+    - name: Upload dependency report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: safety-report
+        path: safety-report.json
+
+  # Job 2: Testing
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        db_type: [postgres, mongo]
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: test_user
+          MONGO_INITDB_ROOT_PASSWORD: test_password
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pipenv
+        pipenv install --dev
+
+    - name: Setup environment
+      run: |
+        echo "FLASK_ENV=testing" >> $GITHUB_ENV
+        echo "FLASK_TESTING=True" >> $GITHUB_ENV
+
+    - name: Test with PostgreSQL
+      if: matrix.db_type == 'postgres'
+      run: |
+        echo "DB_TYPE=postgres" >> $GITHUB_ENV
+        echo "DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db" >> $GITHUB_ENV
+        pipenv run pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+
+    - name: Test with MongoDB
+      if: matrix.db_type == 'mongo'
+      run: |
+        echo "DB_TYPE=mongo" >> $GITHUB_ENV
+        echo "MONGODB_URI=mongodb://test_user:test_password@localhost:27017/test_db" >> $GITHUB_ENV
+        pipenv run pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: matrix.db_type == 'postgres'
+      with:
+        name: coverage-report
+        path: htmlcov/
+
+    - name: Upload coverage to Codecov
+      if: matrix.db_type == 'postgres'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  # Job 3: Build Docker Image
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [lint-security, test]
+    if: github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.DOCKER_IMAGE }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix={{branch}}-
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/amd64,linux/arm64
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+        format: spdx-json
+        output-file: sbom.json
+
+    - name: Upload SBOM
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom
+        path: sbom.json
+
+  # Job 4: Integration Tests
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Compose
+      run: |
+        docker compose -f docker-compose.yml version
+
+    - name: Start services
+      run: |
+        docker compose up -d
+        docker compose ps
+
+    - name: Wait for services to be ready
+      run: |
+        echo "Waiting for web service..."
+        timeout 60 bash -c 'until curl -f http://localhost:8080/health; do sleep 2; done'
+
+    - name: Run health check
+      run: |
+        curl -f http://localhost:8080/health | jq .
+
+    - name: Run readiness check
+      run: |
+        curl -f http://localhost:8080/ready | jq .
+
+    - name: Check API documentation
+      run: |
+        curl -f http://localhost:8080/api/docs | head -20
+
+    - name: View logs
+      if: failure()
+      run: |
+        docker compose logs
+
+    - name: Stop services
+      if: always()
+      run: |
+        docker compose down -v
+
+  # Job 5: Deployment (manual)
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [integration-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://example.com
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to server
+      run: |
+        echo "Deployment step - configure with your deployment strategy"
+        echo "Examples: kubectl, docker-compose, ansible, etc."
+        # Add your deployment commands here
+
+    - name: Verify deployment
+      run: |
+        echo "Verify deployment - configure with your monitoring"
+        # Add verification commands here

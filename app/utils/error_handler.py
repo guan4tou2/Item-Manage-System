@@ -1,13 +1,17 @@
 """錯誤處理和結構化日誌模組"""
-import logging
 import traceback
 from typing import Dict, Any
 from flask import Flask, jsonify, request
 from werkzeug.exceptions import HTTPException
 from datetime import datetime
 
-# 配置結構化日誌
-logger = logging.getLogger(__name__)
+# Use structured logging
+try:
+    import structlog
+    logger = structlog.get_logger(__name__)
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
 
 
 class AppError(Exception):
@@ -53,16 +57,13 @@ def init_error_handlers(app: Flask) -> None:
     @app.errorhandler(Exception)
     def handle_unexpected_error(error):
         logger.error(
-            "Unexpected error",
-            extra={
-                "type": type(error).__name__,
-                "message": str(error),
-                "path": request.path,
-                "method": request.method,
-                "ip": request.remote_addr,
-                "timestamp": datetime.now().isoformat(),
-                "traceback": traceback.format_exc()
-            }
+            "unexpected_error",
+            error_type=type(error).__name__,
+            error_message=str(error),
+            path=request.path if request else None,
+            method=request.method if request else None,
+            ip=request.remote_addr if request else None,
+            traceback=traceback.format_exc()
         )
         response = {
             "success": False,
@@ -76,7 +77,7 @@ def init_error_handlers(app: Flask) -> None:
         return handle_error(error)
 
 
-def handle_error(error: Exception) -> Dict[str, Any]:
+def handle_error(error: Exception) -> tuple[Dict[str, Any], int]:
     """統一錯誤處理並記錄結構化日誌"""
     if isinstance(error, AppError):
         status_code = error.status_code
@@ -88,29 +89,46 @@ def handle_error(error: Exception) -> Dict[str, Any]:
         error_type = type(error).__name__
 
     # 記錄錯誤日誌
-    log_data = {
-        "type": error_type,
-        "message": message,
-        "path": request.path if request else None,
-        "method": request.method if request else None,
-        "ip": request.remote_addr if request else None,
-        "timestamp": datetime.now().isoformat(),
-        "status_code": status_code
-    }
-
     if isinstance(error, (DatabaseError, Exception)):
-        log_data["traceback"] = traceback.format_exc()
-
-    logger.error(
-        message,
-        extra={
-            **log_data,
-            "error_data": {
-                "type": error_type,
-                "message": message
-            }
-        }
-    )
+        if hasattr(logger, 'error'):
+            logger.error(
+                "application_error",
+                error_type=error_type,
+                error_message=message,
+                path=request.path if request else None,
+                method=request.method if request else None,
+                ip=request.remote_addr if request else None,
+                status_code=status_code,
+                traceback=traceback.format_exc()
+            )
+        else:
+            logger.error(
+                f"{error_type}: {message}",
+                extra={
+                    "path": request.path if request else None,
+                    "method": request.method if request else None,
+                    "status_code": status_code
+                }
+            )
+    else:
+        if hasattr(logger, 'warning'):
+            logger.warning(
+                "application_warning",
+                error_type=error_type,
+                error_message=message,
+                path=request.path if request else None,
+                method=request.method if request else None,
+                status_code=status_code
+            )
+        else:
+            logger.warning(
+                f"{error_type}: {message}",
+                extra={
+                    "path": request.path if request else None,
+                    "method": request.method if request else None,
+                    "status_code": status_code
+                }
+            )
 
     # 構建回應
     response = {
@@ -119,44 +137,31 @@ def handle_error(error: Exception) -> Dict[str, Any]:
         "message": message
     }
 
-    if hasattr(error, 'payload'):
+    if hasattr(error, 'payload') and error.payload is not None:
         response["data"] = error.payload
 
-    return jsonify(response), status_code
+    return response, status_code
 
 
 def log_info(message: str, extra: Dict[str, Any] = None) -> None:
     """記錄資訊級別日誌"""
-    logger.info(
-        message,
-        extra={
-            **(extra or {}),
-            "timestamp": datetime.now().isoformat(),
-            "service": "item-manage-system"
-        }
-    )
+    if extra:
+        logger.info(message, **extra)
+    else:
+        logger.info(message)
 
 
 def log_warning(message: str, extra: Dict[str, Any] = None) -> None:
     """記錄警告級別日誌"""
-    logger.warning(
-        message,
-        extra={
-            **(extra or {}),
-            "timestamp": datetime.now().isoformat(),
-            "service": "item-manage-system"
-        }
-    )
+    if extra:
+        logger.warning(message, **extra)
+    else:
+        logger.warning(message)
 
 
 def log_error(message: str, extra: Dict[str, Any] = None, exc_info=None) -> None:
     """記錄錯誤級別日誌"""
-    logger.error(
-        message,
-        exc_info=exc_info,
-        extra={
-            **(extra or {}),
-            "timestamp": datetime.now().isoformat(),
-            "service": "item-manage-system"
-        }
-    )
+    if extra:
+        logger.error(message, exc_info=exc_info, **extra)
+    else:
+        logger.error(message, exc_info=exc_info)
