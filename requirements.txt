@@ -22,3 +22,7 @@ Flask-Caching>=2.1.0
 redis>=5.0.0
 # Rate limiting storage
 limits>=3.7.0
+# Configuration validation
+pydantic>=2.0.0
+email-validator>=2.0.0
+python-dotenv>=1.0.0

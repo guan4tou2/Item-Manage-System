@@ -121,6 +121,28 @@ def create_app() -> Flask:
     }
     cache.init_app(app, config=cache_config)
 
+    # Load and validate configuration
+    from app.config.validation import AppConfig
+
+    try:
+        config_result = AppConfig.load()
+        if not config_result["valid"]:
+            print(f"⚠️  配置驗證失敗:")
+            for error in config_result["errors"]:
+                print(f"  - {error}")
+            print("⚠️  使用默認配置，某些功能可能無法正常工作")
+        else:
+            print("✅ 配置驗證通過")
+    except Exception as e:
+        print(f"⚠️  配置加載失敗: {e}")
+
+    # Replace direct environment access with validated config
+    config = config_result.get("config", AppConfig.load())
+    secret_key = config.secret_key
+
+    csrf.init_app(app)
+    limiter.init_app(app)
+
     with app.app_context():
         _ensure_default_admin()
 

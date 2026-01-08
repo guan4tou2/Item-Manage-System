@@ -1,269 +1,436 @@
 # 🏠 物品管理系統
 
-一個用於記錄和管理家中物品位置的 Web 應用程式，支援照片上傳、樓層/房間/區域階層記錄、保固/使用期限追蹤，以及 QR/條碼標籤。
+一個功能完整的物品管理系統，支持保存期限追蹤、Email 通知、Docker 部署，兼容 PostgreSQL 和 MongoDB。
 
-> 📘 **新功能上線**：支援 PWA 安裝、批量操作與進階篩選！詳情請參閱 [使用者手冊 (User Manual)](User_Manual_zh-TW.md)。
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Python](https://img.shields.io/badge/python-3.13+-green.svg)
+![Flask](https://img.shields.io/badge/flask-3.1+-lightgrey.svg)
 
-## ✨ 主要功能
+## ✨ 核心功能
 
-### 📸 照片記錄
+- 📸 **物品管理** - 新增、編輯、刪除物品
+- 📍 **位置追蹤** - 樓層/房間/區域階層記錄
+- 📧 **照片管理** - 支持物品照片上傳
+- 🔍 **智能搜尋** - 模糊搜尋、多條件篩選
+- 🏷️ **物品分類** - 自定義物品類型
+- 📊 **統計報表** - 詳細的數據統計
+- 📦 **QR/條碼** - 生成標籤、相機掃描
+- 🍎 **保存期限** - 食物、用品有效期追蹤
+- 🛡 **保固管理** - 產品保固期管理
+- 🔔 **Email 通知** - 到期自動提醒通知
+- 📋 **批量操作** - 批量刪除、移動物品
+- ⭐ **收藏功能** - 常用物品快速訪問
+- 📱 **PWA 支持** - 可安裝為手機應用
 
-- 支援上傳物品照片 (JPG, PNG, GIF)
-- 自動生成縮圖以提升載入速度
-- 照片預覽功能
+## 🚀 快速開始
 
-### 📍 放置地點管理
+### 方法一：Docker 部署（最簡單）
 
-- 記錄樓層 / 房間 / 區域，並保留完整放置描述
-- 支援按樓層/房間/區域/地點搜尋
-- 地點標籤顯示，快速更新位置
+```bash
+# 1. 克隆專案
+git clone <repository-url>
+cd Item-Manage-System
 
-### 🔍 搜尋功能
+# 2. 啟動服務
+docker compose up --build
 
-- 按物品名稱搜尋
-- 按放置地點搜尋
-- 模糊搜尋支援
+# 3. 訪問系統
+# 瀏覽器打開: http://localhost:8080
+# 預設帳號: admin / admin
+```
 
-### 📊 統計資訊
+### 方法二：本地開發
 
+```bash
+# 1. 創建虛擬環境
+uv venv .venv
+source .venv/bin/activate
+
+# 2. 安裝依賴
+uv pip install -r requirements.txt
+
+# 3. 配置環境
+cp .env.example .env
+# 編輯 .env 配置資料庫連接
+
+# 4. 運行應用
+python run.py
+```
+
+## 📖 完整文檔
+
+### 快速導航
+
+- 📘 [完整使用指南 (繁體中文)](GUIDE_ZH-TW.md) - 推薦新用戶閱讀
+- 🇺🇸 [Complete Documentation (English)](GUIDE_EN.md) - English version
+
+### 詳細文檔
+
+| 文檔 | 說明 |
+|-------|--------|
+| [安裝指南](GUIDE_ZH-TW.md#安裝指南) | 詳細安裝步驟 |
+| [快速開始](GUIDE_ZH-TW.md#快速開始) | 5 分鐘快速上手 |
+| [使用教學](GUIDE_ZH-TW.md#使用教學) | 詳細功能說明 |
+| [通知系統](GUIDE_ZH-TW.md#通知系統) | 保存期限通知配置 |
+| [Docker 部署](GUIDE_ZH-TW.md#docker-部署) | 容器化部署指南 |
+| [API 文檔](GUIDE_ZH-TW.md#api-文檔) | API 介面說明 |
+| [常見問題](GUIDE_ZH-TW.md#常見問題) | 問題解決方案 |
+
+### 其他文檔
+
+- [部署指南](Deployment_Guide_zh-TW.md) - 生產環境部署
+- [用戶手冊](User_Manual_zh-TW.md) - 詳細用戶手冊
+- [功能說明](FEATURES.md) - 完整功能列表
+- [測試文檔](TESTING.md) - 測試說明
+- [Docker 指南](DOCKER_POSTGRES_GUIDE.md) - Docker 和 PostgreSQL 配置
+
+## 🛠️ 技術架構
+
+### 後端
+
+- **Flask 3.1+** - Web 框架
+- **SQLAlchemy 2.0+** - ORM（PostgreSQL）
+- **PyMongo** - MongoDB 驅動
+- **APScheduler 3.11+** - 定時任務
+- **Flask-Mail** - Email 發送
+- **Flask-Login** - 認證
+- **Flask-WTF** - 表單驗證
+- **Flask-Limiter** - 請求限流
+
+### 前端
+
+- **Bootstrap 5** - UI 框架
+- **Font Awesome** - 圖標庫
+- **JavaScript** - 交互功能
+- **PWA** - 漸進式 Web 應用
+
+### 資料庫
+
+- **PostgreSQL 16+** - 主資料庫（推薦）
+- **MongoDB 7+** - 保留支持
+
+### 開發工具
+
+- **Python 3.13+**
+- **Docker & Docker Compose**
+- **Git**
+
+## 📁 項目結構
+
+```
+Item-Manage-System/
+├── app/                      # 應用核心
+│   ├── __init__.py           # 應用初始化
+│   ├── models/               # SQLAlchemy 模型
+│   │   ├── user.py
+│   │   ├── item.py
+│   │   ├── item_type.py
+│   │   └── log.py
+│   ├── repositories/          # 資料庫訪問層
+│   │   ├── user_repo.py
+│   │   ├── item_repo.py
+│   │   ├── type_repo.py
+│   │   ├── location_repo.py
+│   │   └── log_repo.py
+│   ├── services/             # 業務邏輯層
+│   │   ├── notification_service.py
+│   │   ├── email_service.py
+│   │   ├── item_service.py
+│   │   └── log_service.py
+│   ├── routes/               # API 路由
+│   │   ├── auth/
+│   │   ├── items/
+│   │   ├── types/
+│   │   ├── locations/
+│   │   └── notifications/
+│   ├── utils/                # 工具模組
+│   │   ├── storage.py
+│   │   ├── image.py
+│   │   ├── auth.py
+│   │   └── scheduler.py
+│   └── validators/           # 表單驗證
+├── templates/                 # HTML 模板
+├── static/                   # 靜態資源
+│   ├── css/
+│   ├── js/
+│   ├── uploads/              # 上傳文件
+│   └── brand/
+├── tests/                    # 測試用例
+├── scripts/                  # 腳本工具
+├── docker-compose.yml          # Docker 編排
+├── Dockerfile               # Docker 鏡像
+├── requirements.txt          # Python 依賴
+├── .env.example            # 環境變數範例
+└── docs/                   # 文檔目錄
+```
+
+## 🔧 環境配置
+
+### 資料庫配置
+
+```bash
+# 使用 PostgreSQL（推薦）
+export DB_TYPE=postgres
+export DATABASE_URL=postgresql://user:password@localhost:5432/itemman
+
+# 或使用 MongoDB
+export DB_TYPE=mongo
+export MONGO_URI=mongodb://localhost:27017/myDB
+```
+
+### Email 通知配置
+
+```bash
+export MAIL_SERVER=smtp.gmail.com
+export MAIL_PORT=587
+export MAIL_USE_TLS=true
+export MAIL_USERNAME=your-email@gmail.com
+export MAIL_PASSWORD=your-app-password
+export MAIL_DEFAULT_SENDER=your-email@gmail.com
+```
+
+完整配置請參考 [`.env.example`](.env.example)
+
+## 🧪 測試
+
+```bash
+# 運行測試
+python run_tests.py
+
+# 測試通知功能
+python test_notifications.py
+
+# 測試登入
+python test_login.py
+
+# 測試系統
+python test_system.py
+```
+
+## 📱 PWA 安裝
+
+本系統支持 PWA，可以安裝為手機應用：
+
+1. 在手機瀏覽器訪問系統
+2. 點擊瀏覽器菜單「添加到主屏幕」
+3. 確認安裝
+
+## 🚀 生產部署
+
+### 推薦配置
+1. **使用 PostgreSQL** - 更好的性能和可靠性
+2. **配置 HTTPS** - 安全通信
+3. **使用 Nginx** - 反向代理和靜態文件服務
+4. **定期備份** - 資料庫和上傳文件
+5. **監控日誌** - 及時發現問題
+
+詳細部署指南請參考 [Deployment_Guide_zh-TW.md](Deployment_Guide_zh-TW.md)
+
+---
+
+## 🚀 生產部署
+
+### 健康檢查和監控端點
+
+應用程序現提供生產級別的監控端點，用於 Kubernetes 準備和負載均衡器集成。
+
+#### 端點列表
+
+| 端點 | 方法 | 說明 |
+|-------|------|------|
+| `/health` | GET | 簡單健康檢查，檢查資料庫和 Redis 連接 |
+| `/ready` | GET | 準備度檢查，檢查應用是否準備處理流量 |
+| `/metrics` | GET | 基礎應用指標，用於監控儀表板 |
+
+#### 健康檢查端點 (`/health`)
+
+**檢查項目：**
+- ✅ 資料庫連接
+- ✅ Redis 緩存連接
+- ✅ 服務狀態
+
+**響應示例（健康）：**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-01-08T16:45:00Z",
+  "version": "1.0.0",
+  "components": {
+    "database": "healthy",
+    "cache": "healthy"
+  }
+}
+```
+
+**響應示例（降級）：**
+```json
+{
+  "status": "degraded",
+  "timestamp": "2025-01-08T16:45:00Z",
+  "version": "1.0.0",
+  "components": {
+    "database": "healthy",
+    "cache": "unhealthy"
+  }
+}
+```
+
+#### 準備度檢查端點 (`/ready`)
+
+**檢查項目：**
+- ✅ 資料庫連接
+- ✅ Redis 緩存連接
+- ✅ 數據庫遷移狀態（僅 PostgreSQL）
+- ✅ 應用是否準備處理流量
+
+**響應示例（就緒）：**
+```json
+{
+  "ready": true,
+  "timestamp": "2025-01-08T16:45:00Z",
+  "checks": {
+    "database": "pass",
+    "cache": "pass",
+    "migrations": "pass"
+  }
+}
+```
+
+**響應示例（未就緒）：**
+```json
+{
+  "ready": false,
+  "timestamp": "2025-01-08T16:45:00Z",
+  "checks": {
+    "database": "pass",
+    "cache": "pass",
+    "migrations": "skip"
+  }
+}
+```
+
+#### 應用指標端點 (`/metrics`)
+
+**返回的指標：**
 - 總物品數量
 - 有照片的物品數量
 - 有位置記錄的物品數量
 - 有分類的物品數量
-- 保固/使用期限到期排序
+- 類型總數
+- 位置總數
+- 用戶總數
 
-### 🛡 保固與效期
-
-- 紀錄保固截止日、使用期限
-- 搜尋與排序支援保固/效期
-
-### 📦 QR / 條碼
-
-- 產生物品 QR 與條碼圖片（可下載列印）
-- 掃描頁（相機）可直接帶入搜尋
-
-### 🏷️ 物品分類
-
-- 自定義物品類型
-- 類型標籤顯示
-### 🏷️ 物品分類
-
-- 自定義物品類型
-- 類型標籤顯示
-- 按類型管理
-
-### ⚡ 進階管理功能 (New)
-
-- **批量操作**：支援批量刪除與移動物品
-- **PWA 支援**：可安裝為手機應用程式，支援離線瀏覽
-- **進階篩選**：側邊欄抽屜式篩選，支援多條件組合
-
-## 🚀 安裝與運行
-
-### 環境需求
-
-- Python 3.7+
-- MongoDB
-- Flask
-
-### Docker / Dev Container
-```bash
-# 以 docker-compose 啟動（含 Mongo）
-docker compose up --build
-# 服務將於 http://localhost:8080
+**響應示例：**
+```json
+{
+  "timestamp": "2025-01-08T16:45:00Z",
+  "application": "item-manage-system",
+  "version": "1.0.0",
+  "counts": {
+    "total_items": 142,
+    "items_with_photo": 87,
+    "items_with_location": 134,
+    "items_with_type": 56,
+    "types": 8,
+    "locations": 12,
+    "users": 5
+  }
+}
 ```
 
-VS Code / Cursor Dev Container：
-- 專案含 `.devcontainer/devcontainer.json`，直接「Reopen in Container」即可。
+#### Kubernetes 準備配置
 
-### 安裝步驟
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    successThreshold: 1
+    failureThreshold: 3
 
-1. **克隆專案**
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    successThreshold: 1
+    failureThreshold: 3
+```
+
+#### 使用方法
 
 ```bash
-git clone <repository-url>
-cd Item-Manage-System
+# 健康檢查
+curl http://localhost:8080/health
+
+# 準備度檢查
+curl http://localhost:8080/ready
+
+# 應用指標
+curl http://localhost:8080/metrics
 ```
 
-2. **安裝依賴（推薦使用 uv，加速且隔離）**
+#### 監控建議
 
-```bash
-# 推薦：使用 uv
-uv venv venv
-source venv/bin/activate
-uv pip install -r requirements.txt
+這些端點可以與以下監控系統集成：
+- **Prometheus** - 通過 metrics 端點收集指標
+- **Grafana** - 創建監控儀表板
+- **ELK Stack** - 收集和分析結構化日誌
+- **Datadog** - 雲端監控和分析
+- **New Relic** - 應用性能監控
 
-# 若未安裝 uv，改用 pip
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-3. **設定 MongoDB**
-   確保 MongoDB 服務正在運行，並創建必要的集合：
-
-- `user` - 使用者資料
-- `item` - 物品資料
-- `type` - 物品類型
-
-4. **初始化資料**
-   在 MongoDB 中創建測試使用者：
-
-```javascript
-use myDB
-db.user.insertOne({
-  "User": "admin",
-  "Password": "admin",
-  "admin": true
-})
-```
-
-5. **運行應用程式**
-
-```bash
-python run.py
-```
-
-6. **訪問系統**
-   打開瀏覽器訪問 `http://localhost:8080`
-
-> 🚀 **進階部署**：關於 Gunicorn、Docker 生產環境設定與 Nginx 反向代理，請參閱 [部署指南 (Deployment Guide)](Deployment_Guide_zh-TW.md)。
-
-## 📱 使用指南
-
-### 登入系統
-
-- 使用預設帳號：admin / admin
-- 或創建自己的使用者帳號
-
-### 新增物品
-
-1. 點擊「新增物品」按鈕
-2. 填寫物品資訊：
-   - 物品名稱
-   - 物品 ID
-   - 上傳照片（可選）
-   - 放置地點 + 樓層/房間/區域
-   - 物品類型
-   - 擁有者
-   - 取得日期
-   - 使用年限
-   - 保固截止 / 使用期限
-   - 物品描述
-3. 點擊「儲存物品」
-
-### 搜尋物品
-
-1. 在首頁搜尋欄位輸入關鍵字
-2. 或點擊「搜尋」頁面進行進階搜尋
-3. 支援按物品名稱和放置地點搜尋
-
-### 管理物品
-
-1. 在「管理物品」頁面查看所有物品
-2. 可以快速更新物品位置（地點/樓層/房間/區域）
-3. 下載 QR / 條碼標籤
-4. 編輯物品資訊
-5. 搜尋相似物品
-
-### 位置設定
-
-- 前往「位置設定」維護樓層、房間、區域下拉選單
-
-### QR/條碼與掃描
-
-- 物品卡片可下載 QR / 條碼
-- 「掃描」頁啟用相機掃描並自動搜尋
-
-## 🛠️ 技術架構
-
-### 後端技術
-
-- **Flask** - Web 框架
-- **PyMongo** - MongoDB 驅動
-- **Pillow** - 圖片處理
-- **Werkzeug** - 文件上傳
-
-### 前端技術
-
-- **Bootstrap 5** - UI 框架
-- **Font Awesome** - 圖標庫
-- **JavaScript** - 互動功能
-
-### 資料庫
-
-- **MongoDB** - NoSQL 資料庫
-
-## 📁 專案結構
-
-```
-Item-Manage-System/
-├── app.py                 # 主應用程式
-├── requirements.txt       # Python依賴
-├── README.md             # 專案說明
-├── static/               # 靜態檔案
-│   ├── css/             # CSS樣式
-│   ├── js/              # JavaScript
-│   ├── brand/           # 品牌資源
-│   └── uploads/         # 上傳檔案
-└── templates/           # HTML模板
-    ├── template.html    # 基礎模板
-    ├── home.html        # 首頁
-    ├── additem.html     # 新增物品
-    ├── search.html      # 搜尋頁面
-    ├── manageitem.html  # 管理物品
-    ├── edititem.html    # 編輯物品
-    ├── addtype.html     # 新增類型
-    └── signin.html      # 登入頁面
-```
-
-## 🔧 配置選項
-
-### 檔案上傳設定
-
-- 最大檔案大小：16MB
-- 支援格式：JPG, PNG, GIF
-- 縮圖尺寸：300x300 像素
-
-### 資料庫設定
-
-- MongoDB URI：`mongodb://localhost:27017/myDB`
-- 資料庫名稱：`myDB`
+---
 
 ## 🐛 故障排除
 
 ### 常見問題
 
-1. **MongoDB 連接失敗**
+| 問題 | 解決方案 |
+|-------|----------|
+| Docker 端口被佔用 | 修改 `docker-compose.yml` 端口映射 |
+| 無法連接資料庫 | 檢查資料庫容器狀態和連接字符串 |
+| Email 通知未發送 | 檢查 SMTP 配置和垃圾郵件資料夾 |
+| 照片上傳失敗 | 檢查文件大小（<16MB）和格式 |
+| 性能問題 | 使用 PostgreSQL，添加數據庫索引 |
 
-   - 確保 MongoDB 服務正在運行
-   - 檢查連接字串是否正確
-
-2. **照片上傳失敗**
-
-   - 檢查檔案大小是否超過 16MB
-   - 確認檔案格式是否支援
-   - 檢查上傳目錄權限
-
-3. **頁面載入緩慢**
-   - 檢查圖片檔案大小
-   - 確認縮圖是否正常生成
+更多問題解決方案請參考 [GUIDE_ZH-TW.md#常見問題](GUIDE_ZH-TW.md#常見問題)
 
 ## 🤝 貢獻指南
 
-歡迎提交 Issue 和 Pull Request 來改善這個專案！
+歡迎貢獻！
+
+### 開發流程
+
+1. Fork 本專案
+2. 創建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 開啟 Pull Request
+
+### 代碼規範
+
+- 遵循 PEP 8 程式碼風格
+- 添加適當的文檔和註釋
+- 編寫測試用例
+- 確保所有測試通過
 
 ## 📄 授權
 
-本專案採用 MIT 授權條款。
+MIT License - 詳細請參考 [LICENSE](LICENSE) 文件
 
-## 📞 聯絡資訊
+## 🙏 致謝
 
-如有任何問題或建議，請透過以下方式聯絡：
-
-- 提交 GitHub Issue
-- 發送 Email 至專案維護者
+- Flask 團隊
+- Bootstrap 團隊
+- 所有貢獻者
 
 ---
 
-**物品管理系統** - 讓您的物品位置記錄變得簡單高效！ 🎉
+**感謝使用物品管理系統！** 🎉
+
+如有問題或建議，請：
+- 提交 [GitHub Issue](../../issues)
+- 發送 [Email](mailto:support@example.com)
