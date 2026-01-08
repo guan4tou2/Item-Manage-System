@@ -521,7 +521,7 @@ def bulk_move_items(item_ids: List[str], target_location: str) -> Tuple[int, Lis
             # 記錄移動日誌
             item_repo.add_move_history(item_id, old_loc, target_location)
             # 記錄操作日誌
-            log_service.log_move(item_id, old_item.get("ItemName", ""), old_loc, target_location)
+            log_service.log_item_move("", item_id, old_item.get("ItemName", ""), old_loc, target_location)
         else:
             failed_ids.append(item_id)
             

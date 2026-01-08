@@ -1,0 +1,301 @@
+{%extends "template.html"%}
+
+{%block title%}通知設定 - 物品管理系統{%endblock%}
+
+{%block user%}{{User.name}}{%endblock%}
+
+{%block contain%}
+<div class="row">
+  <!-- 頁面標題 -->
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-bell text-primary me-2"></i>通知設定
+        </h2>
+        <p class="text-muted mb-0">設定物品到期通知偏好</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{url_for('items.notifications')}}" class="btn btn-outline-secondary">
+          <i class="fas fa-list me-1"></i>查看通知
+        </a>
+        <a href="{{url_for('items.home')}}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回首頁
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 設定表單 -->
+  <div class="col-lg-6 mb-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-cog me-2"></i>通知設定
+        </h5>
+      </div>
+      <div class="card-body">
+        <form id="notificationSettingsForm">
+          <!-- 啟用通知 -->
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="notify_enabled" name="notify_enabled"
+                     {% if settings.notify_enabled %}checked{% endif %}>
+              <label class="form-check-label" for="notify_enabled">
+                <strong>啟用通知</strong>
+                <div class="text-muted small">當物品快到期時發送 Email 通知</div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="mb-3">
+            <label for="email" class="form-label">
+              <i class="fas fa-envelope me-1"></i>Email 地址
+            </label>
+            <input type="email" class="form-control" id="email" name="email"
+                   value="{{ settings.email }}" placeholder="your@email.com"
+                   {% if not settings.notify_enabled %}disabled{% endif %}>
+            <div class="form-text">將在此地址收到到期通知</div>
+          </div>
+
+          <!-- 通知天數 -->
+          <div class="mb-3">
+            <label for="notify_days" class="form-label">
+              <i class="fas fa-calendar-alt me-1"></i>提前通知天數
+            </label>
+            <select class="form-select" id="notify_days" name="notify_days"
+                    {% if not settings.notify_enabled %}disabled{% endif %}>
+              <option value="7" {% if settings.notify_days == 7 %}selected{% endif %}>7 天前</option>
+              <option value="14" {% if settings.notify_days == 14 %}selected{% endif %}>14 天前</option>
+              <option value="30" {% if settings.notify_days == 30 %}selected{% endif %}>30 天前</option>
+              <option value="60" {% if settings.notify_days == 60 %}selected{% endif %}>60 天前</option>
+            </select>
+            <div class="form-text">在到期前多少天開始通知</div>
+          </div>
+
+          <!-- 通知時間 -->
+          <div class="mb-3">
+            <label for="notify_time" class="form-label">
+              <i class="fas fa-clock me-1"></i>通知時間
+            </label>
+            <input type="time" class="form-control" id="notify_time" name="notify_time"
+                   value="{{ settings.notify_time }}"
+                   {% if not settings.notify_enabled %}disabled{% endif %}>
+            <div class="form-text">每天在此時間檢查並發送通知</div>
+          </div>
+
+          <!-- 按鈕 -->
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save me-1"></i>儲存設定
+            </button>
+            <button type="button" id="sendTestBtn" class="btn btn-outline-success"
+                    {% if not settings.email %}disabled{% endif %}>
+              <i class="fas fa-paper-plane me-1"></i>發送測試通知
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 通知摘要 -->
+  <div class="col-lg-6 mb-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-chart-pie me-2"></i>通知摘要
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-6">
+            <div class="card border-danger border-0 shadow-sm h-100">
+              <div class="card-body text-center">
+                <h6 class="text-danger mb-1">已過期</h6>
+                <h3 class="mb-0 fw-bold text-danger">{{ expiry_info.expired_count }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="card border-warning border-0 shadow-sm h-100">
+              <div class="card-body text-center">
+                <h6 class="text-warning mb-1">即將到期</h6>
+                <h3 class="mb-0 fw-bold text-warning">{{ expiry_info.near_count }}</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3">
+          <h6 class="mb-2">設定狀態</h6>
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                <i class="fas fa-bell me-2"></i>通知啟用
+              </span>
+              <span class="badge {% if settings.notify_enabled %}bg-success{% else %}bg-secondary{% endif %}">
+                {% if settings.notify_enabled %}是{% else %}否{% endif %}
+              </span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                <i class="fas fa-envelope me-2"></i>Email 已設定
+              </span>
+              <span class="badge {% if settings.email %}bg-success{% else %}bg-secondary{% endif %}">
+                {% if settings.email %}是{% else %}否{% endif %}
+              </span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                <i class="fas fa-clock me-2"></i>通知時間
+              </span>
+              <span class="badge bg-primary">{{ settings.notify_time }}</span>
+            </li>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                <i class="fas fa-calendar me-2"></i>提前天數
+              </span>
+              <span class="badge bg-primary">{{ settings.notify_days }} 天</span>
+            </li>
+          </ul>
+        </div>
+
+        {% if can_send %}
+        <div class="mt-3">
+          <button id="sendNowBtn" class="btn btn-warning w-100">
+            <i class="fas fa-bell me-1"></i>立即發送通知
+          </button>
+          <small class="text-muted d-block mt-1">今天尚未發送通知</small>
+        </div>
+        {% else %}
+        <div class="mt-3">
+          <button class="btn btn-secondary w-100" disabled>
+            <i class="fas fa-check me-1"></i>今日已發送通知
+          </button>
+          <small class="text-muted d-block mt-1">下次: 明天 {{ settings.notify_time }}</small>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+  }
+  .badge {
+    font-weight: 500;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.getElementById('notificationSettingsForm');
+  const notifyEnabled = document.getElementById('notify_enabled');
+  const emailInput = document.getElementById('email');
+  const notifyDaysSelect = document.getElementById('notify_days');
+  const notifyTimeInput = document.getElementById('notify_time');
+  const sendTestBtn = document.getElementById('sendTestBtn');
+  const sendNowBtn = document.getElementById('sendNowBtn');
+
+  // 切換通知啟用時的狀態
+  notifyEnabled.addEventListener('change', function() {
+    const disabled = !this.checked;
+    emailInput.disabled = disabled;
+    notifyDaysSelect.disabled = disabled;
+    notifyTimeInput.disabled = disabled;
+  });
+
+  // 提交表單
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const data = {
+      email: emailInput.value,
+      notify_enabled: notifyEnabled.checked,
+      notify_days: parseInt(notifyDaysSelect.value),
+      notify_time: notifyTimeInput.value
+    };
+
+    fetch('/notifications/api/settings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        alert('✅ 設定已儲存！');
+        location.reload();
+      } else {
+        alert('❌ 儲存失敗！');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('❌ 發生錯誤！');
+    });
+  });
+
+  // 發送測試通知
+  sendTestBtn.addEventListener('click', function() {
+    if (!emailInput.value) {
+      alert('請先設定 Email 地址');
+      return;
+    }
+
+    fetch('/notifications/api/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        alert(`✅ 測試通知已發送到 ${emailInput.value}`);
+      } else {
+        alert(`❌ 發送失敗: ${result.message}`);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('❌ 發生錯誤！');
+    });
+  });
+
+  // 立即發送通知
+  sendNowBtn.addEventListener('click', function() {
+    if (!confirm('確定要立即發送通知嗎？')) {
+      return;
+    }
+
+    fetch('/notifications/api/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(result => {
+      if (result.success) {
+        alert(`✅ 通知已發送！包含 ${result.expired_count} 個已過期物品和 ${result.near_count} 個即將到期物品`);
+        location.reload();
+      } else {
+        alert(`❌ 發送失敗: ${result.message}`);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('❌ 發生錯誤！');
+    });
+  });
+});
+</script>
+{%endblock%}

@@ -119,13 +119,9 @@ def create_user(username: str, password: str, admin: bool = False) -> bool:
     # 檢查是否已存在（區分大小寫）
     if user_repo.find_by_username(username):
         return False
-    
+
     # 檢查是否已存在（不區分大小寫，防止混淆）
-    from app import mongo
-    existing_case_insensitive = mongo.db.user.find_one({
-        "User": {"$regex": f"^{username}$", "$options": "i"}
-    })
-    if existing_case_insensitive:
+    if user_repo.find_by_username_case_insensitive(username):
         return False
 
     # 驗證新密碼強度
