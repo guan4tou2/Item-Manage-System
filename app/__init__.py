@@ -10,9 +10,11 @@ from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
+from flask_caching import Cache
 
 mongo = PyMongo()
 db = SQLAlchemy()
+cache = Cache()
 csrf = CSRFProtect()
 limiter = Limiter(
     key_func=get_remote_address,
@@ -112,6 +114,13 @@ def create_app() -> Flask:
     csrf.init_app(app)
     limiter.init_app(app)
 
+    cache_config = {
+        "CACHE_TYPE": "RedisCache",
+        "CACHE_REDIS_URL": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
+        "CACHE_DEFAULT_TIMEOUT": 300
+    }
+    cache.init_app(app, config=cache_config)
+
     with app.app_context():
         _ensure_default_admin()
 
@@ -120,18 +129,24 @@ def create_app() -> Flask:
             from app.utils import scheduler
             scheduler.init_scheduler()
 
+        # 初始化全局錯誤處理器
+        from app.utils.error_handler import init_error_handlers
+        init_error_handlers(app)
+
     # Blueprint 註冊
     from app.auth.routes import bp as auth_bp
     from app.items.routes import bp as items_bp
     from app.types.routes import bp as types_bp
     from app.locations.routes import bp as locations_bp
     from app.notifications.routes import bp as notifications_bp
+    from app.health.routes import bp as health_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
     app.register_blueprint(types_bp)
     app.register_blueprint(locations_bp)
     app.register_blueprint(notifications_bp)
+    app.register_blueprint(health_bp)
     
     # 註冊自定義過濾器
     import re
