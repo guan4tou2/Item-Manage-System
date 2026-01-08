@@ -167,6 +167,7 @@ def create_app() -> Flask:
     from app.locations.routes import bp as locations_bp
     from app.notifications.routes import bp as notifications_bp
     from app.health.routes import bp as health_bp
+    from app.routes.import_routes import bp as import_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
@@ -174,6 +175,7 @@ def create_app() -> Flask:
     app.register_blueprint(locations_bp)
     app.register_blueprint(notifications_bp)
     app.register_blueprint(health_bp)
+    app.register_blueprint(import_bp)
     
     # 註冊自定義過濾器
     import re

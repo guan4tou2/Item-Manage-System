@@ -1,0 +1,271 @@
+{% extends "template.html" %}
+
+{% block title %}批量導入物品 - 物品管理系統{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-file-import me-2"></i>批量導入物品
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Instructions -->
+                    <div class="alert alert-info mb-4">
+                        <h5><i class="fas fa-info-circle me-2"></i>導入說明</h5>
+                        <ul class="mb-0">
+                            <li>支持 CSV 和 JSON 格式文件</li>
+                            <li><strong>CSV 格式：</strong>必須包含標題行，必需欄位：<code>ItemName</code></li>
+                            <li><strong>JSON 格式：</strong>必須是對象數組，每個對象必須有 <code>ItemName</code> 欄位</li>
+                            <li>日期格式：YYYY-MM-DD（例如：2025-12-31）</li>
+                            <li>可選欄位：ItemType, Location, PhotoPath, WarrantyExpiry, UsageExpiry, Notes</li>
+                        </ul>
+                    </div>
+
+                    <!-- Download Template -->
+                    <div class="mb-4">
+                        <a href="{{ url_for('import.template') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-download me-2"></i>下載 CSV 模板
+                        </a>
+                    </div>
+
+                    <!-- Upload Form -->
+                    <form id="importForm" enctype="multipart/form-data">
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <div class="input-group">
+                                    <input type="file" class="form-control" id="fileInput" name="file" accept=".csv,.json" required>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-upload me-2"></i>導入
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Loading Indicator -->
+                    <div id="loadingIndicator" class="d-none text-center my-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">正在處理導入，請稍候...</p>
+                    </div>
+
+                    <!-- Import Results -->
+                    <div id="importResults" class="d-none mt-4">
+                        <h5><i class="fas fa-check-circle me-2"></i>導入結果</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <div id="resultSummary"></div>
+                                <div id="errorList" class="mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Field Reference -->
+                    <div class="mt-4">
+                        <h5><i class="fas fa-list me-2"></i>欄位說明</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>欄位名稱</th>
+                                        <th>必填</th>
+                                        <th>說明</th>
+                                        <th>範例</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>ItemName</code></td>
+                                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                                        <td>物品名稱</td>
+                                        <td>筆記型電腦</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>ItemType</code></td>
+                                        <td class="text-center">-</td>
+                                        <td>物品類型（需事先創建）</td>
+                                        <td>電子產品</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Location</code></td>
+                                        <td class="text-center">-</td>
+                                        <td>存放位置（需事先創建）</td>
+                                        <td>1F/RoomA/Shelf1</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>PhotoPath</code></td>
+                                        <td class="text-center">-</td>
+                                        <td>照片路徑（可留空）</td>
+                                        <td>uploads/item001.jpg</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>WarrantyExpiry</code></td>
+                                        <td class="text-center">-</td>
+                                        <td>保固到期日期</td>
+                                        <td>2025-12-31</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>UsageExpiry</code></td>
+                                        <td class="text-center">-</td>
+                                        <td>使用到期日期</td>
+                                        <td>2026-06-30</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>Notes</code></td>
+                                        <td class="text-center">-</td>
+                                        <td>備註</td>
+                                        <td>購買於 2024 年 1 月</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Example CSV -->
+                    <div class="mt-4">
+                        <h5><i class="fas fa-code me-2"></i>CSV 範例</h5>
+                        <pre class="bg-light p-3 rounded"><code>ItemName,ItemType,Location,PhotoPath,WarrantyExpiry,UsageExpiry,Notes
+筆記型電腦,電子產品,1F/RoomA/Shelf1,,2025-12-31,2026-06-30,購買於 2024 年 1 月
+辦公椅,辦公用品,2F/RoomB/Shelf2,,,,
+鍵盤,電子產品,1F/RoomA/Drawer1,,2025-06-30,,</code></pre>
+                    </div>
+
+                    <!-- Example JSON -->
+                    <div class="mt-4">
+                        <h5><i class="fas fa-code me-2"></i>JSON 範例</h5>
+                        <pre class="bg-light p-3 rounded"><code>[
+  {
+    "ItemName": "筆記型電腦",
+    "ItemType": "電子產品",
+    "Location": "1F/RoomA/Shelf1",
+    "PhotoPath": "",
+    "WarrantyExpiry": "2025-12-31",
+    "UsageExpiry": "2026-06-30",
+    "Notes": "購買於 2024 年 1 月"
+  },
+  {
+    "ItemName": "辦公椅",
+    "ItemType": "辦公用品",
+    "Location": "2F/RoomB/Shelf2",
+    "PhotoPath": "",
+    "WarrantyExpiry": "",
+    "UsageExpiry": "",
+    "Notes": ""
+  }
+]</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('importForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert('請選擇文件');
+        return;
+    }
+
+    // Show loading indicator
+    document.getElementById('loadingIndicator').classList.remove('d-none');
+    document.getElementById('importResults').classList.add('d-none');
+
+    // Create form data
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const response = await fetch('{{ url_for("import.upload") }}', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        // Hide loading indicator
+        document.getElementById('loadingIndicator').classList.add('d-none');
+
+        if (data.success) {
+            // Show results
+            displayResults(data.result);
+        } else {
+            alert('導入失敗：' + (data.error || '未知錯誤'));
+        }
+    } catch (error) {
+        // Hide loading indicator
+        document.getElementById('loadingIndicator').classList.add('d-none');
+        alert('導入失敗：' + error.message);
+    }
+});
+
+function displayResults(result) {
+    const resultsDiv = document.getElementById('importResults');
+    const summaryDiv = document.getElementById('resultSummary');
+    const errorListDiv = document.getElementById('errorList');
+
+    // Show results
+    resultsDiv.classList.remove('d-none');
+
+    // Display summary
+    summaryDiv.innerHTML = `
+        <div class="alert ${result.failed_count === 0 ? 'alert-success' : 'alert-warning'}">
+            <h6 class="alert-heading mb-2">
+                <i class="fas fa-chart-bar me-2"></i>導入摘要
+            </h6>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="stat-card bg-success text-white p-3 rounded text-center">
+                        <h5 class="mb-0">${result.success_count}</h5>
+                        <small>成功導入</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card bg-danger text-white p-3 rounded text-center">
+                        <h5 class="mb-0">${result.failed_count}</h5>
+                        <small>導入失敗</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card bg-primary text-white p-3 rounded text-center">
+                        <h5 class="mb-0">${result.success_count + result.failed_count}</h5>
+                        <small>總計</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Display errors if any
+    if (result.errors && result.errors.length > 0) {
+        let errorHTML = '<h6 class="text-danger mt-3"><i class="fas fa-exclamation-triangle me-2"></i>錯誤詳情</h6>';
+        errorHTML += '<ul class="list-group">';
+
+        result.errors.forEach(error => {
+            errorHTML += `
+                <li class="list-group-item list-group-item-danger">
+                    <strong>行 ${error.row}:</strong> ${error.item}
+                    <br>
+                    <small class="text-danger">${error.error}</small>
+                </li>
+            `;
+        });
+
+        errorHTML += '</ul>';
+        errorListDiv.innerHTML = errorHTML;
+    } else {
+        errorListDiv.innerHTML = '';
+    }
+}
+</script>
+{% endblock %}
