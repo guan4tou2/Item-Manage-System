@@ -57,3 +57,30 @@ def get_type_by_name(name: str):
     if db_type == "postgres":
         return ItemType.query.filter_by(name=name).first()
     return mongo.db.type.find_one({"name": name})
+
+
+def get_all_types_for_backup() -> List[str]:
+    """取得所有類型名稱（用於備份）"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        return [t.name for t in ItemType.query.all()]
+    else:
+        return [t["name"] for t in mongo.db.type.find({}, {"name": 1, "_id": 0})]
+
+
+def restore_types(types: List, mode: str = "merge") -> int:
+    """還原類型資料"""
+    db_type = get_db_type()
+    count = 0
+
+    for t in types:
+        type_name = t if isinstance(t, str) else t.get("name")
+        if not type_name:
+            continue
+
+        existing = get_type_by_name(type_name)
+        if not existing:
+            insert_type(type_name)
+            count += 1
+
+    return count

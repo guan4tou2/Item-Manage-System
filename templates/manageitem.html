@@ -18,6 +18,9 @@
         <a href="{{ url_for('items.export_items', format='csv') }}" class="btn btn-outline-success">
           <i class="fas fa-file-csv me-1"></i>匯出 CSV
         </a>
+        <a href="{{ url_for('items.export_restock') }}" class="btn btn-outline-danger">
+          <i class="fas fa-clipboard-list me-1"></i>補貨清單
+        </a>
         <a href="{{ url_for('items.import_items') }}" class="btn btn-warning">
           <i class="fas fa-upload me-1"></i>匯入
         </a>

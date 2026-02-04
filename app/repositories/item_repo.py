@@ -150,14 +150,22 @@ def get_stats() -> Dict[str, int]:
     }
 
 
-def get_all_items_for_export(projection: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+def get_all_items_for_export(
+    filters: Optional[Dict[str, Any]] = None,
+    projection: Optional[Dict[str, Any]] = None,
+) -> List[Dict[str, Any]]:
     db_type = get_db_type()
+    query = filters or {}
     if db_type == "postgres":
-        items = db.session.query(Item).all()
+        items_query = db.session.query(Item)
+        for key, value in query.items():
+            if value is not None:
+                items_query = items_query.filter(getattr(Item, key) == value)
+        items = items_query.all()
         return [item.to_dict() for item in items]
     if projection is None:
         projection = {"_id": 0}
-    return list(mongo.db.item.find({}, projection))
+    return list(mongo.db.item.find(query, projection))
 
 
 def toggle_favorite(item_id: str, user_id: str) -> bool:
@@ -353,3 +361,148 @@ def get_expiring_items(days_threshold: int = 30) -> List[Dict[str, Any]]:
         for item in items:
             item["_id"] = str(item["_id"])
         return items
+
+
+def search_suggestions(query: str, limit: int = 8) -> List[Dict[str, Any]]:
+    """取得搜尋自動完成建議"""
+    db_type = get_db_type()
+    suggestions = []
+
+    if db_type == "postgres":
+        name_results = db.session.query(
+            Item.ItemName, Item.ItemID, Item.ItemType
+        ).filter(
+            Item.ItemName.ilike(f"%{query}%")
+        ).limit(5).all()
+
+        for item in name_results:
+            suggestions.append({
+                "text": item.ItemName,
+                "id": item.ItemID,
+                "type": item.ItemType or "",
+                "category": "name"
+            })
+
+        id_results = db.session.query(
+            Item.ItemName, Item.ItemID, Item.ItemType
+        ).filter(
+            Item.ItemID.ilike(f"%{query}%")
+        ).limit(3).all()
+
+        for item in id_results:
+            if not any(s["id"] == item.ItemID for s in suggestions):
+                suggestions.append({
+                    "text": item.ItemID,
+                    "id": item.ItemID,
+                    "name": item.ItemName,
+                    "type": item.ItemType or "",
+                    "category": "id"
+                })
+    else:
+        name_results = mongo.db.item.find(
+            {"ItemName": {"$regex": query, "$options": "i"}},
+            {"ItemName": 1, "ItemID": 1, "ItemType": 1, "_id": 0}
+        ).limit(5)
+
+        for item in name_results:
+            suggestions.append({
+                "text": item.get("ItemName", ""),
+                "id": item.get("ItemID", ""),
+                "type": item.get("ItemType", ""),
+                "category": "name"
+            })
+
+        id_results = mongo.db.item.find(
+            {"ItemID": {"$regex": query, "$options": "i"}},
+            {"ItemName": 1, "ItemID": 1, "ItemType": 1, "_id": 0}
+        ).limit(3)
+
+        for item in id_results:
+            if not any(s["id"] == item.get("ItemID") for s in suggestions):
+                suggestions.append({
+                    "text": item.get("ItemID", ""),
+                    "id": item.get("ItemID", ""),
+                    "name": item.get("ItemName", ""),
+                    "type": item.get("ItemType", ""),
+                    "category": "id"
+                })
+
+    return suggestions[:limit]
+
+
+def get_all_items_for_backup() -> List[Dict[str, Any]]:
+    """取得所有物品資料（用於備份）"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        return [item.to_dict() for item in Item.query.all()]
+    else:
+        items = list(mongo.db.item.find({}, {"_id": 0}))
+        return items
+
+
+def restore_items(items: List[Dict[str, Any]], mode: str = "merge") -> int:
+    """還原物品資料"""
+    db_type = get_db_type()
+    count = 0
+
+    if db_type == "postgres":
+        for item_data in items:
+            item_id = item_data.get("ItemID")
+            if not item_id:
+                continue
+
+            existing = Item.query.filter_by(ItemID=item_id).first()
+
+            if mode == "replace" and existing:
+                db.session.delete(existing)
+                db.session.commit()
+                existing = None
+
+            if not existing:
+                item = Item(
+                    ItemID=item_id,
+                    ItemName=item_data.get("ItemName", ""),
+                    ItemDesc=item_data.get("ItemDesc", ""),
+                    ItemPic=item_data.get("ItemPic", ""),
+                    ItemThumb=item_data.get("ItemThumb", ""),
+                    ItemPics=item_data.get("ItemPics", []),
+                    ItemStorePlace=item_data.get("ItemStorePlace", ""),
+                    ItemType=item_data.get("ItemType", ""),
+                    ItemOwner=item_data.get("ItemOwner", ""),
+                    ItemGetDate=item_data.get("ItemGetDate", ""),
+                    ItemFloor=item_data.get("ItemFloor", ""),
+                    ItemRoom=item_data.get("ItemRoom", ""),
+                    ItemZone=item_data.get("ItemZone", ""),
+                    Quantity=item_data.get("Quantity", 0),
+                    SafetyStock=item_data.get("SafetyStock", 0),
+                    ReorderLevel=item_data.get("ReorderLevel", 0),
+                )
+                db.session.add(item)
+                count += 1
+            elif mode == "merge":
+                for key, value in item_data.items():
+                    if hasattr(existing, key) and key != "ItemID":
+                        setattr(existing, key, value)
+                count += 1
+
+        db.session.commit()
+    else:
+        for item_data in items:
+            item_id = item_data.get("ItemID")
+            if not item_id:
+                continue
+
+            if mode == "replace":
+                mongo.db.item.delete_one({"ItemID": item_id})
+
+            if not mongo.db.item.find_one({"ItemID": item_id}):
+                mongo.db.item.insert_one(item_data)
+                count += 1
+            elif mode == "merge":
+                mongo.db.item.update_one(
+                    {"ItemID": item_id},
+                    {"$set": item_data}
+                )
+                count += 1
+
+    return count

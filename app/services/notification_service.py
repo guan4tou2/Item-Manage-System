@@ -7,6 +7,19 @@ from app.services import item_service
 from app.services import email_service
 
 
+def _parse_reminder_ladder(value):
+    if isinstance(value, list):
+        return [int(v) for v in value if isinstance(v, int) or str(v).isdigit()]
+    if isinstance(value, str):
+        result = []
+        for part in value.split(","):
+            part = part.strip()
+            if part.isdigit():
+                result.append(int(part))
+        return result
+    return None
+
+
 def check_and_send_notifications() -> Dict[str, Any]:
     """
     檢查並發送到期通知
@@ -37,6 +50,8 @@ def check_and_send_notifications() -> Dict[str, Any]:
         user_email = user.get("email", "")
         notify_days = user.get("notify_days", 30)
         notify_time = user.get("notify_time", "09:00")
+        notify_channels = user.get("notify_channels", []) or ["email"]
+        reminder_ladder = user.get("reminder_ladder")
         last_notification_date = user.get("last_notification_date", "")
         
         user_result = {
@@ -47,9 +62,19 @@ def check_and_send_notifications() -> Dict[str, Any]:
             "items_count": 0,
         }
         
+        if not username:
+            user_result["reason"] = "找不到使用者"
+            results["details"].append(user_result)
+            continue
+        
         # 檢查今天是否已發送通知
         if last_notification_date == today_str:
             user_result["reason"] = "今日已發送通知"
+            results["details"].append(user_result)
+            continue
+
+        if "email" not in notify_channels:
+            user_result["reason"] = "未啟用 Email 通知"
             results["details"].append(user_result)
             continue
         
@@ -60,28 +85,36 @@ def check_and_send_notifications() -> Dict[str, Any]:
             results["details"].append(user_result)
             continue
         
-        # 取得到期物品
-        expiry_info = item_service.get_expiring_items(days_threshold=notify_days)
+        expiry_info = item_service.get_expiring_items(
+            days_threshold=notify_days,
+            ladder=_parse_reminder_ladder(reminder_ladder),
+        )
+        replacement_info = item_service.get_replacement_items(user)
+        total_alerts = expiry_info["total_alerts"] + replacement_info["total_alerts"]
         
-        if expiry_info["total_alerts"] == 0:
-            user_result["reason"] = "無到期物品"
+        if total_alerts == 0:
+            user_result["reason"] = "無到期或更換提醒"
             results["details"].append(user_result)
             continue
         
         # 發送通知
-        sent = email_service.send_expiry_notification(
-            to_email=user_email,
-            expired_items=expiry_info["expired"],
-            near_expiry_items=expiry_info["near_expiry"],
-        )
+        sent = False
+        if "email" in notify_channels:
+            sent = email_service.send_expiry_notification(
+                to_email=user_email,
+                expired_items=expiry_info["expired"],
+                near_expiry_items=expiry_info["near_expiry"],
+                replacement_due=replacement_info["due"],
+                replacement_upcoming=replacement_info["upcoming"],
+            )
         
         if sent:
             # 更新最後通知日期
             user_repo.update_last_notification_date(username, today_str)
             results["success_users"] += 1
-            results["total_notifications"] += expiry_info["total_alerts"]
+            results["total_notifications"] += total_alerts
             user_result["sent"] = True
-            user_result["items_count"] = expiry_info["total_alerts"]
+            user_result["items_count"] = total_alerts
         else:
             results["failed_users"] += 1
             user_result["reason"] = "發送失敗"
@@ -116,26 +149,48 @@ def send_manual_notification(username: str) -> Dict[str, Any]:
             "expired_count": 0,
             "near_count": 0,
         }
-    
-    notify_days = settings.get("notify_days", 30)
-    
-    # 取得到期物品
-    expiry_info = item_service.get_expiring_items(days_threshold=notify_days)
-    
-    if expiry_info["total_alerts"] == 0:
+
+    if "email" not in settings.get("notify_channels", []) and settings.get("notify_channels"):
         return {
             "success": False,
-            "message": "無到期物品",
+            "message": "未啟用 Email 通知",
             "expired_count": 0,
             "near_count": 0,
         }
     
-    # 發送通知
-    sent = email_service.send_expiry_notification(
-        to_email=settings["email"],
-        expired_items=expiry_info["expired"],
-        near_expiry_items=expiry_info["near_expiry"],
+    notify_days = settings.get("notify_days", 30)
+    notify_channels = settings.get("notify_channels", []) or ["email"]
+    reminder_ladder = settings.get("reminder_ladder")
+    
+    # 取得到期物品
+    expiry_info = item_service.get_expiring_items(
+        days_threshold=notify_days,
+        ladder=_parse_reminder_ladder(reminder_ladder),
     )
+    
+    replacement_info = item_service.get_replacement_items(settings)
+    total_alerts = expiry_info["total_alerts"] + replacement_info["total_alerts"]
+
+    if total_alerts == 0:
+        return {
+            "success": False,
+            "message": "無到期或更換提醒",
+            "expired_count": 0,
+            "near_count": 0,
+            "replacement_due_count": 0,
+            "replacement_upcoming_count": 0,
+        }
+    
+    # 發送通知
+    sent = False
+    if "email" in notify_channels:
+        sent = email_service.send_expiry_notification(
+            to_email=settings["email"],
+            expired_items=expiry_info["expired"],
+            near_expiry_items=expiry_info["near_expiry"],
+            replacement_due=replacement_info["due"],
+            replacement_upcoming=replacement_info["upcoming"],
+        )
     
     if sent:
         today = date.today()
@@ -146,6 +201,8 @@ def send_manual_notification(username: str) -> Dict[str, Any]:
         "message": "通知發送成功" if sent else "通知發送失敗",
         "expired_count": expiry_info["expired_count"],
         "near_count": expiry_info["near_count"],
+        "replacement_due_count": len(replacement_info["due"]),
+        "replacement_upcoming_count": len(replacement_info["upcoming"]),
     }
 
 
@@ -165,17 +222,25 @@ def get_notification_summary(username: str) -> Dict[str, Any]:
     """
     settings = user_repo.get_notification_settings(username)
     notify_days = settings.get("notify_days", 30)
+    reminder_ladder = settings.get("reminder_ladder")
     
-    expiry_info = item_service.get_expiring_items(days_threshold=notify_days)
+    expiry_info = item_service.get_expiring_items(
+        days_threshold=notify_days,
+        ladder=_parse_reminder_ladder(reminder_ladder),
+    )
+
+    replacement_info = item_service.get_replacement_items(settings)
+    combined_total = expiry_info["total_alerts"] + replacement_info["total_alerts"]
     
     # 檢查今天是否已發送通知
     today = date.today()
     today_str = today.strftime("%Y-%m-%d")
     last_sent = settings.get("last_notification_date", "")
-    can_send = last_sent != today_str and expiry_info["total_alerts"] > 0
+    can_send = last_sent != today_str and combined_total > 0
     
     return {
         "settings": settings,
         "expiry_info": expiry_info,
+        "replacement_info": replacement_info,
         "can_send": can_send,
     }

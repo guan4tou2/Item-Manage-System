@@ -22,7 +22,11 @@ class User(UserMixin, db.Model):
     notify_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     notify_days: Mapped[int] = mapped_column(Integer, default=30)
     notify_time: Mapped[str] = mapped_column(String(10), default="09:00")
+    notify_channels: Mapped[Optional[List[str]]] = mapped_column(JSON, default=list)
+    reminder_ladder: Mapped[Optional[str]] = mapped_column(String(50), default="30,14,7,3,1")
     last_notification_date: Mapped[Optional[str]] = mapped_column(String(20), default="")
+    replacement_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    replacement_intervals: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=list)
     
     # 密碼修改相關
     password_changed: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -46,6 +50,8 @@ class User(UserMixin, db.Model):
             "notify_enabled": self.notify_enabled,
             "notify_days": self.notify_days,
             "notify_time": self.notify_time,
+            "notify_channels": list(self.notify_channels or []),
+            "reminder_ladder": self.reminder_ladder or "",
             "last_notification_date": self.last_notification_date,
             "password_changed": self.password_changed,
             "failed_attempts": self.failed_attempts,

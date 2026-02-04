@@ -117,3 +117,41 @@ def list_choices() -> tuple:
         zones = mongo.db.item.distinct("ItemZone")
 
     return (floors, rooms, zones)
+
+
+def get_all_locations_for_backup() -> List[Dict[str, Any]]:
+    """取得所有位置資料（用於備份）"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        from app.models.location import Location
+        return [loc.to_dict() for loc in Location.query.all()]
+    else:
+        return list(mongo.db.locations.find({}, {"_id": 0}))
+
+
+def find_location(floor: str, room: str, zone: str) -> Optional[Dict[str, Any]]:
+    """根據樓層/房間/區域尋找位置"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        from app.models.location import Location
+        loc = Location.query.filter_by(floor=floor, room=room, zone=zone).first()
+        return loc.to_dict() if loc else None
+    else:
+        return mongo.db.locations.find_one({"floor": floor, "room": room, "zone": zone})
+
+
+def restore_locations(locations: List[Dict[str, Any]], mode: str = "merge") -> int:
+    """還原位置資料"""
+    count = 0
+
+    for loc in locations:
+        floor = loc.get("floor", "")
+        room = loc.get("room", "")
+        zone = loc.get("zone", "")
+
+        existing = find_location(floor, room, zone)
+        if not existing:
+            insert_location(loc)
+            count += 1
+
+    return count

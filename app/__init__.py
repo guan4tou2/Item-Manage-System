@@ -38,7 +38,10 @@ def ensure_upload_folder(app: Flask) -> None:
 
 def _ensure_default_admin() -> None:
     """確保預設管理員帳號存在"""
+    from werkzeug.security import generate_password_hash
+    
     db_type = get_db_type()
+    hashed_password = generate_password_hash("admin")
     
     if db_type == "postgres":
         from app.models import User
@@ -47,21 +50,23 @@ def _ensure_default_admin() -> None:
         if not existing_admin:
             admin = User(
                 User="admin",
-                Password="admin",
-                admin=True
+                Password=hashed_password,
+                admin=True,
+                password_changed=False
             )
             db.session.add(admin)
             db.session.commit()
-            print("✅ 已建立預設管理員帳號: admin / admin")
+            print("✅ 已建立預設管理員帳號: admin / admin (首次登入請修改密碼)")
     else:
         existing_admin = mongo.db.user.find_one({"User": "admin"})
         if not existing_admin:
             mongo.db.user.insert_one({
                 "User": "admin",
-                "Password": "admin",
-                "admin": True
+                "Password": hashed_password,
+                "admin": True,
+                "password_changed": False
             })
-            print("✅ 已建立預設管理員帳號: admin / admin")
+            print("✅ 已建立預設管理員帳號: admin / admin (首次登入請修改密碼)")
 
 
 def create_app() -> Flask:
@@ -130,26 +135,16 @@ def create_app() -> Flask:
     from app.config.validation import AppConfig
 
     try:
-        config_result = AppConfig.load()
-        if not config_result["valid"]:
-            logger.warning(
-                "configuration_validation_failed",
-                errors=config_result["errors"]
-            )
-        else:
-            logger.info("configuration_validation_passed")
+        cfg = AppConfig.load()
+        config_result = {"valid": True, "config": cfg}
+        logger.info("configuration_validation_passed")
     except Exception as e:
-        logger.error("configuration_load_failed", error=str(e))
-
-    # Replace direct environment access with validated config
-    config = config_result.get("config", AppConfig.load())
-    secret_key = config.secret_key
-
-    csrf.init_app(app)
-    limiter.init_app(app)
+        logger.warning("configuration_validation_warning", error=str(e))
+        config_result = {"valid": False, "errors": str(e), "config": None}
 
     with app.app_context():
-        _ensure_default_admin()
+        if os.environ.get("TEST_MODE") != "true":
+            _ensure_default_admin()
 
         # 只在web进程（非worker）中初始化scheduler
         if os.environ.get("WORKER_MODE") != "scheduler":
@@ -168,6 +163,7 @@ def create_app() -> Flask:
     from app.notifications.routes import bp as notifications_bp
     from app.health.routes import bp as health_bp
     from app.routes.import_routes import bp as import_bp
+    from app.travel.routes import bp as travel_bp, shopping_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
@@ -176,6 +172,8 @@ def create_app() -> Flask:
     app.register_blueprint(notifications_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(import_bp)
+    app.register_blueprint(travel_bp)
+    app.register_blueprint(shopping_bp)
     
     # 註冊自定義過濾器
     import re

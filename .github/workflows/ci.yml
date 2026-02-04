@@ -1,0 +1,248 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  PYTHON_VERSION: "3.13"
+  POSTGRES_VERSION: "16"
+
+jobs:
+  lint:
+    name: Code Quality & Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy
+          pip install -r requirements.txt
+      
+      - name: Run Black (code formatting check)
+        run: black --check --diff app/ tests/
+        continue-on-error: true
+      
+      - name: Run isort (import sorting check)
+        run: isort --check-only --diff app/ tests/
+        continue-on-error: true
+      
+      - name: Run Flake8 (linting)
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings
+          flake8 app/ tests/ --count --exit-zero --max-complexity=15 --max-line-length=100 --statistics
+      
+      - name: Run mypy (type checking)
+        run: mypy app/ --ignore-missing-imports --no-strict-optional
+        continue-on-error: true
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+        db-type: [postgres, mongo]
+    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[test]"
+      
+      - name: Run tests with coverage
+        env:
+          DB_TYPE: ${{ matrix.db-type }}
+          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
+          MONGO_URI: mongodb://localhost:27017/test_db
+          REDIS_URL: redis://localhost:6379/1
+          SECRET_KEY: test-secret-key
+          FLASK_ENV: testing
+          TEST_MODE: true
+        run: |
+          pytest -v --cov=app --cov-report=xml --cov-report=term-missing --cov-report=html
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-${{ matrix.python-version }}-${{ matrix.db-type }}
+          fail_ci_if_error: false
+      
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-${{ matrix.python-version }}-${{ matrix.db-type }}
+          path: htmlcov/
+          retention-days: 7
+
+  docker:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        run: |
+          docker build -t item-manage-system:test .
+      
+      - name: Test Docker image
+        run: |
+          docker run --rm item-manage-system:test python -c "import app; print('Import successful')"
+      
+      - name: Run Docker Compose test
+        run: |
+          docker-compose -f docker-compose.test.yml build
+          docker-compose -f docker-compose.test.yml run --rm test
+          docker-compose -f docker-compose.test.yml down -v
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit
+          pip install -r requirements.txt
+      
+      - name: Run Safety (dependency vulnerability check)
+        run: safety check --json
+        continue-on-error: true
+      
+      - name: Run Bandit (security linter)
+        run: bandit -r app/ -f json -o bandit-report.json
+        continue-on-error: true
+      
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report
+          path: bandit-report.json
+          retention-days: 30
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [lint, test, docker, security]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: https://staging.example.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to staging
+        run: |
+          echo "🚀 Deploying to staging environment..."
+          # Add your deployment script here
+          # Example: kubectl apply -f k8s/staging/
+          # Example: ssh user@staging-server 'cd /app && git pull && docker-compose up -d'
+      
+      - name: Run smoke tests
+        run: |
+          echo "🧪 Running smoke tests..."
+          # Add smoke tests here
+          # Example: curl https://staging.example.com/health
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [lint, test, docker, security]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://app.example.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to production
+        run: |
+          echo "🚀 Deploying to production environment..."
+          # Add your deployment script here
+          # Recommended: Use blue-green or canary deployment
+      
+      - name: Run smoke tests
+        run: |
+          echo "🧪 Running production smoke tests..."
+          # Add production smoke tests here
+      
+      - name: Notify team
+        run: |
+          echo "📢 Notifying team about deployment..."
+          # Add notification logic (Slack, Discord, Email, etc.)

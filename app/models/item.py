@@ -2,7 +2,7 @@
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 
-from sqlalchemy import String, Text, JSON, Date
+from sqlalchemy import String, Text, JSON, Date, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app import db
@@ -25,11 +25,15 @@ class Item(db.Model):
     ItemFloor: Mapped[Optional[str]] = mapped_column(String(50), index=True)
     ItemRoom: Mapped[Optional[str]] = mapped_column(String(50), index=True)
     ItemZone: Mapped[Optional[str]] = mapped_column(String(50), index=True)
+    Quantity: Mapped[int] = mapped_column(Integer, default=0)
+    SafetyStock: Mapped[int] = mapped_column(Integer, default=0)
+    ReorderLevel: Mapped[int] = mapped_column(Integer, default=0)
     WarrantyExpiry: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
     UsageExpiry: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
     move_history: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=list)
     favorites: Mapped[Optional[List[str]]] = mapped_column(JSON, default=list)
     related_items: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=list)
+    size_notes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, default=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -46,11 +50,15 @@ class Item(db.Model):
             "ItemFloor": self.ItemFloor or "",
             "ItemRoom": self.ItemRoom or "",
             "ItemZone": self.ItemZone or "",
+            "Quantity": int(self.Quantity or 0),
+            "SafetyStock": int(self.SafetyStock or 0),
+            "ReorderLevel": int(self.ReorderLevel or 0),
             "WarrantyExpiry": self.WarrantyExpiry.strftime("%Y-%m-%d") if self.WarrantyExpiry else "",
             "UsageExpiry": self.UsageExpiry.strftime("%Y-%m-%d") if self.UsageExpiry else "",
             "move_history": list(self.move_history or []),
             "favorites": list(self.favorites or []),
             "related_items": list(self.related_items or []),
+            "size_notes": self.size_notes or {},
         }
 
     def __repr__(self) -> str:

@@ -7,14 +7,74 @@
 import os
 import sys
 from datetime import date
+import types
 
-# 添加項目根目錄到路徑
+import tests.fixtures_env
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app import create_app
+
+class _FakeCollection:
+    def __init__(self):
+        self.data = {}
+
+    def find_one(self, query):
+        user = query.get("User")
+        return self.data.get(user)
+
+    def find(self, *args, **kwargs):
+        return list(self.data.values())
+
+    def insert_one(self, doc):
+        self.data[doc.get("User")] = doc
+
+    def update_one(self, query, update):
+        user = query.get("User")
+        doc = self.data.get(user, {})
+        set_fields = update.get("$set", {}) if isinstance(update, dict) else {}
+        doc.update(set_fields)
+        self.data[user] = doc
+
+
+class _FakeDB:
+    def __init__(self):
+        self.user = _FakeCollection()
+        self.item = _FakeCollection()
+        self.items = _FakeCollection()
+
+
+def _install_fake_mongo():
+    fake_mod = types.ModuleType("app.mongo")
+    fake_mod.db = _FakeDB()  # type: ignore[attr-defined]
+    fake_mod.init_app = lambda *_args, **_kwargs: None  # type: ignore[assignment]
+    sys.modules["app.mongo"] = fake_mod
+    sys.modules["mongo"] = fake_mod
+    return fake_mod
+
+
+fake_mongo = _install_fake_mongo()
+
+from app import create_app  # type: ignore  # after mongo patch
 from app.services import notification_service, email_service
 from app.repositories import user_repo
 from app.services import item_service
+
+user_repo.mongo = fake_mongo  # type: ignore[attr-defined]
+item_service.item_repo.mongo = fake_mongo  # type: ignore[attr-defined]
+item_service.item_repo.list_items = lambda *args, **kwargs: []  # type: ignore[assignment]
+user_repo.get_notification_settings = lambda username: {
+    "email": "admin@example.com",
+    "notify_enabled": True,
+    "notify_days": 30,
+    "notify_time": "09:00",
+    "notify_channels": ["email"],
+    "reminder_ladder": "30,14,7,3,1",
+    "last_notification_date": "",
+    "replacement_enabled": True,
+    "replacement_intervals": [],
+}  # type: ignore[assignment]
+user_repo.update_last_notification_date = lambda username, date_str: None  # type: ignore[assignment]
+
 
 
 def test_notification_settings():

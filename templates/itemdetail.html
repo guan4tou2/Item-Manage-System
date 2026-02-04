@@ -169,6 +169,60 @@
           </div>
           {%endif%}
           
+          <!-- 庫存管理 -->
+          <div class="info-section" id="stockSection">
+            <h5 class="info-section-title">
+              <i class="fas fa-cubes text-primary"></i>
+              庫存管理
+            </h5>
+            <div class="row align-items-center">
+              <div class="col-sm-4 mb-2 mb-sm-0">
+                <p class="text-muted small mb-1">現有數量</p>
+                <div class="d-flex align-items-center gap-2">
+                  {%if User.admin%}
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-danger qty-btn" data-delta="-1" title="-1">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="btn btn-outline-success qty-btn" data-delta="1" title="+1">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  {%endif%}
+                  <span class="badge fs-5 quantity-display 
+                    {%if (item.ReorderLevel or 0) > 0 and (item.Quantity or 0) <= (item.ReorderLevel or 0)%}bg-danger
+                    {%elif (item.SafetyStock or 0) > 0 and (item.Quantity or 0) <= (item.SafetyStock or 0)%}bg-warning text-dark
+                    {%else%}bg-primary{%endif%}">
+                    {{ item.Quantity or 0 }}
+                  </span>
+                  {%if User.admin%}
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary qty-btn" data-delta="5" title="+5">+5</button>
+                    <button class="btn btn-outline-primary qty-btn" data-delta="10" title="+10">+10</button>
+                  </div>
+                  {%endif%}
+                </div>
+              </div>
+              <div class="col-sm-4 mb-2 mb-sm-0">
+                <p class="text-muted small mb-1">安全庫存</p>
+                <p class="mb-0"><strong>{{ item.SafetyStock or 0 }}</strong></p>
+              </div>
+              <div class="col-sm-4">
+                <p class="text-muted small mb-1">補貨門檻</p>
+                <p class="mb-0"><strong>{{ item.ReorderLevel or 0 }}</strong></p>
+              </div>
+            </div>
+            {%if (item.ReorderLevel or 0) > 0 and (item.Quantity or 0) <= (item.ReorderLevel or 0)%}
+            <div class="alert alert-danger mt-3 mb-0 py-2">
+              <i class="fas fa-exclamation-circle me-1"></i>庫存低於補貨門檻，建議補貨！
+            </div>
+            {%elif (item.SafetyStock or 0) > 0 and (item.Quantity or 0) <= (item.SafetyStock or 0)%}
+            <div class="alert alert-warning mt-3 mb-0 py-2">
+              <i class="fas fa-exclamation-triangle me-1"></i>庫存低於安全庫存
+            </div>
+            {%endif%}
+          </div>
+          
           <!-- 物品描述 -->
           {%if item.ItemDesc%}
           <div class="info-section">
@@ -552,6 +606,47 @@ async function removeRelatedItem(relatedId) {
 
 // 頁面載入時載入關聯物品
 document.addEventListener('DOMContentLoaded', loadRelatedItems);
+
+// 數量調整按鈕
+document.querySelectorAll('.qty-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const delta = parseInt(this.dataset.delta);
+    const display = document.querySelector('.quantity-display');
+    
+    this.disabled = true;
+    
+    fetch(`/api/quantity/{{item.ItemID}}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ delta: delta })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        display.textContent = data.quantity;
+        display.className = 'badge fs-5 quantity-display';
+        if (data.status === 'critical') {
+          display.classList.add('bg-danger');
+        } else if (data.status === 'low') {
+          display.classList.add('bg-warning', 'text-dark');
+        } else {
+          display.classList.add('bg-primary');
+        }
+      } else {
+        alert(data.message || '更新失敗');
+      }
+    })
+    .catch(err => {
+      console.error('Error:', err);
+      alert('更新失敗');
+    })
+    .finally(() => {
+      this.disabled = false;
+    });
+  });
+});
 </script>
 {%endblock%}
 

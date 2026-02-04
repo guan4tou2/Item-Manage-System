@@ -232,33 +232,51 @@
 
   <!-- 統計資訊 -->
   <div class="row g-3 mb-4 animate-fadeInUp stagger-3">
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
       <div class="stats-card bg-primary text-white">
         <div class="icon"><i class="fas fa-box"></i></div>
         <h2>{{ stats.total if stats else (pagination.total if pagination else items|length) }}</h2>
         <h5>總物品數</h5>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
       <div class="stats-card bg-success text-white">
         <div class="icon"><i class="fas fa-image"></i></div>
         <h2>{{ stats.with_photo if stats else 0 }}</h2>
         <h5>有照片</h5>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
       <div class="stats-card bg-info text-white">
         <div class="icon"><i class="fas fa-map-pin"></i></div>
         <h2>{{ stats.with_location if stats else 0 }}</h2>
         <h5>有位置記錄</h5>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-6 col-md-2">
       <div class="stats-card bg-warning text-white">
         <div class="icon"><i class="fas fa-folder"></i></div>
         <h2>{{ stats.with_type if stats else 0 }}</h2>
         <h5>有分類</h5>
       </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <a href="{{ url_for('items.reorder_list') }}" class="text-decoration-none">
+        <div class="stats-card bg-danger text-white" id="stockAlertCard">
+          <div class="icon"><i class="fas fa-shopping-cart"></i></div>
+          <h2 id="stockAlertCount">-</h2>
+          <h5>需補貨</h5>
+        </div>
+      </a>
+    </div>
+    <div class="col-6 col-md-2">
+      <a href="{{ url_for('items.notifications') }}" class="text-decoration-none">
+        <div class="stats-card bg-secondary text-white">
+          <div class="icon"><i class="fas fa-bell"></i></div>
+          <h2 id="expiryAlertCount">-</h2>
+          <h5>到期通知</h5>
+        </div>
+      </a>
     </div>
   </div>
 </div>
@@ -752,6 +770,49 @@ async function toggleFavorite(itemId, btn) {
         })
         .catch(err => alert('發生錯誤'));
     }
+
+    // ==========================================
+    // 首頁統計數字動態載入
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', function() {
+        // 載入庫存警告數量
+        fetch('/api/stock/count')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const stockEl = document.getElementById('stockAlertCount');
+                    if (stockEl) {
+                        stockEl.textContent = data.count;
+                        // 若有警告則加上紅色
+                        if (data.count > 0) {
+                            stockEl.classList.add('text-danger');
+                        }
+                    }
+                }
+            })
+            .catch(err => console.error('載入庫存警告失敗:', err));
+
+        // 載入到期通知數量
+        fetch('/api/notifications/count')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success !== false) {
+                    const expiryEl = document.getElementById('expiryAlertCount');
+                    if (expiryEl) {
+                        // 通知 API 回傳 {expiring_soon, expired, total}
+                        const total = data.total || 0;
+                        expiryEl.textContent = total;
+                        // 若有到期則加上警告色
+                        if (data.expired > 0) {
+                            expiryEl.classList.add('text-danger');
+                        } else if (data.expiring_soon > 0) {
+                            expiryEl.classList.add('text-warning');
+                        }
+                    }
+                }
+            })
+            .catch(err => console.error('載入到期通知失敗:', err));
+    });
 
   </script>
 {%endblock%}

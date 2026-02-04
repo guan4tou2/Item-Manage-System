@@ -18,11 +18,11 @@ class FakeLocationRepo:
         self.locations.append(doc)
 
     def delete_location(self, loc_id):
-        self.locations = [l for l in self.locations if l["_id"] != loc_id]
+        self.locations = [l for l in self.locations if str(l.get("_id")) != str(loc_id)]
 
     def update_location(self, loc_id, doc: dict):
         for loc in self.locations:
-            if loc["_id"] == loc_id:
+            if str(loc.get("_id")) == str(loc_id):
                 loc.update(doc)
                 break
 
@@ -64,7 +64,7 @@ class LocationServiceTestCase(unittest.TestCase):
         
         self.assertEqual(sorted(floors), ["1F", "2F"])
         self.assertEqual(sorted(rooms), ["客廳", "書房", "臥室"])
-        self.assertEqual(sorted(zones), ["沙發", "書桌", "衣櫃"])
+        self.assertEqual(sorted(zones), sorted(["沙發", "書桌", "衣櫃"]))
 
     def test_list_choices_empty(self):
         """測試空的位置列表"""
@@ -129,6 +129,7 @@ class LocationServiceTestCase(unittest.TestCase):
         
         locations_after = location_service.list_locations()
         self.assertEqual(len(locations_after), 0)
+        self.assertEqual(self.fake_repo.locations, [])
 
     def test_delete_location_invalid_id(self):
         """測試刪除無效 ID"""
@@ -153,7 +154,8 @@ class LocationServiceTestCase(unittest.TestCase):
         updated_locations = location_service.list_locations()
         self.assertEqual(updated_locations[0]["floor"], "2F")
         self.assertEqual(updated_locations[0]["room"], "臥室")
-        self.assertEqual(updated_locations[0]["zone"], "書桌")  # 未更新的欄位保持不變
+        self.assertEqual(updated_locations[0]["zone"], "書桌")
+        self.assertEqual(self.fake_repo.locations[0]["floor"], "2F")
 
     def test_update_location_invalid_id(self):
         """測試更新無效 ID"""

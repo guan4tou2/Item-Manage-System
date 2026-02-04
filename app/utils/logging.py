@@ -132,15 +132,17 @@ class LoggingMiddleware:
     def __call__(self, environ, start_response):
         """Log HTTP requests."""
         import time
-        from flask import request
+        from werkzeug.wrappers import Request
+
+        req = Request(environ)
 
         # Log request start
         self.logger.info(
             "request_started",
-            method=request.method,
-            path=request.path,
-            remote_addr=request.remote_addr,
-            user_agent=request.user_agent.string if request.user_agent else None,
+            method=req.method,
+            path=req.path,
+            remote_addr=req.remote_addr,
+            user_agent=req.user_agent.string if req.user_agent else None,
         )
 
         start_time = time.time()

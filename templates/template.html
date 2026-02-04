@@ -110,12 +110,18 @@
                       <i class="fas fa-edit me-2 text-primary"></i>管理物品
                     </a>
                   </li>
-                  <li>
-                    <a class="dropdown-item" href="{{url_for('items.print_labels')}}">
-                      <i class="fas fa-print me-2 text-secondary"></i>列印標籤
-                    </a>
-                  </li>
-                  <li><hr class="dropdown-divider" /></li>
+                   <li>
+                     <a class="dropdown-item" href="{{url_for('items.print_labels')}}">
+                       <i class="fas fa-print me-2 text-secondary"></i>列印標籤
+                     </a>
+                   </li>
+                   <li>
+                     <a class="dropdown-item" href="{{url_for('travel.list_page')}}">
+                       <i class="fas fa-suitcase-rolling me-2 text-success"></i>旅行清單
+                     </a>
+                   </li>
+                   <li><hr class="dropdown-divider" /></li>
+
                   <li>
                     <a class="dropdown-item" href="{{url_for('types.addtype')}}">
                       <i class="fas fa-tags me-2 text-info"></i>新增類型
@@ -195,7 +201,7 @@
                   
                   <!-- 通知鈴鐺 -->
                   <div class="nav-item me-3">
-                    <a href="{{url_for('items.notifications')}}" 
+                    <a href="{{url_for('items.notifications_summary')}}" 
                        class="nav-link position-relative notification-bell" 
                        id="notificationBell"
                        title="到期通知">

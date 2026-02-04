@@ -8,5 +8,5 @@ def list_types() -> List[Dict[str, Any]]:
 
 
 def create_type(data: Dict[str, Any]) -> None:
-    type_repo.insert_type(data["name"])
+    type_repo.insert_type({"name": data["name"]})
 

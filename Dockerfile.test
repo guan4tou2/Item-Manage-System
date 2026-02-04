@@ -1,0 +1,31 @@
+FROM python:3.13-slim
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libjpeg-dev \
+    zlib1g-dev \
+    curl \
+    git \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Install uv
+RUN pip install --no-cache-dir uv
+
+# Copy dependency files
+COPY requirements.txt pyproject.toml /workspace/
+
+# Install dependencies with uv
+RUN uv pip install --system --no-cache-dir -r requirements.txt
+RUN uv pip install --system --no-cache-dir pytest pytest-cov pytest-mock pytest-flask pytest-env
+
+# Copy application code
+COPY . /workspace
+
+ENV FLASK_APP=run.py \
+    FLASK_ENV=testing \
+    PYTHONPATH=/workspace
+
+CMD ["pytest", "-v"]

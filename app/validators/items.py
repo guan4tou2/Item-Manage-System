@@ -47,5 +47,16 @@ def validate_item_fields(
             if not ok:
                 return ok, msg
 
+    # 數量與補貨門檻
+    for int_field, label in [("Quantity", "庫存數量"), ("SafetyStock", "安全庫存"), ("ReorderLevel", "補貨門檻")]:
+        val = data.get(int_field, "")
+        if val != "":
+            try:
+                num = int(val)
+                if num < 0:
+                    return False, f"{label} 需為大於等於 0 的數字"
+            except ValueError:
+                return False, f"{label} 需為數字"
+
     return True, ""
 

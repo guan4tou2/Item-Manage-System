@@ -1,0 +1,358 @@
+{%extends "template.html"%}
+
+{%block title%}補貨清單 - 物品管理系統{%endblock%}
+
+{%block user%}{{User.name}}{%endblock%}
+
+{%block contain%}
+<div class="row">
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-shopping-cart text-primary me-2"></i>補貨清單
+        </h2>
+        <p class="text-muted mb-0">庫存不足的物品列表</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{url_for('items.notifications')}}" class="btn btn-outline-warning">
+          <i class="fas fa-bell me-1"></i>到期通知
+        </a>
+        <a href="{{url_for('items.home')}}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回首頁
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 mb-4">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+          <div class="card-body text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-white-50 mb-1">需補貨</h6>
+                <h2 class="mb-0 fw-bold">{{ reorder_count }}</h2>
+              </div>
+              <div class="opacity-50">
+                <i class="fas fa-exclamation-circle fa-3x"></i>
+              </div>
+            </div>
+            <small class="text-white-75">低於補貨門檻</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+          <div class="card-body text-dark">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-dark opacity-75 mb-1">低庫存</h6>
+                <h2 class="mb-0 fw-bold">{{ low_stock_count }}</h2>
+              </div>
+              <div class="opacity-50">
+                <i class="fas fa-box-open fa-3x"></i>
+              </div>
+            </div>
+            <small class="opacity-75">低於安全庫存</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);">
+          <div class="card-body text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-white-50 mb-1">總警報</h6>
+                <h2 class="mb-0 fw-bold">{{ total_alerts }}</h2>
+              </div>
+              <div class="opacity-50">
+                <i class="fas fa-bell fa-3x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if total_alerts == 0 %}
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body text-center py-5">
+        <div class="mb-4">
+          <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+        </div>
+        <h4 class="text-success">庫存充足！</h4>
+        <p class="text-muted mb-4">所有物品的庫存都在安全範圍內</p>
+        <a href="{{url_for('items.home')}}" class="btn btn-primary">
+          <i class="fas fa-home me-1"></i>返回首頁
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+
+  {% if need_reorder_items %}
+  <div class="col-12 mb-4">
+    <div class="card border-danger border-0 shadow-sm">
+      <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-exclamation-triangle me-2"></i>需要補貨
+        </h5>
+        <span class="badge bg-white text-danger">{{ reorder_count }} 項</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>物品名稱</th>
+                <th>位置</th>
+                <th class="text-center">現有數量</th>
+                <th class="text-center">補貨門檻</th>
+                <th class="text-center">安全庫存</th>
+                <th class="text-center">快速調整</th>
+                <th class="text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in need_reorder_items %}
+              <tr data-item-id="{{ item.ItemID }}">
+                <td>
+                  <div class="d-flex align-items-center">
+                    {% if item.ItemThumb or item.ItemPic %}
+                    <img src="{{url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic)}}" 
+                         class="rounded me-2" 
+                         style="width: 40px; height: 40px; object-fit: cover;">
+                    {% else %}
+                    <div class="rounded me-2 bg-secondary d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                      <i class="fas fa-box text-white"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                      <a href="{{url_for('items.item_detail', item_id=item.ItemID)}}" class="text-decoration-none">
+                        <strong>{{ item.ItemName }}</strong>
+                      </a>
+                      <br><small class="text-muted">{{ item.ItemType }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <small>
+                    {% if item.ItemFloor %}{{ item.ItemFloor }}{% endif %}
+                    {% if item.ItemRoom %} / {{ item.ItemRoom }}{% endif %}
+                    {% if item.ItemZone %} / {{ item.ItemZone }}{% endif %}
+                  </small>
+                  <br><small class="text-muted">{{ item.ItemStorePlace }}</small>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-danger fs-6 quantity-display">{{ item.Quantity or 0 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-secondary">{{ item.ReorderLevel or 0 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-info text-dark">{{ item.SafetyStock or 0 }}</span>
+                </td>
+                <td class="text-center">
+                  {% if User.admin %}
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-danger qty-btn" data-delta="-1" title="-1">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="btn btn-outline-success qty-btn" data-delta="1" title="+1">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn btn-outline-primary qty-btn" data-delta="10" title="+10">
+                      +10
+                    </button>
+                  </div>
+                  {% else %}
+                  <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if User.admin %}
+                  <a href="{{url_for('items.edititem', item_id=item.ItemID)}}" 
+                     class="btn btn-sm btn-outline-primary" 
+                     title="編輯物品">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if low_stock_items %}
+  <div class="col-12 mb-4">
+    <div class="card border-warning border-0 shadow-sm">
+      <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-box-open me-2"></i>低庫存警告
+        </h5>
+        <span class="badge bg-dark">{{ low_stock_count }} 項</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>物品名稱</th>
+                <th>位置</th>
+                <th class="text-center">現有數量</th>
+                <th class="text-center">補貨門檻</th>
+                <th class="text-center">安全庫存</th>
+                <th class="text-center">快速調整</th>
+                <th class="text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in low_stock_items %}
+              {% if item.stock_status != 'critical' %}
+              <tr data-item-id="{{ item.ItemID }}">
+                <td>
+                  <div class="d-flex align-items-center">
+                    {% if item.ItemThumb or item.ItemPic %}
+                    <img src="{{url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic)}}" 
+                         class="rounded me-2" 
+                         style="width: 40px; height: 40px; object-fit: cover;">
+                    {% else %}
+                    <div class="rounded me-2 bg-secondary d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                      <i class="fas fa-box text-white"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                      <a href="{{url_for('items.item_detail', item_id=item.ItemID)}}" class="text-decoration-none">
+                        <strong>{{ item.ItemName }}</strong>
+                      </a>
+                      <br><small class="text-muted">{{ item.ItemType }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <small>
+                    {% if item.ItemFloor %}{{ item.ItemFloor }}{% endif %}
+                    {% if item.ItemRoom %} / {{ item.ItemRoom }}{% endif %}
+                    {% if item.ItemZone %} / {{ item.ItemZone }}{% endif %}
+                  </small>
+                  <br><small class="text-muted">{{ item.ItemStorePlace }}</small>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-warning text-dark fs-6 quantity-display">{{ item.Quantity or 0 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-secondary">{{ item.ReorderLevel or 0 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge bg-info text-dark">{{ item.SafetyStock or 0 }}</span>
+                </td>
+                <td class="text-center">
+                  {% if User.admin %}
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-danger qty-btn" data-delta="-1" title="-1">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <button class="btn btn-outline-success qty-btn" data-delta="1" title="+1">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn btn-outline-primary qty-btn" data-delta="10" title="+10">
+                      +10
+                    </button>
+                  </div>
+                  {% else %}
+                  <span class="text-muted">-</span>
+                  {% endif %}
+                </td>
+                <td class="text-center">
+                  {% if User.admin %}
+                  <a href="{{url_for('items.edititem', item_id=item.ItemID)}}" 
+                     class="btn btn-sm btn-outline-primary" 
+                     title="編輯物品">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endif %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %}
+</div>
+
+<style>
+  .table th {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge {
+    font-weight: 500;
+  }
+  .qty-btn {
+    min-width: 36px;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.qty-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const row = this.closest('tr');
+      const itemId = row.dataset.itemId;
+      const delta = parseInt(this.dataset.delta);
+      const display = row.querySelector('.quantity-display');
+      
+      this.disabled = true;
+      
+      fetch(`/api/quantity/${itemId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ delta: delta })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          display.textContent = data.quantity;
+          display.className = 'badge fs-6 quantity-display';
+          if (data.status === 'critical') {
+            display.classList.add('bg-danger');
+          } else if (data.status === 'low') {
+            display.classList.add('bg-warning', 'text-dark');
+          } else {
+            display.classList.add('bg-success');
+          }
+        } else {
+          alert(data.message || '更新失敗');
+        }
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        alert('更新失敗');
+      })
+      .finally(() => {
+        this.disabled = false;
+      });
+    });
+  });
+});
+</script>
+{%endblock%}

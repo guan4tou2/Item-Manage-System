@@ -102,7 +102,7 @@ ITEM-002,另一個物品,文具,...
 </code></pre>
               <div class="alert alert-info small mt-3 mb-0">
                 <i class="fas fa-info-circle me-1"></i>
-                可以先匯出現有資料作為範本
+                可以先匯出現有資料作為範本，欄位支援 Quantity、SafetyStock、ReorderLevel、WarrantyExpiry、UsageExpiry
               </div>
             </div>
           </div>
@@ -120,6 +120,9 @@ ITEM-002,另一個物品,文具,...
             </a>
             <a href="{{ url_for('items.export_items', format='csv') }}" class="btn btn-outline-success">
               <i class="fas fa-file-csv me-1"></i>匯出 CSV
+            </a>
+            <a href="{{ url_for('items.export_restock') }}" class="btn btn-outline-danger">
+              <i class="fas fa-clipboard-list me-1"></i>補貨清單
             </a>
           </div>
         </div>

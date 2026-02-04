@@ -184,6 +184,42 @@
             </div>
           </div>
 
+          <!-- 庫存設定 -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-boxes text-warning"></i>
+              庫存與補貨
+            </h5>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-floating">
+              <input type="number" min="0" class="form-control" id="Quantity" name="Quantity" placeholder="庫存數量" value="{{ item.Quantity or 0 }}" />
+              <label for="Quantity"><i class="fas fa-cubes me-1"></i>庫存數量</label>
+            </div>
+            <small class="text-muted">目前庫存，預設 0</small>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-floating">
+              <input type="number" min="0" class="form-control" id="SafetyStock" name="SafetyStock" placeholder="安全庫存" value="{{ item.SafetyStock or 0 }}" />
+              <label for="SafetyStock"><i class="fas fa-shield-alt me-1"></i>安全庫存</label>
+            </div>
+            <small class="text-muted">低於此值顯示警告</small>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-floating">
+              <input type="number" min="0" class="form-control" id="ReorderLevel" name="ReorderLevel" placeholder="補貨門檻" value="{{ item.ReorderLevel or 0 }}" />
+              <label for="ReorderLevel"><i class="fas fa-bell me-1"></i>補貨門檻</label>
+            </div>
+            <small class="text-muted">低於或等於此值為需補貨</small>
+          </div>
+
+          <div class="col-12">
+            <small class="text-muted">安全庫存為警告門檻；補貨門檻為需要補貨</small>
+          </div>
+
           <!-- 分類資訊區塊 -->
           <div class="col-12">
             <h5 class="form-section-title mt-3">

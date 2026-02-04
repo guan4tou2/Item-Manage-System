@@ -1,0 +1,60 @@
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - DB_TYPE=postgres
+      - DATABASE_URL=postgresql://testuser:testpass@test-postgres:5432/testdb
+      - REDIS_URL=redis://test-redis:6379/1
+      - FLASK_ENV=testing
+      - SECRET_KEY=test-secret-key-for-testing
+      - MONGO_URI=mongodb://test-mongo:27017/testDB
+    volumes:
+      - .:/workspace
+      - test_coverage:/workspace/htmlcov
+    depends_on:
+      test-postgres:
+        condition: service_healthy
+      test-redis:
+        condition: service_healthy
+      test-mongo:
+        condition: service_healthy
+    command: ["pytest", "-v", "--cov=app", "--cov-report=html", "--cov-report=term"]
+
+  test-postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=testuser
+      - POSTGRES_PASSWORD=testpass
+      - POSTGRES_DB=testdb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  test-redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /data
+
+  test-mongo:
+    image: mongo:7
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    tmpfs:
+      - /data/db
+
+volumes:
+  test_coverage:

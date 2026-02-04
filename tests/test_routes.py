@@ -30,7 +30,7 @@ class RoutesTestCase(unittest.TestCase):
 
     def test_signin_post_success(self):
         """測試成功登入"""
-        with patch("app.services.user_service.authenticate", return_value=True):
+        with patch("app.services.user_service.authenticate", return_value=(True, "")):
             response = self.client.post(
                 "/signin",
                 data={"UserID": "admin", "Password": "admin"},
@@ -42,7 +42,7 @@ class RoutesTestCase(unittest.TestCase):
 
     def test_signin_post_failure(self):
         """測試登入失敗"""
-        with patch("app.services.user_service.authenticate", return_value=False):
+        with patch("app.services.user_service.authenticate", return_value=(False, "帳號或密碼錯誤")):
             response = self.client.post(
                 "/signin",
                 data={"UserID": "admin", "Password": "wrong"},
@@ -81,8 +81,7 @@ class RoutesTestCase(unittest.TestCase):
 
     def test_home_with_login(self):
         """測試登入後訪問首頁"""
-        with patch("app.services.user_service.authenticate", return_value=True):
-            # 登入
+        with patch("app.services.user_service.authenticate", return_value=(True, "")):
             self.client.post(
                 "/signin",
                 data={"UserID": "admin", "Password": "admin"},

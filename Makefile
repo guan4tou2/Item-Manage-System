@@ -123,9 +123,26 @@ docker-rebuild: ## 重建並重啟 Docker 容器
 # 測試與品質
 # ============================================================
 
-test: ## 執行測試
+test: ## 執行測試（本地）
 	@echo "$(BLUE)🧪 執行測試...$(NC)"
 	@. venv/bin/activate && python -m pytest tests/ -v
+
+test-cov: ## 執行測試並生成覆蓋率報告
+	@echo "$(BLUE)🧪 執行測試並生成覆蓋率...$(NC)"
+	@. venv/bin/activate && python -m pytest tests/ -v --cov=app --cov-report=html --cov-report=term-missing
+	@echo "$(GREEN)✓ 覆蓋率報告: htmlcov/index.html$(NC)"
+
+test-watch: ## 監視模式執行測試
+	@echo "$(BLUE)🧪 監視模式執行測試...$(NC)"
+	@. venv/bin/activate && python -m pytest tests/ -v --cov=app -f
+
+test-docker: ## 在 Docker 中執行測試
+	@echo "$(BLUE)🐳 在 Docker 中執行測試...$(NC)"
+	@./run_tests.sh
+
+test-uv: ## 使用 uv 執行測試（本地）
+	@echo "$(BLUE)⚡ 使用 uv 執行測試...$(NC)"
+	@./run_tests_uv.sh
 
 lint: ## 程式碼檢查
 	@echo "$(BLUE)🔍 程式碼檢查...$(NC)"

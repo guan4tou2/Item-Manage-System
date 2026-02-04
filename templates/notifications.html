@@ -26,7 +26,7 @@
   <!-- 統計卡片 -->
   <div class="col-12 mb-4">
     <div class="row g-3">
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
           <div class="card-body text-white">
             <div class="d-flex justify-content-between align-items-center">
@@ -41,7 +41,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
           <div class="card-body text-dark">
             <div class="d-flex justify-content-between align-items-center">
@@ -57,13 +57,30 @@
           </div>
         </div>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);">
+          <div class="card-body text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <h6 class="text-white-50 mb-1">庫存不足</h6>
+                <h2 class="mb-0 fw-bold">{{ low_count }}</h2>
+              </div>
+              <div class="opacity-50">
+                <i class="fas fa-box-open fa-3x"></i>
+              </div>
+            </div>
+            <small class="text-white-75">低於或等於補貨門檻</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
         <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);">
           <div class="card-body text-white">
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <h6 class="text-white-50 mb-1">總警報</h6>
                 <h2 class="mb-0 fw-bold">{{ total_alerts }}</h2>
+                <small class="text-white-50">包含到期與更換提醒</small>
               </div>
               <div class="opacity-50">
                 <i class="fas fa-bell fa-3x"></i>
@@ -203,6 +220,58 @@
   </div>
   {% endif %}
 
+  <!-- 更換提醒 -->
+  {% if replacement_due or replacement_upcoming %}
+  <div class="col-12 mb-4">
+    <div class="card border-info border-0 shadow-sm">
+      <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-sync-alt me-2"></i>衣物/耗材更換提醒
+        </h5>
+        <div class="d-flex gap-2 align-items-center">
+          <span class="badge bg-light text-info">需更換 {{ replacement_due|length }}</span>
+          <span class="badge bg-dark">即將更換 {{ replacement_upcoming|length }}</span>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>物品名稱</th>
+                <th>規則</th>
+                <th>天數</th>
+                <th>類型</th>
+                <th class="text-center">狀態</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in replacement_due %}
+              <tr class="align-middle">
+                <td><strong>{{ item.ItemName }}</strong><br><small class="text-muted">{{ item.ItemType }}</small></td>
+                <td>{{ item.rule_name }}</td>
+                <td>已 {{ item.days_since }} 天</td>
+                <td>{{ item.ItemType }}</td>
+                <td class="text-center"><span class="badge bg-danger">需更換</span></td>
+              </tr>
+              {% endfor %}
+              {% for item in replacement_upcoming %}
+              <tr class="align-middle">
+                <td><strong>{{ item.ItemName }}</strong><br><small class="text-muted">{{ item.ItemType }}</small></td>
+                <td>{{ item.rule_name }}</td>
+                <td>剩餘 {{ item.days_remaining }} 天</td>
+                <td>{{ item.ItemType }}</td>
+                <td class="text-center"><span class="badge bg-warning text-dark">即將更換</span></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- 即將到期物品 -->
   {% if near_expiry_items %}
   <div class="col-12 mb-4">
@@ -213,6 +282,7 @@
         </h5>
         <span class="badge bg-dark">{{ near_count }} 項</span>
       </div>
+
       <div class="card-body p-0">
         <div class="table-responsive">
           <table class="table table-hover mb-0">
@@ -294,6 +364,108 @@
                     {% endif %}
                   {% endfor %}
                 </td>
+                <td class="text-center">
+                  {% if User.admin %}
+                  <a href="{{url_for('items.edititem', item_id=item.ItemID)}}" 
+                     class="btn btn-sm btn-outline-primary" 
+                     title="編輯物品">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- 庫存不足物品 -->
+  {% if low_stock_items %}
+  <div class="col-12 mb-4">
+    <div class="card border-primary border-0 shadow-sm">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-box-open me-2"></i>庫存不足
+        </h5>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="badge bg-light text-primary">共 {{ low_count }} 項</span>
+          <span class="badge bg-warning text-dark">警告 {{ warning_count }}</span>
+          <span class="badge bg-danger">需補貨 {{ critical_count }}</span>
+          <form action="{{ url_for('items.export_restock') }}" method="get" class="d-flex align-items-center gap-2">
+            <select name="level" class="form-select form-select-sm">
+              <option value="all">全部</option>
+              <option value="warning">警告</option>
+              <option value="critical">需補貨</option>
+            </select>
+            <select name="format" class="form-select form-select-sm">
+              <option value="csv">CSV</option>
+              <option value="json">JSON</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-light">補貨清單</button>
+          </form>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>物品名稱</th>
+                <th>位置</th>
+                <th>庫存 / 安全 / 補貨</th>
+                <th>狀態</th>
+                <th>類型</th>
+                <th class="text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in low_stock_items %}
+              <tr class="align-middle">
+                <td>
+                  <div class="d-flex align-items-center">
+                    {% if item.ItemPic %}
+                    <img src="{{url_for('items.uploaded_file', filename=item.ItemPic)}}" 
+                         class="rounded me-2" 
+                         style="width: 40px; height: 40px; object-fit: cover;">
+                    {% else %}
+                    <div class="rounded me-2 bg-secondary d-flex align-items-center justify-content-center" 
+                         style="width: 40px; height: 40px;">
+                      <i class="fas fa-box text-white"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                      <strong>{{ item.ItemName }}</strong>
+                      <br><small class="text-muted">{{ item.ItemID }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <small>
+                    {% if item.ItemFloor %}{{ item.ItemFloor }}{% endif %}
+                    {% if item.ItemRoom %} / {{ item.ItemRoom }}{% endif %}
+                    {% if item.ItemZone %} / {{ item.ItemZone }}{% endif %}
+                  </small>
+                  <br><small class="text-muted">{{ item.ItemStorePlace }}</small>
+                </td>
+                <td>
+                  <span class="badge bg-primary">{{ item.Quantity }}</span>
+                  <span class="badge bg-info text-dark ms-1">安全 {{ item.SafetyStock }}</span>
+                  <span class="badge bg-secondary ms-1">補貨 {{ item.ReorderLevel }}</span>
+                </td>
+                <td>
+                  {% if item.StockLevel == 'critical' %}
+                  <span class="badge bg-danger">需補貨</span>
+                  {% elif item.StockLevel == 'warning' %}
+                  <span class="badge bg-warning text-dark">低於安全庫存</span>
+                  {% else %}
+                  <span class="badge bg-success">正常</span>
+                  {% endif %}
+                </td>
+                <td><small class="text-muted">{{ item.ItemType }}</small></td>
                 <td class="text-center">
                   {% if User.admin %}
                   <a href="{{url_for('items.edititem', item_id=item.ItemID)}}" 

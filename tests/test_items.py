@@ -70,6 +70,11 @@ class FakeItemRepo:
                 return True
         return False
 
+    def add_move_history(self, item_id, old_location, new_location):
+        history = self.updated_items.get(item_id, {})
+        history["_move_history_called"] = True
+        self.updated_items[item_id] = history
+
 
 class ItemServiceTestCase(unittest.TestCase):
     def setUp(self):
@@ -195,9 +200,9 @@ class ItemServiceTestCase(unittest.TestCase):
         """測試取得單個物品"""
         item = item_service.get_item("A1")
         self.assertIsNotNone(item)
+        assert item is not None
         self.assertEqual(item["ItemID"], "A1")
         self.assertEqual(item["ItemName"], "筆記本")
-        # 應該有過期狀態註解
         self.assertIn("WarrantyStatus", item)
         self.assertIn("UsageStatus", item)
 
@@ -225,7 +230,7 @@ class ItemServiceTestCase(unittest.TestCase):
             ok, msg = item_service.create_item(form_data, None)
             self.assertTrue(ok)
             self.assertIn("成功", msg)
-            self.assertEqual(len(item_service.item_repo.inserted_items), 1)
+            self.assertEqual(len(item_service.item_repo.inserted_items), 1)  # type: ignore[arg-type]
 
     def test_create_item_validation_failure(self):
         """測試建立物品時驗證失敗"""
@@ -256,7 +261,7 @@ class ItemServiceTestCase(unittest.TestCase):
             ok, msg = item_service.update_item("A1", form_data, None)
             self.assertTrue(ok)
             self.assertIn("成功", msg)
-            self.assertIn("A1", item_service.item_repo.updated_items)
+            self.assertIn("A1", item_service.item_repo.updated_items)  # type: ignore[arg-type]
 
     def test_update_item_not_found(self):
         """測試更新不存在的物品"""
@@ -270,7 +275,7 @@ class ItemServiceTestCase(unittest.TestCase):
         ok, msg = item_service.delete_item("A1")
         self.assertTrue(ok)
         self.assertIn("刪除", msg)
-        self.assertIn("A1", item_service.item_repo.deleted_items)
+        self.assertIn("A1", item_service.item_repo.deleted_items)  # type: ignore[arg-type]
 
     def test_delete_item_not_found(self):
         """測試刪除不存在的物品"""
@@ -287,8 +292,8 @@ class ItemServiceTestCase(unittest.TestCase):
             "ItemZone": "衣櫃",
         }
         item_service.update_item_place("A1", updates)
-        self.assertIn("A1", item_service.item_repo.updated_items)
-        self.assertEqual(item_service.item_repo.updated_items["A1"]["ItemStorePlace"], "新位置")
+        self.assertIn("A1", item_service.item_repo.updated_items)  # type: ignore[arg-type]
+        self.assertEqual(item_service.item_repo.updated_items.get("A1", {}).get("ItemStorePlace"), "新位置")  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

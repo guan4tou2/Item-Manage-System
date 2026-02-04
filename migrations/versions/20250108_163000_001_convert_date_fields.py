@@ -1,9 +1,15 @@
 """Convert date fields from String to Date type
 
-Revision ID: 001
+Revision ID: 20250108_163000_001
 Revises:
 Create Date: 2025-01-08 16:30:00
 """
+
+# revision identifiers, used by Alembic.
+revision = "20250108_163000_001"
+down_revision = "20250101_base_schema"
+branch_labels = None
+depends_on = None
 from typing import Sequence, Union
 from datetime import date
 
@@ -21,7 +27,7 @@ def upgrade() -> None:
     op.execute("""
         UPDATE items
         SET _warranty_expiry_date = CASE
-            WHEN WarrantyExpiry IS NOT NULL AND WarrantyExpiry != '' THEN WarrantyExpiry::date
+            WHEN "WarrantyExpiry" IS NOT NULL AND "WarrantyExpiry" != '' THEN "WarrantyExpiry"::date
             ELSE NULL
         END
     """)
@@ -29,7 +35,7 @@ def upgrade() -> None:
     op.execute("""
         UPDATE items
         SET _usage_expiry_date = CASE
-            WHEN UsageExpiry IS NOT NULL AND UsageExpiry != '' THEN UsageExpiry::date
+            WHEN "UsageExpiry" IS NOT NULL AND "UsageExpiry" != '' THEN "UsageExpiry"::date
             ELSE NULL
         END
     """)

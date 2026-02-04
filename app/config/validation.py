@@ -1,7 +1,8 @@
 """Application configuration validation using pydantic"""
+import json
+import os
 from typing import Optional, List
 from pydantic import BaseModel, Field, validator, EmailStr, HttpUrl
-import os
 
 
 class DatabaseConfig(BaseModel):
@@ -30,10 +31,14 @@ class ServerConfig(BaseModel):
     debug: bool = Field(default=False, description="Debug mode")
     workers: int = Field(default=4, ge=1, le=32, description="Number of Gunicorn workers")
     threads: int = Field(default=2, ge=1, le=8, description="Number of Gunicorn threads per worker")
-    secret_key: str = Field(..., min_length=32, description="Application secret key")
+    secret_key: Optional[str] = Field(default=None, description="Application secret key")
 
     @validator('secret_key')
     def validate_secret_key(cls, v):
+        if v is None or v == "":
+            return None
+        if len(v) < 32:
+            raise ValueError('SECRET_KEY must have at least 32 characters')
         if v in ['dev-secret-key', 'change-in-production', 'secret']:
             raise ValueError('SECRET_KEY must not be a default value')
         return v
@@ -108,6 +113,8 @@ class AppConfig(BaseModel):
 
     @validator('mail')
     def validate_mail_config(cls, v):
+        if v is None:
+            return v
         if v.username and '@example.com' in v.username:
             raise ValueError('Example email addresses are not allowed in production')
         return v
@@ -149,6 +156,20 @@ class AppConfig(BaseModel):
     @classmethod
     def load(cls) -> "AppConfig":
         """Load configuration from environment variables with validation"""
+
+        def _parse_limits(val):
+            if isinstance(val, list):
+                return val
+            if isinstance(val, str):
+                try:
+                    parsed = json.loads(val)
+                    if isinstance(parsed, list):
+                        return parsed
+                except Exception:
+                    pass
+                return [s.strip() for s in val.split(",") if s.strip()]
+            return ["200 per day", "50 per hour"]
+
         return cls(
             flask_env=os.environ.get("FLASK_ENV", "production"),
             database=DatabaseConfig(
@@ -176,9 +197,9 @@ class AppConfig(BaseModel):
                 username=os.environ.get("MAIL_USERNAME"),
                 password=os.environ.get("MAIL_PASSWORD"),
                 default_sender=os.environ.get("MAIL_DEFAULT_SENDER")
-            ),
+            ) if os.environ.get("MAIL_SERVER") else None,
             rate_limit=RateLimitConfig(
-                default_limits=os.environ.get("DEFAULT_LIMITS", "200 per day, 50 per hour"),
+                default_limits=_parse_limits(os.environ.get("DEFAULT_LIMITS", ["200 per day", "50 per hour"])),
                 storage_uri=os.environ.get("STORAGE_URI", "redis://localhost:6379/0")
             ),
             upload_folder=os.environ.get("UPLOAD_FOLDER", "/workspace/static/uploads")

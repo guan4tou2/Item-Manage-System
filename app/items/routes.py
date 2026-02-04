@@ -17,18 +17,25 @@ from flask import (
     Response,
 )
 
+from typing import Any, Dict, List
+
 from app.services import (
     item_service,
     type_service,
     location_service,
 )
 from app.services import log_service
+from app.repositories import user_repo
 from app.utils.auth import login_required, admin_required, get_current_user
+from app.models.item import Item
+from app.models.item_type import ItemType
+from app.models.location import Location
 import qrcode
 import barcode
 from barcode.writer import ImageWriter
 
 bp = Blueprint("items", __name__)
+
 
 
 @bp.route("/uploads/<filename>")
@@ -376,50 +383,56 @@ def notification_count():
     return jsonify(counts)
 
 
-@bp.route("/export/<format>")
+@bp.route("/export/<string:export_format>")
 @admin_required
-def export_items(format: str):
-    """匯出物品資料"""
-    items = item_service.get_all_items_for_export()
+def export_items(export_format: str):
+    filters = {
+        key: value
+        for key, value in {
+            "ItemType": request.args.get("type"),
+            "ItemOwner": request.args.get("owner"),
+            "ItemFloor": request.args.get("floor"),
+            "ItemRoom": request.args.get("room"),
+            "ItemZone": request.args.get("zone"),
+        }.items()
+        if value
+    }
+    items = item_service.get_all_items_for_export(filters=filters)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    if format == "json":
-        # JSON 格式匯出
+
+    if export_format == "json":
         output = json.dumps(items, ensure_ascii=False, indent=2)
         return Response(
             output,
             mimetype="application/json",
-            headers={"Content-Disposition": f"attachment;filename=items_export_{timestamp}.json"}
+            headers={"Content-Disposition": f"attachment;filename=items_export_{timestamp}.json"},
         )
-    elif format == "csv":
-        # CSV 格式匯出
+    if export_format == "csv":
         if not items:
             flash("沒有可匯出的資料", "warning")
             return redirect(url_for("items.manageitem"))
-        
-        # 取得所有欄位
+
         fieldnames = [
             "ItemID", "ItemName", "ItemDesc", "ItemPic", "ItemStorePlace",
             "ItemType", "ItemOwner", "ItemGetDate", "ItemFloor", "ItemRoom",
-            "ItemZone", "WarrantyExpiry", "UsageExpiry"
+            "ItemZone", "Quantity", "SafetyStock", "ReorderLevel", "WarrantyExpiry", "UsageExpiry",
         ]
-        
+
         output = StringIO()
-        writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction='ignore')
+        writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
-        
         for item in items:
             writer.writerow(item)
-        
+
         output.seek(0)
         return Response(
             output.getvalue(),
             mimetype="text/csv",
-            headers={"Content-Disposition": f"attachment;filename=items_export_{timestamp}.csv"}
+            headers={"Content-Disposition": f"attachment;filename=items_export_{timestamp}.csv"},
         )
-    else:
-        flash("不支援的匯出格式", "danger")
-        return redirect(url_for("items.manageitem"))
+
+    flash("不支援的匯出格式", "danger")
+    return redirect(url_for("items.manageitem"))
 
 
 @bp.route("/import", methods=["GET", "POST"])
@@ -617,43 +630,10 @@ def search_suggestions():
     if len(query) < 2:
         return jsonify({"suggestions": []})
     
-    # 搜尋物品名稱和 ID
-    from app import mongo
+    from app.repositories import item_repo
+    suggestions = item_repo.search_suggestions(query)
     
-    suggestions = []
-    
-    # 搜尋名稱
-    name_results = mongo.db.item.find(
-        {"ItemName": {"$regex": query, "$options": "i"}},
-        {"ItemName": 1, "ItemID": 1, "ItemType": 1, "_id": 0}
-    ).limit(5)
-    
-    for item in name_results:
-        suggestions.append({
-            "text": item.get("ItemName", ""),
-            "id": item.get("ItemID", ""),
-            "type": item.get("ItemType", ""),
-            "category": "name"
-        })
-    
-    # 搜尋 ID
-    id_results = mongo.db.item.find(
-        {"ItemID": {"$regex": query, "$options": "i"}},
-        {"ItemName": 1, "ItemID": 1, "ItemType": 1, "_id": 0}
-    ).limit(3)
-    
-    for item in id_results:
-        # 避免重複
-        if not any(s["id"] == item.get("ItemID") for s in suggestions):
-            suggestions.append({
-                "text": item.get("ItemID", ""),
-                "id": item.get("ItemID", ""),
-                "name": item.get("ItemName", ""),
-                "type": item.get("ItemType", ""),
-                "category": "id"
-            })
-    
-    return jsonify({"suggestions": suggestions[:8]})
+    return jsonify({"suggestions": suggestions})
 
 
 @bp.route("/logs")
@@ -768,17 +748,19 @@ def backup_page():
 @admin_required
 def full_backup():
     """API: 完整資料備份"""
-    from app import mongo
-    
+    from app import get_db_type
+    from app.repositories import item_repo, type_repo, location_repo
+
+    db_type = get_db_type()
     backup_data = {
-        "version": "1.0",
+        "version": "1.1",
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "items": list(mongo.db.item.find({}, {"_id": 0})),
-        "types": list(mongo.db.type.find({}, {"_id": 0})),
-        "locations": list(mongo.db.locations.find({}, {"_id": 0})),
+        "db_type": db_type,
+        "items": item_repo.get_all_items_for_backup(),
+        "types": type_repo.get_all_types_for_backup(),
+        "locations": location_repo.get_all_locations_for_backup(),
     }
-    
-    # 建立 JSON 回應
+
     response = Response(
         json.dumps(backup_data, ensure_ascii=False, indent=2),
         mimetype="application/json",
@@ -786,7 +768,7 @@ def full_backup():
             "Content-Disposition": f"attachment; filename=backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         }
     )
-    
+
     return response
 
 
@@ -794,7 +776,7 @@ def full_backup():
 @admin_required
 def restore_backup():
     """API: 還原備份資料"""
-    from app import mongo
+    from app.repositories import item_repo, type_repo, location_repo
     
     if "backup_file" not in request.files:
         return jsonify({"success": False, "message": "請選擇備份檔案"}), 400
@@ -806,45 +788,16 @@ def restore_backup():
     try:
         data = json.load(file)
         
-        # 驗證資料格式
         if "items" not in data:
             return jsonify({"success": False, "message": "無效的備份檔案格式"}), 400
         
-        restore_mode = request.form.get("mode", "merge")  # merge 或 replace
+        restore_mode = request.form.get("mode", "merge")
         
-        stats = {"items": 0, "types": 0, "locations": 0}
-        
-        # 還原物品
-        for item in data.get("items", []):
-            if restore_mode == "replace":
-                mongo.db.item.delete_one({"ItemID": item.get("ItemID")})
-            
-            if not mongo.db.item.find_one({"ItemID": item.get("ItemID")}):
-                mongo.db.item.insert_one(item)
-                stats["items"] += 1
-            elif restore_mode == "merge":
-                mongo.db.item.update_one(
-                    {"ItemID": item.get("ItemID")},
-                    {"$set": item}
-                )
-                stats["items"] += 1
-        
-        # 還原類型
-        for t in data.get("types", []):
-            if not mongo.db.type.find_one({"name": t.get("name")}):
-                mongo.db.type.insert_one(t)
-                stats["types"] += 1
-        
-        # 還原位置
-        for loc in data.get("locations", []):
-            existing = mongo.db.locations.find_one({
-                "floor": loc.get("floor"),
-                "room": loc.get("room"),
-                "zone": loc.get("zone")
-            })
-            if not existing:
-                mongo.db.locations.insert_one(loc)
-                stats["locations"] += 1
+        stats = {
+            "items": item_repo.restore_items(data.get("items", []), restore_mode),
+            "types": type_repo.restore_types(data.get("types", []), restore_mode),
+            "locations": location_repo.restore_locations(data.get("locations", []), restore_mode),
+        }
         
         return jsonify({
             "success": True,
@@ -915,4 +868,89 @@ def print_labels():
         items=result["items"],
         pagination=result,
     )
+
+
+@bp.route("/api/quantity/<item_id>", methods=["POST"])
+@admin_required
+def adjust_quantity(item_id: str):
+    """API: 快速調整物品數量 (+/-)"""
+    data = request.get_json() or {}
+    delta = data.get("delta", 0)
+    
+    try:
+        delta = int(delta)
+    except (ValueError, TypeError):
+        return jsonify({"success": False, "message": "無效的數量"}), 400
+    
+    success, new_qty, message = item_service.adjust_quantity(item_id, delta)
+    
+    if success:
+        item = item_service.get_item(item_id)
+        safety_stock = (item.get("SafetyStock") or 0) if item else 0
+        reorder_level = (item.get("ReorderLevel") or 0) if item else 0
+        
+        status = "ok"
+        if reorder_level > 0 and new_qty <= reorder_level:
+            status = "critical"
+        elif safety_stock > 0 and new_qty <= safety_stock:
+            status = "low"
+        
+        return jsonify({
+            "success": True,
+            "quantity": new_qty,
+            "status": status,
+            "message": message
+        })
+    
+    return jsonify({"success": False, "message": message}), 400
+
+
+@bp.route("/reorder")
+@login_required
+def reorder_list():
+    """補貨清單頁面"""
+    user = get_current_user()
+    result = item_service.get_low_stock_items()
+    
+    return render_template(
+        "reorder.html",
+        User=user,
+        low_stock_items=result["low_stock"],
+        need_reorder_items=result["need_reorder"],
+        low_stock_count=result["low_stock_count"],
+        reorder_count=result["reorder_count"],
+        total_alerts=result["total_alerts"],
+    )
+
+
+@bp.route("/api/bulk/quantity", methods=["POST"])
+@admin_required
+def bulk_update_quantity():
+    """API: 批量更新物品數量"""
+    data = request.get_json() or {}
+    updates = data.get("updates", [])
+    
+    if not updates:
+        return jsonify({"success": False, "message": "未提供更新資料"}), 400
+    
+    success_count, failed_ids = item_service.bulk_update_quantity(updates)
+    
+    return jsonify({
+        "success": True,
+        "success_count": success_count,
+        "failed_ids": failed_ids,
+        "message": f"成功更新 {success_count} 個物品"
+    })
+
+
+@bp.route("/api/stock/count")
+@login_required
+def stock_alert_count():
+    """API: 取得庫存警告數量（用於導航欄即時更新）"""
+    result = item_service.get_low_stock_items()
+    return jsonify({
+        "low_stock": result["low_stock_count"],
+        "reorder": result["reorder_count"],
+        "total": result["total_alerts"],
+    })
 

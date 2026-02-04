@@ -15,4 +15,38 @@ venv/
 .venv/
 mongo_data/
 postgres_data/
-__pycache__/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+.nox/
+test-results/
+junit/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Uploads
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Temporary files
+tmp/
+*.bak
+*.backup
+
+# Node modules
+node_modules/
+
+# Planning files
+.sisyphus/
