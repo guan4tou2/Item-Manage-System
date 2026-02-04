@@ -1,9 +1,11 @@
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import date
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.repositories import item_repo, type_repo
 from app.utils import storage, image
 from app.validators import items as item_validator
+
 
 ITEM_PROJECTION = {
     "_id": 0,
@@ -29,7 +31,7 @@ ITEM_PROJECTION = {
 
 
 def _filter_valid_types() -> List[str]:
-    return [t.get("name") for t in type_repo.list_types()]
+    return [t.get("name") or "" for t in type_repo.list_types() if t.get("name")]
 
 
 def build_search_filter(
@@ -309,10 +311,7 @@ def get_expiring_items(days_threshold: int = 30) -> Dict[str, Any]:
         for field in ["WarrantyExpiry", "UsageExpiry"]:
             val = item.get(field)
             if val:
-                try:
-                    dates.append(val)
-                except:
-                    pass
+                dates.append(val)
         return min(dates) if dates else "9999-12-31"
     
     expired_items.sort(key=get_earliest_expiry)
@@ -344,9 +343,8 @@ def get_stats() -> Dict[str, int]:
     return item_repo.get_stats()
 
 
-def get_all_items_for_export() -> List[Dict[str, Any]]:
-    """取得所有物品用於匯出"""
-    return item_repo.get_all_items_for_export()
+def get_all_items_for_export(filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    return item_repo.get_all_items_for_export(filters=filters)
 
 
 def import_items(items: List[Dict[str, Any]]) -> Tuple[int, int]:
@@ -455,7 +453,9 @@ def get_related_items(item_id: str) -> List[Dict[str, Any]]:
         rid = relation.get("id") if isinstance(relation, dict) else relation
         rtype = relation.get("type", "配件") if isinstance(relation, dict) else "配件"
         
-        related = item_repo.find_item_by_id(rid, ITEM_PROJECTION)
+        if not rid:
+            continue
+        related = item_repo.find_item_by_id(str(rid), ITEM_PROJECTION)
         if related:
             related["relation_type"] = rtype
             related_items.append(related)
@@ -525,5 +525,122 @@ def bulk_move_items(item_ids: List[str], target_location: str) -> Tuple[int, Lis
         else:
             failed_ids.append(item_id)
             
+    return success_count, failed_ids
+
+
+def adjust_quantity(item_id: str, delta: int) -> Tuple[bool, int, str]:
+    """調整物品數量
+    
+    Args:
+        item_id: 物品 ID
+        delta: 數量變化（正數增加，負數減少）
+    
+    Returns:
+        (成功與否, 新數量, 訊息)
+    """
+    item = item_repo.find_item_by_id(item_id)
+    if not item:
+        return False, 0, "找不到該物品"
+    
+    current_qty = item.get("Quantity", 0) or 0
+    new_qty = max(0, current_qty + delta)  # 不允許負數庫存
+    
+    success = item_repo.update_item_field(item_id, "Quantity", new_qty)
+    if success:
+        return True, new_qty, f"數量已更新為 {new_qty}"
+    return False, current_qty, "更新失敗"
+
+
+def get_low_stock_items() -> Dict[str, Any]:
+    """取得低庫存和需補貨的物品
+    
+    低庫存: Quantity <= SafetyStock 且 SafetyStock > 0
+    需補貨: Quantity <= ReorderLevel 且 ReorderLevel > 0
+    
+    Returns:
+        {
+            "low_stock": [...],      # 低庫存物品
+            "need_reorder": [...],   # 需補貨物品
+            "low_stock_count": 數量,
+            "reorder_count": 數量,
+            "total_alerts": 總警報數量,
+        }
+    """
+    projection = ITEM_PROJECTION.copy()
+    projection["Quantity"] = 1
+    projection["SafetyStock"] = 1
+    projection["ReorderLevel"] = 1
+    
+    all_items = list(item_repo.list_items({}, projection))
+    
+    low_stock_items = []
+    need_reorder_items = []
+    
+    for item in all_items:
+        qty = item.get("Quantity", 0) or 0
+        safety = item.get("SafetyStock", 0) or 0
+        reorder = item.get("ReorderLevel", 0) or 0
+        
+        # 標記庫存狀態
+        item["stock_status"] = "ok"
+        
+        # 低於安全庫存
+        if safety > 0 and qty <= safety:
+            item["stock_status"] = "low"
+            low_stock_items.append(item)
+        
+        # 低於補貨門檻（更嚴重）
+        if reorder > 0 and qty <= reorder:
+            item["stock_status"] = "critical"
+            if item not in low_stock_items:
+                low_stock_items.append(item)
+            need_reorder_items.append(item)
+    
+    # 按數量排序（數量越少越前面）
+    low_stock_items.sort(key=lambda x: x.get("Quantity", 0) or 0)
+    need_reorder_items.sort(key=lambda x: x.get("Quantity", 0) or 0)
+    
+    return {
+        "low_stock": low_stock_items,
+        "need_reorder": need_reorder_items,
+        "low_stock_count": len(low_stock_items),
+        "reorder_count": len(need_reorder_items),
+        "total_alerts": len(low_stock_items),
+    }
+
+
+def bulk_update_quantity(updates: List[Dict[str, Any]]) -> Tuple[int, List[str]]:
+    """批量更新物品數量
+    
+    Args:
+        updates: [{"item_id": "xxx", "quantity": 10}, ...]
+    
+    Returns:
+        (成功的數量, 失敗的 ID 列表)
+    """
+    success_count = 0
+    failed_ids = []
+    
+    for update in updates:
+        item_id = update.get("item_id", "")
+        quantity = update.get("quantity")
+        
+        if not item_id or quantity is None:
+            continue
+        
+        try:
+            qty = int(str(quantity))
+            if qty < 0:
+                failed_ids.append(item_id)
+                continue
+            
+            success = item_repo.update_item_field(item_id, "Quantity", qty)
+            if success:
+                success_count += 1
+            else:
+                failed_ids.append(item_id)
+        except (ValueError, TypeError):
+            failed_ids.append(item_id)
+    
     return success_count, failed_ids
 
