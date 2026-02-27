@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from io import StringIO
 import csv
 import uuid
@@ -26,6 +26,39 @@ def _get_travel_or_403(travel_id: int):
     return travel
 
 
+def _get_shopping_list_or_403(list_id: int):
+    lst = ShoppingList.query.get_or_404(list_id)
+    current_user = session.get("UserID")
+    if lst.owner and lst.owner != current_user:
+        abort(403)
+    return lst
+
+
+def _normalize_scope(scope: str | None) -> str:
+    if scope == "personal":
+        return "personal"
+    return "common"
+
+
+def _normalize_visibility(visibility: str | None) -> str:
+    if visibility == "private":
+        return "private"
+    return "shared"
+
+
+def _parse_date(value):
+    if not value:
+        return None
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return None
+
+
 @bp.route("/", methods=["GET"])
 def list_page():
     ok, redirect_resp = _require_auth()
@@ -34,8 +67,12 @@ def list_page():
     owner = session.get("UserID")
     travels = Travel.query.filter((Travel.owner == owner) | (Travel.owner.is_(None))).all()
     items_counts = {t.id: TravelItem.query.filter_by(travel_id=t.id).count() for t in travels}
+    common_counts = {t.id: TravelItem.query.filter_by(travel_id=t.id, list_scope="common").count() for t in travels}
+    personal_counts = {t.id: TravelItem.query.filter_by(travel_id=t.id, list_scope="personal").count() for t in travels}
     for t in travels:
         t.item_count = items_counts.get(t.id, 0)
+        t.common_count = common_counts.get(t.id, 0)
+        t.personal_count = personal_counts.get(t.id, 0)
     return render_template("travel.html", travels=travels, User={"name": owner, "admin": False})
 
 
@@ -51,8 +88,8 @@ def create_travel_form():
     travel = Travel(
         name=name,
         owner=session.get("UserID"),
-        start_date=request.form.get("start_date") or None,
-        end_date=request.form.get("end_date") or None,
+        start_date=_parse_date(request.form.get("start_date")),
+        end_date=_parse_date(request.form.get("end_date")),
         note=request.form.get("note"),
     )
     db.session.add(travel)
@@ -70,7 +107,16 @@ def detail(travel_id: int):
         return redirect_resp
     travel = _get_travel_or_403(travel_id)
     groups = TravelGroup.query.filter_by(travel_id=travel_id).order_by(TravelGroup.sort_order).all()
+    current_user = session.get("UserID")
     items = TravelItem.query.filter_by(travel_id=travel_id).all()
+    common_items = [i for i in items if i.list_scope == "common"]
+    personal_items = [i for i in items if i.list_scope == "personal" and (not i.assignee or i.assignee == current_user)]
+    grouped_items = {}
+    for g in groups:
+        grouped_items[g.id] = {
+            "common": [i for i in common_items if i.group_id == g.id],
+            "personal": [i for i in personal_items if i.group_id == g.id],
+        }
     shopping = ShoppingList.query.filter_by(travel_id=travel_id, list_type="travel").first()
     if not shopping:
         shopping = ShoppingList(
@@ -87,6 +133,9 @@ def detail(travel_id: int):
         travel=travel,
         groups=groups,
         items=items,
+        common_items=common_items,
+        personal_items=personal_items,
+        grouped_items=grouped_items,
         shopping=shopping,
         shopping_items=shopping_items,
         User={"name": session.get("UserID"), "admin": False},
@@ -118,12 +167,19 @@ def add_item_form(travel_id: int):
     if not name:
         flash("請輸入物品名稱", "warning")
         return redirect(url_for("travel.detail", travel_id=travel_id))
+    list_scope = _normalize_scope(request.form.get("list_scope"))
+    assignee = request.form.get("assignee") or None
+    if list_scope == "personal" and not assignee:
+        assignee = session.get("UserID")
     item = TravelItem(
         travel_id=travel_id,
         group_id=request.form.get("group_id") or None,
         source_type=request.form.get("source_type", "temp"),
         source_ref=request.form.get("source_ref") or None,
         name=name,
+        list_scope=list_scope,
+        assignee=assignee,
+        visibility=_normalize_visibility(request.form.get("visibility")),
         qty_required=int(request.form.get("qty_required", 1)),
         qty_packed=int(request.form.get("qty_packed", 0)),
         carried=bool(request.form.get("carried")),
@@ -194,6 +250,9 @@ def _serialize_travel_item(item: TravelItem):
         "source_type": item.source_type,
         "source_ref": item.source_ref,
         "name": item.name,
+        "list_scope": item.list_scope,
+        "assignee": item.assignee,
+        "visibility": item.visibility,
         "qty_required": item.qty_required,
         "qty_packed": item.qty_packed,
         "carried": item.carried,
@@ -226,8 +285,8 @@ def create_travel():
     travel = Travel(
         name=name,
         owner=session.get("UserID"),
-        start_date=data.get("start_date"),
-        end_date=data.get("end_date"),
+        start_date=_parse_date(data.get("start_date")),
+        end_date=_parse_date(data.get("end_date")),
         note=data.get("note"),
     )
     db.session.add(travel)
@@ -244,6 +303,7 @@ def create_group(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
+    _get_travel_or_403(travel_id)
     data = request.get_json(force=True) or {}
     name = data.get("name")
     if not name:
@@ -260,7 +320,11 @@ def list_items(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
+    _get_travel_or_403(travel_id)
     items = TravelItem.query.filter_by(travel_id=travel_id).all()
+    scope = request.args.get("scope")
+    if scope in {"common", "personal"}:
+        items = [i for i in items if i.list_scope == scope]
     return jsonify({"items": [_serialize_travel_item(i) for i in items]})
 
 
@@ -270,6 +334,7 @@ def add_item(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
+    _get_travel_or_403(travel_id)
     data = request.get_json(force=True) or {}
     name = data.get("name")
     if not name:
@@ -280,6 +345,9 @@ def add_item(travel_id: int):
         source_type=data.get("source_type", "temp"),
         source_ref=data.get("source_ref"),
         name=name,
+        list_scope=_normalize_scope(data.get("list_scope")),
+        assignee=data.get("assignee") or None,
+        visibility=_normalize_visibility(data.get("visibility")),
         qty_required=int(data.get("qty_required", 1)),
         qty_packed=int(data.get("qty_packed", 0)),
         carried=bool(data.get("carried", False)),
@@ -300,6 +368,7 @@ def update_item(item_id: int):
         return redirect_resp
     data = request.get_json(force=True) or {}
     item = TravelItem.query.get_or_404(item_id)
+    _get_travel_or_403(item.travel_id)
     if "qty_packed" in data:
         item.qty_packed = int(data.get("qty_packed", item.qty_packed))
     if "qty_required" in data:
@@ -308,6 +377,12 @@ def update_item(item_id: int):
         item.carried = bool(data.get("carried"))
     if "note" in data:
         item.note = data.get("note")
+    if "list_scope" in data:
+        item.list_scope = _normalize_scope(data.get("list_scope"))
+    if "assignee" in data:
+        item.assignee = data.get("assignee") or None
+    if "visibility" in data:
+        item.visibility = _normalize_visibility(data.get("visibility"))
     if "size_notes" in data:
         item.size_notes = data.get("size_notes") or {}
     db.session.commit()
@@ -319,6 +394,7 @@ def export_travel(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
+    _get_travel_or_403(travel_id)
     items = TravelItem.query.filter_by(travel_id=travel_id).all()
     output = StringIO()
     writer = csv.writer(output)
@@ -341,6 +417,7 @@ def travel_reminder(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
+    _get_travel_or_403(travel_id)
     items = TravelItem.query.filter_by(travel_id=travel_id).all()
     total = len(items)
     pending = sum(1 for i in items if not i.carried or i.qty_packed < i.qty_required)
@@ -352,6 +429,7 @@ def export_travel_pdf(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
+    _get_travel_or_403(travel_id)
     items = TravelItem.query.filter_by(travel_id=travel_id).all()
     lines = ["旅旅行清單"]
     for i in items:
@@ -365,6 +443,8 @@ def _serialize_shopping_item(item: ShoppingItem):
         "id": item.id,
         "list_id": item.list_id,
         "name": item.name,
+        "list_scope": item.list_scope,
+        "assignee": item.assignee,
         "qty": item.qty,
         "budget": float(item.budget) if item.budget is not None else None,
         "price": float(item.price) if item.price is not None else None,
@@ -426,7 +506,7 @@ def add_shopping_item(list_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
-    lst = ShoppingList.query.get_or_404(list_id)
+    lst = _get_shopping_list_or_403(list_id)
     if request.is_json:
         data = request.get_json(force=True) or {}
     else:
@@ -440,6 +520,8 @@ def add_shopping_item(list_id: int):
     item = ShoppingItem(
         list_id=list_id,
         name=name,
+        list_scope=_normalize_scope(data.get("list_scope")),
+        assignee=data.get("assignee") or None,
         qty=int(data.get("qty", 1)),
         budget=data.get("budget"),
         price=data.get("price"),
@@ -465,8 +547,13 @@ def update_shopping_item(item_id: int):
         return redirect_resp
     data = request.get_json(force=True) or {}
     item = ShoppingItem.query.get_or_404(item_id)
+    _get_shopping_list_or_403(item.list_id)
     if "qty" in data:
         item.qty = int(data.get("qty", item.qty))
+    if "list_scope" in data:
+        item.list_scope = _normalize_scope(data.get("list_scope"))
+    if "assignee" in data:
+        item.assignee = data.get("assignee") or None
     if "budget" in data:
         item.budget = data.get("budget")
     if "price" in data:
@@ -492,6 +579,7 @@ def export_shopping(list_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
+    _get_shopping_list_or_403(list_id)
     items = ShoppingItem.query.filter_by(list_id=list_id).all()
     output = StringIO()
     writer = csv.writer(output)
@@ -515,6 +603,7 @@ def shopping_summary(list_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
         return redirect_resp
+    _get_shopping_list_or_403(list_id)
     items = ShoppingItem.query.filter_by(list_id=list_id).all()
     todo = sum(1 for i in items if i.status != "done")
     done = sum(1 for i in items if i.status == "done")

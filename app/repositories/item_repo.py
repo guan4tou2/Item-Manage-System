@@ -30,6 +30,8 @@ def list_items(
             query = query.filter(Item.ItemRoom == filter_query["ItemRoom"])
         if "ItemZone" in filter_query and filter_query["ItemZone"]:
             query = query.filter(Item.ItemZone == filter_query["ItemZone"])
+        if "visibility" in filter_query and filter_query["visibility"]:
+            query = query.filter(Item.visibility == filter_query["visibility"])
         
         if sort:
             for field, direction in sort:
@@ -70,6 +72,8 @@ def count_items(filter_query: Dict[str, Any]) -> int:
             query = query.filter(Item.ItemRoom == filter_query["ItemRoom"])
         if "ItemZone" in filter_query and filter_query["ItemZone"]:
             query = query.filter(Item.ItemZone == filter_query["ItemZone"])
+        if "visibility" in filter_query and filter_query["visibility"]:
+            query = query.filter(Item.visibility == filter_query["visibility"])
         
         return query.count()
     
@@ -473,6 +477,8 @@ def restore_items(items: List[Dict[str, Any]], mode: str = "merge") -> int:
                     ItemFloor=item_data.get("ItemFloor", ""),
                     ItemRoom=item_data.get("ItemRoom", ""),
                     ItemZone=item_data.get("ItemZone", ""),
+                    visibility=item_data.get("visibility", "private"),
+                    shared_with=item_data.get("shared_with", []),
                     Quantity=item_data.get("Quantity", 0),
                     SafetyStock=item_data.get("SafetyStock", 0),
                     ReorderLevel=item_data.get("ReorderLevel", 0),

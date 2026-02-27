@@ -1,10 +1,16 @@
 """通知服務模組"""
+import json
 from typing import Dict, Any, List
 from datetime import datetime, date, timedelta
+from urllib import request as urlrequest
 
+from flask import current_app
+
+from app import get_db_type
 from app.repositories import user_repo
 from app.services import item_service
 from app.services import email_service
+from app.models import LineUserLink, TelegramUserLink
 
 
 def _parse_reminder_ladder(value):
@@ -18,6 +24,75 @@ def _parse_reminder_ladder(value):
                 result.append(int(part))
         return result
     return None
+
+
+def _build_plain_notification_text(expiry_info: Dict[str, Any], replacement_info: Dict[str, Any]) -> str:
+    lines = ["物品到期提醒"]
+    if expiry_info.get("expired"):
+        lines.append(f"已過期 {len(expiry_info['expired'])} 項")
+    if expiry_info.get("near_expiry"):
+        lines.append(f"即將到期 {len(expiry_info['near_expiry'])} 項")
+    if replacement_info.get("due"):
+        lines.append(f"需要更換 {len(replacement_info['due'])} 項")
+    if replacement_info.get("upcoming"):
+        lines.append(f"即將更換 {len(replacement_info['upcoming'])} 項")
+    lines.append("請回到系統查看詳細清單。")
+    return "\n".join(lines)
+
+
+def _line_push(line_user_id: str, text: str) -> bool:
+    token = current_app.config.get("LINE_CHANNEL_ACCESS_TOKEN", "")
+    if not token or not line_user_id:
+        return False
+    req = urlrequest.Request(
+        url="https://api.line.me/v2/bot/message/push",
+        data=json.dumps(
+            {
+                "to": line_user_id,
+                "messages": [{"type": "text", "text": text[:1000]}],
+            }
+        ).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        },
+        method="POST",
+    )
+    try:
+        with urlrequest.urlopen(req, timeout=8):
+            return True
+    except Exception:
+        return False
+
+
+def _telegram_send(chat_id: str, text: str) -> bool:
+    token = current_app.config.get("TELEGRAM_BOT_TOKEN", "")
+    if not token or not chat_id:
+        return False
+    req = urlrequest.Request(
+        url=f"https://api.telegram.org/bot{token}/sendMessage",
+        data=json.dumps({"chat_id": chat_id, "text": text[:4000]}).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urlrequest.urlopen(req, timeout=8):
+            return True
+    except Exception:
+        return False
+
+
+def _send_chat_notifications(username: str, channels: set[str], text: str) -> Dict[str, bool]:
+    status = {"line": False, "telegram": False}
+    if get_db_type() != "postgres":
+        return status
+    if "line" in channels:
+        links = LineUserLink.query.filter_by(user_id=username).all()
+        status["line"] = any(_line_push(link.line_user_id, text) for link in links)
+    if "telegram" in channels:
+        links = TelegramUserLink.query.filter_by(user_id=username).all()
+        status["telegram"] = any(_telegram_send(link.chat_id, text) for link in links)
+    return status
 
 
 def check_and_send_notifications() -> Dict[str, Any]:
@@ -73,11 +148,6 @@ def check_and_send_notifications() -> Dict[str, Any]:
             results["details"].append(user_result)
             continue
 
-        if "email" not in notify_channels:
-            user_result["reason"] = "未啟用 Email 通知"
-            results["details"].append(user_result)
-            continue
-        
         # 檢查是否到達通知時間
         current_time = datetime.now().strftime("%H:%M")
         if current_time < notify_time:
@@ -99,14 +169,23 @@ def check_and_send_notifications() -> Dict[str, Any]:
         
         # 發送通知
         sent = False
+        channel_status = {"email": False, "line": False, "telegram": False}
         if "email" in notify_channels:
-            sent = email_service.send_expiry_notification(
-                to_email=user_email,
-                expired_items=expiry_info["expired"],
-                near_expiry_items=expiry_info["near_expiry"],
-                replacement_due=replacement_info["due"],
-                replacement_upcoming=replacement_info["upcoming"],
-            )
+            if user_email:
+                channel_status["email"] = email_service.send_expiry_notification(
+                    to_email=user_email,
+                    expired_items=expiry_info["expired"],
+                    near_expiry_items=expiry_info["near_expiry"],
+                    replacement_due=replacement_info["due"],
+                    replacement_upcoming=replacement_info["upcoming"],
+                )
+        chat_status = _send_chat_notifications(
+            username,
+            set(notify_channels or []),
+            _build_plain_notification_text(expiry_info, replacement_info),
+        )
+        channel_status.update(chat_status)
+        sent = any(channel_status.values())
         
         if sent:
             # 更新最後通知日期
@@ -118,6 +197,7 @@ def check_and_send_notifications() -> Dict[str, Any]:
         else:
             results["failed_users"] += 1
             user_result["reason"] = "發送失敗"
+        user_result["channel_status"] = channel_status
         
         results["details"].append(user_result)
     
@@ -141,22 +221,6 @@ def send_manual_notification(username: str) -> Dict[str, Any]:
     """
     # 取得使用者設定
     settings = user_repo.get_notification_settings(username)
-    
-    if not settings.get("email"):
-        return {
-            "success": False,
-            "message": "使用者未設定 Email",
-            "expired_count": 0,
-            "near_count": 0,
-        }
-
-    if "email" not in settings.get("notify_channels", []) and settings.get("notify_channels"):
-        return {
-            "success": False,
-            "message": "未啟用 Email 通知",
-            "expired_count": 0,
-            "near_count": 0,
-        }
     
     notify_days = settings.get("notify_days", 30)
     notify_channels = settings.get("notify_channels", []) or ["email"]
@@ -183,14 +247,24 @@ def send_manual_notification(username: str) -> Dict[str, Any]:
     
     # 發送通知
     sent = False
+    channel_status = {"email": False, "line": False, "telegram": False}
     if "email" in notify_channels:
-        sent = email_service.send_expiry_notification(
-            to_email=settings["email"],
-            expired_items=expiry_info["expired"],
-            near_expiry_items=expiry_info["near_expiry"],
-            replacement_due=replacement_info["due"],
-            replacement_upcoming=replacement_info["upcoming"],
-        )
+        if settings.get("email"):
+            channel_status["email"] = email_service.send_expiry_notification(
+                to_email=settings["email"],
+                expired_items=expiry_info["expired"],
+                near_expiry_items=expiry_info["near_expiry"],
+                replacement_due=replacement_info["due"],
+                replacement_upcoming=replacement_info["upcoming"],
+            )
+
+    chat_status = _send_chat_notifications(
+        username,
+        set(notify_channels),
+        _build_plain_notification_text(expiry_info, replacement_info),
+    )
+    channel_status.update(chat_status)
+    sent = any(channel_status.values())
     
     if sent:
         today = date.today()
@@ -203,6 +277,7 @@ def send_manual_notification(username: str) -> Dict[str, Any]:
         "near_count": expiry_info["near_count"],
         "replacement_due_count": len(replacement_info["due"]),
         "replacement_upcoming_count": len(replacement_info["upcoming"]),
+        "channel_status": channel_status,
     }
 
 

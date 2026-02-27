@@ -10,10 +10,15 @@
     <meta name="author" content="物品管理系統" />
     <!-- PWA Settings -->
     <link rel="manifest" href="{{url_for('static', filename='manifest.json')}}" />
-    <meta name="theme-color" content="#0d6efd" />
-    <link rel="apple-touch-icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/svgs/solid/box-open.svg">
+    <meta name="theme-color" content="#1e3a5f" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" href="{{url_for('static', filename='favicon.ico')}}">
+    <link rel="apple-touch-icon" href="{{url_for('static', filename='icons/apple-touch-icon.png')}}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{url_for('static', filename='icons/icon-192.png')}}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{url_for('static', filename='icons/icon-512.png')}}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="物品管理">
     <title>{%block title%}{%endblock%}</title>
 
     <!-- Bootstrap CSS -->
@@ -245,6 +250,11 @@
                     <i class="fas fa-question-circle me-2"></i>操作指引
                   </a>
                 </li>
+                <li>
+                  <button class="dropdown-item d-none pwa-install-btn" type="button" id="pwaInstallBtn">
+                    <i class="fas fa-download me-2"></i>安裝到裝置
+                  </button>
+                </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li>
                   <a class="dropdown-item text-danger" href="{{url_for('auth.signout')}}">
@@ -438,12 +448,48 @@
           navigator.serviceWorker.register("{{url_for('static', filename='sw.js')}}")
             .then(registration => {
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              registration.addEventListener('updatefound', () => {
+                console.log('ServiceWorker update found');
+              });
             })
             .catch(err => {
               console.log('ServiceWorker registration failed: ', err);
             });
         });
       }
+    </script>
+
+    <script>
+      // PWA 安裝提示
+      let deferredPwaPrompt = null;
+      const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+
+      window.addEventListener('beforeinstallprompt', (event) => {
+        event.preventDefault();
+        deferredPwaPrompt = event;
+        if (pwaInstallBtn) {
+          pwaInstallBtn.classList.remove('d-none');
+        }
+      });
+
+      if (pwaInstallBtn) {
+        pwaInstallBtn.addEventListener('click', async () => {
+          if (!deferredPwaPrompt) {
+            return;
+          }
+          deferredPwaPrompt.prompt();
+          await deferredPwaPrompt.userChoice;
+          deferredPwaPrompt = null;
+          pwaInstallBtn.classList.add('d-none');
+        });
+      }
+
+      window.addEventListener('appinstalled', () => {
+        if (pwaInstallBtn) {
+          pwaInstallBtn.classList.add('d-none');
+        }
+        deferredPwaPrompt = null;
+      });
     </script>
     
     <script>

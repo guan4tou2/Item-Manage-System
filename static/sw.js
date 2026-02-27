@@ -1,12 +1,16 @@
-const CACHE_NAME = 'item-manage-v1';
+const CACHE_NAME = 'item-manage-v2';
 const STATIC_ASSETS = [
   '/',
+  '/signin',
+  '/static/offline.html',
+  '/static/manifest.json',
   '/static/css/bootstrap.min.css',
   '/static/css/main.css',
   '/static/css/navbar.css',
   '/static/js/bootstrap.bundle.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
-  'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap'
+  '/static/icons/icon-192.png',
+  '/static/icons/icon-512.png',
+  '/static/icons/apple-touch-icon.png'
 ];
 
 // Install Event - Cache Static Assets
@@ -16,6 +20,7 @@ self.addEventListener('install', (event) => {
       return cache.addAll(STATIC_ASSETS);
     })
   );
+  self.skipWaiting();
 });
 
 // Activate Event - Clean old caches
@@ -31,6 +36,7 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+  self.clients.claim();
 });
 
 // Fetch Event - Network First for HTML/API, Cache First for specific static assets
@@ -61,17 +67,20 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Optional: Cache successful page visits for offline fallback
-        // if (response.status === 200) {
-        //   const responseClone = response.clone();
-        //   caches.open(CACHE_NAME).then((cache) => {
-        //     cache.put(event.request, responseClone);
-        //   });
-        // }
+        if (response.ok && event.request.mode === 'navigate') {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseClone);
+          });
+        }
         return response;
       })
       .catch(() => {
-        // Fallback to cache if network fails
+        if (event.request.mode === 'navigate') {
+          return caches.match(event.request).then((cachedPage) => {
+            return cachedPage || caches.match('/static/offline.html');
+          });
+        }
         return caches.match(event.request);
       })
   );

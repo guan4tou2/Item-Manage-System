@@ -56,7 +56,7 @@ body {
 
 /* 搜尋框增強 */
 .navbar .input-group {
-  width: 250px;
+  width: min(250px, 100%);
 }
 
 .navbar .input-group .form-control {
@@ -79,6 +79,11 @@ body {
   .navbar .dropdown {
     width: 100%;
     text-align: center;
+  }
+
+  .navbar .nav-item {
+    width: 100%;
+    justify-content: center;
   }
   
   .navbar .dropdown-toggle {

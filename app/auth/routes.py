@@ -56,9 +56,9 @@ def signup():
             flash("帳號至少需要 3 個字元", "danger")
             return render_template("signup.html", error="帳號至少需要 3 個字元")
         
-        if len(password) < 6:
-            flash("密碼至少需要 6 個字元", "danger")
-            return render_template("signup.html", error="密碼至少需要 6 個字元")
+        if len(password) < 8:
+            flash("密碼至少需要 8 個字元", "danger")
+            return render_template("signup.html", error="密碼至少需要 8 個字元")
         
         if password != confirm_password:
             flash("兩次輸入的密碼不一致", "danger")
@@ -186,4 +186,3 @@ def admin_unlock_user(target_user):
         flash("解鎖失敗", "danger")
     
     return redirect(url_for("auth.admin_users"))
-

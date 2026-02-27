@@ -22,6 +22,8 @@ ITEM_PROJECTION = {
     "ItemFloor": 1,
     "ItemRoom": 1,
     "ItemZone": 1,
+    "visibility": 1,
+    "shared_with": 1,
     "WarrantyExpiry": 1,
     "UsageExpiry": 1,
     "move_history": 1,  # 移動歷史
@@ -41,6 +43,7 @@ def build_search_filter(
     floor: str = "",
     room: str = "",
     zone: str = "",
+    visibility: str = "",
 ) -> Dict[str, Any]:
     search_filter: Dict[str, Any] = {}
     if name:
@@ -55,6 +58,8 @@ def build_search_filter(
         search_filter["ItemRoom"] = room
     if zone:
         search_filter["ItemZone"] = zone
+    if visibility:
+        search_filter["visibility"] = visibility
     return search_filter
 
 
@@ -87,6 +92,7 @@ def list_items(
         floor=filters.get("floor", ""),
         room=filters.get("room", ""),
         zone=filters.get("zone", ""),
+        visibility=filters.get("visibility", ""),
     )
     projection = ITEM_PROJECTION.copy()
     sort = None
@@ -134,6 +140,8 @@ def create_item(form_data: Dict[str, Any], file_storage) -> Tuple[bool, str]:
     )
     if not ok:
         return False, msg
+
+    form_data["visibility"] = (form_data.get("visibility") or "private").strip().lower()
 
     filename = storage.save_upload(file_storage) if file_storage else None
     if filename:
@@ -183,6 +191,8 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None) -> T
     )
     if not ok:
         return False, msg
+
+    form_data["visibility"] = (form_data.get("visibility") or existing.get("visibility") or "private").strip().lower()
     
     # 處理圖片上傳
     if file_storage and file_storage.filename:
@@ -643,4 +653,3 @@ def bulk_update_quantity(updates: List[Dict[str, Any]]) -> Tuple[int, List[str]]
             failed_ids.append(item_id)
     
     return success_count, failed_ids
-

@@ -1,9 +1,10 @@
 """通知藍圖模組"""
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, session
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, session, current_app
 
 from app import csrf
 from app.services import notification_service
 from app.repositories import user_repo
+from app.models import LineUserLink, TelegramUserLink
 
 bp = Blueprint("notifications", __name__, url_prefix="/notifications")
 
@@ -18,11 +19,27 @@ def index():
     
     user_obj = user_repo.find_by_username(session["UserID"])
     
+    try:
+        line_link = LineUserLink.query.filter_by(user_id=session["UserID"]).first()
+        telegram_link = TelegramUserLink.query.filter_by(user_id=session["UserID"]).first()
+    except Exception:
+        line_link = None
+        telegram_link = None
+    telegram_bot_username = (current_app.config.get("TELEGRAM_BOT_USERNAME", "") or "").strip()
+    integration = {
+        "line_linked": bool(line_link),
+        "telegram_linked": bool(telegram_link),
+        "telegram_bind_available": bool(telegram_bot_username),
+        "telegram_link_url": url_for("telegram.link") if telegram_bot_username else "",
+        "line_bot_url": current_app.config.get("LINE_BOT_URL", ""),
+    }
+
     return render_template(
         "notifications_settings.html",
         settings=summary["settings"],
         expiry_info=summary["expiry_info"],
         can_send=summary["can_send"],
+        integration=integration,
         User={"id": session["UserID"], "name": session["UserID"], "admin": user_obj.get("admin", False) if user_obj else False},
     )
 

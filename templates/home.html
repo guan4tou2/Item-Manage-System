@@ -3,7 +3,7 @@
 {%block user%}{{User.User}}{%endblock%}
 
 {%block contain%}
-<div class="container-fluid">
+<div class="home-page">
   <!-- 頁面標題 -->
   <div class="page-header animate-fadeInUp">
     <h1>🏠 我的物品管理</h1>
@@ -50,8 +50,8 @@
   <!-- 搜尋功能 -->
   <div class="search-form animate-fadeInUp stagger-2 mb-4">
     <form action="{{ url_for('items.search') }}" method="GET" id="searchForm">
-      <div class="d-flex gap-2">
-        <div class="flex-grow-1 position-relative">
+      <div class="d-flex gap-2 home-search-toolbar">
+        <div class="flex-grow-1 position-relative home-search-input-wrap">
           <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
           <input
             type="text"
@@ -66,8 +66,8 @@
           </button>
         </div>
         
-        <button type="button" class="btn btn-outline-secondary rounded-pill px-3 position-relative" data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas">
-          <i class="fas fa-filter"></i> 篩選
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-3 position-relative home-filter-btn" data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas">
+          <i class="fas fa-filter"></i><span class="ms-1 d-none d-sm-inline">篩選</span>
           {% if request.args.get('type') or request.args.get('place') or request.args.get('floor') or request.args.get('room') or request.args.get('zone') %}
           <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
             <span class="visually-hidden">已套用篩選</span>
@@ -75,7 +75,7 @@
           {% endif %}
         </button>
         
-        <a href="{{ url_for('items.scan') }}" class="btn btn-primary rounded-circle" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;" data-tooltip="掃描條碼">
+        <a href="{{ url_for('items.scan') }}" class="btn btn-primary rounded-circle home-scan-btn" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;" data-tooltip="掃描條碼">
           <i class="fas fa-qrcode"></i>
         </a>
       </div>
@@ -150,128 +150,49 @@
       </div>
     </form>
   </div>
-    <form action="{{ url_for('items.search') }}" method="GET" class="row g-3 align-items-end">
-      <div class="col-12 col-md-3">
-        <label class="form-label small text-muted mb-1">
-          <i class="fas fa-font me-1"></i>物品名稱
-        </label>
-        <div class="input-group">
-          <input
-            type="text"
-            name="q"
-            id="homeSearchInput"
-            class="form-control"
-            placeholder="輸入名稱搜尋..."
-            value="{{ request.args.get('q', '') }}"
-          />
-          <button type="button" class="btn btn-outline-secondary clear-input-btn {% if not request.args.get('q', '') %}d-none{% endif %}" id="homeClearBtn" onclick="clearHomeSearch()">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      </div>
-      <div class="col-6 col-md-2">
-        <label class="form-label small text-muted mb-1">
-          <i class="fas fa-map-marker-alt me-1"></i>地點
-        </label>
-        <input
-          type="text"
-          name="place"
-          class="form-control"
-          placeholder="放置地點..."
-          value="{{ request.args.get('place', '') }}"
-        />
-      </div>
-      <div class="col-6 col-md-2">
-        <label class="form-label small text-muted mb-1">
-          <i class="fas fa-tag me-1"></i>類型
-        </label>
-        <select name="type" class="form-select">
-          <option value="">全部類型</option>
-          {% for type in itemtype %}
-          <option value="{{type.name}}" {% if request.args.get('type','')==type.name %}selected{% endif %}>{{type.name}}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-4 col-md-1">
-        <label class="form-label small text-muted mb-1">樓層</label>
-        <select name="floor" class="form-select">
-          <option value="">全部</option>
-          {% for f in floors %}
-          <option value="{{f}}" {% if request.args.get('floor','')==f %}selected{% endif %}>{{f}}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-4 col-md-1">
-        <label class="form-label small text-muted mb-1">房間</label>
-        <select name="room" class="form-select">
-          <option value="">全部</option>
-          {% for r in rooms %}
-          <option value="{{r}}" {% if request.args.get('room','')==r %}selected{% endif %}>{{r}}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-4 col-md-1">
-        <label class="form-label small text-muted mb-1">區域</label>
-        <select name="zone" class="form-select">
-          <option value="">全部</option>
-          {% for z in zones %}
-          <option value="{{z}}" {% if request.args.get('zone','')==z %}selected{% endif %}>{{z}}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-12 col-md-2 d-flex gap-2">
-        <button type="submit" class="btn btn-primary flex-grow-1">
-          <i class="fas fa-search me-1"></i>搜尋
-        </button>
-        <a href="{{ url_for('items.scan') }}" class="btn btn-outline-info" data-tooltip="掃描條碼">
-          <i class="fas fa-qrcode"></i>
-        </a>
-      </div>
-    </form>
-  </div>
 
   <!-- 統計資訊 -->
-  <div class="row g-3 mb-4 animate-fadeInUp stagger-3">
-    <div class="col-6 col-md-2">
-      <div class="stats-card bg-primary text-white">
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-4 animate-fadeInUp stagger-3">
+    <div class="col">
+      <div class="stats-card stats-tone-1">
         <div class="icon"><i class="fas fa-box"></i></div>
         <h2>{{ stats.total if stats else (pagination.total if pagination else items|length) }}</h2>
         <h5>總物品數</h5>
       </div>
     </div>
-    <div class="col-6 col-md-2">
-      <div class="stats-card bg-success text-white">
+    <div class="col">
+      <div class="stats-card stats-tone-2">
         <div class="icon"><i class="fas fa-image"></i></div>
         <h2>{{ stats.with_photo if stats else 0 }}</h2>
         <h5>有照片</h5>
       </div>
     </div>
-    <div class="col-6 col-md-2">
-      <div class="stats-card bg-info text-white">
+    <div class="col">
+      <div class="stats-card stats-tone-3">
         <div class="icon"><i class="fas fa-map-pin"></i></div>
         <h2>{{ stats.with_location if stats else 0 }}</h2>
         <h5>有位置記錄</h5>
       </div>
     </div>
-    <div class="col-6 col-md-2">
-      <div class="stats-card bg-warning text-white">
+    <div class="col">
+      <div class="stats-card stats-tone-4">
         <div class="icon"><i class="fas fa-folder"></i></div>
         <h2>{{ stats.with_type if stats else 0 }}</h2>
         <h5>有分類</h5>
       </div>
     </div>
-    <div class="col-6 col-md-2">
+    <div class="col">
       <a href="{{ url_for('items.reorder_list') }}" class="text-decoration-none">
-        <div class="stats-card bg-danger text-white" id="stockAlertCard">
+        <div class="stats-card stats-tone-5" id="stockAlertCard">
           <div class="icon"><i class="fas fa-shopping-cart"></i></div>
           <h2 id="stockAlertCount">-</h2>
           <h5>需補貨</h5>
         </div>
       </a>
     </div>
-    <div class="col-6 col-md-2">
+    <div class="col">
       <a href="{{ url_for('items.notifications') }}" class="text-decoration-none">
-        <div class="stats-card bg-secondary text-white">
+        <div class="stats-card stats-tone-6">
           <div class="icon"><i class="fas fa-bell"></i></div>
           <h2 id="expiryAlertCount">-</h2>
           <h5>到期通知</h5>
@@ -671,13 +592,17 @@ async function toggleFavorite(itemId, btn) {
     let selectedItems = new Set();
     
     function updateBulkUI() {
+      if (!bulkActionBar || !selectedCountSpan) return;
       if (selectedItems.size > 0) {
         bulkActionBar.style.display = 'block';
         setTimeout(() => {
             bulkActionBar.style.transform = 'translateY(0)';
         }, 10);
         selectedCountSpan.textContent = selectedItems.size;
-        document.getElementById('bulkMoveCount').textContent = selectedItems.size; // Update modal count
+        const bulkMoveCount = document.getElementById('bulkMoveCount');
+        if (bulkMoveCount) {
+            bulkMoveCount.textContent = selectedItems.size; // Update modal count
+        }
       } else {
         bulkActionBar.style.transform = 'translateY(100%)';
         setTimeout(() => {
@@ -732,9 +657,11 @@ async function toggleFavorite(itemId, btn) {
     }
     
     // 批量移動
-    const bulkMoveModal = new bootstrap.Modal(document.getElementById('bulkMoveModal'));
+    const bulkMoveModalEl = document.getElementById('bulkMoveModal');
+    const bulkMoveModal = bulkMoveModalEl ? new bootstrap.Modal(bulkMoveModalEl) : null;
     
     function showBulkMoveModal() {
+        if (!bulkMoveModal) return;
         document.getElementById('bulkTargetLocation').value = ''; // Clear previous input
         bulkMoveModal.show();
     }

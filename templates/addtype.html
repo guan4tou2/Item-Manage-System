@@ -11,20 +11,22 @@
 <form class="row g-3" action="{{ url_for('types.addtype') }}" method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
     <div class="col-md-12 ">
-        <table class="table table-striped  border border-dark" >
-            <thead>
-                <tr>
-                    <th scope="col">Type</th>
-                </tr>
-            </thead>
-            <tbody style="overflow-y: auto;height: 200px;display: block;">
-                {%for type in itemtype%}
-                <tr style="width: 100%;display: inline-table;">
-                    <td>{{type.name}}</td>
-                </tr>
-                {%endfor%}
-            </tbody>
-        </table>
+        <div class="table-responsive border border-dark rounded-3">
+            <table class="table table-striped mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {%for type in itemtype%}
+                    <tr>
+                        <td>{{type.name}}</td>
+                    </tr>
+                    {%endfor%}
+                </tbody>
+            </table>
+        </div>
     </div>
     <div class="col-md-12">
         <label for="Type" class="form-label">Type</label>

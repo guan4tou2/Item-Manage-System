@@ -2,10 +2,10 @@
 import unittest
 from unittest.mock import Mock, patch, MagicMock
 import sys
+import os
 from datetime import datetime
 
-# Setup test environment
-import tests.conftest  # noqa: F401
+import tests.fixtures_env  # noqa: F401
 
 from app import create_app
 
@@ -15,6 +15,9 @@ class NotificationsTestCase(unittest.TestCase):
 
     def setUp(self):
         """測試前設置"""
+        os.environ["DB_TYPE"] = "postgres"
+        os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+        os.environ["REDIS_URL"] = "redis://localhost:6379/0"
         self.app = create_app()
         self.app.config['TESTING'] = True
         self.app.config['WTF_CSRF_ENABLED'] = False
@@ -53,6 +56,53 @@ class NotificationsTestCase(unittest.TestCase):
         response = self.client.get('/notifications/')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'testuser', response.data)
+
+    @patch('app.services.notification_service.get_notification_summary')
+    @patch('app.repositories.user_repo.find_by_username')
+    def test_notifications_index_hides_telegram_bind_button_when_bot_unconfigured(self, mock_find_user, mock_get_summary):
+        mock_get_summary.return_value = {
+            'settings': {
+                'email': 'test@example.com',
+                'notify_enabled': True,
+                'notify_days': 30,
+            },
+            'expiry_info': {'total': 5, 'expiring_soon': 2},
+            'can_send': True,
+        }
+        mock_find_user.return_value = {'User': 'testuser', 'admin': False}
+        self.app.config['TELEGRAM_BOT_USERNAME'] = ''
+
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'testuser'
+
+        response = self.client.get('/notifications/')
+        self.assertEqual(response.status_code, 200)
+        content = response.data.decode('utf-8')
+        self.assertNotIn('前往 Telegram 綁定', content)
+        self.assertIn('暫時無法綁定', content)
+
+    @patch('app.services.notification_service.get_notification_summary')
+    @patch('app.repositories.user_repo.find_by_username')
+    def test_notifications_index_shows_telegram_bind_button_when_bot_configured(self, mock_find_user, mock_get_summary):
+        mock_get_summary.return_value = {
+            'settings': {
+                'email': 'test@example.com',
+                'notify_enabled': True,
+                'notify_days': 30,
+            },
+            'expiry_info': {'total': 5, 'expiring_soon': 2},
+            'can_send': True,
+        }
+        mock_find_user.return_value = {'User': 'testuser', 'admin': False}
+        self.app.config['TELEGRAM_BOT_USERNAME'] = 'item_manage_bot'
+
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'testuser'
+
+        response = self.client.get('/notifications/')
+        self.assertEqual(response.status_code, 200)
+        content = response.data.decode('utf-8')
+        self.assertIn('前往 Telegram 綁定', content)
 
     def test_get_settings_requires_auth(self):
         """測試取得設定 API 需要登入"""
@@ -194,6 +244,22 @@ class NotificationsTestCase(unittest.TestCase):
         self.assertIn('settings', data)
         self.assertIn('expiry_info', data)
         self.assertEqual(data['expiry_info']['total'], 10)
+
+    @patch('app.services.notification_service.get_db_type', return_value='mongo')
+    @patch('app.services.notification_service.TelegramUserLink')
+    @patch('app.services.notification_service.LineUserLink')
+    def test_send_chat_notifications_returns_false_without_sql_in_mongo_mode(self, mock_line_link, mock_tg_link, _mock_db_type):
+        from app.services import notification_service
+
+        status = notification_service._send_chat_notifications(
+            username='testuser',
+            channels={'line', 'telegram'},
+            text='hello',
+        )
+
+        self.assertEqual(status, {'line': False, 'telegram': False})
+        mock_line_link.query.filter_by.assert_not_called()
+        mock_tg_link.query.filter_by.assert_not_called()
 
 
 if __name__ == '__main__':

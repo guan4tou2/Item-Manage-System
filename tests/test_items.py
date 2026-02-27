@@ -88,6 +88,7 @@ class ItemServiceTestCase(unittest.TestCase):
                 "ItemFloor": "1F",
                 "ItemRoom": "書房",
                 "ItemZone": "書桌",
+                "visibility": "private",
                 "WarrantyExpiry": "2030-01-01",
                 "UsageExpiry": "2030-06-01",
             },
@@ -100,6 +101,7 @@ class ItemServiceTestCase(unittest.TestCase):
                 "ItemFloor": "B1",
                 "ItemRoom": "工具間",
                 "ItemZone": "架上",
+                "visibility": "shared",
                 "WarrantyExpiry": "2000-01-01",
                 "UsageExpiry": "2000-02-01",
             },
@@ -136,6 +138,11 @@ class ItemServiceTestCase(unittest.TestCase):
         )
         self.assertEqual(len(result["items"]), 1)
         self.assertEqual(result["items"][0]["ItemID"], "A1")
+
+    def test_search_by_visibility(self):
+        result = item_service.list_items({"q": "", "place": "", "type": "", "visibility": "shared"})
+        self.assertEqual(len(result["items"]), 1)
+        self.assertEqual(result["items"][0]["ItemID"], "B2")
 
     def test_expiry_annotation(self):
         """測試過期狀態註解"""
@@ -298,4 +305,3 @@ class ItemServiceTestCase(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -302,7 +302,7 @@ def update_last_notification_date(username: str, date: str) -> None:
 def get_all_users_for_notification() -> List[Dict[str, Any]]:
     db_type = get_db_type()
     if db_type == "postgres":
-        users = User.query.filter(User.notify_enabled == True).filter(User.email.isnot(None), User.email != "").all()
+        users = User.query.filter(User.notify_enabled == True).all()
         return [
             {
                 "User": u.User,
@@ -318,7 +318,7 @@ def get_all_users_for_notification() -> List[Dict[str, Any]]:
             for u in users
         ]
     return list(mongo.db.user.find(
-        {"notify_enabled": True, "email": {"$ne": ""}},
+        {"notify_enabled": True},
         {
             "_id": 0,
             "User": 1,

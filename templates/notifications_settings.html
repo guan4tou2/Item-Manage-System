@@ -92,6 +92,41 @@
             <div class="form-text">目前僅 Email 已啟用，其他管道作為預留</div>
           </div>
 
+          <div class="mb-3">
+            <label class="form-label">
+              <i class="fas fa-link me-1"></i>聊天平台綁定狀態
+            </label>
+            <div class="d-flex flex-column gap-2">
+              <div class="d-flex justify-content-between align-items-center">
+                <span>LINE</span>
+                <span class="badge {% if integration.line_linked %}bg-success{% else %}bg-secondary{% endif %}">
+                  {% if integration.line_linked %}已綁定{% else %}未綁定{% endif %}
+                </span>
+              </div>
+              {% if not integration.line_linked and integration.line_bot_url %}
+              <a href="{{ integration.line_bot_url }}" target="_blank" rel="noopener" class="btn btn-outline-success btn-sm">
+                <i class="fab fa-line me-1"></i>前往 LINE Bot 綁定
+              </a>
+              {% elif not integration.line_linked %}
+              <div class="text-muted small">請到 LINE Bot 輸入「連結帳號」完成綁定。</div>
+              {% endif %}
+
+              <div class="d-flex justify-content-between align-items-center mt-2">
+                <span>Telegram</span>
+                <span class="badge {% if integration.telegram_linked %}bg-success{% else %}bg-secondary{% endif %}">
+                  {% if integration.telegram_linked %}已綁定{% else %}未綁定{% endif %}
+                </span>
+              </div>
+              {% if not integration.telegram_linked and integration.telegram_bind_available %}
+              <a href="{{ integration.telegram_link_url }}" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm">
+                <i class="fab fa-telegram-plane me-1"></i>前往 Telegram 綁定
+              </a>
+              {% elif not integration.telegram_linked %}
+              <div class="text-muted small">管理員尚未設定 Telegram Bot，暫時無法綁定。</div>
+              {% endif %}
+            </div>
+          </div>
+
           <!-- 通知天數 -->
           <div class="mb-3">
             <label for="notify_days" class="form-label">

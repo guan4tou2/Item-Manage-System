@@ -54,6 +54,7 @@ def home():
         "floor": request.args.get("floor", ""),
         "room": request.args.get("room", ""),
         "zone": request.args.get("zone", ""),
+        "visibility": request.args.get("visibility", ""),
         "sort": request.args.get("sort", ""),
     }
     page = request.args.get("page", 1, type=int)
@@ -274,6 +275,7 @@ def search():
     floor = request.args.get("floor", "")
     room = request.args.get("room", "")
     zone = request.args.get("zone", "")
+    visibility = request.args.get("visibility", "")
     sort = request.args.get("sort", "")
     page = request.args.get("page", 1, type=int)
     
@@ -285,6 +287,7 @@ def search():
             "floor": floor,
             "room": room,
             "zone": zone,
+            "visibility": visibility,
             "sort": sort,
         },
         page=page,
@@ -375,6 +378,12 @@ def notifications():
     )
 
 
+@bp.route("/notifications/summary")
+@login_required
+def notifications_summary():
+    return notifications()
+
+
 @bp.route("/api/notifications/count")
 @login_required
 def notification_count():
@@ -394,6 +403,7 @@ def export_items(export_format: str):
             "ItemFloor": request.args.get("floor"),
             "ItemRoom": request.args.get("room"),
             "ItemZone": request.args.get("zone"),
+            "visibility": request.args.get("visibility"),
         }.items()
         if value
     }
@@ -415,7 +425,7 @@ def export_items(export_format: str):
         fieldnames = [
             "ItemID", "ItemName", "ItemDesc", "ItemPic", "ItemStorePlace",
             "ItemType", "ItemOwner", "ItemGetDate", "ItemFloor", "ItemRoom",
-            "ItemZone", "Quantity", "SafetyStock", "ReorderLevel", "WarrantyExpiry", "UsageExpiry",
+            "ItemZone", "visibility", "shared_with", "Quantity", "SafetyStock", "ReorderLevel", "WarrantyExpiry", "UsageExpiry",
         ]
 
         output = StringIO()
@@ -953,4 +963,3 @@ def stock_alert_count():
         "reorder": result["reorder_count"],
         "total": result["total_alerts"],
     })
-

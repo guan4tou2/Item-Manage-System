@@ -8,13 +8,13 @@
    ========================================= */
 :root {
   /* 主色調 - 深藍綠色系 */
-  --primary: #0d6efd;
-  --primary-dark: #0a58ca;
-  --primary-light: #3d8bfd;
+  --primary: #2f658f;
+  --primary-dark: #255273;
+  --primary-light: #4c7ca3;
   
   /* 強調色 */
-  --accent: #6f42c1;
-  --accent-light: #8b5cf6;
+  --accent: #3f6f92;
+  --accent-light: #5c88a8;
   
   /* 語意色 */
   --success: #198754;
@@ -35,7 +35,7 @@
   --gray-900: #0f172a;
   
   /* 背景漸變 */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-primary: linear-gradient(135deg, #2f658f 0%, #4a5d73 100%);
   --gradient-dark: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
   --gradient-subtle: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
   
@@ -187,6 +187,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 body {
@@ -195,6 +196,26 @@ body {
   min-height: 100vh;
   color: var(--gray-800);
   line-height: 1.6;
+  overflow-x: hidden;
+}
+
+main,
+.container-fluid,
+.bg-light {
+  min-width: 0;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* =========================================
@@ -314,6 +335,8 @@ body {
   transition: var(--transition);
   position: relative;
   overflow: hidden;
+  min-height: 170px;
+  border: 1px solid transparent;
 }
 
 .stats-card::before {
@@ -331,21 +354,56 @@ body {
 }
 
 .stats-card .icon {
-  font-size: 2.5rem;
+  font-size: 2rem;
   margin-bottom: 0.5rem;
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .stats-card h2 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 800;
   margin: 0;
 }
 
 .stats-card h5 {
-  font-size: 0.875rem;
-  opacity: 0.9;
-  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.88;
+  margin: 0.2rem 0 0;
+}
+
+.stats-card.stats-tone-1 {
+  background: linear-gradient(135deg, #1e3a5f 0%, #27507a 100%);
+  color: #f8fbff;
+}
+
+.stats-card.stats-tone-2 {
+  background: linear-gradient(135deg, #245072 0%, #2f658f 100%);
+  color: #f8fbff;
+}
+
+.stats-card.stats-tone-3 {
+  background: linear-gradient(135deg, #2a5d66 0%, #347b87 100%);
+  color: #f8fbff;
+}
+
+.stats-card.stats-tone-4 {
+  background: linear-gradient(135deg, #4a5d73 0%, #5f738b 100%);
+  color: #f8fbff;
+}
+
+.stats-card.stats-tone-5 {
+  background: linear-gradient(135deg, #5f4c6b 0%, #736089 100%);
+  color: #f8fbff;
+}
+
+.stats-card.stats-tone-6 {
+  background: linear-gradient(135deg, #374864 0%, #476082 100%);
+  color: #f8fbff;
+}
+
+.stats-card .text-danger,
+.stats-card .text-warning {
+  color: #ffe7a6 !important;
 }
 
 /* =========================================
@@ -465,6 +523,63 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   margin-bottom: 2rem;
+}
+
+.home-page .page-header,
+.home-page .quick-start,
+.home-page .search-form,
+.home-page .empty-state {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fc 100%);
+  border: 1px solid rgba(55, 96, 130, 0.16);
+  box-shadow: 0 10px 26px -20px rgba(30, 58, 95, 0.45);
+}
+
+.home-page .page-header {
+  border-radius: var(--radius-xl);
+  text-align: left;
+  padding: 1.5rem;
+}
+
+.home-page .page-header h1 {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2f658f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.home-page .page-header .lead {
+  color: #4a6078;
+}
+
+.home-page .quick-start h3,
+.home-page .search-form .form-label,
+.home-page .empty-state h3 {
+  color: #1f3f61;
+}
+
+.home-page .quick-start-step {
+  background: rgba(47, 101, 143, 0.06);
+  border: 1px solid rgba(47, 101, 143, 0.12);
+}
+
+.home-page .quick-start-step:hover {
+  background: rgba(47, 101, 143, 0.11);
+}
+
+.home-page .empty-state i {
+  color: #5b6f85;
+}
+
+.home-page .empty-state p {
+  color: #667f97;
+}
+
+.home-search-toolbar {
+  align-items: center;
+}
+
+.home-search-input-wrap {
+  min-width: 0;
 }
 
 /* =========================================
@@ -674,6 +789,8 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  max-width: min(92vw, 720px);
+  white-space: normal;
 }
 
 .quick-tip.show {
@@ -882,12 +999,46 @@ body {
    15. 響應式調整
    ========================================= */
 @media (max-width: 768px) {
+  .container-fluid.py-4 {
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  .bg-light {
+    padding: 1rem !important;
+  }
+
+  .search-form {
+    padding: 1rem;
+  }
+
+  .home-page .page-header,
+  .home-page .quick-start,
+  .home-page .search-form,
+  .home-page .empty-state {
+    border-radius: var(--radius-lg);
+  }
+
   .page-header h1 {
     font-size: 1.75rem;
   }
   
   .stats-card h2 {
     font-size: 1.75rem;
+  }
+
+  .stats-card {
+    min-height: 142px;
+    padding: 1.1rem;
+  }
+
+  .stats-card .icon {
+    font-size: 1.6rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .stats-card h5 {
+    font-size: 0.82rem;
   }
   
   .welcome-banner {
@@ -903,6 +1054,39 @@ body {
     right: 1.5rem;
     width: 50px;
     height: 50px;
+  }
+
+  .home-search-toolbar {
+    flex-wrap: wrap;
+    gap: 0.75rem !important;
+  }
+
+  .home-search-input-wrap {
+    flex: 1 1 100%;
+  }
+
+  .home-filter-btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+
+  .home-scan-btn {
+    flex: 0 0 48px;
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .quick-tip {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    transform: translateY(120px);
+    max-width: none;
+    padding: 0.75rem 1rem;
+  }
+
+  .quick-tip.show {
+    transform: translateY(0);
   }
 }
 
@@ -1232,6 +1416,7 @@ body {
   gap: 1rem;
   z-index: 1000;
   animation: slideUp 0.3s ease;
+  max-width: min(92vw, 820px);
 }
 
 .batch-toolbar.hidden {
@@ -1499,6 +1684,17 @@ body {
   .select-mode main {
     padding-bottom: 80px;
   }
+
+  .batch-toolbar {
+    width: 100%;
+    max-width: none;
+    left: 0;
+    transform: none;
+    bottom: 0;
+    border-radius: 0;
+    padding: 0.85rem 1rem;
+    justify-content: space-between;
+  }
 }
 
 /* 桌面版勾選框始終顯示 */
@@ -1541,7 +1737,7 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   width: 90%;
-  max-width: 400px;
+  max-width: min(92vw, 400px);
   transform: scale(0.9);
   transition: transform 0.2s ease;
 }
@@ -1893,3 +2089,7 @@ body {
   margin-top: 0.25rem;
 }
 
+.pwa-install-btn {
+  width: 100%;
+  text-align: left;
+}

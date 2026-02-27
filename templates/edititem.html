@@ -261,6 +261,16 @@
             </div>
           </div>
 
+          <div class="col-md-4">
+            <div class="form-floating">
+              <select id="visibility" class="form-select" name="visibility" required>
+                <option value="private" {% if item.visibility != 'shared' %}selected{% endif %}>私人</option>
+                <option value="shared" {% if item.visibility == 'shared' %}selected{% endif %}>共用</option>
+              </select>
+              <label for="visibility">可見性</label>
+            </div>
+          </div>
+
           <!-- 取得日期 -->
           <div class="col-md-4">
             <div class="form-floating">

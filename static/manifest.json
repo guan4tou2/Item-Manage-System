@@ -1,23 +1,45 @@
 {
   "name": "物品管理系統",
   "short_name": "物品管理",
+  "id": "/",
+  "description": "管理家中物品、位置、效期與通知提醒",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
-  "theme_color": "#0d6efd",
+  "theme_color": "#1e3a5f",
   "orientation": "portrait-primary",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
-      "src": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/svgs/solid/box-open.svg",
+      "src": "/static/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/svgs/solid/box-open.svg",
+      "src": "/static/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "快速搜尋",
+      "short_name": "搜尋",
+      "url": "/search"
+    },
+    {
+      "name": "新增物品",
+      "short_name": "新增",
+      "url": "/additem"
     }
   ]
 }

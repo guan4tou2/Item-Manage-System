@@ -25,6 +25,8 @@ class Item(db.Model):
     ItemFloor: Mapped[Optional[str]] = mapped_column(String(50), index=True)
     ItemRoom: Mapped[Optional[str]] = mapped_column(String(50), index=True)
     ItemZone: Mapped[Optional[str]] = mapped_column(String(50), index=True)
+    visibility: Mapped[str] = mapped_column(String(20), default="private", index=True)
+    shared_with: Mapped[Optional[List[str]]] = mapped_column(JSON, default=list)
     Quantity: Mapped[int] = mapped_column(Integer, default=0)
     SafetyStock: Mapped[int] = mapped_column(Integer, default=0)
     ReorderLevel: Mapped[int] = mapped_column(Integer, default=0)
@@ -50,6 +52,8 @@ class Item(db.Model):
             "ItemFloor": self.ItemFloor or "",
             "ItemRoom": self.ItemRoom or "",
             "ItemZone": self.ItemZone or "",
+            "visibility": self.visibility or "private",
+            "shared_with": list(self.shared_with or []),
             "Quantity": int(self.Quantity or 0),
             "SafetyStock": int(self.SafetyStock or 0),
             "ReorderLevel": int(self.ReorderLevel or 0),
@@ -63,4 +67,3 @@ class Item(db.Model):
 
     def __repr__(self) -> str:
         return f"<Item {self.ItemID}: {self.ItemName}>"
-

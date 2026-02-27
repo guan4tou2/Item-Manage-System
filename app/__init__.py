@@ -104,6 +104,13 @@ def create_app() -> Flask:
         SESSION_COOKIE_SAMESITE="Lax",
         WTF_CSRF_ENABLED=True,
         WTF_CSRF_TIME_LIMIT=3600,
+        LINE_CHANNEL_SECRET=os.environ.get("LINE_CHANNEL_SECRET", ""),
+        LINE_CHANNEL_ACCESS_TOKEN=os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", ""),
+        LINE_LIFF_ID=os.environ.get("LINE_LIFF_ID", ""),
+        LINE_BOT_URL=os.environ.get("LINE_BOT_URL", ""),
+        TELEGRAM_BOT_TOKEN=os.environ.get("TELEGRAM_BOT_TOKEN", ""),
+        TELEGRAM_BOT_USERNAME=os.environ.get("TELEGRAM_BOT_USERNAME", ""),
+        TELEGRAM_WEBHOOK_SECRET=os.environ.get("TELEGRAM_WEBHOOK_SECRET", ""),
     )
 
     ensure_upload_folder(app)
@@ -164,6 +171,8 @@ def create_app() -> Flask:
     from app.health.routes import bp as health_bp
     from app.routes.import_routes import bp as import_bp
     from app.travel.routes import bp as travel_bp, shopping_bp
+    from app.line.routes import bp as line_bp
+    from app.telegram.routes import bp as telegram_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
@@ -174,6 +183,8 @@ def create_app() -> Flask:
     app.register_blueprint(import_bp)
     app.register_blueprint(travel_bp)
     app.register_blueprint(shopping_bp)
+    app.register_blueprint(line_bp)
+    app.register_blueprint(telegram_bp)
     
     # 註冊自定義過濾器
     import re

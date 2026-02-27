@@ -47,6 +47,10 @@ def validate_item_fields(
             if not ok:
                 return ok, msg
 
+    visibility = (data.get("visibility") or "private").strip().lower()
+    if visibility not in {"private", "shared"}:
+        return False, "visibility 僅允許 private 或 shared"
+
     # 數量與補貨門檻
     for int_field, label in [("Quantity", "庫存數量"), ("SafetyStock", "安全庫存"), ("ReorderLevel", "補貨門檻")]:
         val = data.get(int_field, "")
@@ -59,4 +63,3 @@ def validate_item_fields(
                 return False, f"{label} 需為數字"
 
     return True, ""
-

@@ -622,10 +622,64 @@ Redirect to: /travel/<travel_id>
   "group_id": 1,
   "name": "充電器",
   "quantity": 2,
+  "list_scope": "common",
+  "assignee": null,
+  "visibility": "shared",
   "is_temp": false,
   "note": "Type-C"
 }
 ```
+
+`list_scope` 可為 `common` 或 `personal`。
+
+---
+
+### LINE Webhook
+
+**Endpoint:** `POST /line/webhook`
+
+**Authentication:** LINE Signature (`X-Line-Signature`)
+
+**Description:**
+- 驗證 webhook 簽章（HMAC-SHA256）
+- 接收 LINE message/accountLink 事件
+- 支援文字指令操作旅行清單
+
+---
+
+### LINE Account Link Redirect
+
+**Endpoint:** `GET /line/account-link?linkToken=<token>`
+
+**Authentication:** Required (Web App 登入)
+
+**Description:**
+- 將登入中的系統帳號與 LINE 帳號綁定
+- 產生一次性 nonce 並導向 LINE account link URL
+
+---
+
+### Telegram Webhook
+
+**Endpoint:** `POST /telegram/webhook`
+
+**Authentication:** `X-Telegram-Bot-Api-Secret-Token`（若有設定 `TELEGRAM_WEBHOOK_SECRET`）
+
+**Description:**
+- 接收 Telegram message / callback_query 事件
+- 支援旅行與清單指令：`我的旅行`、`共同清單`、`我的清單`、`打包完成 <item_id>`
+
+---
+
+### Telegram Link Redirect
+
+**Endpoint:** `GET /telegram/link`
+
+**Authentication:** Required (Web App 登入)
+
+**Description:**
+- 導向 Telegram bot deep link（`/start <token>`）
+- 供使用者完成帳號綁定
 
 ---
 

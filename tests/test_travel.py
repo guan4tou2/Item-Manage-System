@@ -1,10 +1,10 @@
 """旅行模組測試"""
+import os
 import unittest
 from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
 
-# Setup test environment
-import tests.conftest  # noqa: F401
+import tests.fixtures_env  # noqa: F401
 
 from app import create_app, db
 from app.models import Travel, TravelGroup, TravelItem, ShoppingList, ShoppingItem
@@ -15,10 +15,12 @@ class TravelTestCase(unittest.TestCase):
 
     def setUp(self):
         """測試前設置"""
+        os.environ["DB_TYPE"] = "postgres"
+        os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+        os.environ["REDIS_URL"] = "redis://localhost:6379/0"
         self.app = create_app()
         self.app.config['TESTING'] = True
         self.app.config['WTF_CSRF_ENABLED'] = False
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         self.client = self.app.test_client()
         self.ctx = self.app.app_context()
         self.ctx.push()
@@ -127,6 +129,46 @@ class TravelTestCase(unittest.TestCase):
 
         item = TravelItem.query.filter_by(travel_id=travel.id, name='Passport').first()
         self.assertIsNotNone(item)
+        assert item is not None
+        self.assertEqual(item.list_scope, 'common')
+
+    def test_add_personal_item_to_travel(self):
+        travel = Travel(name='Test Travel', owner='testuser')
+        db.session.add(travel)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'testuser'
+
+        response = self.client.post(
+            f'/travel/{travel.id}/item',
+            data={'name': 'Wallet', 'list_scope': 'personal', 'assignee': 'testuser'},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        item = TravelItem.query.filter_by(travel_id=travel.id, name='Wallet').first()
+        self.assertIsNotNone(item)
+        assert item is not None
+        self.assertEqual(item.list_scope, 'personal')
+        self.assertEqual(item.assignee, 'testuser')
+
+    def test_add_item_api_with_scope(self):
+        travel = Travel(name='Test Travel', owner='testuser')
+        db.session.add(travel)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'testuser'
+
+        response = self.client.post(
+            f'/travel/api/{travel.id}/items',
+            json={'name': 'Shoes', 'list_scope': 'personal', 'assignee': 'testuser', 'visibility': 'private'},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertTrue(data['success'])
+        self.assertEqual(data['item']['list_scope'], 'personal')
+        self.assertEqual(data['item']['visibility'], 'private')
 
     def test_add_item_without_name(self):
         """測試新增物品時沒有名稱"""
@@ -197,6 +239,17 @@ class TravelTestCase(unittest.TestCase):
         self.assertIn('items', data)
         self.assertEqual(len(data['items']), 1)
 
+    def test_travel_api_forbidden_for_other_owner(self):
+        travel = Travel(name='Owner Travel', owner='owner_a')
+        db.session.add(travel)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'owner_b'
+
+        response = self.client.get(f'/travel/api/{travel.id}/items')
+        self.assertEqual(response.status_code, 403)
+
     def test_create_travel_api(self):
         """測試 API 建立旅行"""
         with self.client.session_transaction() as sess:
@@ -263,10 +316,12 @@ class ShoppingListTestCase(unittest.TestCase):
 
     def setUp(self):
         """測試前設置"""
+        os.environ["DB_TYPE"] = "postgres"
+        os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+        os.environ["REDIS_URL"] = "redis://localhost:6379/0"
         self.app = create_app()
         self.app.config['TESTING'] = True
         self.app.config['WTF_CSRF_ENABLED'] = False
-        self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         self.client = self.app.test_client()
         self.ctx = self.app.app_context()
         self.ctx.push()
