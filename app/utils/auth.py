@@ -7,13 +7,22 @@ from flask import flash, redirect, session, url_for
 from app.services import user_service
 
 
+def _normalize_user_payload(user: Optional[Dict[str, Any]], user_id: Optional[str]) -> Dict[str, Any]:
+    """統一模板可用的使用者欄位，避免不同頁面取值不一致。"""
+    normalized = dict(user or {})
+    normalized["User"] = normalized.get("User") or user_id
+    normalized["name"] = normalized.get("name") or normalized.get("User") or ""
+    normalized["admin"] = bool(normalized.get("admin", False))
+    return normalized
+
+
 def get_current_user() -> Dict[str, Any]:
     """取得當前登入使用者資訊"""
     user_id = session.get("UserID")
     if not user_id:
-        return {"User": None, "admin": False}
+        return _normalize_user_payload(None, None)
     user = user_service.get_user(user_id)
-    return user or {"User": user_id, "admin": False}
+    return _normalize_user_payload(user, user_id)
 
 
 def login_required(f: Callable) -> Callable:
@@ -40,4 +49,3 @@ def admin_required(f: Callable) -> Callable:
             return redirect(url_for("items.home"))
         return f(*args, **kwargs)
     return decorated_function
-

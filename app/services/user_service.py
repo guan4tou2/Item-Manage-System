@@ -295,3 +295,28 @@ def unlock_user(username: str) -> bool:
         return False
     user_repo.unlock_account(username)
     return True
+
+
+def delete_user(actor_username: str, target_username: str) -> Tuple[bool, str]:
+    """刪除使用者，避免刪除自己或最後一個管理員。"""
+    target_user = user_repo.find_by_username(target_username)
+    if not target_user:
+        return False, "找不到該用戶"
+
+    if actor_username == target_username:
+        return False, "無法刪除目前登入的帳號"
+
+    if target_user.get("admin"):
+        users = user_repo.list_all_users()
+        admin_count = sum(1 for user in users if user.get("admin"))
+        if admin_count <= 1:
+            return False, "至少需要保留一個管理員帳號"
+
+    deleted = user_repo.delete_user(target_username)
+    if not deleted:
+        return False, "刪除失敗"
+
+    log_service.log_action("delete", actor_username, target_username, details={
+        "message": f"管理員刪除了使用者 {target_username}"
+    })
+    return True, f"已刪除 {target_username}"

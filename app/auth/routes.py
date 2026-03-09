@@ -146,6 +146,49 @@ def admin_users():
     )
 
 
+@bp.route("/admin/users/create", methods=["POST"])
+def admin_create_user():
+    """管理員新增用戶"""
+    username = session.get("UserID")
+    if not username:
+        return redirect(url_for("auth.signin"))
+
+    user = user_service.get_user(username)
+    if not user or not user.get("admin"):
+        flash("您沒有權限執行此操作", "danger")
+        return redirect(url_for("items.home"))
+
+    new_username = request.form.get("UserID", "").strip()
+    password = request.form.get("Password", "")
+    confirm_password = request.form.get("ConfirmPassword", "")
+    is_admin = request.form.get("admin") == "on"
+
+    if not new_username or not password or not confirm_password:
+        flash("請填寫新增用戶所需欄位", "danger")
+        return redirect(url_for("auth.admin_users"))
+
+    if len(new_username) < 3:
+        flash("帳號至少需要 3 個字元", "danger")
+        return redirect(url_for("auth.admin_users"))
+
+    if password != confirm_password:
+        flash("兩次輸入的密碼不一致", "danger")
+        return redirect(url_for("auth.admin_users"))
+
+    ok, msg = user_service.validate_new_password(password)
+    if not ok:
+        flash(msg, "danger")
+        return redirect(url_for("auth.admin_users"))
+
+    if user_service.create_user(new_username, password, admin=is_admin):
+        role_label = "管理員" if is_admin else "一般用戶"
+        flash(f"已新增 {new_username}（{role_label}）", "success")
+    else:
+        flash("新增失敗，帳號可能已存在或密碼不符合規則", "danger")
+
+    return redirect(url_for("auth.admin_users"))
+
+
 @bp.route("/admin/reset-password/<target_user>", methods=["POST"])
 def admin_reset_password(target_user):
     """管理員重置用戶密碼"""
@@ -185,4 +228,21 @@ def admin_unlock_user(target_user):
     else:
         flash("解鎖失敗", "danger")
     
+    return redirect(url_for("auth.admin_users"))
+
+
+@bp.route("/admin/delete-user/<target_user>", methods=["POST"])
+def admin_delete_user(target_user):
+    """管理員刪除用戶"""
+    username = session.get("UserID")
+    if not username:
+        return redirect(url_for("auth.signin"))
+
+    user = user_service.get_user(username)
+    if not user or not user.get("admin"):
+        flash("您沒有權限執行此操作", "danger")
+        return redirect(url_for("items.home"))
+
+    ok, msg = user_service.delete_user(username, target_user)
+    flash(msg, "success" if ok else "danger")
     return redirect(url_for("auth.admin_users"))

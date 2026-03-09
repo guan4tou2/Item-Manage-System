@@ -33,6 +33,16 @@ def insert_user(user: Dict[str, Any]) -> None:
         mongo.db.user.insert_one(user)
 
 
+def delete_user(username: str) -> bool:
+    db_type = get_db_type()
+    if db_type == "postgres":
+        deleted = User.query.filter_by(User=username).delete()
+        db.session.commit()
+        return deleted > 0
+    result = mongo.db.user.delete_one({"User": username})
+    return result.deleted_count > 0
+
+
 def update_password(username: str, hashed_password: str) -> None:
     db_type = get_db_type()
     if db_type == "postgres":

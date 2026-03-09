@@ -51,6 +51,7 @@ class TravelTestCase(unittest.TestCase):
         response = self.client.get('/travel/')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'testuser', response.data)
+        self.assertNotIn(b"{'_id':", response.data)
 
     def test_list_page_uses_form_endpoint_for_create(self):
         """測試旅行頁面表單使用 HTML 表單端點而非 API 端點"""

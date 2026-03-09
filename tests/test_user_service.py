@@ -1,6 +1,7 @@
 """使用者服務測試"""
 
 import unittest
+from unittest.mock import patch
 
 from werkzeug.security import check_password_hash
 
@@ -45,6 +46,12 @@ class FakeUserRepo:
     def mark_password_changed(self, username: str):
         if username in self.users:
             self.users[username]["password_changed"] = True
+
+    def list_all_users(self):
+        return list(self.users.values())
+
+    def delete_user(self, username: str):
+        return self.users.pop(username, None) is not None
 
 
 class UserServiceTestCase(unittest.TestCase):
@@ -185,6 +192,31 @@ class UserServiceTestCase(unittest.TestCase):
         self.assertTrue(check_password_hash(hashed, password))
         # 錯誤密碼應該驗證失敗
         self.assertFalse(check_password_hash(hashed, "wrongpass"))
+
+    def test_delete_user_success(self):
+        self.fake_repo.insert_user({"User": "admin", "Password": "hashed", "admin": True})
+        self.fake_repo.insert_user({"User": "user1", "Password": "hashed", "admin": False})
+
+        with patch("app.services.user_service.log_service.log_action"):
+            ok, msg = user_service.delete_user("admin", "user1")
+        self.assertTrue(ok)
+        self.assertIn("已刪除", msg)
+        self.assertIsNone(self.fake_repo.find_by_username("user1"))
+
+    def test_delete_user_rejects_self_delete(self):
+        self.fake_repo.insert_user({"User": "admin", "Password": "hashed", "admin": True})
+
+        ok, msg = user_service.delete_user("admin", "admin")
+        self.assertFalse(ok)
+        self.assertIn("無法刪除", msg)
+
+    def test_delete_user_keeps_last_admin(self):
+        self.fake_repo.insert_user({"User": "admin", "Password": "hashed", "admin": True})
+        self.fake_repo.insert_user({"User": "user1", "Password": "hashed", "admin": False})
+
+        ok, msg = user_service.delete_user("user1", "admin")
+        self.assertFalse(ok)
+        self.assertIn("至少需要保留一個管理員", msg)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch, MagicMock
 from io import BytesIO
 
 from app import create_app
+from app.utils.auth import get_current_user
 
 
 class RoutesTestCase(unittest.TestCase):
@@ -104,6 +105,98 @@ class RoutesTestCase(unittest.TestCase):
             
             response = self.client.get("/home")
             self.assertEqual(response.status_code, 200)
+
+    @patch("app.services.user_service.get_user", return_value={"User": "admin", "admin": True})
+    def test_get_current_user_normalizes_name_field(self, _mock_get_user):
+        with self.app.test_request_context("/home"):
+            from flask import session
+            session["UserID"] = "admin"
+            user = get_current_user()
+
+        self.assertEqual(user["User"], "admin")
+        self.assertEqual(user["name"], "admin")
+        self.assertTrue(user["admin"])
+
+    @patch("app.services.user_service.list_users", return_value=[])
+    @patch("app.services.user_service.get_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_admin_users_page_contains_create_form(self, _mock_get_user, _mock_list_users):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.get("/admin/users")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('action="/admin/users/create"', content)
+        self.assertIn('name="ConfirmPassword"', content)
+
+    @patch("app.services.user_service.create_user", return_value=True)
+    @patch("app.services.user_service.validate_new_password", return_value=(True, ""))
+    @patch("app.services.user_service.get_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_admin_can_create_user(
+        self,
+        _mock_get_user,
+        _mock_validate_password,
+        mock_create_user,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.post(
+            "/admin/users/create",
+            data={
+                "UserID": "newuser",
+                "Password": "Passw0rd1",
+                "ConfirmPassword": "Passw0rd1",
+                "admin": "on",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/users", response.location)
+        mock_create_user.assert_called_once_with("newuser", "Passw0rd1", admin=True)
+
+    @patch("app.services.user_service.get_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_admin_create_user_rejects_password_mismatch(self, _mock_get_user):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.post(
+            "/admin/users/create",
+            data={
+                "UserID": "newuser",
+                "Password": "Passw0rd1",
+                "ConfirmPassword": "Passw0rd2",
+            },
+            follow_redirects=False,
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/users", response.location)
+
+    @patch("app.services.user_service.list_users", return_value=[
+        {"User": "admin", "admin": True},
+        {"User": "user1", "admin": False},
+    ])
+    @patch("app.services.user_service.get_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_admin_users_page_contains_delete_action(self, _mock_get_user, _mock_list_users):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.get("/admin/users")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("/admin/delete-user/user1", content)
+        self.assertNotIn("/admin/delete-user/admin", content)
+
+    @patch("app.services.user_service.delete_user", return_value=(True, "已刪除 user1"))
+    @patch("app.services.user_service.get_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_admin_can_delete_user(self, _mock_get_user, mock_delete_user):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.post("/admin/delete-user/user1", follow_redirects=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/admin/users", response.location)
+        mock_delete_user.assert_called_once_with("admin", "user1")
 
     @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
     @patch("app.services.item_service.get_stats", return_value={"total": 2, "by_type": {"工具": 1}, "low_stock": 0})

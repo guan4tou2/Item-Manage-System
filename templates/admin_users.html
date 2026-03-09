@@ -16,6 +16,50 @@
 <div class="container-fluid">
   <div class="row justify-content-center">
     <div class="col-lg-10">
+      <div class="card animate-fadeInUp stagger-1 mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <h5 class="mb-1"><i class="fas fa-user-plus me-2"></i>新增用戶</h5>
+            <small class="text-muted">管理員可直接建立一般用戶或管理員帳號</small>
+          </div>
+          <span class="badge bg-light text-dark">帳號至少 3 碼，密碼需含英數且至少 8 碼</span>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-light border mb-3" role="alert">
+            <div class="fw-semibold mb-1">密碼政策</div>
+            <div class="small text-muted">
+              新用戶密碼至少 8 個字元，且必須同時包含英文字母與數字。建立後若需交付臨時帳號，建議由管理員立即重設一次密碼再提供。
+            </div>
+          </div>
+          <form action="{{ url_for('auth.admin_create_user') }}" method="POST" class="row g-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="col-md-4">
+              <label for="newUserId" class="form-label">帳號</label>
+              <input type="text" class="form-control" id="newUserId" name="UserID" minlength="3" required>
+            </div>
+            <div class="col-md-3">
+              <label for="newPassword" class="form-label">密碼</label>
+              <input type="password" class="form-control" id="newPassword" name="Password" minlength="8" required>
+            </div>
+            <div class="col-md-3">
+              <label for="newConfirmPassword" class="form-label">確認密碼</label>
+              <input type="password" class="form-control" id="newConfirmPassword" name="ConfirmPassword" minlength="8" required>
+            </div>
+            <div class="col-md-2">
+              <div class="form-check mt-4">
+                <input class="form-check-input" type="checkbox" id="newUserAdmin" name="admin">
+                <label class="form-check-label" for="newUserAdmin">設為管理員</label>
+              </div>
+            </div>
+            <div class="col-12 d-flex justify-content-end">
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>建立用戶
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div class="card animate-fadeInUp stagger-1">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="mb-0"><i class="fas fa-users me-2"></i>用戶列表</h5>
@@ -102,6 +146,15 @@
                           <i class="fas fa-key"></i>
                         </button>
                       </form>
+                      <form action="{{ url_for('auth.admin_delete_user', target_user=u.User) }}"
+                            method="POST"
+                            class="d-inline"
+                            onsubmit="return confirm('確定要刪除 {{ u.User }} 嗎？此操作無法復原。');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-outline-danger" title="刪除用戶">
+                          <i class="fas fa-trash-alt"></i>
+                        </button>
+                      </form>
                       {%else%}
                       <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary" title="修改密碼">
                         <i class="fas fa-edit"></i>
@@ -133,4 +186,3 @@
   </div>
 </div>
 {%endblock%}
-
