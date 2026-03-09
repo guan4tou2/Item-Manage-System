@@ -1148,6 +1148,7 @@ canvas {
    ========================================= */
 [data-tooltip] {
   position: relative;
+  overflow: visible;
 }
 
 .fab[data-tooltip] {
@@ -1169,8 +1170,9 @@ canvas {
   font-weight: 700;
   line-height: 1.35;
   letter-spacing: 0.01em;
+  width: max-content;
   white-space: nowrap;
-  max-width: min(240px, calc(100vw - 24px));
+  max-width: min(260px, calc(100vw - 24px));
   opacity: 0;
   visibility: hidden;
   display: none;
@@ -1211,12 +1213,13 @@ canvas {
 
 .fab[data-tooltip]::before {
   left: auto;
-  right: 0;
-  transform: translateX(0) translateY(-5px);
+  right: calc(100% + 12px);
+  bottom: 50%;
+  transform: translateX(0) translateY(50%);
 }
 
 .fab[data-tooltip]:hover::before {
-  transform: translateX(0) translateY(-10px);
+  transform: translateX(0) translateY(50%);
 }
 
 /* =========================================

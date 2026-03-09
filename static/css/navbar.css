@@ -6,6 +6,17 @@ body {
 
 .navbar {
   margin-bottom: 0;
+  overflow: visible;
+}
+
+.navbar .container,
+.navbar .navbar-collapse,
+.navbar .nav-item.dropdown {
+  overflow: visible;
+}
+
+.navbar .nav-item.dropdown {
+  position: relative;
 }
 
 /* 使用者頭像 */
@@ -27,10 +38,18 @@ body {
   padding: 0.55rem;
   min-width: 200px;
   box-shadow: 0 18px 36px -22px rgba(15, 23, 42, 0.35);
+  z-index: 1305;
 }
 
 .admin-dropdown-menu {
   min-width: 250px;
+}
+
+.navbar .dropdown-toggle.show[data-tooltip]::before,
+.navbar .dropdown-toggle.show[data-tooltip]:hover::before {
+  display: none;
+  opacity: 0;
+  visibility: hidden;
 }
 
 .dropdown-item {
