@@ -142,34 +142,37 @@
       {%if query%}
       <span class="badge bg-light text-dark border">
         <i class="fas fa-font me-1"></i>名稱：{{query}}
-        <a href="{{ url_for('items.search', place=place, type=selected_type) }}" class="text-danger ms-1">×</a>
+        <a href="{{ url_for('items.search', place=place, type=selected_type, floor=request.args.get('floor',''), room=request.args.get('room',''), zone=request.args.get('zone',''), sort=selected_sort, visibility=request.args.get('visibility','')) }}" class="text-danger ms-1">×</a>
       </span>
       {%endif%}
       {%if place%}
       <span class="badge bg-light text-dark border">
         <i class="fas fa-map-marker-alt me-1"></i>地點：{{place}}
-        <a href="{{ url_for('items.search', q=query, type=selected_type) }}" class="text-danger ms-1">×</a>
+        <a href="{{ url_for('items.search', q=query, type=selected_type, floor=request.args.get('floor',''), room=request.args.get('room',''), zone=request.args.get('zone',''), sort=selected_sort, visibility=request.args.get('visibility','')) }}" class="text-danger ms-1">×</a>
       </span>
       {%endif%}
       {%if selected_type%}
       <span class="badge bg-light text-dark border">
         <i class="fas fa-tag me-1"></i>類型：{{selected_type}}
-        <a href="{{ url_for('items.search', q=query, place=place) }}" class="text-danger ms-1">×</a>
+        <a href="{{ url_for('items.search', q=query, place=place, floor=request.args.get('floor',''), room=request.args.get('room',''), zone=request.args.get('zone',''), sort=selected_sort, visibility=request.args.get('visibility','')) }}" class="text-danger ms-1">×</a>
       </span>
       {%endif%}
       {%if request.args.get('floor')%}
       <span class="badge bg-light text-dark border">
         <i class="fas fa-building me-1"></i>樓層：{{request.args.get('floor')}}
+        <a href="{{ url_for('items.search', q=query, place=place, type=selected_type, room=request.args.get('room',''), zone=request.args.get('zone',''), sort=selected_sort, visibility=request.args.get('visibility','')) }}" class="text-danger ms-1">×</a>
       </span>
       {%endif%}
       {%if request.args.get('room')%}
       <span class="badge bg-light text-dark border">
         <i class="fas fa-door-open me-1"></i>房間：{{request.args.get('room')}}
+        <a href="{{ url_for('items.search', q=query, place=place, type=selected_type, floor=request.args.get('floor',''), zone=request.args.get('zone',''), sort=selected_sort, visibility=request.args.get('visibility','')) }}" class="text-danger ms-1">×</a>
       </span>
       {%endif%}
       {%if request.args.get('zone')%}
       <span class="badge bg-light text-dark border">
         <i class="fas fa-vector-square me-1"></i>區域：{{request.args.get('zone')}}
+        <a href="{{ url_for('items.search', q=query, place=place, type=selected_type, floor=request.args.get('floor',''), room=request.args.get('room',''), sort=selected_sort, visibility=request.args.get('visibility','')) }}" class="text-danger ms-1">×</a>
       </span>
       {%endif%}
     </div>

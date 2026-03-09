@@ -154,6 +154,39 @@ class RoutesTestCase(unittest.TestCase):
         response = self.client.get("/search", follow_redirects=False)
         self.assertEqual(response.status_code, 302)
 
+    @patch("app.services.item_service.list_items")
+    @patch("app.services.type_service.list_types", return_value=[])
+    @patch("app.services.location_service.list_choices", return_value=(["1F"], ["書房"], ["書桌"]))
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_search_filter_remove_links_preserve_other_filters(
+        self,
+        _mock_current_user,
+        _mock_location_choices,
+        _mock_types,
+        mock_list_items,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_list_items.return_value = {
+            "items": [],
+            "total": 0,
+            "page": 1,
+            "page_size": 12,
+            "total_pages": 1,
+            "has_prev": False,
+            "has_next": False,
+        }
+
+        response = self.client.get("/search?q=筆電&place=書房&type=電子產品&floor=1F&room=書房&zone=書桌&sort=name")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("place=%E6%9B%B8%E6%88%BF", content)
+        self.assertIn("floor=1F", content)
+        self.assertIn("room=%E6%9B%B8%E6%88%BF", content)
+        self.assertIn("zone=%E6%9B%B8%E6%A1%8C", content)
+        self.assertIn("sort=name", content)
+
     def test_scan_requires_login(self):
         """測試掃描頁面需要登入"""
         response = self.client.get("/scan", follow_redirects=False)

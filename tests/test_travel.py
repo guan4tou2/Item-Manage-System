@@ -198,6 +198,24 @@ class TravelTestCase(unittest.TestCase):
         response = self.client.post(f'/travel/{travel.id}/item', data={})
         self.assertEqual(response.status_code, 302)
 
+    def test_travel_detail_shows_ungrouped_items(self):
+        travel = Travel(name='Test Travel', owner='testuser')
+        db.session.add(travel)
+        db.session.flush()
+
+        item = TravelItem(travel_id=travel.id, name='Passport', qty_required=1, group_id=None)
+        db.session.add(item)
+        db.session.commit()
+
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'testuser'
+
+        response = self.client.get(f'/travel/{travel.id}')
+        content = response.data.decode('utf-8')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('未分組', content)
+        self.assertIn('Passport', content)
+
     def test_update_travel_item(self):
         """測試更新旅行物品"""
         travel = Travel(name='Test Travel', owner='testuser')

@@ -43,7 +43,7 @@
                      {% if settings.notify_enabled %}checked{% endif %}>
               <label class="form-check-label" for="notify_enabled">
                 <strong>啟用通知</strong>
-                <div class="text-muted small">當物品快到期時發送 Email 通知</div>
+                <div class="text-muted small">當物品快到期時發送 Email 或已綁定聊天通知</div>
               </label>
             </div>
           </div>
@@ -89,7 +89,7 @@
                 <label class="form-check-label" for="channel_telegram">Telegram</label>
               </div>
             </div>
-            <div class="form-text">目前僅 Email 已啟用，其他管道作為預留</div>
+            <div class="form-text">Email、LINE、Telegram 可同時啟用；聊天通知需先完成帳號綁定。</div>
           </div>
 
           <div class="mb-3">
@@ -187,12 +187,18 @@
           </div>
 
           <!-- 按鈕 -->
+          {% set selected_channels = settings.notify_channels or ['email'] %}
+          {% set has_reachable_channel =
+            ('email' in selected_channels and settings.email)
+            or ('line' in selected_channels and integration.line_linked)
+            or ('telegram' in selected_channels and integration.telegram_linked)
+          %}
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-save me-1"></i>儲存設定
             </button>
             <button type="button" id="sendTestBtn" class="btn btn-outline-success"
-                    {% if not settings.email %}disabled{% endif %}>
+                    {% if not settings.notify_enabled or not has_reachable_channel %}disabled{% endif %}>
               <i class="fas fa-paper-plane me-1"></i>發送測試通知
             </button>
           </div>
@@ -333,11 +339,42 @@ document.addEventListener('DOMContentLoaded', function() {
   const sendTestBtn = document.getElementById('sendTestBtn');
   const sendNowBtn = document.getElementById('sendNowBtn');
   const settingsFeedback = document.getElementById('settingsFeedback');
+  const integration = {
+    lineLinked: {{ 'true' if integration.line_linked else 'false' }},
+    telegramLinked: {{ 'true' if integration.telegram_linked else 'false' }}
+  };
 
   function showFeedback(type, message) {
     settingsFeedback.className = `alert alert-${type} mt-3`;
     settingsFeedback.textContent = message;
     settingsFeedback.classList.remove('d-none');
+  }
+
+  function hasReachableChannel() {
+    const selectedChannels = Array.from(channelInputs)
+      .filter((input) => input.checked)
+      .map((input) => input.value);
+
+    if (selectedChannels.includes('email') && emailInput.value.trim()) {
+      return true;
+    }
+    if (selectedChannels.includes('line') && integration.lineLinked) {
+      return true;
+    }
+    if (selectedChannels.includes('telegram') && integration.telegramLinked) {
+      return true;
+    }
+    return false;
+  }
+
+  function refreshSendButtons() {
+    const disabled = !notifyEnabled.checked;
+    if (sendTestBtn) {
+      sendTestBtn.disabled = disabled || !hasReachableChannel();
+    }
+    if (sendNowBtn) {
+      sendNowBtn.disabled = disabled || !hasReachableChannel();
+    }
   }
 
   // 切換通知啟用時的狀態
@@ -354,15 +391,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const replacementIntervalsInput = document.getElementById('replacement_intervals');
     if (replacementEnabled) replacementEnabled.disabled = disabled;
     if (replacementIntervalsInput) replacementIntervalsInput.disabled = disabled;
-    if (sendTestBtn) {
-      sendTestBtn.disabled = disabled || !emailInput.value.trim();
-    }
+    refreshSendButtons();
   });
 
   emailInput.addEventListener('input', function() {
-    if (sendTestBtn) {
-      sendTestBtn.disabled = !notifyEnabled.checked || !this.value.trim();
-    }
+    refreshSendButtons();
+  });
+
+  channelInputs.forEach((input) => {
+    input.addEventListener('change', refreshSendButtons);
   });
 
   // 提交表單
@@ -418,8 +455,8 @@ document.addEventListener('DOMContentLoaded', function() {
   // 發送測試通知
   if (sendTestBtn) {
     sendTestBtn.addEventListener('click', function() {
-      if (!emailInput.value) {
-        alert('請先設定 Email 地址');
+      if (!hasReachableChannel()) {
+        alert('請先設定可用的通知管道，例如 Email 或已綁定的聊天通知');
         return;
       }
   
@@ -487,6 +524,8 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }
+
+  refreshSendButtons();
 });
 </script>
 {%endblock%}

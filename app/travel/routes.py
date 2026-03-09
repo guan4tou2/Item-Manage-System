@@ -131,6 +131,10 @@ def detail(travel_id: int):
             "common": [i for i in common_items if i.group_id == g.id],
             "personal": [i for i in personal_items if i.group_id == g.id],
         }
+    ungrouped_items = {
+        "common": [i for i in common_items if not i.group_id],
+        "personal": [i for i in personal_items if not i.group_id],
+    }
     shopping = ShoppingList.query.filter_by(travel_id=travel_id, list_type="travel").first()
     if not shopping:
         shopping = ShoppingList(
@@ -151,6 +155,7 @@ def detail(travel_id: int):
         common_items=common_items,
         personal_items=personal_items,
         grouped_items=grouped_items,
+        ungrouped_items=ungrouped_items,
         shopping=shopping,
         shopping_items=shopping_items,
         User=user,

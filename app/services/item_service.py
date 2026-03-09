@@ -160,6 +160,13 @@ def update_item_place(item_id: str, updates: Dict[str, Any]) -> None:
     # 取得現有位置
     existing = item_repo.find_item_by_id(item_id)
     if existing:
+        floor = (updates.get("ItemFloor", existing.get("ItemFloor", "")) or "").strip()
+        room = (updates.get("ItemRoom", existing.get("ItemRoom", "")) or "").strip()
+        zone = (updates.get("ItemZone", existing.get("ItemZone", "")) or "").strip()
+        derived_place = "/".join(part for part in [floor, room, zone] if part)
+        if derived_place and not (updates.get("ItemStorePlace") or "").strip():
+            updates["ItemStorePlace"] = derived_place
+
         old_location = existing.get("ItemStorePlace", "")
         new_location = updates.get("ItemStorePlace", "")
         

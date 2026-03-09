@@ -104,6 +104,46 @@ class NotificationsTestCase(unittest.TestCase):
         content = response.data.decode('utf-8')
         self.assertIn('前往 Telegram 綁定', content)
 
+    @patch('app.services.notification_service.get_notification_summary')
+    @patch('app.repositories.user_repo.find_by_username')
+    @patch('app.notifications.routes.TelegramUserLink')
+    @patch('app.notifications.routes.LineUserLink')
+    def test_notifications_index_enables_test_send_for_linked_chat_channels(
+        self,
+        mock_line_link,
+        mock_tg_link,
+        mock_find_user,
+        mock_get_summary,
+    ):
+        mock_get_summary.return_value = {
+            'settings': {
+                'email': '',
+                'notify_enabled': True,
+                'notify_days': 30,
+                'notify_time': '09:00',
+                'notify_channels': ['telegram'],
+                'replacement_enabled': True,
+                'replacement_intervals': [],
+                'reminder_ladder': '30,14,7',
+            },
+            'expiry_info': {'expired_count': 1, 'near_count': 0, 'total_alerts': 1},
+            'replacement_info': {'due': [], 'upcoming': [], 'total_alerts': 0},
+            'can_send': True,
+        }
+        mock_find_user.return_value = {'User': 'testuser', 'admin': False}
+        mock_line_link.query.filter_by.return_value.first.return_value = None
+        mock_tg_link.query.filter_by.return_value.first.return_value = object()
+        self.app.config['TELEGRAM_BOT_USERNAME'] = 'item_manage_bot'
+
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'testuser'
+
+        response = self.client.get('/notifications/')
+        self.assertEqual(response.status_code, 200)
+        content = response.data.decode('utf-8')
+        self.assertIn('id="sendTestBtn"', content)
+        self.assertNotIn('id="sendTestBtn" class="btn btn-outline-success"\n                    disabled', content)
+
     def test_get_settings_requires_auth(self):
         """測試取得設定 API 需要登入"""
         response = self.client.get('/notifications/api/settings')

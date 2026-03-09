@@ -218,6 +218,12 @@ class ItemServiceTestCase(unittest.TestCase):
         item = item_service.get_item("NONEXISTENT")
         self.assertIsNone(item)
 
+    def test_update_item_place_derives_store_place_from_floor_room_zone(self):
+        """測試快速更新位置時會同步完整位置字串"""
+        item_service.update_item_place("A1", {"ItemFloor": "2F", "ItemRoom": "客廳", "ItemZone": "展示櫃"})
+        updated = item_service.item_repo.updated_items["A1"]  # type: ignore[index]
+        self.assertEqual(updated["ItemStorePlace"], "2F/客廳/展示櫃")
+
     def test_create_item_success(self):
         """測試成功建立物品"""
         with mock.patch("app.services.item_service._filter_valid_types", return_value=["文具", "工具"]), \
