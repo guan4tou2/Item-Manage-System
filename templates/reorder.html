@@ -26,9 +26,26 @@
   </div>
 
   <div class="col-12 mb-4">
+    <div class="stats-summary-strip">
+      <div class="summary-chip">
+        <span class="summary-chip-label">優先處理</span>
+        <strong>{{ reorder_count }} 項需補貨</strong>
+      </div>
+      <div class="summary-chip">
+        <span class="summary-chip-label">次要追蹤</span>
+        <strong>{{ low_stock_count }} 項低庫存</strong>
+      </div>
+      <div class="summary-chip">
+        <span class="summary-chip-label">建議動作</span>
+        <strong>先補臨界品，再更新實際到貨數量</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 mb-4">
     <div class="row g-3">
       <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+        <div class="card border-0 shadow-sm h-100" style="background: #dc3545;">
           <div class="card-body text-white">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -44,7 +61,7 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+        <div class="card border-0 shadow-sm h-100" style="background: #ffc107;">
           <div class="card-body text-dark">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -60,7 +77,7 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);">
+        <div class="card border-0 shadow-sm h-100" style="background: #6c757d;">
           <div class="card-body text-white">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -86,9 +103,14 @@
         </div>
         <h4 class="text-success">庫存充足！</h4>
         <p class="text-muted mb-4">所有物品的庫存都在安全範圍內</p>
-        <a href="{{url_for('items.home')}}" class="btn btn-primary">
-          <i class="fas fa-home me-1"></i>返回首頁
-        </a>
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+          <a href="{{url_for('items.home')}}" class="btn btn-primary">
+            <i class="fas fa-home me-1"></i>返回首頁
+          </a>
+          <a href="{{ url_for('items.manageitem') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-edit me-1"></i>前往管理物品
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -307,6 +329,23 @@
   }
   .qty-btn {
     min-width: 36px;
+  }
+  .stats-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  .summary-chip {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1rem;
+  }
+  .summary-chip-label {
+    display: block;
+    color: var(--gray-600);
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
   }
 </style>
 

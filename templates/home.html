@@ -50,6 +50,17 @@
   <!-- 搜尋功能 -->
   <div class="search-form animate-fadeInUp stagger-2 mb-4">
     <form action="{{ url_for('items.search') }}" method="GET" id="searchForm">
+      <div class="home-search-header">
+        <div>
+          <h3>快速查找與篩選</h3>
+          <p class="mb-0">先用關鍵字縮小範圍，再補上位置或類型條件。</p>
+        </div>
+        <div class="home-search-meta">
+          <span class="home-search-meta-pill">
+            <i class="fas fa-boxes-stacked me-1"></i>{{ stats.total if stats else (pagination.total if pagination else items|length) }} 件物品
+          </span>
+        </div>
+      </div>
       <div class="d-flex gap-2 home-search-toolbar">
         <div class="flex-grow-1 position-relative home-search-input-wrap">
           <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
@@ -79,6 +90,31 @@
           <i class="fas fa-qrcode"></i>
         </a>
       </div>
+
+      {% set active_filter_count = (1 if request.args.get('q') else 0) + (1 if request.args.get('place') else 0) + (1 if request.args.get('type') else 0) + (1 if request.args.get('floor') else 0) + (1 if request.args.get('room') else 0) + (1 if request.args.get('zone') else 0) %}
+      {% if active_filter_count > 0 %}
+      <div class="active-filter-strip">
+        <span class="active-filter-label">目前條件</span>
+        {% if request.args.get('q') %}
+        <span class="active-filter-chip"><i class="fas fa-search me-1"></i>{{ request.args.get('q') }}</span>
+        {% endif %}
+        {% if request.args.get('place') %}
+        <span class="active-filter-chip"><i class="fas fa-location-dot me-1"></i>{{ request.args.get('place') }}</span>
+        {% endif %}
+        {% if request.args.get('type') %}
+        <span class="active-filter-chip"><i class="fas fa-tag me-1"></i>{{ request.args.get('type') }}</span>
+        {% endif %}
+        {% if request.args.get('floor') %}
+        <span class="active-filter-chip"><i class="fas fa-building me-1"></i>{{ request.args.get('floor') }}</span>
+        {% endif %}
+        {% if request.args.get('room') %}
+        <span class="active-filter-chip"><i class="fas fa-door-open me-1"></i>{{ request.args.get('room') }}</span>
+        {% endif %}
+        {% if request.args.get('zone') %}
+        <span class="active-filter-chip"><i class="fas fa-vector-square me-1"></i>{{ request.args.get('zone') }}</span>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <!-- 篩選 Offcanvas -->
       <div class="offcanvas offcanvas-end" tabindex="-1" id="filterOffcanvas" aria-labelledby="filterOffcanvasLabel">
@@ -142,7 +178,7 @@
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-check me-1"></i>套用篩選
             </button>
-            <a href="{{ url_for('items.home') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('items.home') }}" class="btn btn-outline-secondary" id="homeFilterResetBtn">
               <i class="fas fa-undo me-1"></i>清除重置
             </a>
           </div>
@@ -204,10 +240,25 @@
 {%endblock%}
 
 {%block card%}
-<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
+<div class="inventory-section-head animate-fadeInUp">
+  <div>
+    <h3>物品清單</h3>
+    <p class="mb-0">
+      {% if items %}
+      直接從卡片完成查看、收藏、搜尋相似與條碼操作。
+      {% else %}
+      目前還沒有資料，先新增第一個物品會更容易開始。
+      {% endif %}
+    </p>
+  </div>
+  <div class="inventory-section-badge">
+    {{ pagination.total if pagination else items|length }} 筆
+  </div>
+</div>
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4 item-grid">
   {%for item in items%}
   <div class="col">
-    <div class="card h-100">
+    <div class="card h-100 inventory-card">
       <!-- 收藏按鈕 -->
       <button type="button" 
               class="favorite-btn position-absolute top-0 start-0 m-2 z-2 {% if User.User in (item.favorites or []) %}active{% endif %}"
@@ -237,7 +288,7 @@
         />
         {%else%}
         <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center h-100" 
-             style="background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);">
+             style="background: #e2e8f0;">
           <i class="fas fa-image fa-4x text-white opacity-50"></i>
         </div>
         {%endif%}
@@ -275,7 +326,7 @@
       </div>
       
       <!-- 卡片內容 -->
-      <div class="card-body">
+      <div class="card-body inventory-card-body">
         <h5 class="card-title text-truncate" title="{{item.ItemName}}">
           {{item.ItemName}}
         </h5>
@@ -321,8 +372,8 @@
       </div>
       
       <!-- 卡片底部操作 -->
-      <div class="card-footer bg-transparent">
-        <div class="d-flex justify-content-between align-items-center">
+      <div class="card-footer bg-transparent inventory-card-footer">
+        <div class="inventory-card-actions">
           <div class="btn-group btn-group-sm">
             {%if User.admin%}
             <a href="{{ url_for('items.edititem', item_id=item.ItemID) }}" 
@@ -424,6 +475,9 @@
 // 首頁搜尋框即時清除功能
 const homeSearchInput = document.getElementById('homeSearchInput');
 const homeClearBtn = document.getElementById('homeClearBtn');
+const homeSearchForm = document.getElementById('searchForm');
+const homeFilterResetBtn = document.getElementById('homeFilterResetBtn');
+const HOME_FILTER_KEY = 'ims-home-filters-v1';
 
 function clearHomeSearch() {
   homeSearchInput.value = '';
@@ -445,6 +499,42 @@ if (homeSearchInput) {
     if (e.key === 'Escape') {
       clearHomeSearch();
     }
+  });
+}
+
+// 記住首頁篩選條件，減少重複操作
+if (homeSearchForm) {
+  const filterNames = ['place', 'type', 'floor', 'room', 'zone', 'sort'];
+
+  if (!window.location.search) {
+    try {
+      const stored = JSON.parse(localStorage.getItem(HOME_FILTER_KEY) || '{}');
+      filterNames.forEach(name => {
+        const field = homeSearchForm.querySelector(`[name="${name}"]`);
+        if (field && stored[name]) {
+          field.value = stored[name];
+        }
+      });
+    } catch (err) {
+      console.log('讀取篩選記錄失敗');
+    }
+  }
+
+  homeSearchForm.addEventListener('submit', function() {
+    const payload = {};
+    filterNames.forEach(name => {
+      const field = homeSearchForm.querySelector(`[name="${name}"]`);
+      if (field && field.value) {
+        payload[name] = field.value;
+      }
+    });
+    localStorage.setItem(HOME_FILTER_KEY, JSON.stringify(payload));
+  });
+}
+
+if (homeFilterResetBtn) {
+  homeFilterResetBtn.addEventListener('click', function() {
+    localStorage.removeItem(HOME_FILTER_KEY);
   });
 }
 
@@ -704,7 +794,12 @@ async function toggleFavorite(itemId, btn) {
     document.addEventListener('DOMContentLoaded', function() {
         // 載入庫存警告數量
         fetch('/api/stock/count')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`stock_count_${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 if (data.success) {
                     const stockEl = document.getElementById('stockAlertCount');
@@ -721,7 +816,12 @@ async function toggleFavorite(itemId, btn) {
 
         // 載入到期通知數量
         fetch('/api/notifications/count')
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`notification_count_${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 if (data.success !== false) {
                     const expiryEl = document.getElementById('expiryAlertCount');
@@ -732,7 +832,7 @@ async function toggleFavorite(itemId, btn) {
                         // 若有到期則加上警告色
                         if (data.expired > 0) {
                             expiryEl.classList.add('text-danger');
-                        } else if (data.expiring_soon > 0) {
+                        } else if (data.near > 0) {
                             expiryEl.classList.add('text-warning');
                         }
                     }

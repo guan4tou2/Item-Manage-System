@@ -4,9 +4,12 @@
 {%block contain%}
 <div class="row mb-4">
   <div class="col-12">
-    <div class="d-flex justify-content-between align-items-center">
-      <h3 class="mb-0"><i class="fas fa-suitcase-rolling me-2"></i>旅行清單</h3>
-      <a class="btn btn-outline-secondary" href="{{ url_for('travel.create_travel') }}">重新整理</a>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h3 class="mb-1"><i class="fas fa-suitcase-rolling me-2"></i>旅行清單</h3>
+        <p class="text-muted mb-0">把共同與個人物品拆開管理，出發前更容易確認是否已打包。</p>
+      </div>
+      <a class="btn btn-outline-secondary" href="{{ url_for('travel.list_page') }}">重新整理</a>
     </div>
   </div>
 </div>
@@ -15,7 +18,7 @@
     <div class="card shadow-sm">
       <div class="card-body">
         <h5 class="card-title">新增旅行</h5>
-        <form method="post" action="{{ url_for('travel.create_travel') }}">
+        <form method="post" action="{{ url_for('travel.create_travel_form') }}">
           <div class="mb-2">
             <label class="form-label">旅行名稱</label>
             <input type="text" name="name" class="form-control" required placeholder="例如：日本行、商務差旅" />
@@ -41,8 +44,31 @@
       </div>
     </div>
   </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="card-title">使用建議</h5>
+        <ul class="text-muted mb-0">
+          <li>先建立旅行，再依「隨身 / 托運 / 共用」分群。</li>
+          <li>共同物品適合放護照套、充電器、藥品等跨人共享項目。</li>
+          <li>臨時採買可直接加入購買清單，避免出發前另開備忘錄。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="row g-3">
+  {% if not travels %}
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body text-center py-5">
+        <i class="fas fa-plane-departure fa-3x text-muted mb-3"></i>
+        <h5>還沒有旅行清單</h5>
+        <p class="text-muted mb-0">先建立一個行程，再把要帶的物品與待購項目整理進去。</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
   {% for travel in travels %}
   <div class="col-md-6">
     <div class="card h-100 shadow-sm">

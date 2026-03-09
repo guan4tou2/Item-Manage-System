@@ -23,11 +23,32 @@
     </div>
   </div>
 
+  <div class="col-12 mb-4">
+    <div class="stats-summary-strip">
+      <div class="summary-chip">
+        <span class="summary-chip-label">到期提醒</span>
+        <strong>{{ expired_count + near_count }} 項</strong>
+      </div>
+      <div class="summary-chip">
+        <span class="summary-chip-label">更換提醒</span>
+        <strong>{{ replacement_due|length + replacement_upcoming|length }} 項</strong>
+      </div>
+      <div class="summary-chip">
+        <span class="summary-chip-label">庫存警示</span>
+        <strong>{{ low_count }} 項</strong>
+      </div>
+      <div class="summary-chip">
+        <span class="summary-chip-label">建議順序</span>
+        <strong>先處理已過期，再看需補貨與即將到期</strong>
+      </div>
+    </div>
+  </div>
+
   <!-- 統計卡片 -->
   <div class="col-12 mb-4">
     <div class="row g-3">
       <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+        <div class="card border-0 shadow-sm h-100" style="background: #dc3545;">
           <div class="card-body text-white">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -42,7 +63,7 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+        <div class="card border-0 shadow-sm h-100" style="background: #ffc107;">
           <div class="card-body text-dark">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -58,7 +79,7 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);">
+        <div class="card border-0 shadow-sm h-100" style="background: #0d6efd;">
           <div class="card-body text-white">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -74,7 +95,7 @@
         </div>
       </div>
       <div class="col-md-3">
-        <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);">
+        <div class="card border-0 shadow-sm h-100" style="background: #6c757d;">
           <div class="card-body text-white">
             <div class="d-flex justify-content-between align-items-center">
               <div>
@@ -102,9 +123,14 @@
         </div>
         <h4 class="text-success">太棒了！沒有到期通知</h4>
         <p class="text-muted mb-4">所有物品的保固和使用期限都在有效範圍內</p>
-        <a href="{{url_for('items.home')}}" class="btn btn-primary">
-          <i class="fas fa-home me-1"></i>返回首頁
-        </a>
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+          <a href="{{url_for('items.home')}}" class="btn btn-primary">
+            <i class="fas fa-home me-1"></i>返回首頁
+          </a>
+          <a href="{{ url_for('notifications.index') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-cog me-1"></i>通知設定
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -496,6 +522,22 @@
   .badge {
     font-weight: 500;
   }
+  .stats-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  .summary-chip {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1rem;
+  }
+  .summary-chip-label {
+    display: block;
+    color: var(--gray-600);
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
+  }
 </style>
 {%endblock%}
-

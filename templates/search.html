@@ -10,9 +10,37 @@
     <p class="lead">快速找到您需要的物品</p>
   </div>
 
+  <div class="stats-summary-strip animate-fadeInUp stagger-1">
+    <div class="summary-chip">
+      <span class="summary-chip-label">可用條件</span>
+      <strong>名稱、地點、類型、樓層、房間、區域</strong>
+    </div>
+    <div class="summary-chip">
+      <span class="summary-chip-label">目前結果</span>
+      <strong>{{ pagination.total if pagination else items|length }} 項</strong>
+    </div>
+    <div class="summary-chip">
+      <span class="summary-chip-label">建議策略</span>
+      <strong>先用名稱，再補位置條件縮小範圍</strong>
+    </div>
+  </div>
+
   <!-- 搜尋表單 -->
-  <div class="search-form animate-fadeInUp stagger-1">
-    <form action="{{ url_for('items.search') }}" method="GET" class="row g-3 align-items-end">
+  <div class="search-form animate-fadeInUp stagger-2">
+    <form action="{{ url_for('items.search') }}" method="GET" class="row g-3 align-items-end" id="searchFilterForm">
+      <div class="col-12">
+        <div class="search-form-intro">
+          <div>
+            <h3>多條件搜尋</h3>
+            <p class="mb-0">名稱、地點、類型與位置條件可以自由組合，結果會即時保留在下方卡片。</p>
+          </div>
+          <div class="search-form-meta">
+            <span class="search-form-pill">
+              <i class="fas fa-layer-group me-1"></i>{{ pagination.total if pagination else items|length }} 項
+            </span>
+          </div>
+        </div>
+      </div>
       <div class="col-12 col-md-3">
         <label class="form-label small text-muted mb-1">
           <i class="fas fa-font me-1"></i>物品名稱
@@ -93,7 +121,7 @@
         <button type="submit" class="btn btn-primary">
           <i class="fas fa-search me-1"></i>搜尋
         </button>
-        <a href="{{ url_for('items.search') }}" class="btn btn-outline-secondary" data-tooltip="清除篩選">
+        <a href="{{ url_for('items.search') }}" class="btn btn-outline-secondary" data-tooltip="清除篩選" id="searchFilterResetBtn">
           <i class="fas fa-times"></i>
         </a>
       </div>
@@ -102,7 +130,7 @@
 
   <!-- 搜尋結果統計 -->
   {%if query or place or selected_type or request.args.get('floor') or request.args.get('room') or request.args.get('zone')%}
-  <div class="d-flex flex-wrap align-items-center gap-2 mb-4 animate-fadeInUp stagger-2">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-4 animate-fadeInUp stagger-3">
     <h5 class="mb-0">
       <i class="fas fa-list me-2"></i>
       搜尋結果 
@@ -129,6 +157,21 @@
         <a href="{{ url_for('items.search', q=query, place=place) }}" class="text-danger ms-1">×</a>
       </span>
       {%endif%}
+      {%if request.args.get('floor')%}
+      <span class="badge bg-light text-dark border">
+        <i class="fas fa-building me-1"></i>樓層：{{request.args.get('floor')}}
+      </span>
+      {%endif%}
+      {%if request.args.get('room')%}
+      <span class="badge bg-light text-dark border">
+        <i class="fas fa-door-open me-1"></i>房間：{{request.args.get('room')}}
+      </span>
+      {%endif%}
+      {%if request.args.get('zone')%}
+      <span class="badge bg-light text-dark border">
+        <i class="fas fa-vector-square me-1"></i>區域：{{request.args.get('zone')}}
+      </span>
+      {%endif%}
     </div>
   </div>
   {%endif%}
@@ -137,7 +180,7 @@
 
 {%block card%}
 {%if items%}
-<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4">
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4 item-grid">
   {%for item in items%}
   <div class="col">
     <div class="card h-100">
@@ -153,7 +196,7 @@
       />
         {%else%}
         <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center h-100" 
-             style="background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);">
+             style="background: #e2e8f0;">
           <i class="fas fa-image fa-3x text-white opacity-50"></i>
         </div>
         {%endif%}
@@ -269,6 +312,9 @@
 // 搜尋框即時清除功能
 const searchInput = document.getElementById('searchInput');
 const clearBtn = document.getElementById('clearSearchBtn');
+const searchFilterForm = document.getElementById('searchFilterForm');
+const searchFilterResetBtn = document.getElementById('searchFilterResetBtn');
+const SEARCH_FILTER_KEY = 'ims-search-filters-v1';
 
 function clearSearchInput() {
   searchInput.value = '';
@@ -293,5 +339,63 @@ if (searchInput) {
     }
   });
 }
+
+if (searchFilterForm) {
+  const filterNames = ['q', 'place', 'type', 'floor', 'room', 'zone', 'sort'];
+
+  if (!window.location.search) {
+    try {
+      const stored = JSON.parse(localStorage.getItem(SEARCH_FILTER_KEY) || '{}');
+      filterNames.forEach(name => {
+        const field = searchFilterForm.querySelector(`[name="${name}"]`);
+        if (field && stored[name]) {
+          field.value = stored[name];
+        }
+      });
+    } catch (err) {
+      console.log('讀取搜尋篩選記錄失敗');
+    }
+  }
+
+  searchFilterForm.addEventListener('submit', function() {
+    const payload = {};
+    filterNames.forEach(name => {
+      const field = searchFilterForm.querySelector(`[name="${name}"]`);
+      if (field && field.value) {
+        payload[name] = field.value;
+      }
+    });
+    localStorage.setItem(SEARCH_FILTER_KEY, JSON.stringify(payload));
+  });
+}
+
+if (searchFilterResetBtn) {
+  searchFilterResetBtn.addEventListener('click', function() {
+    localStorage.removeItem(SEARCH_FILTER_KEY);
+  });
+}
 </script>
+
+<style>
+.stats-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-chip {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+}
+
+.summary-chip-label {
+  display: block;
+  color: var(--gray-600);
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+</style>
 {%endblock%}

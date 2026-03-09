@@ -52,6 +52,17 @@ class TravelTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'testuser', response.data)
 
+    def test_list_page_uses_form_endpoint_for_create(self):
+        """測試旅行頁面表單使用 HTML 表單端點而非 API 端點"""
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'testuser'
+
+        response = self.client.get('/travel/')
+        content = response.data.decode('utf-8')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('action="/travel/create"', content)
+        self.assertNotIn('action="/travel/api"', content)
+
     def test_create_travel_requires_auth(self):
         """測試建立旅行需要登入"""
         response = self.client.post('/travel/create',

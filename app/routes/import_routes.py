@@ -5,8 +5,9 @@ import json
 from datetime import datetime
 from typing import List, Dict, Any
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, current_app
-from flask_login import login_required, current_user
+from flask import Blueprint, render_template, request, jsonify
+
+from app.utils.auth import login_required, get_current_user
 
 from app.utils.logging import get_logger
 
@@ -18,7 +19,7 @@ logger = get_logger(__name__)
 @login_required
 def index():
     """Render bulk import page."""
-    return render_template('import_items.html')
+    return render_template('import_items.html', User=get_current_user())
 
 
 @bp.route('/upload', methods=['POST'])
@@ -31,18 +32,15 @@ def upload():
     Returns import results with success/failure counts and error details.
     """
     if 'file' not in request.files:
-        flash('No file uploaded', 'error')
-        return redirect(url_for('import.index'))
+        return jsonify({'success': False, 'error': '請選擇要上傳的檔案'}), 400
 
     file = request.files['file']
     if file.filename == '':
-        flash('No file selected', 'error')
-        return redirect(url_for('import.index'))
+        return jsonify({'success': False, 'error': '請選擇要上傳的檔案'}), 400
 
     # Validate file type
     if not allowed_file(file.filename):
-        flash('Invalid file type. Please upload CSV or JSON files only.', 'error')
-        return redirect(url_for('import.index'))
+        return jsonify({'success': False, 'error': '僅支援 CSV 或 JSON 檔案'}), 400
 
     try:
         # Read file content
@@ -62,18 +60,12 @@ def upload():
         # Log import results
         logger.info(
             "bulk_import_completed",
-            user_id=current_user.id if hasattr(current_user, 'id') else 'unknown',
+            user_id=(get_current_user() or {}).get("User", "unknown"),
             file_name=file.filename,
             total_items=len(items),
             successful=result['success_count'],
             failed=result['failed_count'],
             errors=result['errors'][:5]  # Log first 5 errors
-        )
-
-        flash(
-            f"Import completed: {result['success_count']} items imported, "
-            f"{result['failed_count']} items failed.",
-            'success' if result['failed_count'] == 0 else 'warning'
         )
 
         # Store result for display on page
@@ -89,8 +81,7 @@ def upload():
             file_name=file.filename,
             exc_info=True
         )
-        flash(f'Error importing file: {str(e)}', 'error')
-        return redirect(url_for('import.index'))
+        return jsonify({'success': False, 'error': f'導入失敗：{str(e)}'}), 400
 
 
 @bp.route('/template', methods=['GET'])

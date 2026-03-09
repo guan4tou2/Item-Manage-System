@@ -105,6 +105,36 @@ class RoutesTestCase(unittest.TestCase):
             response = self.client.get("/home")
             self.assertEqual(response.status_code, 200)
 
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    @patch("app.services.item_service.get_stats", return_value={"total": 2, "by_type": {"工具": 1}, "low_stock": 0})
+    @patch("app.services.item_service.get_all_items_for_export")
+    @patch("app.services.type_service.list_types", return_value=[{"name": "工具"}, {"name": "文具"}])
+    @patch("app.services.location_service.list_choices", return_value=(["1F", "2F"], [], []))
+    @patch("app.services.item_service.get_notification_count", return_value={"expired": 0, "near": 0, "total": 0})
+    def test_statistics_page_renders_from_aggregated_items(
+        self,
+        _mock_notification_count,
+        _mock_location_choices,
+        _mock_list_types,
+        mock_get_all_items,
+        _mock_stats,
+        _mock_current_user,
+    ):
+        """測試統計頁以一次撈取的物品資料聚合，不依賴逐項 count 查詢"""
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_get_all_items.return_value = [
+            {"ItemID": "A1", "ItemType": "工具", "ItemFloor": "1F"},
+            {"ItemID": "A2", "ItemType": "文具", "ItemFloor": "1F"},
+        ]
+
+        response = self.client.get("/statistics")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("工具", content)
+        self.assertIn("1F", content)
+
     def test_additem_requires_admin(self):
         """測試新增物品需要管理員權限"""
         with patch("app.services.user_service.authenticate", return_value=True):
@@ -153,7 +183,61 @@ class RoutesTestCase(unittest.TestCase):
             response = self.client.post("/deleteitem/A1", follow_redirects=False)
             self.assertEqual(response.status_code, 302)
 
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_import_page_renders_for_admin(self, _mock_current_user):
+        """測試批量導入頁面可正常載入"""
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.get("/import/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("批量導入物品", response.data.decode("utf-8"))
+
+    @patch("app.services.item_service.get_expiring_items")
+    @patch("app.services.item_service.get_low_stock_items")
+    @patch("app.services.item_service.get_replacement_items")
+    @patch("app.repositories.user_repo.get_notification_settings")
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_notifications_summary_includes_low_stock_and_replacement_sections(
+        self,
+        _mock_current_user,
+        mock_get_settings,
+        mock_get_replacement_items,
+        mock_get_low_stock_items,
+        mock_get_expiring_items,
+    ):
+        """測試通知摘要頁面包含低庫存與更換提醒資料"""
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_get_settings.return_value = {"replacement_enabled": True, "replacement_intervals": []}
+        mock_get_expiring_items.return_value = {
+            "expired": [],
+            "near_expiry": [],
+            "expired_count": 0,
+            "near_count": 0,
+            "total_alerts": 0,
+        }
+        mock_get_low_stock_items.return_value = {
+            "low_stock": [{"ItemID": "A1", "ItemName": "電池", "Quantity": 0, "SafetyStock": 1, "ReorderLevel": 1, "stock_status": "critical"}],
+            "low_stock_count": 1,
+            "need_reorder": [],
+            "reorder_count": 1,
+            "total_alerts": 1,
+        }
+        mock_get_replacement_items.return_value = {
+            "due": [{"ItemID": "B1", "ItemName": "襪子", "ItemType": "衣物", "rule_name": "襪子", "days_since": 200}],
+            "upcoming": [],
+            "total_alerts": 1,
+            "enabled": True,
+        }
+
+        response = self.client.get("/notifications/summary")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("庫存不足", content)
+        self.assertIn("衣物/耗材更換提醒", content)
+
 
 if __name__ == "__main__":
     unittest.main()
-

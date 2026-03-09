@@ -248,8 +248,14 @@ def _annotate_expiry(items: List[Dict[str, Any]]) -> None:
             val = it.get(field)
             if val:
                 try:
-                    y, m, d = map(int, val.split("-"))
-                    dt = date(y, m, d)
+                    if isinstance(val, datetime):
+                        dt = val.date()
+                    elif isinstance(val, date):
+                        dt = val
+                    elif isinstance(val, str):
+                        dt = datetime.strptime(val.strip(), "%Y-%m-%d").date()
+                    else:
+                        raise ValueError("unsupported expiry type")
                     if dt < today:
                         status = "expired"
                     elif (dt - today).days <= 30:
@@ -313,12 +319,28 @@ def get_expiring_items(days_threshold: int = 30, ladder: Optional[List[int]] = N
             near_expiry_items.append(item)
     
     # 按到期日期排序
+    def _normalize_expiry_value(val: Any) -> str:
+        if isinstance(val, datetime):
+            return val.date().strftime("%Y-%m-%d")
+        if isinstance(val, date):
+            return val.strftime("%Y-%m-%d")
+        if isinstance(val, str):
+            txt = val.strip()
+            if not txt:
+                return "9999-12-31"
+            try:
+                return datetime.strptime(txt, "%Y-%m-%d").strftime("%Y-%m-%d")
+            except ValueError:
+                return "9999-12-31"
+        return "9999-12-31"
+
     def get_earliest_expiry(item):
         dates = []
         for field in ["WarrantyExpiry", "UsageExpiry"]:
             val = item.get(field)
-            if val:
-                dates.append(val)
+            normalized = _normalize_expiry_value(val)
+            if normalized != "9999-12-31":
+                dates.append(normalized)
         return min(dates) if dates else "9999-12-31"
     
     expired_items.sort(key=get_earliest_expiry)
@@ -421,7 +443,10 @@ def get_notification_count() -> Dict[str, int]:
     """
     快速取得通知數量（用於導航欄顯示）
     """
-    result = get_expiring_items()
+    try:
+        result = get_expiring_items()
+    except Exception:
+        return {"expired": 0, "near": 0, "total": 0}
     return {
         "expired": result["expired_count"],
         "near": result["near_count"],

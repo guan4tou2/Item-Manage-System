@@ -7,10 +7,16 @@ from flask import Blueprint, jsonify, request, Response, redirect, url_for, sess
 
 from app import db, csrf
 from app.models import Travel, TravelGroup, TravelItem, ShoppingList, ShoppingItem
+from app.utils.auth import get_current_user
 
 bp = Blueprint("travel", __name__, url_prefix="/travel")
 shopping_bp = Blueprint("shopping", __name__, url_prefix="/shopping")
 
+
+def _travel_user_context():
+    user = get_current_user() or {}
+    user_name = user.get("name") or user.get("User") or session.get("UserID")
+    return {**user, "name": user_name, "User": user.get("User", user_name)}
 
 
 def _require_auth():
@@ -80,7 +86,8 @@ def list_page():
         t.item_count = items_counts.get(t.id, 0)
         t.common_count = common_counts.get(t.id, 0)
         t.personal_count = personal_counts.get(t.id, 0)
-    return render_template("travel.html", travels=travels, User={"name": owner, "admin": False})
+    user = _travel_user_context()
+    return render_template("travel.html", travels=travels, User=user)
 
 
 @bp.route("/create", methods=["POST"])
@@ -135,6 +142,7 @@ def detail(travel_id: int):
         db.session.add(shopping)
         db.session.commit()
     shopping_items = ShoppingItem.query.filter_by(list_id=shopping.id).all()
+    user = _travel_user_context()
     return render_template(
         "travel_detail.html",
         travel=travel,
@@ -145,7 +153,7 @@ def detail(travel_id: int):
         grouped_items=grouped_items,
         shopping=shopping,
         shopping_items=shopping_items,
-        User={"name": session.get("UserID"), "admin": False},
+        User=user,
     )
 
 

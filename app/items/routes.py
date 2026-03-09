@@ -15,6 +15,7 @@ from flask import (
     current_app,
     jsonify,
     Response,
+    session,
 )
 
 from typing import Any, Dict, List
@@ -25,6 +26,7 @@ from app.services import (
     location_service,
 )
 from app.services import log_service
+from app import limiter
 from app.repositories import user_repo
 from app.utils.auth import login_required, admin_required, get_current_user
 from app.models.item import Item
@@ -367,6 +369,9 @@ def notifications():
     """到期通知頁面"""
     user = get_current_user()
     result = item_service.get_expiring_items()
+    settings = user_repo.get_notification_settings(session.get("UserID", ""))
+    low_stock = item_service.get_low_stock_items()
+    replacement = item_service.get_replacement_items(settings)
     return render_template(
         "notifications.html",
         User=user,
@@ -374,7 +379,11 @@ def notifications():
         near_expiry_items=result["near_expiry"],
         expired_count=result["expired_count"],
         near_count=result["near_count"],
-        total_alerts=result["total_alerts"],
+        low_stock_items=low_stock["low_stock"],
+        low_count=low_stock["low_stock_count"],
+        replacement_due=replacement["due"],
+        replacement_upcoming=replacement["upcoming"],
+        total_alerts=result["total_alerts"] + low_stock["low_stock_count"] + replacement["total_alerts"],
     )
 
 
@@ -386,6 +395,7 @@ def notifications_summary():
 
 @bp.route("/api/notifications/count")
 @login_required
+@limiter.exempt
 def notification_count():
     """API: 取得通知數量（用於導航欄即時更新）"""
     counts = item_service.get_notification_count()
@@ -445,11 +455,63 @@ def export_items(export_format: str):
     return redirect(url_for("items.manageitem"))
 
 
+@bp.route("/export/restock")
+@admin_required
+def export_restock():
+    """匯出補貨清單（CSV/JSON）"""
+    result = item_service.get_low_stock_items()
+    level = request.args.get("level", "all")
+    output_format = request.args.get("format", "csv")
+
+    low_stock_items = result.get("low_stock", [])
+    if level == "critical":
+        items = [i for i in low_stock_items if i.get("stock_status") == "critical"]
+    elif level == "warning":
+        items = [i for i in low_stock_items if i.get("stock_status") == "warning"]
+    else:
+        items = low_stock_items
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    if output_format == "json":
+        payload = {
+            "level": level,
+            "count": len(items),
+            "items": items,
+        }
+        return Response(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            mimetype="application/json",
+            headers={"Content-Disposition": f"attachment;filename=restock_{level}_{timestamp}.json"},
+        )
+
+    if output_format == "csv":
+        fieldnames = [
+            "ItemID", "ItemName", "ItemStorePlace", "ItemFloor", "ItemRoom", "ItemZone",
+            "ItemType", "Quantity", "SafetyStock", "ReorderLevel", "stock_status",
+        ]
+        output = StringIO()
+        writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        for item in items:
+            writer.writerow(item)
+
+        return Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-Disposition": f"attachment;filename=restock_{level}_{timestamp}.csv"},
+        )
+
+    flash("不支援的匯出格式", "danger")
+    return redirect(url_for("items.manageitem"))
+
+
 @bp.route("/import", methods=["GET", "POST"])
 @admin_required
 def import_items():
     """匯入物品資料"""
-    user = get_current_user()
+    if request.method == "GET":
+        return redirect(url_for("import.index"))
     
     if request.method == "POST":
         if "file" not in request.files:
@@ -487,7 +549,7 @@ def import_items():
         
         return redirect(url_for("items.manageitem"))
     
-    return render_template("import.html", User=user)
+    return redirect(url_for("import.index"))
 
 
 @bp.route("/api/locations/cascade")
@@ -667,23 +729,41 @@ def activity_logs():
 def statistics():
     """統計圖表頁面"""
     user = get_current_user()
-    stats = item_service.get_stats()
-    
-    # 取得各類型的物品數量
+    stats = {
+        "total": 0,
+        "with_photo": 0,
+        "with_location": 0,
+        "with_type": 0,
+        **(item_service.get_stats() or {}),
+    }
+
+    items = item_service.get_all_items_for_export()
+
+    type_counts: Dict[str, int] = {}
+    floor_counts: Dict[str, int] = {}
+    for item in items:
+        item_type = str(item.get("ItemType") or "").strip()
+        item_floor = str(item.get("ItemFloor") or "").strip()
+        if item_type:
+            type_counts[item_type] = type_counts.get(item_type, 0) + 1
+        if item_floor:
+            floor_counts[item_floor] = floor_counts.get(item_floor, 0) + 1
+
     types = type_service.list_types()
     type_stats = []
     for t in types:
-        count = item_service.count_by_type(t.get("name", ""))
-        if count > 0:
-            type_stats.append({"name": t.get("name"), "count": count})
-    
-    # 取得各位置的物品數量
+        type_name = str(t.get("name", "")).strip()
+        count = type_counts.get(type_name, 0)
+        if type_name and count > 0:
+            type_stats.append({"name": type_name, "count": count})
+
     floors, rooms, zones = location_service.list_choices()
     floor_stats = []
     for f in floors:
-        count = item_service.count_by_floor(f)
-        if count > 0:
-            floor_stats.append({"name": f, "count": count})
+        floor_name = str(f).strip()
+        count = floor_counts.get(floor_name, 0)
+        if floor_name and count > 0:
+            floor_stats.append({"name": floor_name, "count": count})
     
     # 到期統計
     expiry_stats = item_service.get_notification_count()

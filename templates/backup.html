@@ -109,12 +109,19 @@
               <i class="fas fa-upload me-2"></i>開始還原
             </button>
           </form>
+
+          <div id="restoreFileHint" class="small text-muted mt-3 d-none"></div>
           
           <!-- 還原結果 -->
           <div id="restoreResult" class="mt-4 d-none">
             <div class="alert" id="restoreAlert">
-              <i class="fas fa-check-circle me-1"></i>
-              <span id="restoreMessage"></span>
+              <div class="d-flex align-items-start gap-2">
+                <i class="fas fa-check-circle mt-1" id="restoreIcon"></i>
+                <div>
+                  <div id="restoreMessage"></div>
+                  <ul id="restoreStats" class="small mb-0 mt-2 ps-3 d-none"></ul>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -155,9 +162,12 @@ document.getElementById('restoreForm').addEventListener('submit', async function
   e.preventDefault();
   
   const btn = document.getElementById('restoreBtn');
+  const fileInput = document.getElementById('backupFile');
   const resultDiv = document.getElementById('restoreResult');
   const alertDiv = document.getElementById('restoreAlert');
+  const icon = document.getElementById('restoreIcon');
   const messageSpan = document.getElementById('restoreMessage');
+  const statsList = document.getElementById('restoreStats');
   
   // 確認對話框
   if (!confirm('確定要執行還原嗎？這可能會影響現有資料。')) {
@@ -179,22 +189,49 @@ document.getElementById('restoreForm').addEventListener('submit', async function
     
     resultDiv.classList.remove('d-none');
     
-    if (data.success) {
+    if (response.ok && data.success) {
       alertDiv.className = 'alert alert-success';
+      icon.className = 'fas fa-check-circle mt-1';
       messageSpan.textContent = data.message;
+      if (data.stats) {
+        statsList.innerHTML = `
+          <li>物品: ${data.stats.items || 0}</li>
+          <li>類型: ${data.stats.types || 0}</li>
+          <li>位置: ${data.stats.locations || 0}</li>
+        `;
+        statsList.classList.remove('d-none');
+      } else {
+        statsList.classList.add('d-none');
+      }
     } else {
       alertDiv.className = 'alert alert-danger';
+      icon.className = 'fas fa-triangle-exclamation mt-1';
       messageSpan.textContent = data.message || '還原失敗';
+      statsList.classList.add('d-none');
     }
   } catch (error) {
     resultDiv.classList.remove('d-none');
     alertDiv.className = 'alert alert-danger';
+    icon.className = 'fas fa-triangle-exclamation mt-1';
     messageSpan.textContent = '還原過程發生錯誤';
+    statsList.classList.add('d-none');
   } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-upload me-2"></i>開始還原';
   }
 });
+
+document.getElementById('backupFile').addEventListener('change', function() {
+  const hint = document.getElementById('restoreFileHint');
+  const file = this.files[0];
+  if (!file) {
+    hint.classList.add('d-none');
+    hint.textContent = '';
+    return;
+  }
+
+  hint.textContent = `已選擇：${file.name} (${Math.max(1, Math.round(file.size / 1024))} KB)`;
+  hint.classList.remove('d-none');
+});
 </script>
 {%endblock%}
-

@@ -213,12 +213,9 @@ def toggle_favorite(item_id: str, user_id: str) -> bool:
 def get_favorites(user_id: str, projection: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     db_type = get_db_type()
     if db_type == "postgres":
-        from sqlalchemy import text
-
-        items = Item.query.filter(
-            text("favorites @> :pattern")
-        ).params(pattern=f'["{user_id}"]').all()
-        return [item.to_dict() for item in items]
+        # Avoid dialect-specific JSON operators so this works on sqlite-backed tests too.
+        items = Item.query.all()
+        return [item.to_dict() for item in items if user_id in (item.favorites or [])]
     if projection is None:
         projection = {"_id": 0}
     return list(mongo.db.item.find({"favorites": user_id}, projection))
@@ -227,13 +224,10 @@ def get_favorites(user_id: str, projection: Optional[Dict[str, Any]] = None) -> 
 def is_favorite(item_id: str, user_id: str) -> bool:
     db_type = get_db_type()
     if db_type == "postgres":
-        from sqlalchemy import text
-
-        item = Item.query.filter(
-            Item.ItemID == item_id,
-            text("favorites @> :pattern")
-        ).params(pattern=f'["{user_id}"]').first()
-        return item is not None
+        item = Item.query.filter(Item.ItemID == item_id).first()
+        if not item:
+            return False
+        return user_id in (item.favorites or [])
     item = mongo.db.item.find_one({"ItemID": item_id, "favorites": user_id})
     return item is not None
 

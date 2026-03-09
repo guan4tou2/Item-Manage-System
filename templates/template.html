@@ -101,10 +101,11 @@
               </li>
               {%if User.admin%}
               <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-tooltip="管理功能選單">
                   <i class="fas fa-cog me-1"></i>管理
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                <ul class="dropdown-menu admin-dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
+                  <li><h6 class="dropdown-header">物品作業</h6></li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('items.additem')}}">
                       <i class="fas fa-plus me-2 text-success"></i>新增物品
@@ -126,6 +127,7 @@
                      </a>
                    </li>
                    <li><hr class="dropdown-divider" /></li>
+                  <li><h6 class="dropdown-header">系統設定</h6></li>
 
                   <li>
                     <a class="dropdown-item" href="{{url_for('types.addtype')}}">
@@ -153,6 +155,8 @@
                       <i class="fas fa-history me-2 text-secondary"></i>操作日誌
                     </a>
                   </li>
+                  <li><hr class="dropdown-divider" /></li>
+                  <li><h6 class="dropdown-header">通知與匯入</h6></li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('notifications.index')}}">
                       <i class="fas fa-bell me-2 text-primary"></i>通知設定
@@ -320,7 +324,7 @@
     <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-          <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+          <div class="modal-header" style="background: #667eea; color: white;">
             <h5 class="modal-title" id="helpModalLabel">
               <i class="fas fa-question-circle me-2"></i>操作指引
             </h5>
@@ -673,11 +677,7 @@
             guideTooltip.className = 'guide-tooltip active bottom';
             
             // 高亮目標元素
-            targetEl.style.position = 'relative';
-            targetEl.style.zIndex = '9999';
-            targetEl.style.background = 'white';
-            targetEl.style.borderRadius = '8px';
-            targetEl.style.padding = '8px';
+            targetEl.classList.add('guide-target-highlight');
           }
         } else {
           // 置中顯示
@@ -698,12 +698,8 @@
       
       function nextGuideStep() {
         // 清除上一步的高亮
-        document.querySelectorAll('[style*="z-index: 9999"]').forEach(el => {
-          el.style.position = '';
-          el.style.zIndex = '';
-          el.style.background = '';
-          el.style.borderRadius = '';
-          el.style.padding = '';
+        document.querySelectorAll('.guide-target-highlight').forEach(el => {
+          el.classList.remove('guide-target-highlight');
         });
         
         currentGuideStep++;
@@ -722,12 +718,8 @@
         guideTooltip.style.transform = '';
         
         // 清除高亮
-        document.querySelectorAll('[style*="z-index: 9999"]').forEach(el => {
-          el.style.position = '';
-          el.style.zIndex = '';
-          el.style.background = '';
-          el.style.borderRadius = '';
-          el.style.padding = '';
+        document.querySelectorAll('.guide-target-highlight').forEach(el => {
+          el.classList.remove('guide-target-highlight');
         });
       }
       
@@ -869,7 +861,12 @@
         if (!badge) return;
         
         fetch('{{url_for("items.notification_count")}}')
-          .then(response => response.json())
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`notification_badge_${response.status}`);
+            }
+            return response.json();
+          })
           .then(data => {
             const total = data.total || 0;
             if (total > 0) {

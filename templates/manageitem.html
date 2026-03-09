@@ -12,16 +12,16 @@
         <p class="lead mb-0">編輯物品資訊、更新位置或刪除物品</p>
       </div>
       <div class="import-export-group">
-        <a href="{{ url_for('items.export_items', format='json') }}" class="btn btn-outline-primary">
+        <a href="{{ url_for('items.export_items', export_format='json') }}" class="btn btn-outline-primary">
           <i class="fas fa-download me-1"></i>匯出 JSON
         </a>
-        <a href="{{ url_for('items.export_items', format='csv') }}" class="btn btn-outline-success">
+        <a href="{{ url_for('items.export_items', export_format='csv') }}" class="btn btn-outline-success">
           <i class="fas fa-file-csv me-1"></i>匯出 CSV
         </a>
         <a href="{{ url_for('items.export_restock') }}" class="btn btn-outline-danger">
           <i class="fas fa-clipboard-list me-1"></i>補貨清單
         </a>
-        <a href="{{ url_for('items.import_items') }}" class="btn btn-warning">
+        <a href="{{ url_for('import.index') }}" class="btn btn-warning">
           <i class="fas fa-upload me-1"></i>匯入
         </a>
       </div>
@@ -77,6 +77,16 @@
       </a>
     </div>
   </div>
+
+  <div class="management-section-head animate-fadeInUp stagger-3">
+    <div>
+      <h3>編輯與批量操作</h3>
+      <p class="mb-0">單筆可直接編輯與更新位置，批量模式適合移動或刪除多筆資料。</p>
+    </div>
+    <div class="management-section-note">
+      <i class="fas fa-mobile-alt me-1"></i>手機可長按卡片進入選擇模式
+    </div>
+  </div>
 </div>
 {%endblock%}
 
@@ -124,7 +134,7 @@
   </div>
 </div>
 
-<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 item-grid">
   {%for item in items%}
   <div class="col">
     <div class="card h-100 batch-item" data-item-id="{{item.ItemID}}" data-item-name="{{item.ItemName}}">
@@ -256,6 +266,12 @@
                     {% endfor %}
                   </select>
                 </div>
+                <div class="col-12">
+                  <small class="text-muted">
+                    找不到對應選項？
+                    <a href="{{ url_for('locations.manage_locations') }}" target="_blank" rel="noopener">前往位置設定新增</a>
+                  </small>
+                </div>
                 
                 <div class="col-12">
                   <button type="submit" class="btn btn-success btn-sm w-100">
@@ -335,6 +351,10 @@
               </select>
             </div>
           </div>
+          <small class="text-muted d-block mt-2">
+            缺少樓層/房間/區域？
+            <a href="{{ url_for('locations.manage_locations') }}" target="_blank" rel="noopener">先到位置設定新增</a>
+          </small>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>

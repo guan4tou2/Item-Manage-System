@@ -25,6 +25,16 @@
   <div class="row justify-content-center">
     <div class="col-lg-10">
       <div class="form-container animate-fadeInUp stagger-2">
+        <div class="form-progress-summary mb-4">
+          <div class="summary-item">
+            <span class="summary-label">必填欄位</span>
+            <strong>名稱 / ID / 位置 / 類型 / 擁有者 / 取得日期</strong>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">建議補齊</span>
+            <strong>照片、樓層房間區域、保固與補貨門檻</strong>
+          </div>
+        </div>
         <form
           class="row g-4"
           action="{{ url_for('items.additem') }}"
@@ -142,6 +152,17 @@
               </label>
             </div>
             <small class="text-muted">例如：客廳電視櫃、書房書架第二層</small>
+            <div class="mt-2 d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary place-suggestion" data-place="抽屜">
+                常用：抽屜
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary place-suggestion" data-place="書桌">
+                常用：書桌
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary place-suggestion" data-place="櫃子上層">
+                常用：櫃子上層
+              </button>
+            </div>
           </div>
 
           <!-- 樓層 / 房間 / 區域 (級聯選擇) -->
@@ -177,6 +198,13 @@
               </select>
               <label for="ItemZone"><i class="fas fa-th-large me-1"></i>區域</label>
             </div>
+          </div>
+          <div class="col-12">
+            <small class="text-muted">
+              沒有想要的樓層/房間/區域？
+              <a href="{{ url_for('locations.manage_locations') }}" target="_blank" rel="noopener">前往位置設定新增</a>
+              ，回到此頁即可直接選擇。
+            </small>
           </div>
 
           <!-- 庫存設定 -->
@@ -355,6 +383,7 @@
 
           <!-- 提交按鈕 -->
           <div class="col-12">
+            <div id="formFeedback" class="alert alert-danger d-none" role="alert"></div>
             <hr class="my-4">
             <div class="d-flex flex-wrap gap-2 justify-content-center">
               <button type="submit" class="btn btn-primary btn-lg">
@@ -399,6 +428,25 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.form-progress-summary {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.summary-item {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+}
+
+.summary-label {
+  display: block;
+  color: var(--gray-600);
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
 }
 </style>
 {%endblock%}
@@ -494,13 +542,6 @@
     uploadPlaceholder.classList.remove('d-none');
   }
 
-  // 防止表單重複提交
-  document.getElementById('addItemForm').addEventListener('submit', function(e) {
-    const submitBtn = this.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>儲存中...';
-  });
-  
   // 自動產生物品 ID
   function generateItemId() {
     fetch('{{ url_for("items.generate_item_id") }}')
@@ -704,6 +745,7 @@
   
   // 表單提交前驗證
   document.getElementById('addItemForm').addEventListener('submit', function(e) {
+    const feedback = document.getElementById('formFeedback');
     let allValid = true;
     
     // 驗證所有欄位
@@ -716,6 +758,8 @@
     
     if (!allValid) {
       e.preventDefault();
+      feedback.textContent = '請先完成必填欄位，並修正標示錯誤的輸入內容。';
+      feedback.classList.remove('d-none');
       
       // 滾動到第一個錯誤欄位
       const firstError = document.querySelector('.is-invalid');
@@ -726,11 +770,22 @@
       
       return false;
     }
+
+    feedback.classList.add('d-none');
     
     // 防止重複提交
     const submitBtn = this.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>儲存中...';
+  });
+
+  document.querySelectorAll('.place-suggestion').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const input = document.getElementById('ItemStorePlace');
+      input.value = this.dataset.place || '';
+      input.focus();
+      validateField(input);
+    });
   });
 </script>
 {%endblock%}

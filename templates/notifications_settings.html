@@ -196,6 +196,8 @@
               <i class="fas fa-paper-plane me-1"></i>發送測試通知
             </button>
           </div>
+
+          <div id="settingsFeedback" class="alert mt-3 d-none" role="alert"></div>
         </form>
       </div>
     </div>
@@ -282,6 +284,20 @@
           </button>
           <small class="text-muted d-block mt-1">今天尚未發送通知</small>
         </div>
+        {% elif not settings.notify_enabled %}
+        <div class="mt-3">
+          <button class="btn btn-secondary w-100" disabled>
+            <i class="fas fa-bell-slash me-1"></i>通知未啟用
+          </button>
+          <small class="text-muted d-block mt-1">啟用通知後才會依設定時間檢查。</small>
+        </div>
+        {% elif not settings.email and ('email' in settings.notify_channels or not settings.notify_channels) %}
+        <div class="mt-3">
+          <button class="btn btn-secondary w-100" disabled>
+            <i class="fas fa-envelope-circle-xmark me-1"></i>缺少 Email
+          </button>
+          <small class="text-muted d-block mt-1">請先設定接收通知的 Email 地址。</small>
+        </div>
         {% else %}
         <div class="mt-3">
           <button class="btn btn-secondary w-100" disabled>
@@ -316,6 +332,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const channelInputs = document.querySelectorAll('.notify-channel');
   const sendTestBtn = document.getElementById('sendTestBtn');
   const sendNowBtn = document.getElementById('sendNowBtn');
+  const settingsFeedback = document.getElementById('settingsFeedback');
+
+  function showFeedback(type, message) {
+    settingsFeedback.className = `alert alert-${type} mt-3`;
+    settingsFeedback.textContent = message;
+    settingsFeedback.classList.remove('d-none');
+  }
 
   // 切換通知啟用時的狀態
   notifyEnabled.addEventListener('change', function() {
@@ -331,6 +354,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const replacementIntervalsInput = document.getElementById('replacement_intervals');
     if (replacementEnabled) replacementEnabled.disabled = disabled;
     if (replacementIntervalsInput) replacementIntervalsInput.disabled = disabled;
+    if (sendTestBtn) {
+      sendTestBtn.disabled = disabled || !emailInput.value.trim();
+    }
+  });
+
+  emailInput.addEventListener('input', function() {
+    if (sendTestBtn) {
+      sendTestBtn.disabled = !notifyEnabled.checked || !this.value.trim();
+    }
   });
 
   // 提交表單
@@ -362,18 +394,24 @@ document.addEventListener('DOMContentLoaded', function() {
       },
       body: JSON.stringify(data)
     })
-    .then(response => response.json())
+    .then(async response => {
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || result.error || '儲存失敗');
+      }
+      return result;
+    })
     .then(result => {
       if (result.success) {
-        alert('✅ 設定已儲存！');
-        location.reload();
+        showFeedback('success', '設定已更新，頁面將重新整理以同步摘要。');
+        setTimeout(() => location.reload(), 800);
       } else {
-        alert('❌ 儲存失敗！');
+        showFeedback('danger', result.message || '儲存失敗。');
       }
     })
     .catch(error => {
       console.error('Error:', error);
-      alert('❌ 發生錯誤！');
+      showFeedback('danger', error.message || '儲存時發生錯誤。');
     });
   });
 
@@ -391,17 +429,23 @@ document.addEventListener('DOMContentLoaded', function() {
           'Content-Type': 'application/json'
         }
       })
-      .then(response => response.json())
+      .then(async response => {
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || '發送失敗');
+        }
+        return result;
+      })
       .then(result => {
         if (result.success) {
-          alert(`✅ 測試通知已發送到 ${emailInput.value}`);
+          showFeedback('success', `測試通知已發送到 ${emailInput.value}。`);
         } else {
-          alert(`❌ 發送失敗: ${result.message}`);
+          showFeedback('danger', `發送失敗：${result.message}`);
         }
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('❌ 發生錯誤！');
+        showFeedback('danger', error.message || '發送測試通知時發生錯誤。');
       });
     });
   }
@@ -419,18 +463,27 @@ document.addEventListener('DOMContentLoaded', function() {
           'Content-Type': 'application/json'
         }
       })
-      .then(response => response.json())
+      .then(async response => {
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || '發送失敗');
+        }
+        return result;
+      })
       .then(result => {
         if (result.success) {
-          alert(`✅ 通知已發送！包含 ${result.expired_count} 個已過期物品和 ${result.near_count} 個即將到期物品`);
-          location.reload();
+          showFeedback(
+            'success',
+            `通知已發送。已過期 ${result.expired_count} 項、即將到期 ${result.near_count} 項、需更換 ${result.replacement_due_count || 0} 項。`
+          );
+          setTimeout(() => location.reload(), 900);
         } else {
-          alert(`❌ 發送失敗: ${result.message}`);
+          showFeedback('danger', `發送失敗：${result.message}`);
         }
       })
       .catch(error => {
         console.error('Error:', error);
-        alert('❌ 發生錯誤！');
+        showFeedback('danger', error.message || '立即發送通知時發生錯誤。');
       });
     });
   }

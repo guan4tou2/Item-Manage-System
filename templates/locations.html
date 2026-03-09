@@ -28,19 +28,19 @@
             
             <div class="mb-3">
               <label class="form-label"><i class="fas fa-building me-1"></i>樓層</label>
-              <input type="text" class="form-control" name="floor" placeholder="例如：1F、2F、B1">
-              <small class="text-muted">輸入樓層名稱</small>
+              <input type="text" class="form-control" id="create-floor" name="floor" list="floor-options" data-location-input="floor" placeholder="例如：1F、2F、B1" autocomplete="off">
+              <small class="text-muted">可直接輸入，或從建議與下方標籤快速帶入</small>
             </div>
             
             <div class="mb-3">
               <label class="form-label"><i class="fas fa-door-open me-1"></i>房間</label>
-              <input type="text" class="form-control" name="room" placeholder="例如：客廳、主臥、書房">
-              <small class="text-muted">輸入房間名稱</small>
+              <input type="text" class="form-control" id="create-room" name="room" list="room-options" data-location-input="room" placeholder="例如：客廳、主臥、書房" autocomplete="off">
+              <small class="text-muted">可重用已建立房間，避免重複輸入</small>
             </div>
             
             <div class="mb-3">
               <label class="form-label"><i class="fas fa-th-large me-1"></i>區域/櫃位</label>
-              <input type="text" class="form-control" name="zone" placeholder="例如：衣櫃、書櫃、抽屜">
+              <input type="text" class="form-control" id="create-zone" name="zone" list="zone-options" data-location-input="zone" placeholder="例如：衣櫃、書櫃、抽屜" autocomplete="off">
               <small class="text-muted">輸入區域或櫃位名稱</small>
             </div>
             
@@ -56,6 +56,22 @@
         </div>
       </div>
       
+      <datalist id="floor-options">
+        {%for f in floors%}
+        <option value="{{f}}"></option>
+        {%endfor%}
+      </datalist>
+      <datalist id="room-options">
+        {%for r in rooms%}
+        <option value="{{r}}"></option>
+        {%endfor%}
+      </datalist>
+      <datalist id="zone-options">
+        {%for z in zones%}
+        <option value="{{z}}"></option>
+        {%endfor%}
+      </datalist>
+
       <!-- 快速統計 -->
       <div class="card mt-4">
         <div class="card-body">
@@ -91,6 +107,9 @@
           </div>
         </div>
         <div class="card-body p-0">
+          <div class="location-usage-hint">
+            <i class="fas fa-lightbulb me-2"></i>點下方標籤可快速帶回左側新增表單，拖曳表格則可調整顯示順序。
+          </div>
           {%if locations%}
           <div class="table-responsive">
             <table class="table table-hover mb-0 location-table">
@@ -127,13 +146,13 @@
                   
                   <!-- 編輯模式 (隱藏) -->
                   <td class="edit-mode d-none">
-                    <input type="text" class="form-control form-control-sm" id="edit-floor-{{loc._id}}" value="{{loc.floor or ''}}">
+                    <input type="text" class="form-control form-control-sm" id="edit-floor-{{loc._id}}" value="{{loc.floor or ''}}" list="floor-options" data-location-input="floor" autocomplete="off">
                   </td>
                   <td class="edit-mode d-none">
-                    <input type="text" class="form-control form-control-sm" id="edit-room-{{loc._id}}" value="{{loc.room or ''}}">
+                    <input type="text" class="form-control form-control-sm" id="edit-room-{{loc._id}}" value="{{loc.room or ''}}" list="room-options" data-location-input="room" autocomplete="off">
                   </td>
                   <td class="edit-mode d-none">
-                    <input type="text" class="form-control form-control-sm" id="edit-zone-{{loc._id}}" value="{{loc.zone or ''}}">
+                    <input type="text" class="form-control form-control-sm" id="edit-zone-{{loc._id}}" value="{{loc.zone or ''}}" list="zone-options" data-location-input="zone" autocomplete="off">
                   </td>
                   <td class="edit-mode d-none text-center">
                     <div class="btn-group btn-group-sm">
@@ -170,7 +189,7 @@
             <div class="card-body p-2">
               <div class="d-flex flex-wrap gap-1">
                 {%for f in floors%}
-                <span class="badge bg-light text-dark">{{f}}</span>
+                <span class="badge bg-light text-dark location-choice-badge" data-location-choice="floor" data-value="{{f}}" role="button" tabindex="0">{{f}}</span>
                 {%endfor%}
                 {%if not floors%}
                 <span class="text-muted small">尚無樓層</span>
@@ -187,7 +206,7 @@
             <div class="card-body p-2">
               <div class="d-flex flex-wrap gap-1">
                 {%for r in rooms%}
-                <span class="badge bg-light text-dark">{{r}}</span>
+                <span class="badge bg-light text-dark location-choice-badge" data-location-choice="room" data-value="{{r}}" role="button" tabindex="0">{{r}}</span>
                 {%endfor%}
                 {%if not rooms%}
                 <span class="text-muted small">尚無房間</span>
@@ -204,7 +223,7 @@
             <div class="card-body p-2">
               <div class="d-flex flex-wrap gap-1">
                 {%for z in zones%}
-                <span class="badge bg-light text-dark">{{z}}</span>
+                <span class="badge bg-light text-dark location-choice-badge" data-location-choice="zone" data-value="{{z}}" role="button" tabindex="0">{{z}}</span>
                 {%endfor%}
                 {%if not zones%}
                 <span class="text-muted small">尚無區域</span>
@@ -260,6 +279,7 @@
 {%block js%}
 <script>
 let currentEditId = null;
+let activeLocationField = "floor";
 
 function startEdit(id, floor, room, zone) {
   // 如果已有其他正在編輯的行，先取消
@@ -326,6 +346,33 @@ document.addEventListener('keydown', function(e) {
 let draggedRow = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('[data-location-input]').forEach(input => {
+    input.addEventListener('focus', function() {
+      activeLocationField = this.dataset.locationInput || "floor";
+    });
+  });
+
+  document.querySelectorAll('[data-location-choice]').forEach(chip => {
+    const applyChoice = () => {
+      const field = chip.dataset.locationChoice;
+      const target = document.querySelector(`input[data-location-input="${field}"]:focus`) ||
+        document.querySelector(`#create-${field}`) ||
+        document.querySelector(`input[data-location-input="${activeLocationField}"]`);
+      if (!target) return;
+      target.value = chip.dataset.value || "";
+      target.dispatchEvent(new Event('input', { bubbles: true }));
+      target.focus();
+    };
+
+    chip.addEventListener('click', applyChoice);
+    chip.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        applyChoice();
+      }
+    });
+  });
+
   const tbody = document.getElementById('locationTableBody');
   if (!tbody) return;
   

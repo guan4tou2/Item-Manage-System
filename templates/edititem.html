@@ -26,6 +26,16 @@
   <div class="row justify-content-center">
     <div class="col-lg-10">
       <div class="form-container animate-fadeInUp stagger-2">
+        <div class="form-progress-summary mb-4">
+          <div class="summary-item">
+            <span class="summary-label">目前狀態</span>
+            <strong>{{ item.ItemStorePlace or '未設定位置' }}</strong>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">快速檢查</span>
+            <strong>照片、位置、分類、庫存與期限是否仍正確</strong>
+          </div>
+        </div>
         <form
           class="row g-4"
           action="{{ url_for('items.edititem', item_id=item.ItemID) }}"
@@ -58,6 +68,17 @@
               <label for="ItemName">
                 <i class="fas fa-font me-1"></i>物品名稱 <span class="text-danger">*</span>
               </label>
+            </div>
+            <div class="mt-2 d-flex flex-wrap gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary place-suggestion" data-place="抽屜">
+                常用：抽屜
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary place-suggestion" data-place="書桌">
+                常用：書桌
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-secondary place-suggestion" data-place="櫃子上層">
+                常用：櫃子上層
+              </button>
             </div>
           </div>
 
@@ -152,7 +173,7 @@
           <!-- 樓層 / 房間 / 區域 -->
           <div class="col-md-2">
             <div class="form-floating">
-              <select id="ItemFloor" class="form-select" name="ItemFloor">
+              <select id="ItemFloor" class="form-select" name="ItemFloor" onchange="onFloorChange()">
                 <option value="">選擇...</option>
                 {% for f in floors %}
                 <option value="{{f}}" {% if item.ItemFloor == f %}selected{% endif %}>{{f}}</option>
@@ -163,7 +184,7 @@
           </div>
           <div class="col-md-2">
             <div class="form-floating">
-              <select id="ItemRoom" class="form-select" name="ItemRoom">
+              <select id="ItemRoom" class="form-select" name="ItemRoom" onchange="onRoomChange()">
                 <option value="">選擇...</option>
                 {% for r in rooms %}
                 <option value="{{r}}" {% if item.ItemRoom == r %}selected{% endif %}>{{r}}</option>
@@ -182,6 +203,13 @@
               </select>
               <label for="ItemZone">區域</label>
             </div>
+          </div>
+          <div class="col-12">
+            <small class="text-muted">
+              沒有想要的樓層/房間/區域？
+              <a href="{{ url_for('locations.manage_locations') }}" target="_blank" rel="noopener">前往位置設定新增</a>
+              ，回到此頁即可直接選擇。
+            </small>
           </div>
 
           <!-- 庫存設定 -->
@@ -345,6 +373,7 @@
 
           <!-- 提交按鈕 -->
           <div class="col-12">
+            <div id="editFormFeedback" class="alert alert-danger d-none" role="alert"></div>
             <hr class="my-4">
             <div class="d-flex flex-wrap gap-2 justify-content-between">
               <div class="d-flex flex-wrap gap-2">
@@ -388,6 +417,27 @@
   </div>
 </div>
 
+<style>
+.form-progress-summary {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.summary-item {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+}
+
+.summary-label {
+  display: block;
+  color: var(--gray-600);
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+</style>
+
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -421,8 +471,90 @@
 
 {%block js%}
 <script>
-  // 防止表單重複提交
+  // 儲存原始選項供級聯選擇使用
+  const allRooms = [...document.getElementById('ItemRoom').options].map(o => o.value).filter(v => v);
+  const allZones = [...document.getElementById('ItemZone').options].map(o => o.value).filter(v => v);
+
+  function onFloorChange() {
+    const floor = document.getElementById('ItemFloor').value;
+    if (!floor) return;
+
+    fetch(`{{ url_for("items.get_cascade_locations") }}?floor=${encodeURIComponent(floor)}`)
+      .then(response => response.json())
+      .then(data => {
+        const roomSelect = document.getElementById('ItemRoom');
+        const currentRoom = roomSelect.value;
+        roomSelect.innerHTML = '<option value="">選擇...</option>';
+
+        const nextRooms = data.rooms && data.rooms.length > 0 ? data.rooms : allRooms;
+        nextRooms.forEach(room => {
+          const option = document.createElement('option');
+          option.value = room;
+          option.textContent = room;
+          if (room === currentRoom) option.selected = true;
+          roomSelect.appendChild(option);
+        });
+      })
+      .catch(() => console.log('無法載入房間選項'));
+  }
+
+  function onRoomChange() {
+    const room = document.getElementById('ItemRoom').value;
+    if (!room) return;
+
+    fetch(`{{ url_for("items.get_cascade_locations") }}?room=${encodeURIComponent(room)}`)
+      .then(response => response.json())
+      .then(data => {
+        const zoneSelect = document.getElementById('ItemZone');
+        const currentZone = zoneSelect.value;
+        zoneSelect.innerHTML = '<option value="">選擇...</option>';
+
+        const nextZones = data.zones && data.zones.length > 0 ? data.zones : allZones;
+        nextZones.forEach(zone => {
+          const option = document.createElement('option');
+          option.value = zone;
+          option.textContent = zone;
+          if (zone === currentZone) option.selected = true;
+          zoneSelect.appendChild(option);
+        });
+      })
+      .catch(() => console.log('無法載入區域選項'));
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('ItemFloor').value) {
+      onFloorChange();
+    }
+    if (document.getElementById('ItemRoom').value) {
+      onRoomChange();
+    }
+
+    document.querySelectorAll('.place-suggestion').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const input = document.getElementById('ItemStorePlace');
+        input.value = this.dataset.place || '';
+        input.focus();
+      });
+    });
+  });
+
   document.getElementById('editItemForm').addEventListener('submit', function(e) {
+    const feedback = document.getElementById('editFormFeedback');
+    const requiredFields = ['ItemName', 'ItemStorePlace', 'ItemType', 'ItemOwner', 'ItemGetDate'];
+    const firstInvalid = requiredFields
+      .map(id => document.getElementById(id))
+      .find(field => !field || !field.value.trim());
+
+    if (firstInvalid) {
+      e.preventDefault();
+      feedback.textContent = '請先完成名稱、位置、分類、擁有者與取得日期。';
+      feedback.classList.remove('d-none');
+      firstInvalid.focus();
+      firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    feedback.classList.add('d-none');
     const submitBtn = this.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>儲存中...';

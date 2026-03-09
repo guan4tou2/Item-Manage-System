@@ -9,9 +9,20 @@
     <h1>⭐ 我的收藏</h1>
     <p class="lead">快速存取您收藏的常用物品</p>
   </div>
+
+  <div class="stats-summary-strip animate-fadeInUp stagger-1">
+    <div class="summary-chip">
+      <span class="summary-chip-label">收藏總數</span>
+      <strong>{{ items|length }} 項</strong>
+    </div>
+    <div class="summary-chip">
+      <span class="summary-chip-label">推薦操作</span>
+      <strong>保留高頻使用、難找或要常補貨的物品</strong>
+    </div>
+  </div>
   
   <!-- 統計 -->
-  <div class="d-flex align-items-center gap-3 mb-4 animate-fadeInUp stagger-1">
+  <div class="d-flex align-items-center gap-3 mb-4 animate-fadeInUp stagger-2">
     <span class="badge bg-primary fs-6">
       <i class="fas fa-star me-1"></i>{{ items|length }} 個收藏
     </span>
@@ -40,7 +51,7 @@
       />
         {%else%}
         <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center h-100" 
-             style="background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);">
+             style="background: #e2e8f0;">
           <i class="fas fa-image fa-4x text-white opacity-50"></i>
         </div>
         {%endif%}
@@ -127,9 +138,14 @@
   <i class="fas fa-star"></i>
   <h3>還沒有收藏任何物品</h3>
   <p>在物品卡片上點擊星號按鈕即可加入收藏</p>
-  <a href="{{ url_for('items.home') }}" class="btn btn-primary btn-lg">
-    <i class="fas fa-home me-2"></i>前往首頁
-  </a>
+  <div class="d-flex gap-2 justify-content-center flex-wrap">
+    <a href="{{ url_for('items.home') }}" class="btn btn-primary btn-lg">
+      <i class="fas fa-home me-2"></i>前往首頁
+    </a>
+    <a href="{{ url_for('items.search') }}" class="btn btn-outline-secondary btn-lg">
+      <i class="fas fa-search me-2"></i>先去搜尋物品
+    </a>
+  </div>
 </div>
 {%endif%}
 {%endblock%}
@@ -179,5 +195,27 @@ async function toggleFavorite(itemId, btn) {
   }
 }
 </script>
-{%endblock%}
 
+<style>
+.stats-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.summary-chip {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+}
+
+.summary-chip-label {
+  display: block;
+  color: var(--gray-600);
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+</style>
+{%endblock%}
