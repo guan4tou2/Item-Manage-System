@@ -170,6 +170,7 @@ def create_app() -> Flask:
     from app.notifications.routes import bp as notifications_bp
     from app.health.routes import bp as health_bp
     from app.routes.import_routes import bp as import_bp
+    from app.api.routes import bp as api_bp
     from app.travel.routes import bp as travel_bp, shopping_bp
     from app.line.routes import bp as line_bp
     from app.telegram.routes import bp as telegram_bp
@@ -181,6 +182,7 @@ def create_app() -> Flask:
     app.register_blueprint(notifications_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(import_bp)
+    app.register_blueprint(api_bp)
     app.register_blueprint(travel_bp)
     app.register_blueprint(shopping_bp)
     app.register_blueprint(line_bp)

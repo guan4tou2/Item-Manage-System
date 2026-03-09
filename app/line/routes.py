@@ -319,10 +319,10 @@ def _handle_text_message(line_user_id: str, text: str) -> tuple[str, list[dict],
         item_id = normalized.replace("打包完成 ", "", 1).strip()
         if not item_id.isdigit():
             return "格式錯誤，請輸入：打包完成 <項目ID>", [], None
-        item = TravelItem.query.get(int(item_id))
+        item = db.session.get(TravelItem, int(item_id))
         if not item:
             return "找不到該項目。", [], None
-        travel = Travel.query.get(item.travel_id)
+        travel = db.session.get(Travel, item.travel_id)
         if not travel or travel.owner != user_id:
             return "你無法操作此項目。", [], None
         item.carried = True
@@ -351,10 +351,10 @@ def _handle_postback(line_user_id: str, data: str) -> tuple[str, list[dict], dic
         item_id = (parsed.get("item_id") or [""])[0]
         if not item_id.isdigit():
             return "項目ID格式錯誤。", [], None
-        item = TravelItem.query.get(int(item_id))
+        item = db.session.get(TravelItem, int(item_id))
         if not item:
             return "找不到該項目。", [], None
-        travel = Travel.query.get(item.travel_id)
+        travel = db.session.get(Travel, item.travel_id)
         if not travel or travel.owner != user_id:
             return "你無法操作此項目。", [], None
         item.carried = True

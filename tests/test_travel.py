@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
 
 import tests.fixtures_env  # noqa: F401
+from flask_sqlalchemy import SQLAlchemy as FlaskSQLAlchemy
 
 from app import create_app, db
 from app.models import Travel, TravelGroup, TravelItem, ShoppingList, ShoppingItem
@@ -24,12 +25,16 @@ class TravelTestCase(unittest.TestCase):
         self.client = self.app.test_client()
         self.ctx = self.app.app_context()
         self.ctx.push()
-        db.create_all()
+        # pytest conftest globally monkeypatches db.init_app/create_all for non-SQL tests.
+        # Travel tests need a real SQLAlchemy binding and schema.
+        if self.app not in db._app_engines:
+            FlaskSQLAlchemy.init_app(db, self.app)
+        FlaskSQLAlchemy.create_all(db)
 
     def tearDown(self):
         """測試後清理"""
         db.session.remove()
-        db.drop_all()
+        FlaskSQLAlchemy.drop_all(db)
         self.ctx.pop()
 
     def test_list_page_requires_auth(self):
@@ -221,7 +226,7 @@ class TravelTestCase(unittest.TestCase):
         response = self.client.post(f'/travel/{travel.id}/items/{item_id}/delete')
         self.assertEqual(response.status_code, 302)
 
-        deleted_item = TravelItem.query.get(item_id)
+        deleted_item = db.session.get(TravelItem, item_id)
         self.assertIsNone(deleted_item)
 
     def test_list_travels_api(self):
@@ -325,12 +330,14 @@ class ShoppingListTestCase(unittest.TestCase):
         self.client = self.app.test_client()
         self.ctx = self.app.app_context()
         self.ctx.push()
-        db.create_all()
+        if self.app not in db._app_engines:
+            FlaskSQLAlchemy.init_app(db, self.app)
+        FlaskSQLAlchemy.create_all(db)
 
     def tearDown(self):
         """測試後清理"""
         db.session.remove()
-        db.drop_all()
+        FlaskSQLAlchemy.drop_all(db)
         self.ctx.pop()
 
     def test_list_shopping_lists(self):

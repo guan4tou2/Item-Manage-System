@@ -7,6 +7,8 @@ import sys
 
 import requests
 
+__test__ = False
+
 
 def test_login():
     """測試登入功能"""

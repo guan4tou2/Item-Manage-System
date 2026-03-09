@@ -1,10 +1,14 @@
-from datetime import datetime, date
+from datetime import date, datetime, timezone
 from typing import Optional, List, Dict, Any
 
 from sqlalchemy import String, Text, JSON, Integer, Date, Boolean, Numeric, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app import db
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Travel(db.Model):
@@ -17,7 +21,7 @@ class Travel(db.Model):
     end_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     note: Mapped[Optional[str]] = mapped_column(Text)
     shared: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
 
     groups: Mapped[List["TravelGroup"]] = relationship("TravelGroup", back_populates="travel", cascade="all, delete-orphan")
     items: Mapped[List["TravelItem"]] = relationship("TravelItem", back_populates="travel", cascade="all, delete-orphan")
@@ -59,7 +63,7 @@ class TravelItem(db.Model):
     note: Mapped[Optional[str]] = mapped_column(Text)
     size_notes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, default=dict)
     is_temp: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
 
     travel: Mapped[Travel] = relationship("Travel", back_populates="items")
     group: Mapped[Optional[TravelGroup]] = relationship("TravelGroup", back_populates="items")
@@ -78,7 +82,7 @@ class ShoppingList(db.Model):
     owner: Mapped[Optional[str]] = mapped_column(String(50), index=True)
     note: Mapped[Optional[str]] = mapped_column(Text)
     shared: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
 
     items: Mapped[List["ShoppingItem"]] = relationship("ShoppingItem", back_populates="shopping_list", cascade="all, delete-orphan")
 
@@ -103,7 +107,7 @@ class ShoppingItem(db.Model):
     note: Mapped[Optional[str]] = mapped_column(Text)
     size_notes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(20), default="todo")
-    created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(default=_utcnow)
 
     shopping_list: Mapped[ShoppingList] = relationship("ShoppingList", back_populates="items")
 

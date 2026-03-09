@@ -2,7 +2,7 @@
 import json
 import os
 from typing import Optional, List
-from pydantic import BaseModel, Field, validator, EmailStr, HttpUrl
+from pydantic import BaseModel, ConfigDict, Field, EmailStr, field_validator
 
 
 class DatabaseConfig(BaseModel):
@@ -11,13 +11,13 @@ class DatabaseConfig(BaseModel):
     database_url: Optional[str] = Field(default=None, description="Database connection URL")
     mongo_uri: Optional[str] = Field(default=None, description="MongoDB connection URI")
 
-    @validator('database_url')
+    @field_validator('database_url')
     def validate_postgres_url(cls, v):
         if v is not None and not v.startswith(('postgresql://', 'postgresql+')):
             raise ValueError('PostgreSQL URL must start with postgresql:// or postgresql+://')
         return v
 
-    @validator('mongo_uri')
+    @field_validator('mongo_uri')
     def validate_mongo_uri(cls, v):
         if v is not None and not v.startswith(('mongodb://', 'mongodb+')):
             raise ValueError('MongoDB URI must start with mongodb:// or mongodb+://')
@@ -33,7 +33,7 @@ class ServerConfig(BaseModel):
     threads: int = Field(default=2, ge=1, le=8, description="Number of Gunicorn threads per worker")
     secret_key: Optional[str] = Field(default=None, description="Application secret key")
 
-    @validator('secret_key')
+    @field_validator('secret_key')
     def validate_secret_key(cls, v):
         if v is None or v == "":
             return None
@@ -72,6 +72,7 @@ class RateLimitConfig(BaseModel):
 
 class AppConfig(BaseModel):
     """Application configuration"""
+    model_config = ConfigDict(extra="ignore")
 
     # Environment
     flask_env: str = Field(default="production", description="Flask environment: development or production")
@@ -97,7 +98,7 @@ class AppConfig(BaseModel):
         description="Upload folder path"
     )
 
-    @validator('database')
+    @field_validator('database')
     def validate_database_config(cls, v):
         if v.db_type == "postgres" and not v.database_url:
             raise ValueError('DATABASE_URL is required when using PostgreSQL')
@@ -105,13 +106,13 @@ class AppConfig(BaseModel):
             raise ValueError('MONGO_URI is required when using MongoDB')
         return v
 
-    @validator('server')
+    @field_validator('server')
     def validate_server_config(cls, v):
         if v.debug and v.secret_key in ['dev-secret-key', 'change-in-production', 'secret']:
             raise ValueError('Insecure configuration: Debug mode with default secret key not allowed')
         return v
 
-    @validator('mail')
+    @field_validator('mail')
     def validate_mail_config(cls, v):
         if v is None:
             return v
@@ -119,8 +120,8 @@ class AppConfig(BaseModel):
             raise ValueError('Example email addresses are not allowed in production')
         return v
 
-    class Config:
-        """Nested config for easier environment variable access"""
+    class Defaults:
+        """Defaults mapping for easier environment variable reference"""
         class Database:
             DB_TYPE: str = "postgres"
             DATABASE_URL: Optional[str] = None

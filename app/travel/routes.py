@@ -19,15 +19,22 @@ def _require_auth():
     return True, None
 
 
+def _session_get_or_404(model, obj_id: int):
+    obj = db.session.get(model, obj_id)
+    if obj is None:
+        abort(404)
+    return obj
+
+
 def _get_travel_or_403(travel_id: int):
-    travel = Travel.query.get_or_404(travel_id)
+    travel = _session_get_or_404(Travel, travel_id)
     if travel.owner and travel.owner != session.get("UserID"):
         abort(403)
     return travel
 
 
 def _get_shopping_list_or_403(list_id: int):
-    lst = ShoppingList.query.get_or_404(list_id)
+    lst = _session_get_or_404(ShoppingList, list_id)
     current_user = session.get("UserID")
     if lst.owner and lst.owner != current_user:
         abort(403)
@@ -198,7 +205,7 @@ def update_item_form(travel_id: int, item_id: int):
     if not ok:
         return redirect_resp
     _get_travel_or_403(travel_id)
-    item = TravelItem.query.get_or_404(item_id)
+    item = _session_get_or_404(TravelItem, item_id)
     if item.travel_id != travel_id:
         abort(404)
     if "toggle_carried" in request.form:
@@ -218,7 +225,7 @@ def delete_item_form(travel_id: int, item_id: int):
     if not ok:
         return redirect_resp
     _get_travel_or_403(travel_id)
-    item = TravelItem.query.get_or_404(item_id)
+    item = _session_get_or_404(TravelItem, item_id)
     if item.travel_id != travel_id:
         abort(404)
     db.session.delete(item)
@@ -367,7 +374,7 @@ def update_item(item_id: int):
     if not ok:
         return redirect_resp
     data = request.get_json(force=True) or {}
-    item = TravelItem.query.get_or_404(item_id)
+    item = _session_get_or_404(TravelItem, item_id)
     _get_travel_or_403(item.travel_id)
     if "qty_packed" in data:
         item.qty_packed = int(data.get("qty_packed", item.qty_packed))
@@ -546,7 +553,7 @@ def update_shopping_item(item_id: int):
     if not ok:
         return redirect_resp
     data = request.get_json(force=True) or {}
-    item = ShoppingItem.query.get_or_404(item_id)
+    item = _session_get_or_404(ShoppingItem, item_id)
     _get_shopping_list_or_403(item.list_id)
     if "qty" in data:
         item.qty = int(data.get("qty", item.qty))

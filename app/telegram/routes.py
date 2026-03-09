@@ -1,6 +1,6 @@
 import json
 import secrets
-from datetime import datetime
+from datetime import datetime, timezone
 from urllib import parse as urlparse
 from urllib import request as urlrequest
 
@@ -56,7 +56,7 @@ def _upsert_link(user_id: str, telegram_user_id: str, chat_id: str) -> None:
     else:
         link.user_id = user_id
         link.chat_id = chat_id
-        link.last_seen_at = datetime.utcnow()
+        link.last_seen_at = datetime.now(timezone.utc)
     db.session.commit()
 
 
@@ -150,10 +150,10 @@ def _handle_text(telegram_user_id: str, chat_id: str, text: str) -> tuple[str, l
 
 
 def _mark_done(user_id: str, item_id: int) -> tuple[str, list[list[dict]] | None]:
-    item = TravelItem.query.get(item_id)
+    item = db.session.get(TravelItem, item_id)
     if not item:
         return "找不到該項目。", None
-    travel = Travel.query.get(item.travel_id)
+    travel = db.session.get(Travel, item.travel_id)
     if not travel or travel.owner != user_id:
         return "你無法操作此項目。", None
     item.carried = True

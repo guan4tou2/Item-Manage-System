@@ -1,5 +1,4 @@
-from typing import Dict, Any, List, Optional, Tuple
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.repositories import item_repo, type_repo
@@ -262,7 +261,7 @@ def _annotate_expiry(items: List[Dict[str, Any]]) -> None:
             it[key] = status
 
 
-def get_expiring_items(days_threshold: int = 30) -> Dict[str, Any]:
+def get_expiring_items(days_threshold: int = 30, ladder: Optional[List[int]] = None) -> Dict[str, Any]:
     """
     取得即將到期和已過期的物品
     
@@ -278,10 +277,8 @@ def get_expiring_items(days_threshold: int = 30) -> Dict[str, Any]:
     today = date.today()
     today_str = today.strftime("%Y-%m-%d")
     
-    # 計算 N 天後的日期
-    from datetime import timedelta
-    threshold_date = today + timedelta(days=days_threshold)
-    threshold_str = threshold_date.strftime("%Y-%m-%d")
+    # 保留 ladder 參數以相容通知服務呼叫簽名。
+    _ = ladder
     
     projection = ITEM_PROJECTION.copy()
     
@@ -333,6 +330,90 @@ def get_expiring_items(days_threshold: int = 30) -> Dict[str, Any]:
         "expired_count": len(expired_items),
         "near_count": len(near_expiry_items),
         "total_alerts": len(expired_items) + len(near_expiry_items),
+    }
+
+
+def _parse_replacement_rules(raw_rules: Any) -> Dict[str, int]:
+    default_rules = {
+        "內衣": 90,
+        "襪子": 180,
+    }
+    parsed: Dict[str, int] = {}
+    if isinstance(raw_rules, list):
+        for rule in raw_rules:
+            if isinstance(rule, str) and "=" in rule:
+                name, days = rule.split("=", 1)
+                name = name.strip()
+                days = days.strip()
+                if name and days.isdigit():
+                    parsed[name] = int(days)
+            elif isinstance(rule, dict):
+                name = str(rule.get("name", "")).strip()
+                days = rule.get("days")
+                if name and isinstance(days, int) and days > 0:
+                    parsed[name] = days
+    return {**default_rules, **parsed}
+
+
+def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    settings = settings or {}
+    enabled = bool(settings.get("replacement_enabled", True))
+    if not enabled:
+        return {
+            "enabled": False,
+            "due": [],
+            "upcoming": [],
+            "total_alerts": 0,
+        }
+
+    rules = _parse_replacement_rules(settings.get("replacement_intervals"))
+    projection = {
+        "_id": 0,
+        "ItemID": 1,
+        "ItemName": 1,
+        "ItemType": 1,
+        "ItemGetDate": 1,
+    }
+    all_items = list(item_repo.list_items({}, projection))
+    today = date.today()
+    upcoming_window_days = 14
+    due_items: List[Dict[str, Any]] = []
+    upcoming_items: List[Dict[str, Any]] = []
+
+    for item in all_items:
+        name = str(item.get("ItemName") or "").strip()
+        if not name or name not in rules:
+            continue
+        got_date_raw = item.get("ItemGetDate")
+        if not isinstance(got_date_raw, str) or not got_date_raw:
+            continue
+        try:
+            got_date = datetime.strptime(got_date_raw, "%Y-%m-%d").date()
+        except ValueError:
+            continue
+
+        interval_days = rules[name]
+        due_date = got_date.fromordinal(got_date.toordinal() + interval_days)
+        days_left = (due_date - today).days
+        enriched = dict(item)
+        enriched["replacement_days"] = interval_days
+        enriched["replacement_due_date"] = due_date.strftime("%Y-%m-%d")
+
+        if days_left <= 0:
+            enriched["days_overdue"] = abs(days_left)
+            due_items.append(enriched)
+        elif days_left <= upcoming_window_days:
+            enriched["days_left"] = days_left
+            upcoming_items.append(enriched)
+
+    due_items.sort(key=lambda x: x.get("replacement_due_date", "9999-12-31"))
+    upcoming_items.sort(key=lambda x: x.get("replacement_due_date", "9999-12-31"))
+
+    return {
+        "enabled": True,
+        "due": due_items,
+        "upcoming": upcoming_items,
+        "total_alerts": len(due_items) + len(upcoming_items),
     }
 
 

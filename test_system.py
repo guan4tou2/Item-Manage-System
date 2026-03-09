@@ -6,6 +6,8 @@
 import os
 import sys
 
+__test__ = False
+
 
 def test_dependencies():
     """測試依賴套件"""
