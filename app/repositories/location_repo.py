@@ -5,10 +5,14 @@ from flask import current_app
 from app import mongo, db, get_db_type, cache
 
 
+def _locations_cache_key() -> str:
+    return f"locations_list_{get_db_type()}"
+
+
 def list_locations() -> Generator[Dict[str, Any], None, None]:
     """列出所有位置"""
     db_type = get_db_type()
-    cache_key = f"locations_list_{db_type}"
+    cache_key = _locations_cache_key()
 
     cached = cache.get(cache_key)
     if cached:
@@ -46,6 +50,7 @@ def insert_location(doc: Dict[str, Any]) -> None:
         db.session.commit()
     else:
         mongo.db.locations.insert_one(doc)
+    cache.delete(_locations_cache_key())
 
 
 def delete_location(loc_id) -> None:
@@ -61,6 +66,7 @@ def delete_location(loc_id) -> None:
             db.session.commit()
     else:
         mongo.db.locations.delete_one({"_id": loc_id})
+    cache.delete(_locations_cache_key())
 
 
 def update_location(loc_id, doc: Dict[str, Any]) -> None:
@@ -83,6 +89,7 @@ def update_location(loc_id, doc: Dict[str, Any]) -> None:
             db.session.commit()
     else:
         mongo.db.locations.update_one({"_id": loc_id}, {"$set": doc})
+    cache.delete(_locations_cache_key())
 
 
 def update_order(loc_id, order: int) -> None:
@@ -98,6 +105,7 @@ def update_order(loc_id, order: int) -> None:
             db.session.commit()
     else:
         mongo.db.locations.update_one({"_id": loc_id}, {"$set": {"order": order}})
+    cache.delete(_locations_cache_key())
 
 
 def list_choices() -> tuple:

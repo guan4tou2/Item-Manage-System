@@ -193,6 +193,49 @@ class RoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("批量導入物品", response.data.decode("utf-8"))
 
+    @patch("app.routes.import_routes.location_service.create_location")
+    @patch("app.routes.import_routes.item_repo.insert_item")
+    @patch("app.routes.import_routes.item_repo.find_item_by_id", return_value=None)
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_import_upload_normalizes_location_and_generates_item_id(
+        self,
+        _mock_current_user,
+        mock_find_item,
+        mock_insert_item,
+        mock_create_location,
+    ):
+        """測試批量導入會生成 ItemID、拆解位置並同步位置選項"""
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        csv_content = (
+            "ItemName,ItemType,Location,WarrantyExpiry,UsageExpiry,Notes\n"
+            "筆電,電子產品,1F/書房/書桌,2026-12-31,,工作用\n"
+        )
+
+        response = self.client.post(
+            "/import/upload",
+            data={
+                "file": (BytesIO(csv_content.encode("utf-8")), "items.csv"),
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["result"]["success_count"], 1)
+        self.assertEqual(data["result"]["failed_count"], 0)
+
+        inserted_item = mock_insert_item.call_args[0][0]
+        self.assertTrue(inserted_item["ItemID"].startswith("ITEM-"))
+        self.assertEqual(inserted_item["ItemStorePlace"], "1F/書房/書桌")
+        self.assertEqual(inserted_item["ItemFloor"], "1F")
+        self.assertEqual(inserted_item["ItemRoom"], "書房")
+        self.assertEqual(inserted_item["ItemZone"], "書桌")
+        self.assertEqual(inserted_item["ItemOwner"], "admin")
+        mock_create_location.assert_called_once_with({"floor": "1F", "room": "書房", "zone": "書桌"})
+
     @patch("app.services.item_service.get_expiring_items")
     @patch("app.services.item_service.get_low_stock_items")
     @patch("app.services.item_service.get_replacement_items")

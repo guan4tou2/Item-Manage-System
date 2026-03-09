@@ -1,8 +1,10 @@
 """位置服務測試"""
 import unittest
 from bson import ObjectId
+from unittest.mock import Mock, patch
 
 from app.services import location_service
+from app.repositories import location_repo
 
 
 class FakeLocationRepo:
@@ -163,6 +165,27 @@ class LocationServiceTestCase(unittest.TestCase):
         location_service.update_location("invalid_id", {"floor": "2F"})
 
 
+class LocationRepoCacheInvalidationTestCase(unittest.TestCase):
+    def test_mutations_invalidate_locations_cache(self):
+        """測試位置資料異動後會清除快取，讓新選項立即可見"""
+        fake_locations = Mock()
+        fake_locations.insert_one = Mock()
+        fake_locations.delete_one = Mock()
+        fake_locations.update_one = Mock()
+        fake_mongo = Mock()
+        fake_mongo.db.locations = fake_locations
+
+        with patch("app.repositories.location_repo.get_db_type", return_value="mongo"), \
+             patch("app.repositories.location_repo.mongo", fake_mongo), \
+             patch("app.repositories.location_repo.cache") as mock_cache:
+            location_repo.insert_location({"floor": "1F"})
+            location_repo.update_location(ObjectId(), {"room": "書房"})
+            location_repo.delete_location(ObjectId())
+            location_repo.update_order(ObjectId(), 3)
+
+        self.assertEqual(mock_cache.delete.call_count, 4)
+        mock_cache.delete.assert_called_with("locations_list_mongo")
+
+
 if __name__ == "__main__":
     unittest.main()
-

@@ -2,11 +2,14 @@
 import csv
 import io
 import json
+import uuid
 from datetime import datetime
 from typing import List, Dict, Any
 
 from flask import Blueprint, render_template, request, jsonify
 
+from app.repositories import item_repo
+from app.services import location_service
 from app.utils.auth import login_required, get_current_user
 
 from app.utils.logging import get_logger
@@ -265,11 +268,6 @@ def import_items(items: List[Dict[str, Any]]) -> Dict[str, Any]:
             - failed_count: Number of failed items
             - errors: List of error messages
     """
-    from app.repositories import get_item_repository
-    from app.services.item_service import insert_item
-
-    item_repo = get_item_repository()
-
     result = {
         'success_count': 0,
         'failed_count': 0,
@@ -278,26 +276,18 @@ def import_items(items: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     for index, item_data in enumerate(items, start=1):
         try:
-            # Insert item
-            item_id = insert_item(
-                item_name=item_data['ItemName'],
-                item_type=item_data.get('ItemType'),
-                location=item_data.get('Location'),
-                photo_path=item_data.get('PhotoPath'),
-                warranty_expiry=item_data.get('WarrantyExpiry'),
-                usage_expiry=item_data.get('UsageExpiry'),
-                notes=item_data.get('Notes')
-            )
-
-            if item_id:
-                result['success_count'] += 1
+            normalized = _normalize_import_item(item_data, index)
+            existing = item_repo.find_item_by_id(normalized["ItemID"])
+            if existing:
+                item_repo.update_item_by_id(normalized["ItemID"], normalized)
             else:
-                result['failed_count'] += 1
-                result['errors'].append({
-                    'row': index,
-                    'item': item_data['ItemName'],
-                    'error': 'Failed to insert item'
-                })
+                item_repo.insert_item(normalized)
+            _ensure_location_choice(
+                normalized.get("ItemFloor", ""),
+                normalized.get("ItemRoom", ""),
+                normalized.get("ItemZone", ""),
+            )
+            result['success_count'] += 1
 
         except Exception as e:
             result['failed_count'] += 1
@@ -308,3 +298,59 @@ def import_items(items: List[Dict[str, Any]]) -> Dict[str, Any]:
             })
 
     return result
+
+
+def _generate_item_id() -> str:
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    random_part = uuid.uuid4().hex[:6].upper()
+    return f"ITEM-{timestamp[-6:]}-{random_part}"
+
+
+def _split_location(location: str | None) -> tuple[str, str, str, str]:
+    raw_location = (location or "").strip()
+    if not raw_location:
+        return "", "", "", ""
+
+    parts = [part.strip() for part in raw_location.split("/") if part.strip()]
+    floor = parts[0] if len(parts) > 0 else ""
+    room = parts[1] if len(parts) > 1 else ""
+    zone = "/".join(parts[2:]) if len(parts) > 2 else ""
+    return raw_location, floor, room, zone
+
+
+def _normalize_import_item(item_data: Dict[str, Any], index: int) -> Dict[str, Any]:
+    raw_location, floor, room, zone = _split_location(item_data.get("Location"))
+    item_id = str(item_data.get("ItemID", "")).strip() or _generate_item_id()
+
+    return {
+        "ItemID": item_id,
+        "ItemName": item_data["ItemName"].strip(),
+        "ItemType": item_data.get("ItemType") or "",
+        "ItemDesc": item_data.get("Notes") or "",
+        "ItemPic": item_data.get("PhotoPath") or "",
+        "ItemThumb": "",
+        "ItemPics": [],
+        "ItemStorePlace": raw_location,
+        "ItemOwner": (get_current_user() or {}).get("User", ""),
+        "ItemGetDate": datetime.now().strftime("%Y-%m-%d"),
+        "ItemFloor": floor,
+        "ItemRoom": room,
+        "ItemZone": zone,
+        "visibility": "private",
+        "shared_with": [],
+        "Quantity": int(item_data.get("Quantity", 0) or 0),
+        "SafetyStock": int(item_data.get("SafetyStock", 0) or 0),
+        "ReorderLevel": int(item_data.get("ReorderLevel", 0) or 0),
+        "WarrantyExpiry": item_data.get("WarrantyExpiry"),
+        "UsageExpiry": item_data.get("UsageExpiry"),
+        "move_history": [],
+        "favorites": [],
+        "related_items": [],
+        "size_notes": {},
+    }
+
+
+def _ensure_location_choice(floor: str, room: str, zone: str) -> None:
+    if not any([floor, room, zone]):
+        return
+    location_service.create_location({"floor": floor, "room": room, "zone": zone})
