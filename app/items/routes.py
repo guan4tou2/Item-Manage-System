@@ -756,6 +756,7 @@ def statistics():
         count = type_counts.get(type_name, 0)
         if type_name and count > 0:
             type_stats.append({"name": type_name, "count": count})
+    type_stats.sort(key=lambda item: (-item["count"], item["name"]))
 
     floors, rooms, zones = location_service.list_choices()
     floor_stats = []
@@ -764,6 +765,7 @@ def statistics():
         count = floor_counts.get(floor_name, 0)
         if floor_name and count > 0:
             floor_stats.append({"name": floor_name, "count": count})
+    floor_stats.sort(key=lambda item: (-item["count"], item["name"]))
     
     # 到期統計
     expiry_stats = item_service.get_notification_count()

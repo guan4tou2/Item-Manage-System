@@ -26,6 +26,9 @@ def manage_locations():
                 "room": request.form.get("room", "").strip(),
                 "zone": request.form.get("zone", "").strip(),
             }
+            if not any(doc.values()):
+                flash("請至少保留一個欄位，避免空白位置選項", "danger")
+                return redirect(url_for("locations.manage_locations"))
             location_service.update_location(loc_id, doc)
             flash("位置選項已更新", "success")
         else:
@@ -62,4 +65,3 @@ def update_order():
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 400
-

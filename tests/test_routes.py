@@ -327,6 +327,25 @@ class RoutesTestCase(unittest.TestCase):
         self.assertIn("庫存不足", content)
         self.assertIn("衣物/耗材更換提醒", content)
 
+    @patch("app.locations.routes.location_service.list_choices", return_value=([], [], []))
+    @patch("app.locations.routes.location_service.list_locations", return_value=[])
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_update_location_rejects_blank_location(
+        self,
+        _mock_current_user,
+        _mock_list_locations,
+        _mock_list_choices,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.post(
+            "/locations",
+            data={"action": "update", "loc_id": "507f1f77bcf86cd799439011", "floor": "", "room": "", "zone": ""},
+            follow_redirects=False,
+        )
+        self.assertEqual(response.status_code, 302)
+
     @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
     def test_restore_backup_rejects_empty_filename(self, _mock_current_user):
         with self.client.session_transaction() as sess:
@@ -339,6 +358,38 @@ class RoutesTestCase(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["message"], "請選擇備份檔案")
+
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    @patch("app.services.item_service.get_stats", return_value={"total": 3, "with_photo": 1, "with_location": 2, "with_type": 3})
+    @patch("app.services.item_service.get_all_items_for_export")
+    @patch("app.services.type_service.list_types", return_value=[{"name": "工具"}, {"name": "文具"}])
+    @patch("app.services.location_service.list_choices", return_value=(["2F", "1F"], [], []))
+    @patch("app.services.item_service.get_notification_count", return_value={"expired": 0, "near": 0, "total": 0})
+    def test_statistics_page_sorts_top_type_and_floor_by_count(
+        self,
+        _mock_notification_count,
+        _mock_location_choices,
+        _mock_list_types,
+        mock_get_all_items,
+        _mock_stats,
+        _mock_current_user,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_get_all_items.return_value = [
+            {"ItemID": "A1", "ItemType": "文具", "ItemFloor": "1F"},
+            {"ItemID": "A2", "ItemType": "文具", "ItemFloor": "1F"},
+            {"ItemID": "A3", "ItemType": "工具", "ItemFloor": "2F"},
+        ]
+
+        response = self.client.get("/statistics")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("主要樓層", content)
+        self.assertIn("主要類型", content)
+        self.assertIn(">1F<", content)
+        self.assertIn(">文具<", content)
 
 
 if __name__ == "__main__":

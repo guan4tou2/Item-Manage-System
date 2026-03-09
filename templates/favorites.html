@@ -13,7 +13,7 @@
   <div class="stats-summary-strip animate-fadeInUp stagger-1">
     <div class="summary-chip">
       <span class="summary-chip-label">收藏總數</span>
-      <strong>{{ items|length }} 項</strong>
+      <strong><span data-favorite-count>{{ items|length }}</span> 項</strong>
     </div>
     <div class="summary-chip">
       <span class="summary-chip-label">推薦操作</span>
@@ -152,6 +152,17 @@
 
 {%block js%}
 <script>
+function updateFavoriteCount(nextCount) {
+  document.querySelectorAll('[data-favorite-count]').forEach((node) => {
+    node.textContent = nextCount;
+  });
+
+  const badge = document.querySelector('.badge.bg-primary');
+  if (badge) {
+    badge.innerHTML = `<i class="fas fa-star me-1"></i>${nextCount} 個收藏`;
+  }
+}
+
 async function toggleFavorite(itemId, btn) {
   try {
     const response = await fetch(`/api/favorite/${itemId}`, {
@@ -173,14 +184,9 @@ async function toggleFavorite(itemId, btn) {
         card.style.transform = 'scale(0.8)';
         setTimeout(() => {
           card.remove();
-          // 更新計數
-          const countBadge = document.querySelector('.badge.bg-primary');
-          if (countBadge) {
-            const currentCount = parseInt(countBadge.textContent.match(/\d+/)[0]);
-            countBadge.innerHTML = `<i class="fas fa-star me-1"></i>${currentCount - 1} 個收藏`;
-          }
-          // 如果沒有收藏了，顯示空狀態
           const remaining = document.querySelectorAll('.favorite-card').length;
+          updateFavoriteCount(remaining);
+          // 如果沒有收藏了，顯示空狀態
           if (remaining === 0) {
             location.reload();
           }
