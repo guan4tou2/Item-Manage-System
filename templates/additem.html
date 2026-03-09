@@ -111,12 +111,11 @@
                 id="ItemPic"
                 name="ItemPic"
                 accept="image/*"
-                multiple
               />
               <div class="upload-placeholder" id="uploadPlaceholder">
                 <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
                 <p class="mb-1">點擊或拖曳照片到此處上傳</p>
-                <small class="text-muted">支援 JPG, PNG, GIF 格式，最大 16MB，可選擇多張</small>
+                <small class="text-muted">支援 JPG, PNG, GIF 格式，最大 16MB，目前一次上傳 1 張主圖</small>
               </div>
               <div class="upload-preview d-none" id="uploadPreview">
                 <div class="d-flex flex-wrap gap-2 justify-content-center" id="previewContainer"></div>
@@ -205,6 +204,7 @@
               <a href="{{ url_for('locations.manage_locations') }}" target="_blank" rel="noopener">前往位置設定新增</a>
               ，回到此頁即可直接選擇。
             </small>
+            <div class="small text-muted mt-2">選擇樓層、房間、區域後，系統會自動帶入上方「放置地點」。</div>
           </div>
 
           <!-- 庫存設定 -->
@@ -351,21 +351,6 @@
               <label for="UsageExpiry"><i class="fas fa-hourglass-half me-1"></i>使用期限</label>
             </div>
           </div>
-          <div class="col-md-4">
-            <div class="form-floating">
-              <input
-                type="number"
-                class="form-control"
-                id="ItemAge"
-                name="ItemAge"
-                placeholder="使用年限"
-                value="{{ form.ItemAge if form else 1 }}"
-                min="1"
-              />
-              <label for="ItemAge"><i class="fas fa-history me-1"></i>使用年限 (年)</label>
-            </div>
-          </div>
-
           <!-- 描述 -->
           <div class="col-12">
             <div class="form-floating">
@@ -558,16 +543,57 @@
   // 儲存原始選項供級聯選擇使用
   const allRooms = [...document.getElementById('ItemRoom').options].map(o => o.value).filter(v => v);
   const allZones = [...document.getElementById('ItemZone').options].map(o => o.value).filter(v => v);
+  let lastGeneratedPlace = '';
+
+  function syncStorePlaceFromSelectors() {
+    const placeInput = document.getElementById('ItemStorePlace');
+    const generated = [
+      document.getElementById('ItemFloor').value,
+      document.getElementById('ItemRoom').value,
+      document.getElementById('ItemZone').value
+    ].filter(Boolean).join('/');
+
+    if (!generated) {
+      if (placeInput.value === lastGeneratedPlace) {
+        placeInput.value = '';
+      }
+      lastGeneratedPlace = '';
+      return;
+    }
+
+    if (!placeInput.value.trim() || placeInput.value === lastGeneratedPlace) {
+      placeInput.value = generated;
+    }
+    lastGeneratedPlace = generated;
+  }
   
   // 樓層變更時篩選房間
   function onFloorChange() {
     const floor = document.getElementById('ItemFloor').value;
-    if (!floor) return;
+    const roomSelect = document.getElementById('ItemRoom');
+    const zoneSelect = document.getElementById('ItemZone');
+    if (!floor) {
+      roomSelect.innerHTML = '<option value="">選擇...</option>';
+      allRooms.forEach(room => {
+        const option = document.createElement('option');
+        option.value = room;
+        option.textContent = room;
+        roomSelect.appendChild(option);
+      });
+      zoneSelect.innerHTML = '<option value="">選擇...</option>';
+      allZones.forEach(zone => {
+        const option = document.createElement('option');
+        option.value = zone;
+        option.textContent = zone;
+        zoneSelect.appendChild(option);
+      });
+      syncStorePlaceFromSelectors();
+      return;
+    }
     
     fetch(`{{ url_for("items.get_cascade_locations") }}?floor=${encodeURIComponent(floor)}`)
       .then(response => response.json())
       .then(data => {
-        const roomSelect = document.getElementById('ItemRoom');
         const currentRoom = roomSelect.value;
         
         // 保留「選擇...」選項和符合篩選的房間
@@ -591,6 +617,7 @@
             roomSelect.appendChild(option);
           });
         }
+        syncStorePlaceFromSelectors();
       })
       .catch(err => console.log('無法載入房間選項'));
   }
@@ -598,7 +625,18 @@
   // 房間變更時篩選區域
   function onRoomChange() {
     const room = document.getElementById('ItemRoom').value;
-    if (!room) return;
+    if (!room) {
+      const zoneSelect = document.getElementById('ItemZone');
+      zoneSelect.innerHTML = '<option value="">選擇...</option>';
+      allZones.forEach(zone => {
+        const option = document.createElement('option');
+        option.value = zone;
+        option.textContent = zone;
+        zoneSelect.appendChild(option);
+      });
+      syncStorePlaceFromSelectors();
+      return;
+    }
     
     fetch(`{{ url_for("items.get_cascade_locations") }}?room=${encodeURIComponent(room)}`)
       .then(response => response.json())
@@ -625,9 +663,17 @@
             zoneSelect.appendChild(option);
           });
         }
+        syncStorePlaceFromSelectors();
       })
       .catch(err => console.log('無法載入區域選項'));
   }
+
+  document.getElementById('ItemZone').addEventListener('change', syncStorePlaceFromSelectors);
+  document.getElementById('ItemStorePlace').addEventListener('input', function() {
+    if (this.value !== lastGeneratedPlace) {
+      lastGeneratedPlace = '';
+    }
+  });
   
   // ========================================
   // 即時表單驗證
@@ -787,5 +833,7 @@
       validateField(input);
     });
   });
+
+  syncStorePlaceFromSelectors();
 </script>
 {%endblock%}

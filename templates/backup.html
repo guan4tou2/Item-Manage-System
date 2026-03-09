@@ -174,6 +174,16 @@ document.getElementById('restoreForm').addEventListener('submit', async function
     return;
   }
   
+  const selectedFile = fileInput.files[0];
+  if (!selectedFile) {
+    resultDiv.classList.remove('d-none');
+    alertDiv.className = 'alert alert-warning';
+    icon.className = 'fas fa-circle-info mt-1';
+    messageSpan.textContent = '請先選擇要還原的備份檔案';
+    statsList.classList.add('d-none');
+    return;
+  }
+
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>還原中...';
   
@@ -192,7 +202,8 @@ document.getElementById('restoreForm').addEventListener('submit', async function
     if (response.ok && data.success) {
       alertDiv.className = 'alert alert-success';
       icon.className = 'fas fa-check-circle mt-1';
-      messageSpan.textContent = data.message;
+      const modeLabel = data.mode === 'replace' ? '覆蓋模式' : '合併模式';
+      messageSpan.textContent = `${data.message}（${modeLabel}）`;
       if (data.stats) {
         statsList.innerHTML = `
           <li>物品: ${data.stats.items || 0}</li>

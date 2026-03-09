@@ -872,6 +872,8 @@ def restore_backup():
         return jsonify({"success": False, "message": "請選擇備份檔案"}), 400
     
     file = request.files["backup_file"]
+    if not file.filename:
+        return jsonify({"success": False, "message": "請選擇備份檔案"}), 400
     if not file.filename.endswith(".json"):
         return jsonify({"success": False, "message": "只支援 JSON 格式"}), 400
     
@@ -892,7 +894,8 @@ def restore_backup():
         return jsonify({
             "success": True,
             "message": f"還原完成：{stats['items']} 物品、{stats['types']} 類型、{stats['locations']} 位置",
-            "stats": stats
+            "stats": stats,
+            "mode": restore_mode,
         })
         
     except json.JSONDecodeError:

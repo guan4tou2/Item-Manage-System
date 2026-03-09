@@ -226,6 +226,19 @@ class RoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("批量導入物品", response.data.decode("utf-8"))
 
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_import_template_includes_optional_inventory_fields(self, _mock_current_user):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.get("/import/template")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("ItemID", content)
+        self.assertIn("Quantity", content)
+        self.assertIn("SafetyStock", content)
+        self.assertIn("ReorderLevel", content)
+
     @patch("app.routes.import_routes.location_service.create_location")
     @patch("app.routes.import_routes.item_repo.insert_item")
     @patch("app.routes.import_routes.item_repo.find_item_by_id", return_value=None)
@@ -313,6 +326,19 @@ class RoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("庫存不足", content)
         self.assertIn("衣物/耗材更換提醒", content)
+
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_restore_backup_rejects_empty_filename(self, _mock_current_user):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.post(
+            "/api/backup/restore",
+            data={"backup_file": (BytesIO(b""), ""), "mode": "merge"},
+            content_type="multipart/form-data",
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["message"], "請選擇備份檔案")
 
 
 if __name__ == "__main__":

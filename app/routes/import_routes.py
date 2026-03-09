@@ -97,7 +97,8 @@ def template():
     """
     # Define CSV headers
     headers = [
-        'ItemName', 'ItemType', 'Location', 'PhotoPath',
+        'ItemID', 'ItemName', 'ItemType', 'Location', 'PhotoPath',
+        'Quantity', 'SafetyStock', 'ReorderLevel',
         'WarrantyExpiry', 'UsageExpiry', 'Notes'
     ]
 
@@ -108,19 +109,27 @@ def template():
 
     # Add example rows
     writer.writerow({
+        'ItemID': '',
         'ItemName': 'Example Item 1',
         'ItemType': 'Electronics',
         'Location': '1F/RoomA/Shelf1',
         'PhotoPath': '',
+        'Quantity': 1,
+        'SafetyStock': 1,
+        'ReorderLevel': 1,
         'WarrantyExpiry': '2025-12-31',
         'UsageExpiry': '2026-06-30',
         'Notes': 'Example notes'
     })
     writer.writerow({
+        'ItemID': 'ITEM-123456-ABCDEF',
         'ItemName': 'Example Item 2',
         'ItemType': 'Office Supplies',
         'Location': '2F/RoomB/Drawer1',
         'PhotoPath': '',
+        'Quantity': 6,
+        'SafetyStock': 2,
+        'ReorderLevel': 1,
         'WarrantyExpiry': '',
         'UsageExpiry': '2025-08-15',
         'Notes': ''

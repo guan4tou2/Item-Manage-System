@@ -106,6 +106,11 @@
               </thead>
               <tbody>
                 <tr>
+                  <td><code>ItemID</code></td>
+                  <td class="text-center">-</td>
+                  <td>ITEM-123456-ABCDEF</td>
+                </tr>
+                <tr>
                   <td><code>ItemName</code></td>
                   <td class="text-center"><i class="fas fa-check text-success"></i></td>
                   <td>筆記型電腦</td>
@@ -119,6 +124,21 @@
                   <td><code>Location</code></td>
                   <td class="text-center">-</td>
                   <td>1F/RoomA/Shelf1</td>
+                </tr>
+                <tr>
+                  <td><code>Quantity</code></td>
+                  <td class="text-center">-</td>
+                  <td>3</td>
+                </tr>
+                <tr>
+                  <td><code>SafetyStock</code></td>
+                  <td class="text-center">-</td>
+                  <td>1</td>
+                </tr>
+                <tr>
+                  <td><code>ReorderLevel</code></td>
+                  <td class="text-center">-</td>
+                  <td>1</td>
                 </tr>
                 <tr>
                   <td><code>WarrantyExpiry</code></td>
@@ -142,7 +162,9 @@
           <div class="mt-3">
             <h6>格式提醒</h6>
             <ul class="small text-muted mb-0">
+              <li>`ItemID` 可留白，系統會自動產生。</li>
               <li>日期格式建議使用 `YYYY-MM-DD`。</li>
+              <li>`Quantity / SafetyStock / ReorderLevel` 可一起匯入，建立後就能直接用補貨功能。</li>
               <li>若類型或位置尚未整理完成，可先匯入名稱與備註。</li>
               <li>發生錯誤時系統會列出失敗列，方便回頭修正原檔。</li>
             </ul>

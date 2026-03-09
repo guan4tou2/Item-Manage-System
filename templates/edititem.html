@@ -210,6 +210,7 @@
               <a href="{{ url_for('locations.manage_locations') }}" target="_blank" rel="noopener">前往位置設定新增</a>
               ，回到此頁即可直接選擇。
             </small>
+            <div class="small text-muted mt-2">調整樓層、房間、區域時，系統會同步更新上方「放置地點」。</div>
           </div>
 
           <!-- 庫存設定 -->
@@ -474,15 +475,56 @@
   // 儲存原始選項供級聯選擇使用
   const allRooms = [...document.getElementById('ItemRoom').options].map(o => o.value).filter(v => v);
   const allZones = [...document.getElementById('ItemZone').options].map(o => o.value).filter(v => v);
+  let lastGeneratedPlace = document.getElementById('ItemStorePlace').value.trim();
+
+  function syncStorePlaceFromSelectors() {
+    const placeInput = document.getElementById('ItemStorePlace');
+    const generated = [
+      document.getElementById('ItemFloor').value,
+      document.getElementById('ItemRoom').value,
+      document.getElementById('ItemZone').value
+    ].filter(Boolean).join('/');
+
+    if (!generated) {
+      if (placeInput.value === lastGeneratedPlace) {
+        placeInput.value = '';
+      }
+      lastGeneratedPlace = '';
+      return;
+    }
+
+    if (!placeInput.value.trim() || placeInput.value === lastGeneratedPlace) {
+      placeInput.value = generated;
+    }
+    lastGeneratedPlace = generated;
+  }
 
   function onFloorChange() {
     const floor = document.getElementById('ItemFloor').value;
-    if (!floor) return;
+    const roomSelect = document.getElementById('ItemRoom');
+    const zoneSelect = document.getElementById('ItemZone');
+    if (!floor) {
+      roomSelect.innerHTML = '<option value="">選擇...</option>';
+      allRooms.forEach(room => {
+        const option = document.createElement('option');
+        option.value = room;
+        option.textContent = room;
+        roomSelect.appendChild(option);
+      });
+      zoneSelect.innerHTML = '<option value="">選擇...</option>';
+      allZones.forEach(zone => {
+        const option = document.createElement('option');
+        option.value = zone;
+        option.textContent = zone;
+        zoneSelect.appendChild(option);
+      });
+      syncStorePlaceFromSelectors();
+      return;
+    }
 
     fetch(`{{ url_for("items.get_cascade_locations") }}?floor=${encodeURIComponent(floor)}`)
       .then(response => response.json())
       .then(data => {
-        const roomSelect = document.getElementById('ItemRoom');
         const currentRoom = roomSelect.value;
         roomSelect.innerHTML = '<option value="">選擇...</option>';
 
@@ -494,13 +536,25 @@
           if (room === currentRoom) option.selected = true;
           roomSelect.appendChild(option);
         });
+        syncStorePlaceFromSelectors();
       })
       .catch(() => console.log('無法載入房間選項'));
   }
 
   function onRoomChange() {
     const room = document.getElementById('ItemRoom').value;
-    if (!room) return;
+    if (!room) {
+      const zoneSelect = document.getElementById('ItemZone');
+      zoneSelect.innerHTML = '<option value="">選擇...</option>';
+      allZones.forEach(zone => {
+        const option = document.createElement('option');
+        option.value = zone;
+        option.textContent = zone;
+        zoneSelect.appendChild(option);
+      });
+      syncStorePlaceFromSelectors();
+      return;
+    }
 
     fetch(`{{ url_for("items.get_cascade_locations") }}?room=${encodeURIComponent(room)}`)
       .then(response => response.json())
@@ -517,6 +571,7 @@
           if (zone === currentZone) option.selected = true;
           zoneSelect.appendChild(option);
         });
+        syncStorePlaceFromSelectors();
       })
       .catch(() => console.log('無法載入區域選項'));
   }
@@ -536,6 +591,14 @@
         input.focus();
       });
     });
+
+    document.getElementById('ItemZone').addEventListener('change', syncStorePlaceFromSelectors);
+    document.getElementById('ItemStorePlace').addEventListener('input', function() {
+      if (this.value !== lastGeneratedPlace) {
+        lastGeneratedPlace = '';
+      }
+    });
+    syncStorePlaceFromSelectors();
   });
 
   document.getElementById('editItemForm').addEventListener('submit', function(e) {
