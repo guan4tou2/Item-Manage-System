@@ -150,7 +150,7 @@ jobs:
       
       - name: Test Docker image
         run: |
-          docker run --rm item-manage-system:test python -c "import app; print('Import successful')"
+          docker run --rm --entrypoint python item-manage-system:test -c "import app; print('Import successful')"
       
       - name: Run Docker Compose test
         run: |
