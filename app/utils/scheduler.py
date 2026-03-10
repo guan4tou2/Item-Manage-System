@@ -11,23 +11,22 @@ scheduler = None
 
 def init_scheduler():
     """初始化定時任務調度器"""
-    global scheduler
-    
     if scheduler is not None and scheduler.running:
         return
-    
-    scheduler = BackgroundScheduler()
+
+    current_scheduler = BackgroundScheduler()
     
     # 每小時檢查一次（可以根據需要調整）
-    scheduler.add_job(
+    current_scheduler.add_job(
         func=check_notifications_job,
         trigger=CronTrigger(minute="0"),
         id="check_notifications",
         name="檢查並發送到期通知",
         replace_existing=True,
     )
-    
-    scheduler.start()
+
+    current_scheduler.start()
+    globals()["scheduler"] = current_scheduler
     print(f"✅ 通知調度器已啟動 - {datetime.now()}")
 
 
