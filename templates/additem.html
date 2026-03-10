@@ -111,11 +111,20 @@
                 id="ItemPic"
                 name="ItemPic"
                 accept="image/*"
+                capture="environment"
               />
               <div class="upload-placeholder" id="uploadPlaceholder">
                 <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
                 <p class="mb-1">點擊或拖曳照片到此處上傳</p>
                 <small class="text-muted">支援 JPG, PNG, GIF 格式，最大 16MB，目前一次上傳 1 張主圖</small>
+                <div class="photo-action-row">
+                  <button type="button" class="btn btn-primary btn-sm" id="cameraCaptureBtn">
+                    <i class="fas fa-camera me-1"></i>直接拍照
+                  </button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" id="filePickerBtn">
+                    <i class="fas fa-image me-1"></i>選擇照片
+                  </button>
+                </div>
               </div>
               <div class="upload-preview d-none" id="uploadPreview">
                 <div class="d-flex flex-wrap gap-2 justify-content-center" id="previewContainer"></div>
@@ -123,6 +132,9 @@
                   <i class="fas fa-times me-1"></i>移除所有照片
                 </button>
               </div>
+            </div>
+            <div class="small text-muted mt-2">
+              手機可直接啟用後鏡頭拍照；桌機可使用瀏覽器相機預覽拍攝。
             </div>
           </div>
 
@@ -388,6 +400,43 @@
   </div>
 </div>
 
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cameraModalLabel">
+          <i class="fas fa-camera me-2"></i>拍攝物品照片
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        <div id="cameraUnsupported" class="alert alert-warning d-none mb-3">
+          目前瀏覽器無法直接開啟相機，系統將改用檔案選擇器。
+        </div>
+        <div class="camera-stage">
+          <video id="cameraPreview" class="camera-preview d-none" autoplay playsinline muted></video>
+          <canvas id="cameraCanvas" class="d-none"></canvas>
+          <div id="cameraEmptyState" class="camera-empty-state">
+            <i class="fas fa-video-slash fa-2x text-muted mb-3"></i>
+            <div>按下「啟用相機」後即可預覽並拍照</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between flex-wrap gap-2">
+        <div class="small text-muted">拍照完成後會自動帶回目前的物品照片欄位。</div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-secondary" id="startCameraBtn">
+            <i class="fas fa-video me-1"></i>啟用相機
+          </button>
+          <button type="button" class="btn btn-primary" id="takePhotoBtn" disabled>
+            <i class="fas fa-camera-retro me-1"></i>拍照
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <style>
 .upload-area {
   border: 2px dashed var(--gray-300);
@@ -407,6 +456,15 @@
 
 .upload-placeholder {
   pointer-events: none;
+}
+
+.photo-action-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  pointer-events: auto;
 }
 
 .upload-preview {
@@ -433,6 +491,30 @@
   font-size: 0.85rem;
   margin-bottom: 0.2rem;
 }
+
+.camera-stage {
+  min-height: 280px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.camera-preview {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: cover;
+  background: #111827;
+}
+
+.camera-empty-state {
+  text-align: center;
+  color: var(--gray-600);
+  padding: 2rem 1rem;
+}
 </style>
 {%endblock%}
 
@@ -454,6 +536,17 @@
   const uploadPlaceholder = document.getElementById('uploadPlaceholder');
   const uploadPreview = document.getElementById('uploadPreview');
   const previewContainer = document.getElementById('previewContainer');
+  const filePickerBtn = document.getElementById('filePickerBtn');
+  const cameraCaptureBtn = document.getElementById('cameraCaptureBtn');
+  const cameraModalEl = document.getElementById('cameraModal');
+  const cameraModal = new bootstrap.Modal(cameraModalEl);
+  const cameraPreview = document.getElementById('cameraPreview');
+  const cameraCanvas = document.getElementById('cameraCanvas');
+  const cameraEmptyState = document.getElementById('cameraEmptyState');
+  const cameraUnsupported = document.getElementById('cameraUnsupported');
+  const startCameraBtn = document.getElementById('startCameraBtn');
+  const takePhotoBtn = document.getElementById('takePhotoBtn');
+  let cameraStream = null;
 
   // 點擊上傳區域觸發檔案選擇
   uploadArea.addEventListener('click', (e) => {
@@ -494,6 +587,81 @@
       showPreview(files);
     }
   });
+
+  filePickerBtn.addEventListener('click', () => fileInput.click());
+
+  cameraCaptureBtn.addEventListener('click', async () => {
+    const supportsCamera = Boolean(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+    if (!supportsCamera) {
+      fileInput.click();
+      return;
+    }
+    cameraUnsupported.classList.add('d-none');
+    takePhotoBtn.disabled = true;
+    cameraPreview.classList.add('d-none');
+    cameraEmptyState.classList.remove('d-none');
+    cameraModal.show();
+  });
+
+  async function startCamera() {
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+      cameraUnsupported.classList.remove('d-none');
+      fileInput.click();
+      cameraModal.hide();
+      return;
+    }
+
+    stopCamera();
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      });
+      cameraPreview.srcObject = cameraStream;
+      cameraPreview.classList.remove('d-none');
+      cameraEmptyState.classList.add('d-none');
+      takePhotoBtn.disabled = false;
+    } catch (error) {
+      console.error('無法啟用相機:', error);
+      cameraUnsupported.classList.remove('d-none');
+      fileInput.click();
+      cameraModal.hide();
+    }
+  }
+
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+    }
+    cameraPreview.srcObject = null;
+    takePhotoBtn.disabled = true;
+  }
+
+  function useCapturedPhoto() {
+    if (!cameraPreview.videoWidth || !cameraPreview.videoHeight) {
+      return;
+    }
+
+    cameraCanvas.width = cameraPreview.videoWidth;
+    cameraCanvas.height = cameraPreview.videoHeight;
+    const context = cameraCanvas.getContext('2d');
+    context.drawImage(cameraPreview, 0, 0, cameraCanvas.width, cameraCanvas.height);
+
+    cameraCanvas.toBlob((blob) => {
+      if (!blob) return;
+      const capturedFile = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const dt = new DataTransfer();
+      dt.items.add(capturedFile);
+      fileInput.files = dt.files;
+      showPreview([capturedFile]);
+      cameraModal.hide();
+    }, 'image/jpeg', 0.92);
+  }
+
+  startCameraBtn.addEventListener('click', startCamera);
+  takePhotoBtn.addEventListener('click', useCapturedPhoto);
+  cameraModalEl.addEventListener('hidden.bs.modal', stopCamera);
 
   // 顯示預覽 (多圖)
   function showPreview(files) {

@@ -129,17 +129,39 @@
                 {%endif%}
               </div>
               <div class="col-md-8">
-                <label for="ItemPic" class="form-label">
+                <label class="form-label">
                   <i class="fas fa-upload me-1"></i>{%if item.ItemPic%}更換照片{%else%}上傳照片{%endif%}
                 </label>
-                <input
-                  class="form-control"
-                  type="file"
-                  id="ItemPic"
-                  name="ItemPic"
-                  accept="image/*"
-                />
-                <small class="text-muted">{%if item.ItemPic%}留空則保留原有照片{%else%}選擇一張物品照片{%endif%}</small>
+                <div class="upload-area" id="uploadArea">
+                  <input
+                    class="form-control d-none"
+                    type="file"
+                    id="ItemPic"
+                    name="ItemPic"
+                    accept="image/*"
+                    capture="environment"
+                  />
+                  <div class="upload-placeholder" id="uploadPlaceholder">
+                    <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-3"></i>
+                    <p class="mb-1">{%if item.ItemPic%}點擊、拍照或拖曳新照片來覆蓋目前主圖{%else%}點擊、拍照或拖曳照片到此處上傳{%endif%}</p>
+                    <small class="text-muted">{%if item.ItemPic%}留空則保留原有照片{%else%}支援 JPG, PNG, GIF 格式，最大 16MB{%endif%}</small>
+                    <div class="photo-action-row">
+                      <button type="button" class="btn btn-primary btn-sm" id="cameraCaptureBtn">
+                        <i class="fas fa-camera me-1"></i>直接拍照
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary btn-sm" id="filePickerBtn">
+                        <i class="fas fa-image me-1"></i>選擇照片
+                      </button>
+                    </div>
+                  </div>
+                  <div class="upload-preview d-none" id="uploadPreview">
+                    <div class="d-flex flex-wrap gap-2 justify-content-center" id="previewContainer"></div>
+                    <button type="button" class="btn btn-sm btn-danger mt-3" onclick="clearUpload()">
+                      <i class="fas fa-times me-1"></i>取消更換
+                    </button>
+                  </div>
+                </div>
+                <small class="text-muted d-block mt-2">手機可直接啟用後鏡頭拍照；桌機可使用瀏覽器相機預覽拍攝。</small>
               </div>
             </div>
           </div>
@@ -419,6 +441,41 @@
 </div>
 
 <style>
+.upload-area {
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  background: var(--gray-50);
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+  border-color: var(--primary);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.upload-placeholder {
+  pointer-events: none;
+}
+
+.photo-action-row {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  pointer-events: auto;
+}
+
+.upload-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .form-progress-summary {
   display: grid;
   gap: 0.75rem;
@@ -436,6 +493,30 @@
   color: var(--gray-600);
   font-size: 0.85rem;
   margin-bottom: 0.2rem;
+}
+
+.camera-stage {
+  min-height: 280px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.camera-preview {
+  width: 100%;
+  max-height: 60vh;
+  object-fit: cover;
+  background: #111827;
+}
+
+.camera-empty-state {
+  text-align: center;
+  color: var(--gray-600);
+  padding: 2rem 1rem;
 }
 </style>
 
@@ -468,10 +549,200 @@
     </div>
   </div>
 </div>
+
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="cameraModalLabel">
+          <i class="fas fa-camera me-2"></i>拍攝物品照片
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        <div id="cameraUnsupported" class="alert alert-warning d-none mb-3">
+          目前瀏覽器無法直接開啟相機，系統將改用檔案選擇器。
+        </div>
+        <div class="camera-stage">
+          <video id="cameraPreview" class="camera-preview d-none" autoplay playsinline muted></video>
+          <canvas id="cameraCanvas" class="d-none"></canvas>
+          <div id="cameraEmptyState" class="camera-empty-state">
+            <i class="fas fa-video-slash fa-2x text-muted mb-3"></i>
+            <div>按下「啟用相機」後即可預覽並拍照</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer justify-content-between flex-wrap gap-2">
+        <div class="small text-muted">拍照完成後會直接作為新的物品照片。</div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-secondary" id="startCameraBtn">
+            <i class="fas fa-video me-1"></i>啟用相機
+          </button>
+          <button type="button" class="btn btn-primary" id="takePhotoBtn" disabled>
+            <i class="fas fa-camera-retro me-1"></i>拍照
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {%endblock%}
 
 {%block js%}
 <script>
+  const uploadArea = document.getElementById('uploadArea');
+  const fileInput = document.getElementById('ItemPic');
+  const uploadPlaceholder = document.getElementById('uploadPlaceholder');
+  const uploadPreview = document.getElementById('uploadPreview');
+  const previewContainer = document.getElementById('previewContainer');
+  const filePickerBtn = document.getElementById('filePickerBtn');
+  const cameraCaptureBtn = document.getElementById('cameraCaptureBtn');
+  const cameraModalEl = document.getElementById('cameraModal');
+  const cameraModal = new bootstrap.Modal(cameraModalEl);
+  const cameraPreview = document.getElementById('cameraPreview');
+  const cameraCanvas = document.getElementById('cameraCanvas');
+  const cameraEmptyState = document.getElementById('cameraEmptyState');
+  const cameraUnsupported = document.getElementById('cameraUnsupported');
+  const startCameraBtn = document.getElementById('startCameraBtn');
+  const takePhotoBtn = document.getElementById('takePhotoBtn');
+  let cameraStream = null;
+
+  uploadArea.addEventListener('click', (e) => {
+    if (e.target === uploadArea || e.target.closest('.upload-placeholder')) {
+      fileInput.click();
+    }
+  });
+
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+
+  uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    if (files.length > 0) {
+      const dt = new DataTransfer();
+      dt.items.add(files[0]);
+      fileInput.files = dt.files;
+      showPreview([files[0]]);
+    }
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      showPreview([files[0]]);
+    }
+  });
+
+  filePickerBtn.addEventListener('click', () => fileInput.click());
+
+  cameraCaptureBtn.addEventListener('click', () => {
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+      fileInput.click();
+      return;
+    }
+    cameraUnsupported.classList.add('d-none');
+    takePhotoBtn.disabled = true;
+    cameraPreview.classList.add('d-none');
+    cameraEmptyState.classList.remove('d-none');
+    cameraModal.show();
+  });
+
+  async function startCamera() {
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+      cameraUnsupported.classList.remove('d-none');
+      fileInput.click();
+      cameraModal.hide();
+      return;
+    }
+
+    stopCamera();
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      });
+      cameraPreview.srcObject = cameraStream;
+      cameraPreview.classList.remove('d-none');
+      cameraEmptyState.classList.add('d-none');
+      takePhotoBtn.disabled = false;
+    } catch (error) {
+      console.error('無法啟用相機:', error);
+      cameraUnsupported.classList.remove('d-none');
+      fileInput.click();
+      cameraModal.hide();
+    }
+  }
+
+  function stopCamera() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+    }
+    cameraPreview.srcObject = null;
+    takePhotoBtn.disabled = true;
+  }
+
+  function showPreview(files) {
+    previewContainer.innerHTML = '';
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'preview-item position-relative';
+        wrapper.innerHTML = `
+          <img src="${e.target.result}" alt="預覽 ${index + 1}"
+               class="img-fluid rounded shadow-sm"
+               style="max-height: 180px; max-width: 180px; object-fit: cover;">
+          <span class="badge bg-primary position-absolute top-0 start-0 m-1">新主圖</span>
+        `;
+        previewContainer.appendChild(wrapper);
+      };
+      reader.readAsDataURL(file);
+    });
+    uploadPlaceholder.classList.add('d-none');
+    uploadPreview.classList.remove('d-none');
+  }
+
+  function clearUpload() {
+    fileInput.value = '';
+    previewContainer.innerHTML = '';
+    uploadPreview.classList.add('d-none');
+    uploadPlaceholder.classList.remove('d-none');
+  }
+
+  function useCapturedPhoto() {
+    if (!cameraPreview.videoWidth || !cameraPreview.videoHeight) {
+      return;
+    }
+
+    cameraCanvas.width = cameraPreview.videoWidth;
+    cameraCanvas.height = cameraPreview.videoHeight;
+    const context = cameraCanvas.getContext('2d');
+    context.drawImage(cameraPreview, 0, 0, cameraCanvas.width, cameraCanvas.height);
+
+    cameraCanvas.toBlob((blob) => {
+      if (!blob) return;
+      const capturedFile = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const dt = new DataTransfer();
+      dt.items.add(capturedFile);
+      fileInput.files = dt.files;
+      showPreview([capturedFile]);
+      cameraModal.hide();
+    }, 'image/jpeg', 0.92);
+  }
+
+  startCameraBtn.addEventListener('click', startCamera);
+  takePhotoBtn.addEventListener('click', useCapturedPhoto);
+  cameraModalEl.addEventListener('hidden.bs.modal', stopCamera);
+
   // 儲存原始選項供級聯選擇使用
   const allRooms = [...document.getElementById('ItemRoom').options].map(o => o.value).filter(v => v);
   const allZones = [...document.getElementById('ItemZone').options].map(o => o.value).filter(v => v);

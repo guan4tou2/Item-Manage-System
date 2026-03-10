@@ -242,6 +242,63 @@ class RoutesTestCase(unittest.TestCase):
             # 應該被拒絕或重定向
             self.assertIn(response.status_code, [302, 403])
 
+    @patch("app.services.type_service.list_types", return_value=[])
+    @patch("app.services.location_service.list_choices", return_value=([], [], []))
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_additem_page_contains_camera_capture_entry(
+        self,
+        _mock_current_user,
+        _mock_location_choices,
+        _mock_types,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.get("/additem")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('capture="environment"', content)
+        self.assertIn("直接拍照", content)
+        self.assertIn("cameraModal", content)
+
+    @patch("app.services.type_service.list_types", return_value=[])
+    @patch("app.services.location_service.list_choices", return_value=([], [], []))
+    @patch("app.services.item_service.get_item")
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_edititem_page_contains_camera_capture_entry(
+        self,
+        _mock_current_user,
+        mock_get_item,
+        _mock_location_choices,
+        _mock_types,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_get_item.return_value = {
+            "ItemID": "DEMO-001",
+            "ItemName": "測試物品",
+            "ItemStorePlace": "書房/書桌",
+            "ItemFloor": "",
+            "ItemRoom": "",
+            "ItemZone": "",
+            "ItemType": "",
+            "ItemOwner": "admin",
+            "visibility": "private",
+            "ItemGetDate": "2026-03-10",
+            "WarrantyExpiry": "",
+            "UsageExpiry": "",
+            "ItemDesc": "",
+            "ItemPic": "",
+        }
+
+        response = self.client.get("/edititem/DEMO-001")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('capture="environment"', content)
+        self.assertIn("直接拍照", content)
+        self.assertIn("cameraModal", content)
+
     def test_search_requires_login(self):
         """測試搜尋頁面需要登入"""
         response = self.client.get("/search", follow_redirects=False)
