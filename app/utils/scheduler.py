@@ -32,8 +32,6 @@ def init_scheduler():
 
 def shutdown_scheduler():
     """關閉定時任務調度器"""
-    global scheduler
-    
     if scheduler and scheduler.running:
         scheduler.shutdown()
         print("✅ 通知調度器已關閉")
