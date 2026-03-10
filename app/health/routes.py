@@ -1,5 +1,5 @@
 """Health check endpoints for monitoring and Kubernetes readiness"""
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, current_app
 from sqlalchemy import text
 from datetime import datetime
 
@@ -76,7 +76,7 @@ def readiness_check():
     - 503 Service Unavailable if not ready
     """
     db_type = get_db_type()
-    checks = {
+    result = {
         "ready": False,
         "timestamp": datetime.now().isoformat(),
         "checks": {}
@@ -85,25 +85,25 @@ def readiness_check():
     # Database readiness check
     try:
         if db_type == "postgres":
-            result = db.session.execute(text("SELECT 1")).scalar()
-            if result == 1:
-                checks["database"] = "pass"
+            db_result = db.session.execute(text("SELECT 1")).scalar()
+            if db_result == 1:
+                result["checks"]["database"] = "pass"
             else:
-                checks["database"] = "fail"
+                result["checks"]["database"] = "fail"
         else:
             from app import mongo
             mongo.db.client.admin.command("ping")
-            checks["database"] = "pass"
+            result["checks"]["database"] = "pass"
     except Exception as e:
-        checks["database"] = f"error: {str(e)}"
+        result["checks"]["database"] = f"error: {str(e)}"
 
     # Cache readiness check
     try:
         cache.set("ready_check", "ok", timeout=5)
         cache.get("ready_check")
-        checks["cache"] = "pass"
+        result["checks"]["cache"] = "pass"
     except Exception as e:
-        checks["cache"] = f"error: {str(e)}"
+        result["checks"]["cache"] = f"error: {str(e)}"
 
     # Check if migrations are applied (optional, can be enhanced)
     try:
@@ -112,39 +112,38 @@ def readiness_check():
             from alembic.script import ScriptDirectory
 
             config = alembic_cfg.Config()
-            config.set_main_option("sqlalchemy.url", app.config.get("SQLALCHEMY_DATABASE_URI"))
+            config.set_main_option("sqlalchemy.url", current_app.config.get("SQLALCHEMY_DATABASE_URI", ""))
             script = ScriptDirectory.from_config(config)
 
             # Check if alembic_version table exists and has a head
             try:
-                from app import db
                 engine = db.engine
                 from sqlalchemy import inspect
 
                 inspector = inspect(engine)
                 has_alembic = inspector.has_table("alembic_version")
-                checks["migrations"] = "pass" if has_alembic else "skip"
+                result["checks"]["migrations"] = "pass" if has_alembic else "skip"
             except Exception:
-                checks["migrations"] = "skip"
+                result["checks"]["migrations"] = "skip"
         else:
-            checks["migrations"] = "skip"
+            result["checks"]["migrations"] = "skip"
     except Exception as e:
-        checks["migrations"] = f"error: {str(e)}"
+        result["checks"]["migrations"] = "skip"
 
     # Determine overall readiness
     all_pass = all(
         check_status in ["pass", "skip"]
-        for check_status in checks["checks"].values()
+        for check_status in result["checks"].values()
     )
 
     if all_pass:
-        checks["ready"] = True
+        result["ready"] = True
         status_code = 200
     else:
-        checks["ready"] = False
+        result["ready"] = False
         status_code = 503
 
-    return jsonify(checks), status_code
+    return jsonify(result), status_code
 
 
 @bp.route("/metrics", methods=["GET"])

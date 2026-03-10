@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
@@ -191,58 +191,3 @@ jobs:
           name: bandit-security-report
           path: bandit-report.json
           retention-days: 30
-
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [lint, test, docker, security]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment:
-      name: staging
-      url: https://staging.example.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Deploy to staging
-        run: |
-          echo "🚀 Deploying to staging environment..."
-          # Add your deployment script here
-          # Example: kubectl apply -f k8s/staging/
-          # Example: ssh user@staging-server 'cd /app && git pull && docker-compose up -d'
-      
-      - name: Run smoke tests
-        run: |
-          echo "🧪 Running smoke tests..."
-          # Add smoke tests here
-          # Example: curl https://staging.example.com/health
-
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [lint, test, docker, security]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment:
-      name: production
-      url: https://app.example.com
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Deploy to production
-        run: |
-          echo "🚀 Deploying to production environment..."
-          # Add your deployment script here
-          # Recommended: Use blue-green or canary deployment
-      
-      - name: Run smoke tests
-        run: |
-          echo "🧪 Running production smoke tests..."
-          # Add production smoke tests here
-      
-      - name: Notify team
-        run: |
-          echo "📢 Notifying team about deployment..."
-          # Add notification logic (Slack, Discord, Email, etc.)
