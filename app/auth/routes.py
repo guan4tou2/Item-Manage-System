@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 
+from app import limiter
 from app.services import user_service
 
 bp = Blueprint("auth", __name__)
@@ -7,6 +8,7 @@ bp = Blueprint("auth", __name__)
 
 @bp.route("/", methods=["GET", "POST"])
 @bp.route("/signin", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def signin():
     if request.method == "POST":
         username = request.form.get("UserID", "").strip()
@@ -40,6 +42,7 @@ def signin():
 
 
 @bp.route("/signup", methods=["GET", "POST"])
+@limiter.limit("5 per hour", methods=["POST"])
 def signup():
     """用戶註冊"""
     if request.method == "POST":
