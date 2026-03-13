@@ -508,7 +508,14 @@ class RoutesTestCase(unittest.TestCase):
             "total_alerts": 1,
         }
         mock_get_replacement_items.return_value = {
-            "due": [{"ItemID": "B1", "ItemName": "襪子", "ItemType": "衣物", "rule_name": "襪子", "days_since": 200}],
+            "due": [{
+                "ItemID": "B1",
+                "ItemName": "襪子",
+                "ItemType": "衣物",
+                "replacement_rule_name": "襪子",
+                "replacement_due_date": "2026-03-01",
+                "days_overdue": 3,
+            }],
             "upcoming": [],
             "total_alerts": 1,
             "enabled": True,
@@ -519,6 +526,7 @@ class RoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("庫存不足", content)
         self.assertIn("保養 / 更換提醒", content)
+        self.assertIn("下次保養日", content)
 
     @patch("app.locations.routes.location_service.list_choices", return_value=([], [], []))
     @patch("app.locations.routes.location_service.list_locations", return_value=[])

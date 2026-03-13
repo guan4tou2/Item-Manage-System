@@ -34,6 +34,18 @@
         <strong>{{ replacement_due|length + replacement_upcoming|length }} 項</strong>
       </div>
       <div class="summary-chip">
+        <span class="summary-chip-label">最近保養日</span>
+        <strong>
+          {% if replacement_due %}
+            {{ replacement_due[0].replacement_due_date }}
+          {% elif replacement_upcoming %}
+            {{ replacement_upcoming[0].replacement_due_date }}
+          {% else %}
+            暫無資料
+          {% endif %}
+        </strong>
+      </div>
+      <div class="summary-chip">
         <span class="summary-chip-label">庫存警示</span>
         <strong>{{ low_count }} 項</strong>
       </div>
@@ -266,6 +278,7 @@
               <tr>
                 <th>物品名稱</th>
                 <th>規則</th>
+                <th>下次保養日</th>
                 <th>天數</th>
                 <th>類型</th>
                 <th class="text-center">狀態</th>
@@ -275,8 +288,9 @@
               {% for item in replacement_due %}
               <tr class="align-middle">
                 <td><strong>{{ item.ItemName }}</strong><br><small class="text-muted">{{ item.ItemType }}</small></td>
-                <td>{{ item.rule_name }}</td>
-                <td>已 {{ item.days_since }} 天</td>
+                <td>{{ item.replacement_rule_name }}</td>
+                <td>{{ item.replacement_due_date }}</td>
+                <td>逾期 {{ item.days_overdue }} 天</td>
                 <td>{{ item.ItemType }}</td>
                 <td class="text-center"><span class="badge bg-danger">需保養 / 更換</span></td>
               </tr>
@@ -284,8 +298,9 @@
               {% for item in replacement_upcoming %}
               <tr class="align-middle">
                 <td><strong>{{ item.ItemName }}</strong><br><small class="text-muted">{{ item.ItemType }}</small></td>
-                <td>{{ item.rule_name }}</td>
-                <td>剩餘 {{ item.days_remaining }} 天</td>
+                <td>{{ item.replacement_rule_name }}</td>
+                <td>{{ item.replacement_due_date }}</td>
+                <td>剩餘 {{ item.days_left }} 天</td>
                 <td>{{ item.ItemType }}</td>
                 <td class="text-center"><span class="badge bg-warning text-dark">即將保養 / 更換</span></td>
               </tr>
