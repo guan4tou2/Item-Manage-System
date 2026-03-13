@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 from flask import Flask
+from sqlalchemy import inspect, text
 from flask_pymongo import PyMongo
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -57,6 +58,35 @@ def _ensure_default_admin() -> None:
             db.session.add(admin)
             db.session.commit()
             print("✅ 已建立預設管理員帳號: admin / admin (首次登入請修改密碼)")
+
+
+def _ensure_item_maintenance_columns() -> None:
+    """補齊 items 表缺少的保養欄位，避免舊資料庫在重構後直接失敗。"""
+    if get_db_type() != "postgres":
+        return
+
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        # 測試環境會 monkeypatch db.init_app/create_all，此時不需要真的補欄位。
+        return
+    if not inspector.has_table("items"):
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("items")}
+    alter_statements = []
+    if "MaintenanceCategory" not in existing_columns:
+        alter_statements.append('ALTER TABLE items ADD COLUMN "MaintenanceCategory" VARCHAR(50) DEFAULT \'\';')
+    if "MaintenanceIntervalDays" not in existing_columns:
+        alter_statements.append('ALTER TABLE items ADD COLUMN "MaintenanceIntervalDays" INTEGER;')
+    if "LastMaintenanceDate" not in existing_columns:
+        alter_statements.append('ALTER TABLE items ADD COLUMN "LastMaintenanceDate" DATE;')
+
+    for statement in alter_statements:
+        db.session.execute(text(statement))
+
+    if alter_statements:
+        db.session.commit()
     else:
         existing_admin = mongo.db.user.find_one({"User": "admin"})
         if not existing_admin:
@@ -120,6 +150,7 @@ def create_app() -> Flask:
         db.init_app(app)
         with app.app_context():
             db.create_all()
+            _ensure_item_maintenance_columns()
     else:
         mongo.init_app(app)
     

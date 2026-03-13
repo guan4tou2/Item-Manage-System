@@ -115,6 +115,27 @@ class ReplacementReminderTestCase(unittest.TestCase):
         self.assertIn("F1", due_ids)
         self.assertIn("W1", upcoming_ids)
 
+    def test_manual_maintenance_settings_override_default_rules(self):
+        today = date.today()
+        items = [
+            {
+                "ItemName": "行動電源",
+                "ItemID": "M1",
+                "ItemType": "3C配件",
+                "ItemGetDate": (today - timedelta(days=120)).strftime("%Y-%m-%d"),
+                "MaintenanceCategory": "充電保養",
+                "MaintenanceIntervalDays": 20,
+                "LastMaintenanceDate": (today - timedelta(days=25)).strftime("%Y-%m-%d"),
+            },
+        ]
+        self._set_repo(items)
+
+        result = item_service.get_replacement_items({"replacement_enabled": True})
+
+        self.assertEqual(len(result["due"]), 1)
+        self.assertEqual(result["due"][0]["ItemID"], "M1")
+        self.assertEqual(result["due"][0]["replacement_rule_name"], "充電保養")
+
 
 if __name__ == "__main__":
     unittest.main()

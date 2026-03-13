@@ -32,6 +32,9 @@ class Item(db.Model):
     ReorderLevel: Mapped[int] = mapped_column(Integer, default=0)
     WarrantyExpiry: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
     UsageExpiry: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
+    MaintenanceCategory: Mapped[Optional[str]] = mapped_column(String(50), default="")
+    MaintenanceIntervalDays: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    LastMaintenanceDate: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     move_history: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=list)
     favorites: Mapped[Optional[List[str]]] = mapped_column(JSON, default=list)
     related_items: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=list)
@@ -59,6 +62,9 @@ class Item(db.Model):
             "ReorderLevel": int(self.ReorderLevel or 0),
             "WarrantyExpiry": self.WarrantyExpiry.strftime("%Y-%m-%d") if self.WarrantyExpiry else "",
             "UsageExpiry": self.UsageExpiry.strftime("%Y-%m-%d") if self.UsageExpiry else "",
+            "MaintenanceCategory": self.MaintenanceCategory or "",
+            "MaintenanceIntervalDays": self.MaintenanceIntervalDays if self.MaintenanceIntervalDays else "",
+            "LastMaintenanceDate": self.LastMaintenanceDate.strftime("%Y-%m-%d") if self.LastMaintenanceDate else "",
             "move_history": list(self.move_history or []),
             "favorites": list(self.favorites or []),
             "related_items": list(self.related_items or []),

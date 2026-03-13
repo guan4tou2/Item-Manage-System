@@ -244,6 +244,35 @@ class ItemServiceTestCase(unittest.TestCase):
             self.assertTrue(ok)
             self.assertIn("成功", msg)
             self.assertEqual(len(item_service.item_repo.inserted_items), 1)  # type: ignore[arg-type]
+            inserted = item_service.item_repo.inserted_items[0]  # type: ignore[index]
+            self.assertEqual(inserted.get("MaintenanceCategory"), "")
+            self.assertIsNone(inserted.get("MaintenanceIntervalDays"))
+            self.assertIsNone(inserted.get("LastMaintenanceDate"))
+
+    def test_create_item_stores_maintenance_settings_in_size_notes(self):
+        with mock.patch("app.services.item_service._filter_valid_types", return_value=["文具", "工具"]), \
+             mock.patch("app.services.location_service.list_choices", return_value=(["1F"], ["書房"], ["書桌"])), \
+             mock.patch("app.validators.items.validate_item_fields", return_value=(True, "")), \
+             mock.patch("app.utils.storage.save_upload", return_value=None):
+
+            form_data = {
+                "ItemName": "行動電源",
+                "ItemID": "NEW2",
+                "ItemStorePlace": "書房",
+                "ItemType": "工具",
+                "ItemOwner": "Admin",
+                "ItemGetDate": "2024-01-01",
+                "MaintenanceCategory": "充電保養",
+                "MaintenanceIntervalDays": "45",
+                "LastMaintenanceDate": "2024-02-01",
+            }
+
+            ok, _ = item_service.create_item(form_data, None)
+            self.assertTrue(ok)
+            inserted = item_service.item_repo.inserted_items[0]  # type: ignore[index]
+            self.assertEqual(inserted["MaintenanceCategory"], "充電保養")
+            self.assertEqual(inserted["MaintenanceIntervalDays"], 45)
+            self.assertEqual(inserted["LastMaintenanceDate"], "2024-02-01")
 
     def test_create_item_validation_failure(self):
         """測試建立物品時驗證失敗"""
@@ -275,6 +304,30 @@ class ItemServiceTestCase(unittest.TestCase):
             self.assertTrue(ok)
             self.assertIn("成功", msg)
             self.assertIn("A1", item_service.item_repo.updated_items)  # type: ignore[arg-type]
+
+    def test_update_item_stores_maintenance_settings_in_size_notes(self):
+        with mock.patch("app.services.item_service._filter_valid_types", return_value=["文具", "工具"]), \
+             mock.patch("app.services.location_service.list_choices", return_value=(["1F"], ["書房"], ["書桌"])), \
+             mock.patch("app.validators.items.validate_item_fields", return_value=(True, "")):
+
+            form_data = {
+                "ItemName": "更新後的行動電源",
+                "ItemID": "A1",
+                "ItemStorePlace": "書房",
+                "ItemType": "工具",
+                "ItemOwner": "Admin",
+                "ItemGetDate": "2024-01-01",
+                "MaintenanceCategory": "充電保養",
+                "MaintenanceIntervalDays": "30",
+                "LastMaintenanceDate": "2024-03-01",
+            }
+
+            ok, _ = item_service.update_item("A1", form_data, None)
+            self.assertTrue(ok)
+            updated = item_service.item_repo.updated_items["A1"]  # type: ignore[index]
+            self.assertEqual(updated["MaintenanceCategory"], "充電保養")
+            self.assertEqual(updated["MaintenanceIntervalDays"], 30)
+            self.assertEqual(updated["LastMaintenanceDate"], "2024-03-01")
 
     def test_update_item_not_found(self):
         """測試更新不存在的物品"""

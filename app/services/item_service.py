@@ -25,10 +25,94 @@ ITEM_PROJECTION = {
     "shared_with": 1,
     "WarrantyExpiry": 1,
     "UsageExpiry": 1,
+    "MaintenanceCategory": 1,
+    "MaintenanceIntervalDays": 1,
+    "LastMaintenanceDate": 1,
     "move_history": 1,  # 移動歷史
     "favorites": 1,  # 收藏使用者列表
     "related_items": 1,  # 關聯物品
+    "size_notes": 1,
 }
+
+
+def get_maintenance_suggestion(item_name: str = "", item_type: str = "") -> Optional[Dict[str, Any]]:
+    searchable_text = f"{(item_name or '').strip()} {(item_type or '').strip()}"
+    for rule in DEFAULT_KEYWORD_REPLACEMENT_RULES:
+        if any(keyword in searchable_text for keyword in rule["keywords"]):
+            return {
+                "category": str(rule["rule_name"]),
+                "interval_days": int(rule["days"]),
+                "source": "suggested",
+            }
+    return None
+
+
+def _extract_maintenance(item: Dict[str, Any]) -> Dict[str, Any]:
+    interval_raw = item.get("MaintenanceIntervalDays")
+    interval_days = None
+    if interval_raw not in ("", None):
+        try:
+            interval_days = int(interval_raw)
+        except (TypeError, ValueError):
+            interval_days = None
+    last_date = str(item.get("LastMaintenanceDate") or "").strip()
+    category = str(item.get("MaintenanceCategory") or "").strip()
+    if category or interval_days or last_date:
+        return {
+            "category": category,
+            "interval_days": interval_days,
+            "last_date": last_date,
+            "source": "manual",
+        }
+
+    size_notes = item.get("size_notes")
+    if not isinstance(size_notes, dict):
+        return {}
+    maintenance = size_notes.get("maintenance")
+    if not isinstance(maintenance, dict):
+        return {}
+    interval_raw = maintenance.get("interval_days")
+    interval_days = None
+    if interval_raw not in ("", None):
+        try:
+            interval_days = int(interval_raw)
+        except (TypeError, ValueError):
+            interval_days = None
+    return {
+        "category": str(maintenance.get("category") or "").strip(),
+        "interval_days": interval_days,
+        "last_date": str(maintenance.get("last_date") or "").strip(),
+        "source": str(maintenance.get("source") or "manual").strip() or "manual",
+    }
+
+
+def _annotate_maintenance_fields(items: List[Dict[str, Any]]) -> None:
+    for item in items:
+        maintenance = _extract_maintenance(item)
+        suggestion = get_maintenance_suggestion(item.get("ItemName", ""), item.get("ItemType", ""))
+        item["MaintenanceCategory"] = maintenance.get("category", "")
+        interval_days = maintenance.get("interval_days")
+        item["MaintenanceIntervalDays"] = "" if interval_days in (None, "") else str(interval_days)
+        item["LastMaintenanceDate"] = maintenance.get("last_date", "")
+        item["MaintenanceSuggestionCategory"] = suggestion.get("category", "") if suggestion else ""
+        item["MaintenanceSuggestionDays"] = suggestion.get("interval_days", "") if suggestion else ""
+
+
+def _apply_maintenance_form_data(form_data: Dict[str, Any], existing: Optional[Dict[str, Any]] = None) -> None:
+    category = str(form_data.pop("MaintenanceCategory", "") or "").strip()
+    interval_raw = str(form_data.pop("MaintenanceIntervalDays", "") or "").strip()
+    last_date = str(form_data.pop("LastMaintenanceDate", "") or "").strip()
+
+    if not category and not interval_raw and not last_date:
+        form_data["MaintenanceCategory"] = ""
+        form_data["MaintenanceIntervalDays"] = None
+        form_data["LastMaintenanceDate"] = None
+        return
+
+    interval_days = int(interval_raw) if interval_raw else None
+    form_data["MaintenanceCategory"] = category or "自訂保養"
+    form_data["MaintenanceIntervalDays"] = interval_days
+    form_data["LastMaintenanceDate"] = last_date or None
 
 
 def _filter_valid_types() -> List[str]:
@@ -113,6 +197,7 @@ def list_items(
         search_filter, projection, sort=sort, skip=skip, limit=page_size
     ))
     _annotate_expiry(items)
+    _annotate_maintenance_fields(items)
     
     return {
         "items": items,
@@ -141,6 +226,7 @@ def create_item(form_data: Dict[str, Any], file_storage) -> Tuple[bool, str]:
         return False, msg
 
     form_data["visibility"] = (form_data.get("visibility") or "private").strip().lower()
+    _apply_maintenance_form_data(form_data)
 
     filename = storage.save_upload(file_storage) if file_storage else None
     if filename:
@@ -199,6 +285,7 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None) -> T
         return False, msg
 
     form_data["visibility"] = (form_data.get("visibility") or existing.get("visibility") or "private").strip().lower()
+    _apply_maintenance_form_data(form_data, existing=existing)
     
     # 處理圖片上傳
     if file_storage and file_storage.filename:
@@ -244,6 +331,7 @@ def get_item(item_id: str) -> Optional[Dict[str, Any]]:
     item = item_repo.find_item_by_id(item_id, ITEM_PROJECTION)
     if item:
         _annotate_expiry([item])
+        _annotate_maintenance_fields([item])
     return item
 
 
@@ -396,14 +484,13 @@ def _parse_replacement_rules(raw_rules: Any) -> Dict[str, int]:
 
 
 def _match_default_keyword_rule(item: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    item_name = str(item.get("ItemName") or "").strip()
-    item_type = str(item.get("ItemType") or "").strip()
-    searchable_text = f"{item_name} {item_type}"
-
-    for rule in DEFAULT_KEYWORD_REPLACEMENT_RULES:
-        if any(keyword in searchable_text for keyword in rule["keywords"]):
-            return rule
-    return None
+    suggestion = get_maintenance_suggestion(item.get("ItemName", ""), item.get("ItemType", ""))
+    if not suggestion:
+        return None
+    return {
+        "rule_name": suggestion["category"],
+        "days": suggestion["interval_days"],
+    }
 
 
 def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -424,6 +511,7 @@ def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str
         "ItemName": 1,
         "ItemType": 1,
         "ItemGetDate": 1,
+        "size_notes": 1,
     }
     all_items = list(item_repo.list_items({}, projection))
     today = date.today()
@@ -444,7 +532,19 @@ def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str
             continue
 
         matched_rule_name = name
-        interval_days = rules.get(name)
+        base_date = got_date
+        explicit_maintenance = _extract_maintenance(item)
+        interval_days = explicit_maintenance.get("interval_days")
+        if interval_days:
+            matched_rule_name = explicit_maintenance.get("category") or "自訂保養"
+            last_date_raw = explicit_maintenance.get("last_date")
+            if last_date_raw:
+                try:
+                    base_date = datetime.strptime(last_date_raw, "%Y-%m-%d").date()
+                except ValueError:
+                    base_date = got_date
+        else:
+            interval_days = rules.get(name)
         if interval_days is None:
             default_rule = _match_default_keyword_rule(item)
             if not default_rule:
@@ -452,11 +552,11 @@ def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str
             interval_days = int(default_rule["days"])
             matched_rule_name = str(default_rule["rule_name"])
 
-        due_date = got_date.fromordinal(got_date.toordinal() + interval_days)
+        due_date = base_date.fromordinal(base_date.toordinal() + int(interval_days))
         days_left = (due_date - today).days
         enriched = dict(item)
         enriched["replacement_rule_name"] = matched_rule_name
-        enriched["replacement_days"] = interval_days
+        enriched["replacement_days"] = int(interval_days)
         enriched["replacement_due_date"] = due_date.strftime("%Y-%m-%d")
 
         if days_left <= 0:

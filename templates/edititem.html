@@ -359,6 +359,18 @@
             </div>
           </div>
 
+          <div class="col-md-4">
+            <div class="form-floating">
+              <select class="form-select" id="MaintenanceCategory" name="MaintenanceCategory">
+                <option value="">不設定</option>
+                {% for option in ['充電保養', '濾網保養', '濾芯更換', '衣物更換', '其他保養'] %}
+                <option value="{{ option }}" {% if item.MaintenanceCategory == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+              </select>
+              <label for="MaintenanceCategory"><i class="fas fa-screwdriver-wrench me-1"></i>保養類型</label>
+            </div>
+          </div>
+
           <!-- 期限資訊區塊 -->
           <div class="col-12">
             <h5 class="form-section-title mt-3">
@@ -401,6 +413,34 @@
             {% elif item.UsageStatus == 'near' %}
             <small class="text-warning"><i class="fas fa-clock me-1"></i>即將到期</small>
             {% endif %}
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input
+                type="number"
+                min="1"
+                class="form-control"
+                id="MaintenanceIntervalDays"
+                name="MaintenanceIntervalDays"
+                value="{{ item.MaintenanceIntervalDays }}"
+                placeholder="保養週期"
+              />
+              <label for="MaintenanceIntervalDays"><i class="fas fa-calendar-rotate-left me-1"></i>保養週期(天)</label>
+            </div>
+            <small class="text-muted">有填的話，通知會優先照這個週期走</small>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              <input
+                type="date"
+                class="form-control"
+                id="LastMaintenanceDate"
+                name="LastMaintenanceDate"
+                value="{{ item.LastMaintenanceDate }}"
+              />
+              <label for="LastMaintenanceDate"><i class="fas fa-clock-rotate-left me-1"></i>上次保養日</label>
+            </div>
+            <small class="text-muted">若近期已清洗、補電或更換，可在這裡更新基準日</small>
           </div>
 
           <!-- 描述 -->
@@ -769,6 +809,31 @@
   const allRooms = [...document.getElementById('ItemRoom').options].map(o => o.value).filter(v => v);
   const allZones = [...document.getElementById('ItemZone').options].map(o => o.value).filter(v => v);
   let lastGeneratedPlace = document.getElementById('ItemStorePlace').value.trim();
+  let maintenanceSuggestionApplied = false;
+  const maintenanceRules = [
+    { keywords: ['行動電源', '備用相機電池', '相機電池', '備用手機', '備用平板', '鋰電'], category: '充電保養', days: 60 },
+    { keywords: ['冷氣濾網', '空調濾網', '除濕機濾網', '掃地機濾網', '掃地機集塵盒'], category: '濾網保養', days: 90 },
+    { keywords: ['空氣清淨機濾網', '清淨機濾網', '飲水機濾芯', '濾水壺濾芯', '淨水器濾芯'], category: '濾芯更換', days: 180 }
+  ];
+
+  function applyMaintenanceSuggestion() {
+    const nameValue = document.getElementById('ItemName').value.trim();
+    const typeValue = document.getElementById('ItemType').value.trim();
+    const searchableText = `${nameValue} ${typeValue}`;
+    const matchedRule = maintenanceRules.find(rule => rule.keywords.some(keyword => searchableText.includes(keyword)));
+    if (!matchedRule) {
+      return;
+    }
+    const categoryInput = document.getElementById('MaintenanceCategory');
+    const intervalInput = document.getElementById('MaintenanceIntervalDays');
+    if (!categoryInput.value || maintenanceSuggestionApplied) {
+      categoryInput.value = matchedRule.category;
+    }
+    if (!intervalInput.value || maintenanceSuggestionApplied) {
+      intervalInput.value = matchedRule.days;
+    }
+    maintenanceSuggestionApplied = true;
+  }
 
   function syncStorePlaceFromSelectors() {
     const placeInput = document.getElementById('ItemStorePlace');
@@ -891,7 +956,10 @@
         lastGeneratedPlace = '';
       }
     });
+    document.getElementById('ItemName').addEventListener('input', applyMaintenanceSuggestion);
+    document.getElementById('ItemType').addEventListener('change', applyMaintenanceSuggestion);
     syncStorePlaceFromSelectors();
+    applyMaintenanceSuggestion();
   });
 
   document.getElementById('editItemForm').addEventListener('submit', function(e) {

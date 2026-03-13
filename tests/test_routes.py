@@ -261,6 +261,8 @@ class RoutesTestCase(unittest.TestCase):
         self.assertIn("直接拍照", content)
         self.assertIn("cameraModal", content)
         self.assertIn("建議保養週期", content)
+        self.assertIn("MaintenanceIntervalDays", content)
+        self.assertIn("LastMaintenanceDate", content)
 
     @patch("app.services.type_service.list_types", return_value=[])
     @patch("app.services.location_service.list_choices", return_value=([], [], []))
@@ -300,6 +302,45 @@ class RoutesTestCase(unittest.TestCase):
         self.assertIn("直接拍照", content)
         self.assertIn("cameraModal", content)
         self.assertIn("建議保養週期", content)
+        self.assertIn("MaintenanceIntervalDays", content)
+        self.assertIn("LastMaintenanceDate", content)
+
+    @patch("app.services.item_service.get_item")
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_item_detail_shows_maintenance_information(
+        self,
+        _mock_current_user,
+        mock_get_item,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_get_item.return_value = {
+            "ItemID": "DEMO-001",
+            "ItemName": "行動電源",
+            "ItemStorePlace": "書房/抽屜",
+            "ItemFloor": "1F",
+            "ItemRoom": "書房",
+            "ItemZone": "抽屜",
+            "ItemType": "3C配件",
+            "ItemOwner": "admin",
+            "visibility": "private",
+            "ItemGetDate": "2026-03-10",
+            "WarrantyExpiry": "",
+            "UsageExpiry": "",
+            "ItemDesc": "",
+            "ItemPic": "",
+            "MaintenanceCategory": "充電保養",
+            "MaintenanceIntervalDays": "45",
+            "LastMaintenanceDate": "2026-03-01",
+        }
+
+        response = self.client.get("/item/DEMO-001")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("保養資訊", content)
+        self.assertIn("充電保養", content)
+        self.assertIn("45 天", content)
 
     def test_search_requires_login(self):
         """測試搜尋頁面需要登入"""
