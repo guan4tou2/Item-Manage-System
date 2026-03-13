@@ -30,7 +30,7 @@
         <strong>{{ expired_count + near_count }} 項</strong>
       </div>
       <div class="summary-chip">
-        <span class="summary-chip-label">更換提醒</span>
+        <span class="summary-chip-label">保養 / 更換提醒</span>
         <strong>{{ replacement_due|length + replacement_upcoming|length }} 項</strong>
       </div>
       <div class="summary-chip">
@@ -101,7 +101,7 @@
               <div>
                 <h6 class="text-white-50 mb-1">總警報</h6>
                 <h2 class="mb-0 fw-bold">{{ total_alerts }}</h2>
-                <small class="text-white-50">包含到期與更換提醒</small>
+                <small class="text-white-50">包含到期與保養 / 更換提醒</small>
               </div>
               <div class="opacity-50">
                 <i class="fas fa-bell fa-3x"></i>
@@ -246,17 +246,17 @@
   </div>
   {% endif %}
 
-  <!-- 更換提醒 -->
+  <!-- 保養 / 更換提醒 -->
   {% if replacement_due or replacement_upcoming %}
   <div class="col-12 mb-4">
     <div class="card border-info border-0 shadow-sm">
       <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
-          <i class="fas fa-sync-alt me-2"></i>衣物/耗材更換提醒
+          <i class="fas fa-sync-alt me-2"></i>保養 / 更換提醒
         </h5>
         <div class="d-flex gap-2 align-items-center">
-          <span class="badge bg-light text-info">需更換 {{ replacement_due|length }}</span>
-          <span class="badge bg-dark">即將更換 {{ replacement_upcoming|length }}</span>
+          <span class="badge bg-light text-info">需處理 {{ replacement_due|length }}</span>
+          <span class="badge bg-dark">即將到期 {{ replacement_upcoming|length }}</span>
         </div>
       </div>
       <div class="card-body p-0">
@@ -278,7 +278,7 @@
                 <td>{{ item.rule_name }}</td>
                 <td>已 {{ item.days_since }} 天</td>
                 <td>{{ item.ItemType }}</td>
-                <td class="text-center"><span class="badge bg-danger">需更換</span></td>
+                <td class="text-center"><span class="badge bg-danger">需保養 / 更換</span></td>
               </tr>
               {% endfor %}
               {% for item in replacement_upcoming %}
@@ -287,7 +287,7 @@
                 <td>{{ item.rule_name }}</td>
                 <td>剩餘 {{ item.days_remaining }} 天</td>
                 <td>{{ item.ItemType }}</td>
-                <td class="text-center"><span class="badge bg-warning text-dark">即將更換</span></td>
+                <td class="text-center"><span class="badge bg-warning text-dark">即將保養 / 更換</span></td>
               </tr>
               {% endfor %}
             </tbody>

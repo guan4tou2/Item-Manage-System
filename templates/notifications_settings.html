@@ -154,12 +154,12 @@
 
           <div class="mb-3">
             <label class="form-label">
-              <i class="fas fa-sync me-1"></i>衣物/耗材更換提醒
+              <i class="fas fa-sync me-1"></i>保養 / 更換提醒
             </label>
             <div class="form-check form-switch mb-2">
               <input class="form-check-input" type="checkbox" id="replacement_enabled" name="replacement_enabled"
                      {% if settings.replacement_enabled %}checked{% endif %}>
-              <label class="form-check-label" for="replacement_enabled">啟用更換提醒</label>
+              <label class="form-check-label" for="replacement_enabled">啟用保養與更換提醒</label>
             </div>
             <label for="replacement_intervals" class="form-label">自訂規則（名稱=天數，以逗號分隔）</label>
             {% set replacement_pairs = [] %}
@@ -170,9 +170,13 @@
             {% endfor %}
             <input type="text" class="form-control" id="replacement_intervals" name="replacement_intervals"
                    value="{{ replacement_pairs | join(', ') }}"
-                   placeholder="內衣=90, 襪子=180"
+                   placeholder="內衣=90, 行動電源=60, 飲水機濾芯=180"
                    {% if not settings.notify_enabled %}disabled{% endif %}>
-            <div class="form-text">預設：內衣/內褲 90 天、運動內衣 120 天、襪子 180 天、毛巾 365 天。格式如 內衣=90, 襪子=180。</div>
+            <div class="form-text">
+              預設已包含衣物更換、3C 補電與常見家電保養：
+              例如 行動電源/備用電池 60 天補電、冷氣濾網 90 天、空氣清淨機濾網 180 天、飲水機濾芯 180 天。
+              你也可以自行追加，例如：內衣=90, 行動電源=60, 飲水機濾芯=180。
+            </div>
           </div>
 
           <!-- 通知時間 -->

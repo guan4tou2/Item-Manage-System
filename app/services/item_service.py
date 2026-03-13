@@ -362,11 +362,22 @@ def get_expiring_items(days_threshold: int = 30, ladder: Optional[List[int]] = N
     }
 
 
+DEFAULT_REPLACEMENT_RULES = {
+    "內衣": 90,
+    "襪子": 180,
+}
+
+DEFAULT_KEYWORD_REPLACEMENT_RULES = [
+    {"rule_name": "3C 電池補電", "days": 60, "keywords": ["行動電源", "備用相機電池", "相機電池", "備用手機", "備用平板", "鋰電"]},
+    {"rule_name": "冷氣濾網保養", "days": 90, "keywords": ["冷氣濾網", "空調濾網"]},
+    {"rule_name": "除濕機濾網保養", "days": 90, "keywords": ["除濕機濾網"]},
+    {"rule_name": "掃地機濾網保養", "days": 90, "keywords": ["掃地機濾網", "掃地機集塵盒"]},
+    {"rule_name": "空氣清淨機濾網保養", "days": 180, "keywords": ["空氣清淨機濾網", "清淨機濾網"]},
+    {"rule_name": "飲水機濾芯更換", "days": 180, "keywords": ["飲水機濾芯", "濾水壺濾芯", "淨水器濾芯"]},
+]
+
+
 def _parse_replacement_rules(raw_rules: Any) -> Dict[str, int]:
-    default_rules = {
-        "內衣": 90,
-        "襪子": 180,
-    }
     parsed: Dict[str, int] = {}
     if isinstance(raw_rules, list):
         for rule in raw_rules:
@@ -381,7 +392,18 @@ def _parse_replacement_rules(raw_rules: Any) -> Dict[str, int]:
                 days = rule.get("days")
                 if name and isinstance(days, int) and days > 0:
                     parsed[name] = days
-    return {**default_rules, **parsed}
+    return {**DEFAULT_REPLACEMENT_RULES, **parsed}
+
+
+def _match_default_keyword_rule(item: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    item_name = str(item.get("ItemName") or "").strip()
+    item_type = str(item.get("ItemType") or "").strip()
+    searchable_text = f"{item_name} {item_type}"
+
+    for rule in DEFAULT_KEYWORD_REPLACEMENT_RULES:
+        if any(keyword in searchable_text for keyword in rule["keywords"]):
+            return rule
+    return None
 
 
 def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -411,7 +433,7 @@ def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str
 
     for item in all_items:
         name = str(item.get("ItemName") or "").strip()
-        if not name or name not in rules:
+        if not name:
             continue
         got_date_raw = item.get("ItemGetDate")
         if not isinstance(got_date_raw, str) or not got_date_raw:
@@ -421,10 +443,19 @@ def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str
         except ValueError:
             continue
 
-        interval_days = rules[name]
+        matched_rule_name = name
+        interval_days = rules.get(name)
+        if interval_days is None:
+            default_rule = _match_default_keyword_rule(item)
+            if not default_rule:
+                continue
+            interval_days = int(default_rule["days"])
+            matched_rule_name = str(default_rule["rule_name"])
+
         due_date = got_date.fromordinal(got_date.toordinal() + interval_days)
         days_left = (due_date - today).days
         enriched = dict(item)
+        enriched["replacement_rule_name"] = matched_rule_name
         enriched["replacement_days"] = interval_days
         enriched["replacement_due_date"] = due_date.strftime("%Y-%m-%d")
 

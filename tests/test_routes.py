@@ -260,6 +260,7 @@ class RoutesTestCase(unittest.TestCase):
         self.assertIn('capture="environment"', content)
         self.assertIn("直接拍照", content)
         self.assertIn("cameraModal", content)
+        self.assertIn("建議保養週期", content)
 
     @patch("app.services.type_service.list_types", return_value=[])
     @patch("app.services.location_service.list_choices", return_value=([], [], []))
@@ -298,6 +299,7 @@ class RoutesTestCase(unittest.TestCase):
         self.assertIn('capture="environment"', content)
         self.assertIn("直接拍照", content)
         self.assertIn("cameraModal", content)
+        self.assertIn("建議保養週期", content)
 
     def test_search_requires_login(self):
         """測試搜尋頁面需要登入"""
@@ -475,7 +477,7 @@ class RoutesTestCase(unittest.TestCase):
         content = response.data.decode("utf-8")
         self.assertEqual(response.status_code, 200)
         self.assertIn("庫存不足", content)
-        self.assertIn("衣物/耗材更換提醒", content)
+        self.assertIn("保養 / 更換提醒", content)
 
     @patch("app.locations.routes.location_service.list_choices", return_value=([], [], []))
     @patch("app.locations.routes.location_service.list_locations", return_value=[])

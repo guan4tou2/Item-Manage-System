@@ -65,6 +65,56 @@ class ReplacementReminderTestCase(unittest.TestCase):
         self.assertEqual(len(result["due"]), 1)
         self.assertEqual(result["due"][0]["ItemID"], "T1")
 
+    def test_default_charge_cycle_for_battery_powered_devices(self):
+        today = date.today()
+        items = [
+            {
+                "ItemName": "行動電源",
+                "ItemID": "P1",
+                "ItemType": "3C配件",
+                "ItemGetDate": (today - timedelta(days=65)).strftime("%Y-%m-%d"),
+            },
+            {
+                "ItemName": "備用相機電池",
+                "ItemID": "B1",
+                "ItemType": "3C配件",
+                "ItemGetDate": (today - timedelta(days=52)).strftime("%Y-%m-%d"),
+            },
+        ]
+        self._set_repo(items)
+
+        result = item_service.get_replacement_items({"replacement_enabled": True})
+
+        due_ids = [item["ItemID"] for item in result["due"]]
+        upcoming_ids = [item["ItemID"] for item in result["upcoming"]]
+        self.assertIn("P1", due_ids)
+        self.assertIn("B1", upcoming_ids)
+
+    def test_default_maintenance_rules_for_filters_and_water_dispenser(self):
+        today = date.today()
+        items = [
+            {
+                "ItemName": "客廳冷氣濾網",
+                "ItemID": "F1",
+                "ItemType": "家電",
+                "ItemGetDate": (today - timedelta(days=95)).strftime("%Y-%m-%d"),
+            },
+            {
+                "ItemName": "飲水機濾芯",
+                "ItemID": "W1",
+                "ItemType": "家電",
+                "ItemGetDate": (today - timedelta(days=170)).strftime("%Y-%m-%d"),
+            },
+        ]
+        self._set_repo(items)
+
+        result = item_service.get_replacement_items({"replacement_enabled": True})
+
+        due_ids = [item["ItemID"] for item in result["due"]]
+        upcoming_ids = [item["ItemID"] for item in result["upcoming"]]
+        self.assertIn("F1", due_ids)
+        self.assertIn("W1", upcoming_ids)
+
 
 if __name__ == "__main__":
     unittest.main()
