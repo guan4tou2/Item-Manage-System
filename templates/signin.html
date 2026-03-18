@@ -90,7 +90,7 @@
 
         <!-- 忘記密碼 -->
         <p class="auth-link" style="margin-top: 0.5rem;">
-          <a href="#" onclick="showForgotPasswordHelp()" class="text-muted" style="font-size: 0.9rem;">
+          <a href="#" id="forgotPasswordLink" class="text-muted" style="font-size: 0.9rem;">
             <i class="fas fa-key me-1"></i>忘記密碼？
           </a>
         </p>
@@ -233,9 +233,10 @@
     
     <script>
       document.getElementById('copyrightYear').textContent = new Date().getFullYear();
-      function showForgotPasswordHelp() {
+      document.getElementById('forgotPasswordLink').addEventListener('click', function(e) {
+        e.preventDefault();
         new bootstrap.Modal(document.getElementById('forgotPasswordModal')).show();
-      }
+      });
     </script>
     
     {%if error%}

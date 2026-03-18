@@ -152,7 +152,7 @@
               </div>
             </div>
             <div class="mt-3">
-              <button type="button" class="btn btn-outline-warning btn-sm" onclick="markMaintenanceToday('{{ item.ItemID }}')">
+              <button type="button" class="btn btn-outline-warning btn-sm" id="markMaintenanceBtn" data-item-id="{{ item.ItemID }}">
                 <i class="fas fa-screwdriver-wrench me-1"></i>標記今天已保養
               </button>
             </div>
@@ -368,7 +368,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-        <button type="button" class="btn btn-primary" onclick="addRelatedItem()">
+        <button type="button" class="btn btn-primary" id="addRelatedBtn">
           <i class="fas fa-plus me-1"></i>新增
         </button>
       </div>
@@ -402,8 +402,8 @@ async function loadRelatedItems() {
           ${data.related_items.map(item => `
             <div class="col-md-6">
               <div class="related-item-card">
-                ${item.ItemPic 
-                  ? `<img src="/uploads/${item.ItemThumb || item.ItemPic}" alt="${item.ItemName}">`
+                ${item.ItemPic
+                  ? `<img src="/uploads/${item.ItemThumb || item.ItemPic}" alt="${item.ItemName}" loading="lazy">`
                   : `<div class="bg-light d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 8px;"><i class="fas fa-image text-muted"></i></div>`
                 }
                 <div class="info">
@@ -520,8 +520,22 @@ async function removeRelatedItem(relatedId) {
   }, { title: '移除關聯', confirmText: '移除', icon: 'fas fa-unlink text-warning' });
 }
 
-// 頁面載入時載入關聯物品
-document.addEventListener('DOMContentLoaded', loadRelatedItems);
+// 頁面載入時載入關聯物品與綁定事件
+document.addEventListener('DOMContentLoaded', function() {
+  loadRelatedItems();
+
+  var maintenanceBtn = document.getElementById('markMaintenanceBtn');
+  if (maintenanceBtn) {
+    maintenanceBtn.addEventListener('click', function() {
+      markMaintenanceToday(this.dataset.itemId);
+    });
+  }
+
+  var addRelatedBtn = document.getElementById('addRelatedBtn');
+  if (addRelatedBtn) {
+    addRelatedBtn.addEventListener('click', addRelatedItem);
+  }
+});
 
 // 數量調整按鈕
 document.querySelectorAll('.qty-btn').forEach(btn => {
