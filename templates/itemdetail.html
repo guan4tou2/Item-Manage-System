@@ -377,142 +377,6 @@
 </div>
 {%endif%}
 
-<style>
-.related-item-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  transition: var(--transition);
-}
-
-.related-item-card:hover {
-  border-color: var(--primary);
-  background: var(--gray-50);
-}
-
-.related-item-card img {
-  width: 50px;
-  height: 50px;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-}
-
-.related-item-card .info {
-  flex: 1;
-}
-
-.related-item-card .name {
-  font-weight: 600;
-  color: var(--gray-800);
-}
-
-.related-item-card .type-badge {
-  font-size: 0.7rem;
-}
-</style>
-
-<style>
-.item-detail-card {
-  background: #fff;
-  padding: 2rem;
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-}
-
-.item-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--gray-800);
-}
-
-.info-sections {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.info-section {
-  padding: 1.25rem;
-  background: var(--gray-50);
-  border-radius: var(--radius-md);
-}
-
-.info-section-title {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--gray-700);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.photo-thumb {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  cursor: pointer;
-  opacity: 0.6;
-  transition: var(--transition);
-  border: 2px solid transparent;
-}
-
-.photo-thumb:hover,
-.photo-thumb.active {
-  opacity: 1;
-  border-color: var(--primary);
-}
-
-/* 時間軸樣式 */
-.timeline {
-  position: relative;
-  padding-left: 2rem;
-}
-
-.timeline::before {
-  content: '';
-  position: absolute;
-  left: 8px;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--gray-200);
-}
-
-.timeline-item {
-  position: relative;
-  padding-bottom: 1.5rem;
-}
-
-.timeline-item:last-child {
-  padding-bottom: 0;
-}
-
-.timeline-marker {
-  position: absolute;
-  left: -2rem;
-  top: 5px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--primary);
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 2px var(--primary);
-}
-
-@media (max-width: 991px) {
-  .item-title {
-    font-size: 1.5rem;
-  }
-  
-  .item-detail-card {
-    padding: 1.5rem;
-  }
-}
-</style>
 {%endblock%}
 
 {%block js%}
@@ -591,9 +455,9 @@ async function markMaintenanceToday(itemId) {
       location.reload();
       return;
     }
-    alert(data.message || '更新失敗');
+    showToast(data.message || '更新失敗', 'danger');
   } catch (error) {
-    alert('更新失敗');
+    showToast('更新失敗', 'danger');
   }
 }
 
@@ -602,7 +466,7 @@ async function addRelatedItem() {
   const relationType = document.getElementById('relationType').value;
   
   if (!relatedId) {
-    alert('請輸入物品 ID');
+    showToast('請輸入物品 ID', 'warning');
     return;
   }
   
@@ -623,36 +487,37 @@ async function addRelatedItem() {
       document.getElementById('relatedItemId').value = '';
       loadRelatedItems();
     } else {
-      alert(data.message || '新增失敗');
+      showToast(data.message || '新增失敗', 'danger');
     }
   } catch (error) {
-    alert('新增失敗');
+    showToast('新增失敗', 'danger');
   }
 }
 
 async function removeRelatedItem(relatedId) {
-  if (!confirm('確定要移除此關聯？')) return;
-  
-  try {
-    const response = await fetch(`/api/related-items/{{item.ItemID}}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token() }}'
-      },
-      body: JSON.stringify({ related_id: relatedId })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      loadRelatedItems();
-    } else {
-      alert(data.message || '移除失敗');
+  showConfirm('確定要移除此關聯？', async function() {
+    try {
+      const response = await fetch(`/api/related-items/{{item.ItemID}}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ related_id: relatedId })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        loadRelatedItems();
+        showToast('已移除關聯', 'success');
+      } else {
+        showToast(data.message || '移除失敗', 'danger');
+      }
+    } catch (error) {
+      showToast('移除失敗', 'danger');
     }
-  } catch (error) {
-    alert('移除失敗');
-  }
+  }, { title: '移除關聯', confirmText: '移除', icon: 'fas fa-unlink text-warning' });
 }
 
 // 頁面載入時載入關聯物品
@@ -687,12 +552,12 @@ document.querySelectorAll('.qty-btn').forEach(btn => {
           display.classList.add('bg-primary');
         }
       } else {
-        alert(data.message || '更新失敗');
+        showToast(data.message || '更新失敗', 'danger');
       }
     })
     .catch(err => {
       console.error('Error:', err);
-      alert('更新失敗');
+      showToast('更新失敗', 'danger');
     })
     .finally(() => {
       this.disabled = false;

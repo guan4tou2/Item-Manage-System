@@ -188,7 +188,7 @@
   </div>
 
   <!-- 統計資訊 -->
-  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mb-4 animate-fadeInUp stagger-3">
+  <div class="row row-cols-2 row-cols-sm-2 row-cols-lg-3 g-3 mb-4 animate-fadeInUp stagger-3">
     <div class="col">
       <div class="stats-card stats-tone-1">
         <div class="icon"><i class="fas fa-box"></i></div>
@@ -307,8 +307,7 @@
           loading="lazy"
         />
         {%else%}
-        <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center h-100" 
-             style="background: #e2e8f0;">
+        <div class="card-img-top bg-light bg-gradient d-flex align-items-center justify-content-center h-100">
           <i class="fas fa-image fa-4x text-white opacity-50"></i>
         </div>
         {%endif%}
@@ -451,12 +450,17 @@
 {%if not items%}
 <div class="empty-state animate-fadeInUp">
   <i class="fas fa-box-open"></i>
-  <h3>還沒有任何物品</h3>
-  <p>點擊下方按鈕開始記錄您的第一個物品吧！</p>
+  <h3>開始管理您的物品</h3>
+  <p>新增第一個物品後，就能透過搜尋和篩選快速找到它。建議先設定位置和類型分類。</p>
   {%if User.admin%}
-  <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg">
-    <i class="fas fa-plus me-2"></i>新增第一個物品
-  </a>
+  <div class="d-flex flex-wrap gap-2 justify-content-center">
+    <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg">
+      <i class="fas fa-plus me-2"></i>新增物品
+    </a>
+    <a href="{{ url_for('locations.manage_locations') }}" class="btn btn-outline-secondary btn-lg">
+      <i class="fas fa-map-marker-alt me-2"></i>設定位置
+    </a>
+  </div>
   {%endif%}
 </div>
 {%endif%}
@@ -557,7 +561,7 @@ if (homeSearchForm) {
         }
       });
     } catch (err) {
-      console.log('讀取篩選記錄失敗');
+      // ignore localStorage read errors
     }
   }
 
@@ -646,12 +650,13 @@ async function saveQuickEdit(itemId, newLocation, container, oldLocation) {
       const display = container.querySelector('.location-display');
       display.textContent = newLocation;
       cancelQuickEdit(container, newLocation);
+      showToast('位置已更新', 'success');
     } else {
-      alert(data.message || '更新失敗');
+      showToast(data.message || '更新失敗', 'danger');
     }
   } catch (error) {
     console.error('Error:', error);
-    alert('更新失敗');
+    showToast('更新失敗', 'danger');
   }
 }
 
@@ -707,11 +712,11 @@ async function toggleFavorite(itemId, btn) {
         btn.style.transform = '';
       }, 200);
     } else {
-      alert(data.message || '操作失敗');
+      showToast(data.message || '操作失敗', 'danger');
     }
   } catch (error) {
     console.error('Error:', error);
-    alert('操作失敗');
+    showToast('操作失敗', 'danger');
   }
 }
     // ==========================================
@@ -763,28 +768,31 @@ async function toggleFavorite(itemId, btn) {
     
     // 批量刪除
     function confirmBulkDelete() {
-        if (!confirm(`確定要刪除這 ${selectedItems.size} 個物品嗎？此操作無法復原！`)) return;
-        
-        const itemIds = Array.from(selectedItems);
-        
-        fetch("{{ url_for('items.bulk_delete') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': "{{ csrf_token() }}"
+        showConfirm(
+            `確定要刪除這 ${selectedItems.size} 個物品嗎？此操作無法復原！`,
+            function() {
+                const itemIds = Array.from(selectedItems);
+                fetch("{{ url_for('items.bulk_delete') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': "{{ csrf_token() }}"
+                    },
+                    body: JSON.stringify({ item_ids: itemIds })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                        window.location.reload();
+                    } else {
+                        showToast('刪除失敗：' + data.message, 'danger');
+                    }
+                })
+                .catch(() => showToast('發生錯誤', 'danger'));
             },
-            body: JSON.stringify({ item_ids: itemIds })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert('刪除失敗：' + data.message);
-            }
-        })
-        .catch(err => alert('發生錯誤'));
+            { title: '批量刪除', confirmText: '刪除', icon: 'fas fa-trash-alt text-danger' }
+        );
     }
     
     // 批量移動
@@ -798,35 +806,35 @@ async function toggleFavorite(itemId, btn) {
     }
     
     function submitBulkMove() {
-        const location = document.getElementById('bulkTargetLocation').value;
-        if (!location) {
-            alert('請輸入位置');
+        const targetLocation = document.getElementById('bulkTargetLocation').value;
+        if (!targetLocation) {
+            showToast('請輸入位置', 'warning');
             return;
         }
-        
+
         const itemIds = Array.from(selectedItems);
-        
+
         fetch("{{ url_for('items.bulk_move') }}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': "{{ csrf_token() }}"
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 item_ids: itemIds,
-                location: location
+                location: targetLocation
             })
         })
         .then(res => res.json())
         .then(data => {
             if (data.success) {
-                alert(data.message);
-                location.reload();
+                showToast(data.message, 'success');
+                window.location.reload();
             } else {
-                alert('移動失敗：' + data.message);
+                showToast('移動失敗：' + data.message, 'danger');
             }
         })
-        .catch(err => alert('發生錯誤'));
+        .catch(() => showToast('發生錯誤', 'danger'));
     }
 
     // ==========================================

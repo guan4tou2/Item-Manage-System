@@ -148,7 +148,7 @@
                   </td>
                   <td class="text-muted small">
                     {{it.note or ''}}
-                    <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end" onsubmit="return confirm('確定刪除此物品？');">
+                    <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end travel-delete-form">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
                     </form>
@@ -179,7 +179,7 @@
                   </td>
                   <td class="text-muted small">
                     {{it.note or ''}}
-                    <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end" onsubmit="return confirm('確定刪除此物品？');">
+                    <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end travel-delete-form">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
                     </form>
@@ -233,7 +233,7 @@
                   </td>
                   <td class="text-muted small">
                     {{it.note or ''}}
-                    <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end" onsubmit="return confirm('確定刪除此物品？');">
+                    <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end travel-delete-form">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
                     </form>
@@ -265,7 +265,7 @@
                   </td>
                   <td class="text-muted small">
                     {{it.note or ''}}
-                    <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end" onsubmit="return confirm('確定刪除此物品？');">
+                    <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end travel-delete-form">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
                     </form>
@@ -326,4 +326,17 @@
     </div>
   </div>
 </div>
+{%endblock%}
+
+{%block js%}
+<script>
+document.addEventListener('submit', function(e) {
+  if (!e.target.classList.contains('travel-delete-form')) return;
+  e.preventDefault();
+  const form = e.target;
+  showConfirm('確定刪除此物品？', function() {
+    form.submit();
+  }, { title: '刪除物品', confirmText: '確定刪除', btnClass: 'btn-danger', icon: 'fa-trash' });
+});
+</script>
 {%endblock%}

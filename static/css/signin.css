@@ -1,33 +1,518 @@
-html,
-body {
+/**
+ * 登入頁面樣式
+ */
+
+:root {
+  --signin-primary: #2f658f;
+  --signin-primary-dark: #255273;
+  --signin-gray-50: #f8fafc;
+  --signin-gray-100: #f1f5f9;
+  --signin-gray-200: #e2e8f0;
+  --signin-gray-500: #64748b;
+  --signin-gray-600: #475569;
+  --signin-gray-700: #334155;
+  --signin-gray-800: #1e293b;
+  --signin-shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --signin-shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
   height: 100%;
 }
 
 body {
+  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1e3a5f;
   display: flex;
   align-items: center;
-  padding-top: 40px;
-  padding-bottom: 40px;
-  background-color: #f5f5f5;
+  justify-content: center;
+  padding: 2rem;
+  margin: 0;
+  position: relative;
+  overflow: hidden;
 }
 
-.form-signin {
-  max-width: 330px;
-  padding: 15px;
+/* 背景裝飾 */
+.bg-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-.form-signin .form-floating:focus-within {
-  z-index: 2;
+.bg-shape {
+  position: absolute;
+  background: rgba(47, 101, 143, 0.12);
+  border-radius: 50%;
 }
 
-.form-signin input[type="email"] {
-  margin-bottom: -1px;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
+.bg-shape-1 {
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  right: -100px;
+  animation: signin-float 20s ease-in-out infinite;
 }
 
-.form-signin input[type="password"] {
-  margin-bottom: 10px;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+.bg-shape-2 {
+  width: 400px;
+  height: 400px;
+  bottom: -100px;
+  left: -100px;
+  animation: signin-float 25s ease-in-out infinite reverse;
+}
+
+.bg-shape-3 {
+  width: 300px;
+  height: 300px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: signin-pulse 10s ease-in-out infinite;
+}
+
+@keyframes signin-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(5deg); }
+}
+
+@keyframes signin-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.3; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.1; }
+}
+
+/* 登入容器 */
+.signin-container {
+  width: 100%;
+  max-width: 420px;
+  position: relative;
+  z-index: 1;
+}
+
+.signin-card {
+  background: #fafbfc;
+  border-radius: 24px;
+  padding: 3rem 2.5rem;
+  box-shadow: var(--signin-shadow-xl);
+  animation: signin-slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes signin-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Logo 區域 */
+.signin-logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-icon {
+  width: 80px;
+  height: 80px;
+  background: var(--signin-primary);
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 24px rgba(47, 101, 143, 0.35);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.logo-icon:hover {
+  transform: scale(1.05);
+}
+
+.logo-icon i {
+  font-size: 2.5rem;
+  color: #fff;
+}
+
+.signin-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--signin-gray-800);
+  margin-bottom: 0.5rem;
+}
+
+.signin-subtitle {
+  color: var(--signin-gray-500);
+  font-size: 0.95rem;
+}
+
+/* 表單樣式 */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.signin-card .form-label {
+  display: block;
+  font-weight: 600;
+  color: var(--signin-gray-700);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--signin-gray-500);
+  transition: color 0.2s ease-out;
+}
+
+.signin-card .form-control {
+  width: 100%;
+  padding: 0.9rem 1rem 0.9rem 3rem;
+  font-size: 1rem;
+  border: 2px solid var(--signin-gray-200);
+  border-radius: 12px;
+  background: var(--signin-gray-50);
+  transition: all 0.2s ease-out;
+}
+
+.signin-card .form-control:focus {
+  outline: none;
+  border-color: var(--signin-primary);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(47, 101, 143, 0.12);
+}
+
+.signin-card .form-control:focus + i,
+.input-wrapper:focus-within i {
+  color: var(--signin-primary);
+}
+
+.signin-card .form-control::placeholder {
+  color: var(--signin-gray-500);
+}
+
+/* 登入按鈕 */
+.btn-signin {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--signin-primary);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(47, 101, 143, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-signin:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(47, 101, 143, 0.4);
+  background: var(--signin-primary-dark);
+}
+
+.btn-signin:active {
+  transform: translateY(0);
+}
+
+.btn-signin i {
+  font-size: 1.2rem;
+}
+
+/* 功能說明 */
+.features {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--signin-gray-200);
+}
+
+.features-title {
+  font-size: 0.85rem;
+  color: var(--signin-gray-500);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.feature-list {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.feature-item {
+  text-align: center;
+}
+
+.feature-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--signin-gray-100);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.5rem;
+  transition: all 0.2s ease-out;
+}
+
+.feature-item:hover .feature-icon {
+  background: var(--signin-primary);
+  transform: scale(1.1);
+}
+
+.feature-item:hover .feature-icon i {
+  color: #fff;
+}
+
+.feature-icon i {
+  color: var(--signin-gray-500);
+  font-size: 1.1rem;
+  transition: color 0.2s ease-out;
+}
+
+.feature-text {
+  font-size: 0.75rem;
+  color: var(--signin-gray-500);
+}
+
+/* 版權資訊 */
+.copyright {
+  text-align: center;
+  margin-top: 2rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+}
+
+/* 操作提示 */
+.hint-text {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(47, 101, 143, 0.08);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  color: var(--signin-gray-600);
+}
+
+.hint-text strong {
+  color: var(--signin-primary);
+}
+
+/* 註冊連結 */
+.signin-card .auth-link {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: var(--signin-gray-500);
+}
+
+.signin-card .auth-link a {
+  color: var(--signin-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.signin-card .auth-link a:hover {
+  text-decoration: underline;
+}
+
+/* Modal 樣式 */
+.signin-card ~ .modal .modal-content,
+body > .modal .modal-content {
+  border-radius: 20px;
+  border: none;
+  overflow: hidden;
+}
+
+body > .modal .modal-header {
+  background: var(--signin-primary);
+  border: none;
+  padding: 1.25rem 1.5rem;
+}
+
+body > .modal .modal-title {
+  color: #fff;
+  font-weight: 700;
+}
+
+body > .modal .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+body > .modal .modal-body {
+  padding: 2rem;
+  text-align: center;
+}
+
+body > .modal .modal-body > i:first-child {
+  font-size: 3rem;
+  color: #dc3545;
+  margin-bottom: 1rem;
+}
+
+body > .modal .modal-body p {
+  font-size: 1.1rem;
+  color: var(--signin-gray-700);
+  margin: 0;
+}
+
+body > .modal .modal-footer {
+  border: none;
+  padding: 0 1.5rem 1.5rem;
+  justify-content: center;
+}
+
+body > .modal .modal-footer .btn {
+  padding: 0.75rem 2rem;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+/* 暗色模式 */
+[data-theme="dark"] body,
+body.dark-mode {
+  background: #0f172a;
+}
+
+[data-theme="dark"] .signin-card,
+body.dark-mode .signin-card {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .signin-title,
+body.dark-mode .signin-title {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .signin-subtitle,
+[data-theme="dark"] .signin-card .form-label,
+body.dark-mode .signin-subtitle,
+body.dark-mode .signin-card .form-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .signin-card .form-control,
+body.dark-mode .signin-card .form-control {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .signin-card .form-control:focus,
+body.dark-mode .signin-card .form-control:focus {
+  background: #1e293b;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
+}
+
+[data-theme="dark"] .signin-card .form-control::placeholder,
+body.dark-mode .signin-card .form-control::placeholder {
+  color: #64748b;
+}
+
+[data-theme="dark"] .input-wrapper i,
+body.dark-mode .input-wrapper i {
+  color: #64748b;
+}
+
+[data-theme="dark"] .input-wrapper:focus-within i,
+body.dark-mode .input-wrapper:focus-within i {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .btn-signin,
+body.dark-mode .btn-signin {
+  background: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="dark"] .btn-signin:hover,
+body.dark-mode .btn-signin:hover {
+  background: #2563eb;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+[data-theme="dark"] .hint-text,
+body.dark-mode .hint-text {
+  background: rgba(96, 165, 250, 0.1);
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .features,
+body.dark-mode .features {
+  border-top-color: #475569;
+}
+
+[data-theme="dark"] .feature-icon,
+body.dark-mode .feature-icon {
+  background: #334155;
+}
+
+[data-theme="dark"] .feature-icon i,
+[data-theme="dark"] .feature-text,
+[data-theme="dark"] .features-title,
+body.dark-mode .feature-icon i,
+body.dark-mode .feature-text,
+body.dark-mode .features-title {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .feature-item:hover .feature-icon,
+body.dark-mode .feature-item:hover .feature-icon {
+  background: #3b82f6;
+}
+
+[data-theme="dark"] .bg-shape,
+body.dark-mode .bg-shape {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+[data-theme="dark"] .copyright,
+body.dark-mode .copyright {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] .auth-link,
+body.dark-mode .auth-link {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .auth-link a,
+body.dark-mode .auth-link a {
+  color: #60a5fa;
+}
+
+/* 響應式 */
+@media (max-width: 480px) {
+  .signin-card {
+    padding: 2rem 1.5rem;
+  }
+
+  .signin-title {
+    font-size: 1.5rem;
+  }
+
+  .feature-list {
+    gap: 1rem;
+  }
 }

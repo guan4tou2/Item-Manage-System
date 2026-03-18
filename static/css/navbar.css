@@ -55,6 +55,9 @@ body {
 .dropdown-item {
   border-radius: 10px;
   padding: 0.72rem 0.95rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   transition: all 0.2s ease;
   font-weight: 600;
   color: #24384e;
@@ -94,6 +97,15 @@ body {
 .navbar .input-group .btn {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
+  min-height: 44px;
+}
+
+/* Ensure navbar interactive elements meet 44px minimum touch target */
+.navbar .nav-link,
+.navbar .dropdown-toggle {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
 }
 
 /* 響應式調整 */

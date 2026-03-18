@@ -160,9 +160,9 @@
 
 {%block js%}
 <script>
-document.getElementById('restoreForm').addEventListener('submit', async function(e) {
+document.getElementById('restoreForm').addEventListener('submit', function(e) {
   e.preventDefault();
-  
+
   const btn = document.getElementById('restoreBtn');
   const fileInput = document.getElementById('backupFile');
   const resultDiv = document.getElementById('restoreResult');
@@ -170,12 +170,9 @@ document.getElementById('restoreForm').addEventListener('submit', async function
   const icon = document.getElementById('restoreIcon');
   const messageSpan = document.getElementById('restoreMessage');
   const statsList = document.getElementById('restoreStats');
-  
-  // 確認對話框
-  if (!confirm('確定要執行還原嗎？這可能會影響現有資料。')) {
-    return;
-  }
-  
+  const form = this;
+
+  showConfirm('確定要執行還原嗎？這可能會影響現有資料。', async function() {
   const selectedFile = fileInput.files[0];
   if (!selectedFile) {
     resultDiv.classList.remove('d-none');
@@ -189,18 +186,18 @@ document.getElementById('restoreForm').addEventListener('submit', async function
   btn.disabled = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>還原中...';
   
-  const formData = new FormData(this);
-  
+  const formData = new FormData(form);
+
   try {
     const response = await fetch('{{ url_for("items.restore_backup") }}', {
       method: 'POST',
       body: formData
     });
-    
+
     const data = await response.json();
-    
+
     resultDiv.classList.remove('d-none');
-    
+
     if (response.ok && data.success) {
       alertDiv.className = 'alert alert-success';
       icon.className = 'fas fa-check-circle mt-1';
@@ -232,6 +229,7 @@ document.getElementById('restoreForm').addEventListener('submit', async function
     btn.disabled = false;
     btn.innerHTML = '<i class="fas fa-upload me-2"></i>開始還原';
   }
+  }, { title: '確認還原', confirmText: '確定還原', btnClass: 'btn-warning', icon: 'fa-upload' });
 });
 
 document.getElementById('backupFile').addEventListener('change', function() {

@@ -31,7 +31,7 @@
           <form action="{{ url_for('items.import_items') }}" method="post" enctype="multipart/form-data" id="importForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
-            <div class="upload-area" id="uploadArea">
+            <div class="upload-area upload-area--import" id="uploadArea">
               <input type="file" name="file" id="fileInput" accept=".json,.csv" class="d-none" required/>
               <div class="upload-placeholder" id="uploadPlaceholder">
                 <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3"></i>
@@ -131,28 +131,6 @@ ITEM-002,另一個物品,文具,...
   </div>
 </div>
 
-<style>
-.upload-area {
-  border: 3px dashed var(--gray-300);
-  border-radius: var(--radius-xl);
-  padding: 4rem 2rem;
-  text-align: center;
-  cursor: pointer;
-  transition: var(--transition);
-  background: var(--gray-50);
-}
-
-.upload-area:hover,
-.upload-area.dragover {
-  border-color: var(--primary);
-  background: rgba(102, 126, 234, 0.05);
-}
-
-.upload-area.has-file {
-  border-color: var(--success);
-  background: rgba(25, 135, 84, 0.05);
-}
-</style>
 {%endblock%}
 
 {%block js%}
@@ -189,7 +167,7 @@ uploadArea.addEventListener('drop', (e) => {
       fileInput.files = files;
       showFileInfo(file);
     } else {
-      alert('請選擇 JSON 或 CSV 格式的檔案');
+      showToast('請選擇 JSON 或 CSV 格式的檔案', 'warning');
     }
   }
 });

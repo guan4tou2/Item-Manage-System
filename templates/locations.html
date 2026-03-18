@@ -469,7 +469,7 @@ function saveNewOrder() {
         // 可選：顯示成功提示
       }
     })
-    .catch(err => console.log('排序儲存失敗'));
+    .catch(() => {});
 }
 </script>
 {%endblock%}

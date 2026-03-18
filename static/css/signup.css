@@ -1,0 +1,290 @@
+/* =========================================
+   signup page
+   ========================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #1e3a5f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  margin: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.bg-shapes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bg-shape {
+  position: absolute;
+  background: rgba(47, 101, 143, 0.12);
+  border-radius: 50%;
+}
+
+.bg-shape-1 {
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  left: -100px;
+  animation: signupFloat 20s ease-in-out infinite;
+}
+
+.bg-shape-2 {
+  width: 400px;
+  height: 400px;
+  bottom: -100px;
+  right: -100px;
+  animation: signupFloat 25s ease-in-out infinite reverse;
+}
+
+@keyframes signupFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-30px) rotate(5deg); }
+}
+
+.signup-container {
+  width: 100%;
+  max-width: 450px;
+  position: relative;
+  z-index: 1;
+}
+
+.signup-card {
+  background: #fafbfc;
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: signupSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes signupSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.signup-logo {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.signup-card .logo-icon {
+  width: 70px;
+  height: 70px;
+  background: var(--gradient-primary, #2f658f);
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 24px rgba(47, 101, 143, 0.35);
+}
+
+.signup-card .logo-icon i {
+  font-size: 2rem;
+  color: #fff;
+}
+
+.signup-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gray-800);
+  margin-bottom: 0.5rem;
+}
+
+.signup-subtitle {
+  color: var(--gray-500);
+  font-size: 0.9rem;
+}
+
+.signup-card .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.signup-card .form-label {
+  display: block;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.signup-card .input-wrapper {
+  position: relative;
+}
+
+.signup-card .input-wrapper i {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--gray-500);
+  transition: color 0.2s ease;
+}
+
+.signup-card .form-control {
+  width: 100%;
+  padding: 0.85rem 1rem 0.85rem 2.75rem;
+  font-size: 1rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 12px;
+  background: var(--gray-50);
+  transition: all 0.2s ease;
+}
+
+.signup-card .form-control:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+}
+
+.signup-card .form-control:focus + i,
+.signup-card .input-wrapper:focus-within i {
+  color: var(--primary);
+}
+
+.signup-card .form-control::placeholder {
+  color: var(--gray-500);
+}
+
+.signup-card .password-strength {
+  height: 4px;
+  background: var(--gray-200);
+  border-radius: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+}
+
+.signup-card .password-strength-bar {
+  height: 100%;
+  width: 0;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.signup-card .password-strength-bar.weak { width: 33%; background: var(--danger, #dc3545); }
+.signup-card .password-strength-bar.medium { width: 66%; background: var(--warning, #ffc107); }
+.signup-card .password-strength-bar.strong { width: 100%; background: var(--success, #28a745); }
+
+.password-hint {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  margin-top: 0.25rem;
+}
+
+.btn-signup {
+  width: 100%;
+  padding: 0.9rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--gradient-primary, #2f658f);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(47, 101, 143, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-signup:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(47, 101, 143, 0.4);
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: var(--gray-500);
+}
+
+.login-link a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-link a:hover {
+  text-decoration: underline;
+}
+
+.terms {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.copyright {
+  text-align: center;
+  margin-top: 1.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+}
+
+/* 暗色模式 */
+[data-theme="dark"] body { background: #0f172a; }
+[data-theme="dark"] .signup-card { background: #1e293b; }
+[data-theme="dark"] .signup-title { color: #f1f5f9; }
+[data-theme="dark"] .signup-subtitle,
+[data-theme="dark"] .signup-card .form-label,
+[data-theme="dark"] .password-hint,
+[data-theme="dark"] .login-link,
+[data-theme="dark"] .terms { color: #94a3b8; }
+[data-theme="dark"] .signup-card .form-control {
+  background: #334155; border-color: #475569; color: #f1f5f9;
+}
+[data-theme="dark"] .signup-card .form-control:focus {
+  background: #1e293b; border-color: #60a5fa;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.15);
+}
+[data-theme="dark"] .signup-card .form-control::placeholder { color: #64748b; }
+[data-theme="dark"] .signup-card .input-wrapper i { color: #64748b; }
+[data-theme="dark"] .signup-card .input-wrapper:focus-within i { color: #60a5fa; }
+[data-theme="dark"] .btn-signup {
+  background: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+[data-theme="dark"] .btn-signup:hover {
+  background: #2563eb; box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+[data-theme="dark"] .login-link a { color: #60a5fa; }
+[data-theme="dark"] .bg-shape { background: rgba(59, 130, 246, 0.08); }
+[data-theme="dark"] .copyright { color: rgba(255, 255, 255, 0.3); }
+[data-theme="dark"] .password-strength { background: #475569; }
+
+/* 響應式 */
+@media (max-width: 480px) {
+  .signup-card {
+    padding: 1.75rem;
+  }
+
+  .signup-title {
+    font-size: 1.35rem;
+  }
+}

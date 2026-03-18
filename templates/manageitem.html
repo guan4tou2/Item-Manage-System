@@ -638,7 +638,7 @@ function submitBatchMaintenance() {
   const maintenanceDate = document.getElementById('batchMaintenanceDate').value;
   if (selected.length === 0) return;
   if (!maintenanceDate) {
-    alert('請選擇保養日期');
+    showToast('請選擇保養日期', 'warning');
     return;
   }
 
@@ -656,13 +656,13 @@ function submitBatchMaintenance() {
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      alert(data.message);
+      showToast(data.message, 'success');
       location.reload();
     } else {
-      alert('更新失敗：' + (data.message || '未知錯誤'));
+      showToast('更新失敗：' + (data.message || '未知錯誤'), 'danger');
     }
   })
-  .catch(() => alert('發生錯誤'));
+  .catch(() => showToast('發生錯誤', 'danger'));
 }
 
 function markMaintenanceToday(itemId) {
@@ -685,9 +685,9 @@ function markMaintenanceToday(itemId) {
       location.reload();
       return;
     }
-    alert('更新失敗：' + (data.message || '未知錯誤'));
+    showToast('更新失敗：' + (data.message || '未知錯誤'), 'danger');
   })
-  .catch(() => alert('發生錯誤'));
+  .catch(() => showToast('發生錯誤', 'danger'));
 }
 
 // 長按進入選擇模式（手機版）

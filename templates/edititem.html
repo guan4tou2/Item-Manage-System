@@ -502,85 +502,6 @@
   </div>
 </div>
 
-<style>
-.upload-area {
-  border: 2px dashed var(--gray-300);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  text-align: center;
-  cursor: pointer;
-  transition: var(--transition);
-  background: var(--gray-50);
-}
-
-.upload-area:hover,
-.upload-area.dragover {
-  border-color: var(--primary);
-  background: rgba(102, 126, 234, 0.05);
-}
-
-.upload-placeholder {
-  pointer-events: none;
-}
-
-.photo-action-row {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 1rem;
-  pointer-events: auto;
-}
-
-.upload-preview {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.form-progress-summary {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.summary-item {
-  background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  padding: 0.9rem 1rem;
-}
-
-.summary-label {
-  display: block;
-  color: var(--gray-600);
-  font-size: 0.85rem;
-  margin-bottom: 0.2rem;
-}
-
-.camera-stage {
-  min-height: 280px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--gray-200);
-  background: var(--gray-50);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.camera-preview {
-  width: 100%;
-  max-height: 60vh;
-  object-fit: cover;
-  background: #111827;
-}
-
-.camera-empty-state {
-  text-align: center;
-  color: var(--gray-600);
-  padding: 2rem 1rem;
-}
-</style>
 
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
@@ -896,7 +817,7 @@
         });
         syncStorePlaceFromSelectors();
       })
-      .catch(() => console.log('無法載入房間選項'));
+      .catch(() => {});
   }
 
   function onRoomChange() {
@@ -931,7 +852,7 @@
         });
         syncStorePlaceFromSelectors();
       })
-      .catch(() => console.log('無法載入區域選項'));
+      .catch(() => {});
   }
 
   document.addEventListener('DOMContentLoaded', function () {

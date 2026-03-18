@@ -43,26 +43,39 @@ bp = Blueprint("items", __name__)
 @bp.route("/uploads/<filename>")
 @login_required
 def uploaded_file(filename):
-    from app.repositories import item_repo
-    # 檢查檔案是否屬於使用者有權限存取的物品
-    user_id = session.get("UserID", "")
-    user = get_current_user()
-    if not user.get("admin"):
-        # 非管理員需驗證圖片歸屬
-        from app import db as _db, get_db_type
-        if get_db_type() == "postgres":
-            item = Item.query.filter(
-                (Item.ItemPic == filename) | (Item.ItemThumb == filename)
-            ).first()
-            if item:
-                visibility = getattr(item, "visibility", "private") or "private"
-                if visibility == "private":
-                    shared = item.shared_with or []
-                    owner = item.ItemOwner or ""
-                    if owner != user_id and user_id not in shared:
-                        from flask import abort
-                        abort(403)
-    return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
+    from flask import abort
+    try:
+        # 檢查檔案是否屬於使用者有權限存取的物品
+        user_id = session.get("UserID", "")
+        user = get_current_user()
+        if not user.get("admin"):
+            from app import get_db_type, mongo
+            db_type = get_db_type()
+            if db_type == "postgres":
+                item = Item.query.filter(
+                    (Item.ItemPic == filename) | (Item.ItemThumb == filename)
+                ).first()
+                if item:
+                    visibility = getattr(item, "visibility", "private") or "private"
+                    if visibility == "private":
+                        shared = item.shared_with or []
+                        owner = item.ItemOwner or ""
+                        if owner != user_id and user_id not in shared:
+                            abort(403)
+            else:
+                item = mongo.db.items.find_one(
+                    {"$or": [{"ItemPic": filename}, {"ItemThumb": filename}]}
+                )
+                if item:
+                    visibility = item.get("visibility", "private") or "private"
+                    if visibility == "private":
+                        shared = item.get("shared_with") or []
+                        owner = item.get("ItemOwner", "")
+                        if owner != user_id and user_id not in shared:
+                            abort(403)
+        return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
+    except (FileNotFoundError, OSError):
+        abort(404)
 
 
 @bp.route("/home")
@@ -699,44 +712,50 @@ def quick_update_location(item_id: str):
 @admin_required
 def bulk_delete():
     """批量刪除物品 API"""
-    data = request.get_json() or {}
-    item_ids = data.get("item_ids", [])
-    
-    if not item_ids:
-        return jsonify({"success": False, "message": "未選擇任何物品"})
-    
-    success_count, failed_ids = item_service.bulk_delete_items(item_ids)
-    
-    return jsonify({
-        "success": True,
-        "success_count": success_count,
-        "failed_ids": failed_ids,
-        "message": f"成功刪除 {success_count} 個物品"
-    })
+    try:
+        data = request.get_json() or {}
+        item_ids = data.get("item_ids", [])
+
+        if not item_ids:
+            return jsonify({"success": False, "message": "未選擇任何物品"})
+
+        success_count, failed_ids = item_service.bulk_delete_items(item_ids)
+
+        return jsonify({
+            "success": True,
+            "success_count": success_count,
+            "failed_ids": failed_ids,
+            "message": f"成功刪除 {success_count} 個物品"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": f"刪除失敗：{str(e)}"}), 500
 
 
 @bp.route("/api/bulk/move", methods=["POST"])
 @admin_required
 def bulk_move():
     """批量移動物品 API"""
-    data = request.get_json() or {}
-    item_ids = data.get("item_ids", [])
-    target_location = data.get("location", "").strip()
-    
-    if not item_ids:
-        return jsonify({"success": False, "message": "未選擇任何物品"})
-    
-    if not target_location:
-         return jsonify({"success": False, "message": "未指定目標位置"})
-    
-    success_count, failed_ids = item_service.bulk_move_items(item_ids, target_location)
-    
-    return jsonify({
-        "success": True,
-        "success_count": success_count,
-        "failed_ids": failed_ids,
-        "message": f"成功移動 {success_count} 個物品至 {target_location}"
-    })
+    try:
+        data = request.get_json() or {}
+        item_ids = data.get("item_ids", [])
+        target_location = data.get("location", "").strip()
+
+        if not item_ids:
+            return jsonify({"success": False, "message": "未選擇任何物品"})
+
+        if not target_location:
+            return jsonify({"success": False, "message": "未指定目標位置"})
+
+        success_count, failed_ids = item_service.bulk_move_items(item_ids, target_location)
+
+        return jsonify({
+            "success": True,
+            "success_count": success_count,
+            "failed_ids": failed_ids,
+            "message": f"成功移動 {success_count} 個物品至 {target_location}"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "message": f"移動失敗：{str(e)}"}), 500
 
 
 @bp.route("/api/bulk/maintenance", methods=["POST"])

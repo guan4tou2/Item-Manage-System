@@ -345,15 +345,6 @@
   </div>
 </div>
  
- <style>
-  .form-check-input:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-  }
-  .badge {
-    font-weight: 500;
-  }
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -485,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (sendTestBtn) {
     sendTestBtn.addEventListener('click', function() {
       if (!hasReachableChannel()) {
-        alert('請先設定可用的通知管道，例如 Email 或已綁定的聊天通知');
+        showToast('請先設定可用的通知管道，例如 Email 或已綁定的聊天通知', 'warning');
         return;
       }
   
@@ -520,39 +511,37 @@ document.addEventListener('DOMContentLoaded', function() {
   // 立即發送通知
   if (sendNowBtn) {
     sendNowBtn.addEventListener('click', function() {
-      if (!confirm('確定要立即發送通知嗎？')) {
-        return;
-      }
-  
-      fetch('/notifications/api/send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token() }}'
-        }
-      })
-      .then(async response => {
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.message || '發送失敗');
-        }
-        return result;
-      })
-      .then(result => {
-        if (result.success) {
-          showFeedback(
-            'success',
-            `通知已發送。已過期 ${result.expired_count || 0} 項、即將到期 ${result.near_count || 0} 項、需保養 ${result.replacement_due_count || 0} 項、即將保養 ${result.replacement_upcoming_count || 0} 項。`
-          );
-          setTimeout(() => location.reload(), 900);
-        } else {
-          showFeedback('danger', `發送失敗：${result.message}`);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        showFeedback('danger', error.message || '立即發送通知時發生錯誤。');
-      });
+      showConfirm('確定要立即發送通知嗎？', function() {
+        fetch('/notifications/api/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+          }
+        })
+        .then(async response => {
+          const result = await response.json();
+          if (!response.ok) {
+            throw new Error(result.message || '發送失敗');
+          }
+          return result;
+        })
+        .then(result => {
+          if (result.success) {
+            showFeedback(
+              'success',
+              `通知已發送。已過期 ${result.expired_count || 0} 項、即將到期 ${result.near_count || 0} 項、需保養 ${result.replacement_due_count || 0} 項、即將保養 ${result.replacement_upcoming_count || 0} 項。`
+            );
+            setTimeout(() => location.reload(), 900);
+          } else {
+            showFeedback('danger', `發送失敗：${result.message}`);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showFeedback('danger', error.message || '立即發送通知時發生錯誤。');
+        });
+      }, { title: '立即發送通知', confirmText: '確定發送', btnClass: 'btn-warning', icon: 'fa-bell' });
     });
   }
 

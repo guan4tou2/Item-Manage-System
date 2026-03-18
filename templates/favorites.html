@@ -50,8 +50,7 @@
         loading="lazy"
       />
         {%else%}
-        <div class="card-img-top bg-gradient d-flex align-items-center justify-content-center h-100" 
-             style="background: #e2e8f0;">
+        <div class="card-img-top bg-light bg-gradient d-flex align-items-center justify-content-center h-100">
           <i class="fas fa-image fa-4x text-white opacity-50"></i>
         </div>
         {%endif%}
@@ -210,35 +209,13 @@ async function toggleFavorite(itemId, btn) {
         }, 300);
       }
     } else {
-      alert(data.message || '操作失敗');
+      showToast(data.message || '操作失敗', 'danger');
     }
   } catch (error) {
     console.error('Error:', error);
-    alert('操作失敗');
+    showToast('操作失敗', 'danger');
   }
 }
 </script>
 
-<style>
-.stats-summary-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.summary-chip {
-  background: var(--gray-50);
-  border: 1px solid var(--gray-200);
-  border-radius: var(--radius-md);
-  padding: 0.9rem 1rem;
-}
-
-.summary-chip-label {
-  display: block;
-  color: var(--gray-600);
-  font-size: 0.85rem;
-  margin-bottom: 0.2rem;
-}
-</style>
 {%endblock%}

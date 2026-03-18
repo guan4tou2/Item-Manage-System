@@ -137,10 +137,14 @@
                       {%endif%}
                       
                       {%if u.User != User.User%}
-                      <form action="{{ url_for('auth.admin_reset_password', target_user=u.User) }}" 
-                            method="POST" 
-                            class="d-inline"
-                            onsubmit="return confirm('確定要重置 {{ u.User }} 的密碼嗎？');">
+                      <form action="{{ url_for('auth.admin_reset_password', target_user=u.User) }}"
+                            method="POST"
+                            class="d-inline confirm-form"
+                            data-confirm-message="確定要重置 {{ u.User }} 的密碼嗎？"
+                            data-confirm-title="重置密碼"
+                            data-confirm-text="確定重置"
+                            data-confirm-icon="fa-key"
+                            data-confirm-btn-class="btn-warning">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="btn btn-outline-warning" title="重置密碼">
                           <i class="fas fa-key"></i>
@@ -148,8 +152,12 @@
                       </form>
                       <form action="{{ url_for('auth.admin_delete_user', target_user=u.User) }}"
                             method="POST"
-                            class="d-inline"
-                            onsubmit="return confirm('確定要刪除 {{ u.User }} 嗎？此操作無法復原。');">
+                            class="d-inline confirm-form"
+                            data-confirm-message="確定要刪除 {{ u.User }} 嗎？此操作無法復原。"
+                            data-confirm-title="刪除用戶"
+                            data-confirm-text="確定刪除"
+                            data-confirm-icon="fa-trash-alt"
+                            data-confirm-btn-class="btn-danger">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <button type="submit" class="btn btn-outline-danger" title="刪除用戶">
                           <i class="fas fa-trash-alt"></i>
@@ -185,4 +193,23 @@
     </div>
   </div>
 </div>
+{%endblock%}
+
+{%block js%}
+<script>
+document.querySelectorAll('form.confirm-form').forEach(function(form) {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const message = form.dataset.confirmMessage;
+    const title   = form.dataset.confirmTitle    || undefined;
+    const confirmText = form.dataset.confirmText || undefined;
+    const btnClass    = form.dataset.confirmBtnClass || undefined;
+    const icon        = form.dataset.confirmIcon || undefined;
+    showConfirm(message, function() {
+      form.removeEventListener('submit', arguments.callee);
+      form.submit();
+    }, { title: title, confirmText: confirmText, btnClass: btnClass, icon: icon });
+  });
+});
+</script>
 {%endblock%}
