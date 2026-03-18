@@ -99,6 +99,34 @@ def _ensure_item_maintenance_columns() -> None:
         db.session.commit()
 
 
+def _ensure_user_profile_columns() -> None:
+    """補齊 users 表缺少的個人設定欄位，避免舊資料庫在重構後直接失敗。"""
+    if get_db_type() != "postgres":
+        return
+
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("users"):
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    alter_statements = []
+    if "display_name" not in existing_columns:
+        alter_statements.append('ALTER TABLE users ADD COLUMN display_name VARCHAR(100);')
+    if "theme_preference" not in existing_columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN theme_preference VARCHAR(20) DEFAULT 'light';")
+    if "language" not in existing_columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN language VARCHAR(10) DEFAULT 'zh_TW';")
+
+    for statement in alter_statements:
+        db.session.execute(text(statement))
+
+    if alter_statements:
+        db.session.commit()
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
@@ -153,6 +181,7 @@ def create_app() -> Flask:
         with app.app_context():
             db.create_all()
             _ensure_item_maintenance_columns()
+            _ensure_user_profile_columns()
     else:
         mongo.init_app(app)
     
@@ -207,6 +236,7 @@ def create_app() -> Flask:
     from app.travel.routes import bp as travel_bp, shopping_bp
     from app.line.routes import bp as line_bp
     from app.telegram.routes import bp as telegram_bp
+    from app.profile.routes import bp as profile_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
@@ -220,6 +250,7 @@ def create_app() -> Flask:
     app.register_blueprint(shopping_bp)
     app.register_blueprint(line_bp)
     app.register_blueprint(telegram_bp)
+    app.register_blueprint(profile_bp)
     
     # 註冊自定義過濾器
     import re

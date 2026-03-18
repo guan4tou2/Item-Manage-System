@@ -297,6 +297,48 @@ def update_notification_settings(
 
 
 
+def get_profile(username: str) -> Dict[str, Any]:
+    db_type = get_db_type()
+    if db_type == "postgres":
+        user = User.query.filter_by(User=username).first()
+        if user:
+            return {
+                "display_name": user.display_name or "",
+                "theme_preference": user.theme_preference or "light",
+                "language": user.language or "zh_TW",
+                "email": user.email or "",
+            }
+        return {}
+    user = mongo.db.user.find_one(
+        {"User": username},
+        {"display_name": 1, "theme_preference": 1, "language": 1, "email": 1}
+    )
+    if user:
+        return {
+            "display_name": user.get("display_name", ""),
+            "theme_preference": user.get("theme_preference", "light"),
+            "language": user.get("language", "zh_TW"),
+            "email": user.get("email", ""),
+        }
+    return {}
+
+
+def update_profile(username: str, data: Dict[str, Any]) -> None:
+    db_type = get_db_type()
+    allowed_fields = {"display_name", "theme_preference", "language", "email"}
+    update_data = {k: v for k, v in data.items() if k in allowed_fields}
+    if not update_data:
+        return
+    if db_type == "postgres":
+        user = User.query.filter_by(User=username).first()
+        if user:
+            for field, value in update_data.items():
+                setattr(user, field, value)
+            db.session.commit()
+    else:
+        mongo.db.user.update_one({"User": username}, {"$set": update_data})
+
+
 def update_last_notification_date(username: str, date: str) -> None:
     db_type = get_db_type()
     if db_type == "postgres":

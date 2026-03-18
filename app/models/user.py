@@ -28,6 +28,11 @@ class User(UserMixin, db.Model):
     replacement_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     replacement_intervals: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=list)
     
+    # 個人設定
+    display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    theme_preference: Mapped[str] = mapped_column(String(20), default="light")
+    language: Mapped[str] = mapped_column(String(10), default="zh_TW")
+
     # 密碼修改相關
     password_changed: Mapped[bool] = mapped_column(Boolean, default=False)
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
@@ -53,6 +58,9 @@ class User(UserMixin, db.Model):
             "notify_channels": list(self.notify_channels or []),
             "reminder_ladder": self.reminder_ladder or "",
             "last_notification_date": self.last_notification_date,
+            "display_name": self.display_name,
+            "theme_preference": self.theme_preference or "light",
+            "language": self.language or "zh_TW",
             "password_changed": self.password_changed,
             "failed_attempts": self.failed_attempts,
             "locked_until": self.locked_until,

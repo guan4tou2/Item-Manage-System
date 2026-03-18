@@ -38,9 +38,9 @@ class RoutesTestCase(unittest.TestCase):
                 data={"UserID": "admin", "Password": "admin"},
                 follow_redirects=False,
             )
-            # 應該重定向到首頁
+            # 應該重定向到 Dashboard
             self.assertEqual(response.status_code, 302)
-            self.assertIn("/home", response.location)
+            self.assertIn("/dashboard", response.location)
 
     def test_signin_post_failure(self):
         """測試登入失敗"""

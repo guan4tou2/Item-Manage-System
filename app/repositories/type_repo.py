@@ -52,6 +52,51 @@ def delete_type(name: str) -> bool:
     return result.deleted_count > 0 if db_type == "postgres" else result.deleted_count > 0
 
 
+def update_type(old_name: str, new_name: str) -> bool:
+    """Rename a type. Returns True on success."""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        t = ItemType.query.filter_by(name=old_name).first()
+        if not t:
+            return False
+        t.name = new_name
+        db.session.commit()
+    else:
+        result = mongo.db.type.update_one({"name": old_name}, {"$set": {"name": new_name}})
+        if result.modified_count == 0:
+            return False
+
+    cache.delete(f"types_list_{db_type}")
+    return True
+
+
+def count_items_by_type(type_name: str) -> int:
+    """Count how many items use this type."""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        from app.models.item import Item
+        return db.session.query(Item).filter_by(ItemType=type_name).count()
+    else:
+        return mongo.db.item.count_documents({"ItemType": type_name})
+
+
+def update_items_type(old_name: str, new_name: str) -> int:
+    """Bulk-rename ItemType on all items. Returns count updated."""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        from app.models.item import Item
+        count = db.session.query(Item).filter_by(ItemType=old_name).update(
+            {"ItemType": new_name}
+        )
+        db.session.commit()
+        return count
+    else:
+        result = mongo.db.item.update_many(
+            {"ItemType": old_name}, {"$set": {"ItemType": new_name}}
+        )
+        return result.modified_count
+
+
 def get_type_by_name(name: str):
     db_type = get_db_type()
     if db_type == "postgres":

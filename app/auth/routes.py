@@ -33,7 +33,7 @@ def signin():
                 flash("首次登入請修改預設密碼以確保安全", "warning")
                 return redirect(url_for("auth.change_password"))
             
-            return redirect(url_for("items.home"))
+            return redirect(url_for("items.dashboard"))
         else:
             return render_template("signin.html", error=error_msg)
 

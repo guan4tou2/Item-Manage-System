@@ -267,6 +267,9 @@ def create_item(form_data: Dict[str, Any], file_storage) -> Tuple[bool, str]:
 
     filename = storage.save_upload(file_storage) if file_storage else None
     if filename:
+        compressed = image.compress_image(filename)
+        if compressed:
+            filename = compressed
         thumb = image.create_thumbnail(filename)
         form_data["ItemPic"] = filename
         if thumb:
@@ -328,12 +331,16 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None) -> T
     if file_storage and file_storage.filename:
         filename = storage.save_upload(file_storage)
         if filename:
+            # 壓縮圖片
+            compressed = image.compress_image(filename)
+            if compressed:
+                filename = compressed
             # 刪除舊圖片與縮圖
             if existing.get("ItemPic"):
                 storage.delete_file(existing["ItemPic"])
             if existing.get("ItemThumb"):
                 storage.delete_file(existing["ItemThumb"])
-                
+
             thumb = image.create_thumbnail(filename)
             form_data["ItemPic"] = filename
             if thumb:

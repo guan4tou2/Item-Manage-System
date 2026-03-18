@@ -78,6 +78,31 @@ def uploaded_file(filename):
         abort(404)
 
 
+@bp.route("/dashboard")
+@login_required
+def dashboard():
+    user = get_current_user()
+    settings = user_repo.get_notification_settings(session.get("UserID", ""))
+    expiring = item_service.get_expiring_items(settings.get("notify_days", 30))
+    low_stock = item_service.get_low_stock_items()
+    replacement = item_service.get_replacement_items(settings)
+    stats = item_service.get_stats()
+    recent_logs = log_service.get_recent_logs(limit=10)
+    return render_template(
+        "dashboard.html",
+        User=user,
+        expiring_items=expiring.get("near_expiry", [])[:5],
+        expired_items=expiring.get("expired", [])[:5],
+        expiring_count=expiring.get("near_count", 0) + expiring.get("expired_count", 0),
+        low_stock_items=low_stock.get("low_stock", [])[:5],
+        low_stock_count=low_stock.get("low_stock_count", 0),
+        maintenance_due=replacement.get("due", [])[:5],
+        maintenance_count=len(replacement.get("due", [])),
+        stats=stats,
+        recent_logs=recent_logs,
+    )
+
+
 @bp.route("/home")
 @login_required
 def home():

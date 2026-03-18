@@ -1,0 +1,183 @@
+{%extends 'template.html' %}
+{%block title%}分類管理 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container">
+  <div class="page-header animate-fadeInUp">
+    <h1><i class="fas fa-tags me-2"></i>分類管理</h1>
+    <p class="lead">管理物品分類，方便新增與搜尋</p>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container">
+  <div class="row g-4">
+    <!-- 新增分類 -->
+    <div class="col-lg-4 animate-fadeInUp">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-plus me-2"></i>新增分類</h5>
+        </div>
+        <div class="card-body">
+          <form action="{{ url_for('types.manage_types') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div class="mb-3">
+              <label for="typeName" class="form-label">分類名稱</label>
+              <input type="text" class="form-control" id="typeName" name="name" placeholder="例如：3C配件" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-plus me-1"></i>新增
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分類列表 -->
+    <div class="col-lg-8 animate-fadeInUp stagger-1">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-list me-2"></i>現有分類 ({{ itemtype|length }})</h5>
+          <input type="text" class="form-control form-control-sm" id="typeSearchInput"
+                 placeholder="搜尋分類..." style="max-width: 200px;">
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="typeTable">
+              <thead class="table-light">
+                <tr>
+                  <th>分類名稱</th>
+                  <th class="text-center" style="width: 100px;">物品數</th>
+                  <th class="text-end" style="width: 160px;">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {%for type in itemtype%}
+                <tr data-type-name="{{ type.name }}">
+                  <td>
+                    <span class="type-name-display">{{ type.name }}</span>
+                  </td>
+                  <td class="text-center">
+                    <span class="badge bg-secondary type-count" data-name="{{ type.name }}">—</span>
+                  </td>
+                  <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-outline-primary edit-type-btn"
+                              data-name="{{ type.name }}" title="編輯">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-danger delete-type-btn"
+                              data-name="{{ type.name }}" title="刪除">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {%endfor%}
+              </tbody>
+            </table>
+          </div>
+          {%if not itemtype%}
+          <div class="text-center py-4 text-muted">
+            <i class="fas fa-tags fa-2x mb-2 opacity-50"></i>
+            <p class="mb-0">尚無分類，請新增第一個分類</p>
+          </div>
+          {%endif%}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 編輯 Modal -->
+<div class="modal fade" id="editTypeModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <form action="{{ url_for('types.edit_type') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="old_name" id="editOldName">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-edit me-2"></i>編輯分類</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="editNewName" class="form-label">新名稱</label>
+            <input type="text" class="form-control" id="editNewName" name="new_name" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">取消</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-save me-1"></i>儲存
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 刪除確認 Modal -->
+<div class="modal fade" id="deleteTypeModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <form id="deleteTypeForm" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="modal-body text-center py-4">
+          <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3"></i>
+          <h6 class="fw-bold mb-2">確認刪除</h6>
+          <p class="text-muted small mb-0">確定要刪除分類「<strong id="deleteTypeName"></strong>」嗎？</p>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2 pt-0 pb-3">
+          <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">取消</button>
+          <button type="submit" class="btn btn-danger btn-sm px-3">刪除</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+  // 搜尋篩選
+  document.getElementById('typeSearchInput').addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#typeTable tbody tr').forEach(function(row) {
+      var name = row.dataset.typeName || '';
+      row.style.display = name.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+
+  // 編輯按鈕
+  document.querySelectorAll('.edit-type-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var name = this.dataset.name;
+      document.getElementById('editOldName').value = name;
+      document.getElementById('editNewName').value = name;
+      new bootstrap.Modal(document.getElementById('editTypeModal')).show();
+    });
+  });
+
+  // 刪除按鈕
+  document.querySelectorAll('.delete-type-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var name = this.dataset.name;
+      document.getElementById('deleteTypeName').textContent = name;
+      document.getElementById('deleteTypeForm').action = "{{ url_for('types.delete_type', name='__NAME__') }}".replace('__NAME__', encodeURIComponent(name));
+      new bootstrap.Modal(document.getElementById('deleteTypeModal')).show();
+    });
+  });
+
+  // 載入每個類型的物品數量
+  document.querySelectorAll('.type-count').forEach(function(badge) {
+    var name = badge.dataset.name;
+    fetch("{{ url_for('types.type_item_count', name='__NAME__') }}".replace('__NAME__', encodeURIComponent(name)))
+      .then(function(r) { return r.json(); })
+      .then(function(data) { badge.textContent = data.count; })
+      .catch(function() { badge.textContent = '?'; });
+  });
+</script>
+{%endblock%}

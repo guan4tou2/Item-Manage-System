@@ -279,6 +279,44 @@ def admin_reset_password(target_username: str) -> Tuple[bool, str, str]:
     return True, f"已重置 {target_username} 的密碼", new_password
 
 
+def get_profile(username: str) -> dict:
+    """取得使用者個人設定"""
+    return user_repo.get_profile(username)
+
+
+def update_profile(username: str, data: dict) -> Tuple[bool, str]:
+    """更新使用者個人設定（含驗證）"""
+    allowed_theme = {"light", "dark"}
+    allowed_language = {"zh_TW", "en"}
+
+    theme = data.get("theme_preference", "light")
+    language = data.get("language", "zh_TW")
+
+    if theme not in allowed_theme:
+        return False, "無效的主題設定"
+    if language not in allowed_language:
+        return False, "無效的語言設定"
+
+    display_name = data.get("display_name", "")
+    if len(display_name) > 100:
+        return False, "顯示名稱不可超過 100 個字元"
+
+    email = data.get("email", "")
+    if email:
+        import re
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+            return False, "電子郵件格式不正確"
+
+    user_repo.update_profile(username, {
+        "display_name": display_name,
+        "theme_preference": theme,
+        "language": language,
+        "email": email,
+    })
+    log_service.log_action("update", username, details={"message": "更新個人設定"})
+    return True, "個人設定已儲存"
+
+
 def list_users() -> list:
     """取得所有使用者列表"""
     return user_repo.list_all_users()
