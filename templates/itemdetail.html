@@ -251,6 +251,23 @@
             {%endif%}
           </div>
           
+          <!-- 數量變動記錄 -->
+          <div class="info-section">
+            <h5 class="info-section-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#qtyLogCollapse" aria-expanded="false">
+              <i class="fas fa-chart-line text-secondary"></i>
+              數量變動記錄
+              <i class="fas fa-chevron-down ms-auto small"></i>
+            </h5>
+            <div class="collapse" id="qtyLogCollapse">
+              <div id="qtyLogContainer">
+                <div class="text-center py-3" id="qtyLogLoading">
+                  <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                  <span class="ms-2 text-muted">載入中...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 物品描述 -->
           {%if item.ItemDesc%}
           <div class="info-section">
@@ -339,6 +356,28 @@
       </div>
     </div>
   </div>
+
+  <!-- 借出記錄 -->
+  <div class="row mt-5">
+    <div class="col-12 animate-fadeInUp stagger-4">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-handshake me-2"></i>借出記錄</h5>
+          {%if User.admin%}
+          <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#lendModal">
+            <i class="fas fa-plus me-1"></i>借出
+          </button>
+          {%endif%}
+        </div>
+        <div class="card-body" id="loansContainer">
+          <div class="text-center py-3" id="loansLoading">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+            <span class="ms-2 text-muted">載入中...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- 新增關聯 Modal -->
@@ -370,6 +409,48 @@
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
         <button type="button" class="btn btn-primary" id="addRelatedBtn">
           <i class="fas fa-plus me-1"></i>新增
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{%endif%}
+
+<!-- 借出 Modal -->
+{%if User.admin%}
+<div class="modal fade" id="lendModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-handshake me-2"></i>借出物品</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label">借用人 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="lendBorrower" placeholder="輸入借用人姓名">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">聯絡方式</label>
+          <input type="text" class="form-control" id="lendContact" placeholder="電話或電子郵件（選填）">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">借出日期 <span class="text-danger">*</span></label>
+          <input type="date" class="form-control" id="lendDate" value="{{ now | default('') }}">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">預計歸還日期</label>
+          <input type="date" class="form-control" id="lendExpectedReturn">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">備註</label>
+          <textarea class="form-control" id="lendNotes" rows="2" placeholder="選填"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" id="confirmLendBtn">
+          <i class="fas fa-handshake me-1"></i>確認借出
         </button>
       </div>
     </div>
@@ -520,9 +601,149 @@ async function removeRelatedItem(relatedId) {
   }, { title: '移除關聯', confirmText: '移除', icon: 'fas fa-unlink text-warning' });
 }
 
+// 載入數量變動記錄
+async function loadQtyLog() {
+  const container = document.getElementById('qtyLogContainer');
+  try {
+    const response = await fetch(`/api/quantity-history/{{item.ItemID}}`);
+    const logs = await response.json();
+    if (logs.length === 0) {
+      container.innerHTML = `<p class="text-muted small mb-0">尚無變動記錄</p>`;
+      return;
+    }
+    container.innerHTML = `
+      <div class="table-responsive mt-2">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>日期</th>
+              <th>使用者</th>
+              <th>變動</th>
+              <th>數量（前→後）</th>
+              <th>原因</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logs.map(log => `
+              <tr>
+                <td class="small">${log.timestamp || ''}</td>
+                <td class="small">${log.user || ''}</td>
+                <td class="small ${log.delta > 0 ? 'text-success' : 'text-danger'}">${log.delta > 0 ? '+' : ''}${log.delta}</td>
+                <td class="small">${log.old_quantity} → ${log.new_quantity}</td>
+                <td class="small text-muted">${log.reason || '—'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (e) {
+    container.innerHTML = `<p class="text-muted small mb-0">載入失敗</p>`;
+  }
+}
+
+// 載入借出記錄
+async function loadLoans() {
+  const container = document.getElementById('loansContainer');
+  try {
+    const response = await fetch(`/api/loans/item/{{item.ItemID}}`);
+    const loans = await response.json();
+    if (loans.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-4 text-muted">
+          <i class="fas fa-handshake fa-2x mb-2 opacity-50"></i>
+          <p class="mb-0">尚無借出記錄</p>
+        </div>
+      `;
+      return;
+    }
+    container.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>借用人</th>
+              <th>借出日期</th>
+              <th>預計歸還</th>
+              <th>實際歸還</th>
+              <th>狀態</th>
+              {%if User.admin%}<th class="text-end">操作</th>{%endif%}
+            </tr>
+          </thead>
+          <tbody>
+            ${loans.map(loan => `
+              <tr>
+                <td>${loan.borrower}</td>
+                <td class="small">${loan.lent_date}</td>
+                <td class="small">${loan.expected_return || '—'}</td>
+                <td class="small">${loan.actual_return || '—'}</td>
+                <td>
+                  ${loan.status === 'returned'
+                    ? '<span class="badge bg-secondary">已歸還</span>'
+                    : loan.status === 'overdue'
+                    ? '<span class="badge bg-danger">已逾期</span>'
+                    : '<span class="badge bg-success">借出中</span>'
+                  }
+                </td>
+                {%if User.admin%}
+                <td class="text-end">
+                  ${loan.status !== 'returned'
+                    ? `<button class="btn btn-sm btn-outline-primary loan-return-btn" data-loan-id="${loan.id}"><i class="fas fa-undo me-1"></i>歸還</button>`
+                    : ''
+                  }
+                </td>
+                {%endif%}
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    // 綁定歸還按鈕
+    container.querySelectorAll('.loan-return-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const loanId = this.dataset.loanId;
+        try {
+          const resp = await fetch(`/api/loans/return/${loanId}`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+          });
+          const data = await resp.json();
+          if (data.success) {
+            showToast(data.message || '已標記歸還', 'success');
+            loadLoans();
+          } else {
+            showToast(data.message || '操作失敗', 'danger');
+          }
+        } catch (e) {
+          showToast('操作失敗', 'danger');
+        }
+      });
+    });
+  } catch (e) {
+    container.innerHTML = `<div class="text-center text-muted py-3">載入失敗</div>`;
+  }
+}
+
 // 頁面載入時載入關聯物品與綁定事件
 document.addEventListener('DOMContentLoaded', function() {
   loadRelatedItems();
+  loadLoans();
+
+  // 當數量變動記錄展開時才載入
+  var qtyCollapse = document.getElementById('qtyLogCollapse');
+  if (qtyCollapse) {
+    qtyCollapse.addEventListener('show.bs.collapse', function() {
+      loadQtyLog();
+    });
+  }
+
+  // 設定借出日期預設為今天
+  var lendDateInput = document.getElementById('lendDate');
+  if (lendDateInput && !lendDateInput.value) {
+    lendDateInput.value = new Date().toISOString().slice(0, 10);
+  }
 
   var maintenanceBtn = document.getElementById('markMaintenanceBtn');
   if (maintenanceBtn) {
@@ -534,6 +755,55 @@ document.addEventListener('DOMContentLoaded', function() {
   var addRelatedBtn = document.getElementById('addRelatedBtn');
   if (addRelatedBtn) {
     addRelatedBtn.addEventListener('click', addRelatedItem);
+  }
+
+  var confirmLendBtn = document.getElementById('confirmLendBtn');
+  if (confirmLendBtn) {
+    confirmLendBtn.addEventListener('click', async function() {
+      const borrower = document.getElementById('lendBorrower').value.trim();
+      const contact = document.getElementById('lendContact').value.trim();
+      const lentDate = document.getElementById('lendDate').value;
+      const expectedReturn = document.getElementById('lendExpectedReturn').value;
+      const notes = document.getElementById('lendNotes').value.trim();
+
+      if (!borrower) {
+        showToast('請輸入借用人姓名', 'warning');
+        return;
+      }
+      if (!lentDate) {
+        showToast('請選擇借出日期', 'warning');
+        return;
+      }
+
+      try {
+        const resp = await fetch('/api/loans/lend', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+          },
+          body: JSON.stringify({
+            item_id: '{{item.ItemID}}',
+            item_name: '{{item.ItemName}}',
+            borrower: borrower,
+            borrower_contact: contact || null,
+            lent_date: lentDate,
+            expected_return: expectedReturn || null,
+            notes: notes || null,
+          })
+        });
+        const data = await resp.json();
+        if (data.success) {
+          bootstrap.Modal.getInstance(document.getElementById('lendModal')).hide();
+          showToast(data.message || '借出記錄已建立', 'success');
+          loadLoans();
+        } else {
+          showToast(data.message || '建立失敗', 'danger');
+        }
+      } catch (e) {
+        showToast('建立失敗', 'danger');
+      }
+    });
   }
 });
 

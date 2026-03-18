@@ -17,6 +17,7 @@ from flask import (
     Response,
     session,
 )
+from flask_babel import gettext as _
 
 from typing import Any, Dict, List
 
@@ -152,7 +153,7 @@ def additem():
         form = dict(request.form)
         ok, msg = item_service.create_item(form, request.files.get("ItemPic"))
         if ok:
-            flash("物品新增成功！", "success")
+            flash(_("物品新增成功！"), "success")
             return redirect(url_for("items.home"))
         else:
             flash(msg, "danger")
@@ -199,9 +200,9 @@ def manageitem():
             updates["ItemZone"] = new_zone
         if item_id and updates:
             item_service.update_item_place(item_id, updates)
-            flash("物品位置更新成功！", "success")
+            flash(_("物品位置更新成功！"), "success")
         else:
-            flash("請輸入位置資訊", "danger")
+            flash(_("請輸入位置資訊"), "danger")
         return redirect(url_for("items.manageitem"))
 
     maintenance = request.args.get("maintenance", "")
@@ -235,9 +236,9 @@ def edititem(item_id: str):
     item = item_service.get_item(item_id)
     
     if not item:
-        flash("找不到該物品", "danger")
+        flash(_("找不到該物品"), "danger")
         return redirect(url_for("items.home"))
-    
+
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
     
@@ -281,7 +282,7 @@ def batch_move():
     new_zone = request.form.get("ItemZone", "").strip()
     
     if not item_ids or not item_ids[0]:
-        flash("請選擇要移動的物品", "danger")
+        flash(_("請選擇要移動的物品"), "danger")
         return redirect(url_for("items.manageitem"))
     
     updates = {}
@@ -295,17 +296,17 @@ def batch_move():
         updates["ItemZone"] = new_zone
     
     if not updates:
-        flash("請輸入位置資訊", "danger")
+        flash(_("請輸入位置資訊"), "danger")
         return redirect(url_for("items.manageitem"))
-    
+
     success = 0
     for item_id in item_ids:
         item_id = item_id.strip()
         if item_id:
             item_service.update_item_place(item_id, updates)
             success += 1
-    
-    flash(f"成功移動 {success} 個物品", "success")
+
+    flash(_("成功移動 %(n)d 個物品", n=success), "success")
     return redirect(url_for("items.manageitem"))
 
 
@@ -317,7 +318,7 @@ def batch_delete():
     item_ids = request.form.get("item_ids", "").split(",")
     
     if not item_ids or not item_ids[0]:
-        flash("請選擇要刪除的物品", "danger")
+        flash(_("請選擇要刪除的物品"), "danger")
         return redirect(url_for("items.manageitem"))
     
     success = 0
@@ -332,9 +333,9 @@ def batch_delete():
                 failed += 1
     
     if failed > 0:
-        flash(f"刪除完成：成功 {success} 個，失敗 {failed} 個", "warning")
+        flash(_("刪除完成：成功 %(s)d 個，失敗 %(f)d 個", s=success, f=failed), "warning")
     else:
-        flash(f"成功刪除 {success} 個物品", "success")
+        flash(_("成功刪除 %(n)d 個物品", n=success), "success")
     
     return redirect(url_for("items.manageitem"))
 
@@ -409,9 +410,9 @@ def item_detail(item_id: str):
     item = item_service.get_item(item_id)
     
     if not item:
-        flash("找不到該物品", "danger")
+        flash(_("找不到該物品"), "danger")
         return redirect(url_for("items.home"))
-    
+
     return render_template("itemdetail.html", User=user, item=item)
 
 
@@ -420,7 +421,7 @@ def item_detail(item_id: str):
 def qrcode_image(item_id: str):
     item = item_service.get_item(item_id)
     if not item:
-        flash("找不到物品", "danger")
+        flash(_("找不到物品"), "danger")
         return redirect(url_for("items.home"))
 
     img = qrcode.make(f"item:{item_id}")
@@ -435,7 +436,7 @@ def qrcode_image(item_id: str):
 def barcode_image(item_id: str):
     item = item_service.get_item(item_id)
     if not item:
-        flash("找不到物品", "danger")
+        flash(_("找不到物品"), "danger")
         return redirect(url_for("items.home"))
 
     code = barcode.get("code128", item_id, writer=ImageWriter())
@@ -511,7 +512,7 @@ def export_items(export_format: str):
         )
     if export_format == "csv":
         if not items:
-            flash("沒有可匯出的資料", "warning")
+            flash(_("沒有可匯出的資料"), "warning")
             return redirect(url_for("items.manageitem"))
 
         fieldnames = [
@@ -535,7 +536,7 @@ def export_items(export_format: str):
             headers={"Content-Disposition": f"attachment;filename=items_export_{timestamp}.csv"},
         )
 
-    flash("不支援的匯出格式", "danger")
+    flash(_("不支援的匯出格式"), "danger")
     return redirect(url_for("items.manageitem"))
 
 
@@ -586,7 +587,7 @@ def export_restock():
             headers={"Content-Disposition": f"attachment;filename=restock_{level}_{timestamp}.csv"},
         )
 
-    flash("不支援的匯出格式", "danger")
+    flash(_("不支援的匯出格式"), "danger")
     return redirect(url_for("items.manageitem"))
 
 
@@ -599,12 +600,12 @@ def import_items():
     
     if request.method == "POST":
         if "file" not in request.files:
-            flash("請選擇要匯入的檔案", "danger")
+            flash(_("請選擇要匯入的檔案"), "danger")
             return redirect(url_for("items.import_items"))
-        
+
         file = request.files["file"]
         if file.filename == "":
-            flash("請選擇要匯入的檔案", "danger")
+            flash(_("請選擇要匯入的檔案"), "danger")
             return redirect(url_for("items.import_items"))
         
         filename = file.filename.lower()
@@ -620,16 +621,16 @@ def import_items():
                 reader = csv.DictReader(StringIO(content))
                 items_data = list(reader)
             else:
-                flash("不支援的檔案格式，請使用 JSON 或 CSV 格式", "danger")
+                flash(_("不支援的檔案格式，請使用 JSON 或 CSV 格式"), "danger")
                 return redirect(url_for("items.import_items"))
             
             success, failed = item_service.import_items(items_data)
-            flash(f"匯入完成：成功 {success} 筆，失敗 {failed} 筆", "success" if failed == 0 else "warning")
-            
+            flash(_("匯入完成：成功 %(s)d 筆，失敗 %(f)d 筆", s=success, f=failed), "success" if failed == 0 else "warning")
+
         except json.JSONDecodeError:
-            flash("JSON 格式錯誤", "danger")
+            flash(_("JSON 格式錯誤"), "danger")
         except Exception as e:
-            flash(f"匯入失敗：{str(e)}", "danger")
+            flash(_("匯入失敗：%(err)s", err=str(e)), "danger")
         
         return redirect(url_for("items.manageitem"))
     
@@ -692,7 +693,7 @@ def manage_related_items(item_id: str):
         return jsonify({"success": True, "related_items": related})
     
     if not user.get("admin"):
-        return jsonify({"success": False, "message": "無權限"}), 403
+        return jsonify({"success": False, "message": _("無權限")}), 403
     
     if request.method == "POST":
         # 新增關聯
@@ -701,7 +702,7 @@ def manage_related_items(item_id: str):
         relation_type = data.get("type", "配件")
         
         if not related_id:
-            return jsonify({"success": False, "message": "請選擇關聯物品"}), 400
+            return jsonify({"success": False, "message": _("請選擇關聯物品")}), 400
         
         ok, msg = item_service.add_related_item(item_id, related_id, relation_type)
         return jsonify({"success": ok, "message": msg})
@@ -724,11 +725,11 @@ def quick_update_location(item_id: str):
         new_location = data.get("location", "").strip()
         
         if not new_location:
-            return jsonify({"success": False, "message": "位置不可為空"}), 400
-        
+            return jsonify({"success": False, "message": _("位置不可為空")}), 400
+
         item_service.update_item_place(item_id, {"ItemStorePlace": new_location})
-        
-        return jsonify({"success": True, "message": "位置已更新"})
+
+        return jsonify({"success": True, "message": _("位置已更新")})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 400
 
@@ -742,7 +743,7 @@ def bulk_delete():
         item_ids = data.get("item_ids", [])
 
         if not item_ids:
-            return jsonify({"success": False, "message": "未選擇任何物品"})
+            return jsonify({"success": False, "message": _("未選擇任何物品")})
 
         success_count, failed_ids = item_service.bulk_delete_items(item_ids)
 
@@ -750,10 +751,10 @@ def bulk_delete():
             "success": True,
             "success_count": success_count,
             "failed_ids": failed_ids,
-            "message": f"成功刪除 {success_count} 個物品"
+            "message": _("成功刪除 %(n)d 個物品", n=success_count)
         })
     except Exception as e:
-        return jsonify({"success": False, "message": f"刪除失敗：{str(e)}"}), 500
+        return jsonify({"success": False, "message": _("刪除失敗：%(err)s", err=str(e))}), 500
 
 
 @bp.route("/api/bulk/move", methods=["POST"])
@@ -766,10 +767,10 @@ def bulk_move():
         target_location = data.get("location", "").strip()
 
         if not item_ids:
-            return jsonify({"success": False, "message": "未選擇任何物品"})
+            return jsonify({"success": False, "message": _("未選擇任何物品")})
 
         if not target_location:
-            return jsonify({"success": False, "message": "未指定目標位置"})
+            return jsonify({"success": False, "message": _("未指定目標位置")})
 
         success_count, failed_ids = item_service.bulk_move_items(item_ids, target_location)
 
@@ -777,10 +778,10 @@ def bulk_move():
             "success": True,
             "success_count": success_count,
             "failed_ids": failed_ids,
-            "message": f"成功移動 {success_count} 個物品至 {target_location}"
+            "message": _("成功移動 %(n)d 個物品至 %(loc)s", n=success_count, loc=target_location)
         })
     except Exception as e:
-        return jsonify({"success": False, "message": f"移動失敗：{str(e)}"}), 500
+        return jsonify({"success": False, "message": _("移動失敗：%(err)s", err=str(e))}), 500
 
 
 @bp.route("/api/bulk/maintenance", methods=["POST"])
@@ -792,20 +793,46 @@ def bulk_maintenance():
     maintenance_date = str(data.get("maintenance_date", "")).strip()
 
     if not item_ids:
-        return jsonify({"success": False, "message": "未選擇任何物品"})
+        return jsonify({"success": False, "message": _("未選擇任何物品")})
     if not maintenance_date:
-        return jsonify({"success": False, "message": "未指定保養日期"})
+        return jsonify({"success": False, "message": _("未指定保養日期")})
 
     success_count, failed_ids = item_service.bulk_update_last_maintenance(item_ids, maintenance_date)
 
     if success_count == 0 and failed_ids:
-        return jsonify({"success": False, "message": "保養日期格式錯誤或物品不存在", "failed_ids": failed_ids}), 400
+        return jsonify({"success": False, "message": _("保養日期格式錯誤或物品不存在"), "failed_ids": failed_ids}), 400
 
     return jsonify({
         "success": True,
         "success_count": success_count,
         "failed_ids": failed_ids,
-        "message": f"成功更新 {success_count} 個物品的上次保養日"
+        "message": _("成功更新 %(n)d 個物品的上次保養日", n=success_count)
+    })
+
+
+@bp.route("/api/search")
+@login_required
+def api_search():
+    """API: Full-text search endpoint.
+
+    GET /api/search?q=<query>&page=<n>&page_size=<n>
+
+    Returns JSON with 'items' list and 'total' count.
+    """
+    q = request.args.get("q", "").strip()
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 20, type=int)
+    page_size = max(1, min(page_size, 100))  # clamp to [1, 100]
+
+    if not q:
+        return jsonify({"items": [], "total": 0, "page": page, "page_size": page_size})
+
+    result = item_service.full_text_search(q, page=page, page_size=page_size)
+    return jsonify({
+        "items": result["items"],
+        "total": result["total"],
+        "page": page,
+        "page_size": page_size,
     })
 
 
@@ -918,12 +945,12 @@ def toggle_favorite(item_id: str):
         return jsonify({
             "success": True,
             "is_favorite": is_favorite,
-            "message": "已加入收藏" if is_favorite else "已取消收藏"
+            "message": _("已加入收藏") if is_favorite else _("已取消收藏")
         })
     else:
         return jsonify({
             "success": False,
-            "message": "操作失敗"
+            "message": _("操作失敗")
         }), 400
 
 
@@ -998,19 +1025,19 @@ def restore_backup():
     from app.repositories import item_repo, type_repo, location_repo
     
     if "backup_file" not in request.files:
-        return jsonify({"success": False, "message": "請選擇備份檔案"}), 400
-    
+        return jsonify({"success": False, "message": _("請選擇備份檔案")}), 400
+
     file = request.files["backup_file"]
     if not file.filename:
-        return jsonify({"success": False, "message": "請選擇備份檔案"}), 400
+        return jsonify({"success": False, "message": _("請選擇備份檔案")}), 400
     if not file.filename.endswith(".json"):
-        return jsonify({"success": False, "message": "只支援 JSON 格式"}), 400
+        return jsonify({"success": False, "message": _("只支援 JSON 格式")}), 400
     
     try:
         data = json.load(file)
         
         if "items" not in data:
-            return jsonify({"success": False, "message": "無效的備份檔案格式"}), 400
+            return jsonify({"success": False, "message": _("無效的備份檔案格式")}), 400
         
         restore_mode = request.form.get("mode", "merge")
         
@@ -1022,13 +1049,14 @@ def restore_backup():
         
         return jsonify({
             "success": True,
-            "message": f"還原完成：{stats['items']} 物品、{stats['types']} 類型、{stats['locations']} 位置",
+            "message": _("還原完成：%(items)d 物品、%(types)d 類型、%(locs)d 位置",
+                         items=stats['items'], types=stats['types'], locs=stats['locations']),
             "stats": stats,
             "mode": restore_mode,
         })
-        
+
     except json.JSONDecodeError:
-        return jsonify({"success": False, "message": "JSON 解析失敗"}), 400
+        return jsonify({"success": False, "message": _("JSON 解析失敗")}), 400
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 500
 
@@ -1045,7 +1073,7 @@ def print_labels():
         item_ids = [id.strip() for id in item_ids if id.strip()]
         
         if not item_ids:
-            flash("請選擇要列印的物品", "warning")
+            flash(_("請選擇要列印的物品"), "warning")
             return redirect(url_for("items.print_labels"))
         
         # 取得物品資料
@@ -1092,20 +1120,32 @@ def print_labels():
     )
 
 
+@bp.route("/api/quantity-history/<item_id>")
+@login_required
+def quantity_history(item_id: str):
+    """API: 取得物品數量變動記錄"""
+    from app.repositories import quantity_log_repo
+    logs = quantity_log_repo.get_logs_by_item(item_id)
+    return jsonify(logs)
+
+
 @bp.route("/api/quantity/<item_id>", methods=["POST"])
 @admin_required
 def adjust_quantity(item_id: str):
     """API: 快速調整物品數量 (+/-)"""
     data = request.get_json() or {}
     delta = data.get("delta", 0)
-    
+    reason = data.get("reason")
+
     try:
         delta = int(delta)
     except (ValueError, TypeError):
-        return jsonify({"success": False, "message": "無效的數量"}), 400
-    
-    success, new_qty, message = item_service.adjust_quantity(item_id, delta)
-    
+        return jsonify({"success": False, "message": _("無效的數量")}), 400
+
+    user = get_current_user()
+    user_id = user.get("User", "")
+    success, new_qty, message = item_service.adjust_quantity(item_id, delta, user=user_id, reason=reason)
+
     if success:
         item = item_service.get_item(item_id)
         safety_stock = (item.get("SafetyStock") or 0) if item else 0
@@ -1153,15 +1193,15 @@ def bulk_update_quantity():
     updates = data.get("updates", [])
     
     if not updates:
-        return jsonify({"success": False, "message": "未提供更新資料"}), 400
-    
+        return jsonify({"success": False, "message": _("未提供更新資料")}), 400
+
     success_count, failed_ids = item_service.bulk_update_quantity(updates)
-    
+
     return jsonify({
         "success": True,
         "success_count": success_count,
         "failed_ids": failed_ids,
-        "message": f"成功更新 {success_count} 個物品"
+        "message": _("成功更新 %(n)d 個物品", n=success_count)
     })
 
 

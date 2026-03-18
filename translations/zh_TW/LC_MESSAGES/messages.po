@@ -1,0 +1,789 @@
+# Chinese (Traditional, Taiwan) translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-03-19 04:28+0800\n"
+"PO-Revision-Date: 2026-03-19 04:29+0800\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_Hant_TW\n"
+"Language-Team: zh_Hant_TW <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/auth/routes.py:19 app/auth/routes.py:20
+msgid "請輸入帳號與密碼"
+msgstr "請輸入帳號與密碼"
+
+#: app/auth/routes.py:34
+msgid "首次登入請修改預設密碼以確保安全"
+msgstr "首次登入請修改預設密碼以確保安全"
+
+#: app/auth/routes.py:55 app/auth/routes.py:56 app/auth/routes.py:96
+msgid "請填寫所有欄位"
+msgstr "請填寫所有欄位"
+
+#: app/auth/routes.py:59 app/auth/routes.py:60 app/auth/routes.py:174
+msgid "帳號至少需要 3 個字元"
+msgstr "帳號至少需要 3 個字元"
+
+#: app/auth/routes.py:63 app/auth/routes.py:64
+msgid "密碼至少需要 8 個字元"
+msgstr "密碼至少需要 8 個字元"
+
+#: app/auth/routes.py:67 app/auth/routes.py:68 app/auth/routes.py:100
+#: app/auth/routes.py:178
+msgid "兩次輸入的密碼不一致"
+msgstr "兩次輸入的密碼不一致"
+
+#: app/auth/routes.py:72
+msgid "註冊成功！請登入"
+msgstr "註冊成功！請登入"
+
+#: app/auth/routes.py:75 app/auth/routes.py:76
+msgid "該帳號已被使用"
+msgstr "該帳號已被使用"
+
+#: app/auth/routes.py:109
+msgid "請輸入舊密碼"
+msgstr "請輸入舊密碼"
+
+#: app/auth/routes.py:140
+msgid "您沒有權限存取此頁面"
+msgstr "您沒有權限存取此頁面"
+
+#: app/auth/routes.py:161 app/auth/routes.py:204 app/auth/routes.py:226
+#: app/auth/routes.py:246
+msgid "您沒有權限執行此操作"
+msgstr "您沒有權限執行此操作"
+
+#: app/auth/routes.py:170
+msgid "請填寫新增用戶所需欄位"
+msgstr "請填寫新增用戶所需欄位"
+
+#: app/auth/routes.py:187 templates/template.html:250
+msgid "管理員"
+msgstr "管理員"
+
+#: app/auth/routes.py:187
+msgid "一般用戶"
+msgstr "一般用戶"
+
+#: app/auth/routes.py:188
+#, python-format
+msgid "已新增 %(username)s（%(role)s）"
+msgstr "已新增 %(username)s（%(role)s）"
+
+#: app/auth/routes.py:190
+msgid "新增失敗，帳號可能已存在或密碼不符合規則"
+msgstr "新增失敗，帳號可能已存在或密碼不符合規則"
+
+#: app/auth/routes.py:210
+#, python-format
+msgid "%(msg)s，新密碼為：%(pw)s"
+msgstr "%(msg)s，新密碼為：%(pw)s"
+
+#: app/auth/routes.py:230
+#, python-format
+msgid "已解鎖 %(user)s 的帳號"
+msgstr "已解鎖 %(user)s 的帳號"
+
+#: app/auth/routes.py:232
+msgid "解鎖失敗"
+msgstr "解鎖失敗"
+
+#: app/items/routes.py:156
+msgid "物品新增成功！"
+msgstr "物品新增成功！"
+
+#: app/items/routes.py:203
+msgid "物品位置更新成功！"
+msgstr "物品位置更新成功！"
+
+#: app/items/routes.py:205 app/items/routes.py:299
+msgid "請輸入位置資訊"
+msgstr "請輸入位置資訊"
+
+#: app/items/routes.py:239 app/items/routes.py:413
+msgid "找不到該物品"
+msgstr "找不到該物品"
+
+#: app/items/routes.py:285
+msgid "請選擇要移動的物品"
+msgstr "請選擇要移動的物品"
+
+#: app/items/routes.py:309
+#, python-format
+msgid "成功移動 %(n)d 個物品"
+msgstr "成功移動 %(n)d 個物品"
+
+#: app/items/routes.py:321
+msgid "請選擇要刪除的物品"
+msgstr "請選擇要刪除的物品"
+
+#: app/items/routes.py:336
+#, python-format
+msgid "刪除完成：成功 %(s)d 個，失敗 %(f)d 個"
+msgstr "刪除完成：成功 %(s)d 個，失敗 %(f)d 個"
+
+#: app/items/routes.py:338 app/items/routes.py:754
+#, python-format
+msgid "成功刪除 %(n)d 個物品"
+msgstr "成功刪除 %(n)d 個物品"
+
+#: app/items/routes.py:424 app/items/routes.py:439
+msgid "找不到物品"
+msgstr "找不到物品"
+
+#: app/items/routes.py:515
+msgid "沒有可匯出的資料"
+msgstr "沒有可匯出的資料"
+
+#: app/items/routes.py:539 app/items/routes.py:590
+msgid "不支援的匯出格式"
+msgstr "不支援的匯出格式"
+
+#: app/items/routes.py:603 app/items/routes.py:608
+msgid "請選擇要匯入的檔案"
+msgstr "請選擇要匯入的檔案"
+
+#: app/items/routes.py:624
+msgid "不支援的檔案格式，請使用 JSON 或 CSV 格式"
+msgstr "不支援的檔案格式，請使用 JSON 或 CSV 格式"
+
+#: app/items/routes.py:628
+#, python-format
+msgid "匯入完成：成功 %(s)d 筆，失敗 %(f)d 筆"
+msgstr "匯入完成：成功 %(s)d 筆，失敗 %(f)d 筆"
+
+#: app/items/routes.py:631
+msgid "JSON 格式錯誤"
+msgstr "JSON 格式錯誤"
+
+#: app/items/routes.py:633
+#, python-format
+msgid "匯入失敗：%(err)s"
+msgstr "匯入失敗：%(err)s"
+
+#: app/items/routes.py:696
+msgid "無權限"
+msgstr "無權限"
+
+#: app/items/routes.py:705
+msgid "請選擇關聯物品"
+msgstr "請選擇關聯物品"
+
+#: app/items/routes.py:728
+msgid "位置不可為空"
+msgstr "位置不可為空"
+
+#: app/items/routes.py:732
+msgid "位置已更新"
+msgstr "位置已更新"
+
+#: app/items/routes.py:746 app/items/routes.py:770 app/items/routes.py:796
+msgid "未選擇任何物品"
+msgstr "未選擇任何物品"
+
+#: app/items/routes.py:757
+#, python-format
+msgid "刪除失敗：%(err)s"
+msgstr "刪除失敗：%(err)s"
+
+#: app/items/routes.py:773
+msgid "未指定目標位置"
+msgstr "未指定目標位置"
+
+#: app/items/routes.py:781
+#, python-format
+msgid "成功移動 %(n)d 個物品至 %(loc)s"
+msgstr "成功移動 %(n)d 個物品至 %(loc)s"
+
+#: app/items/routes.py:784
+#, python-format
+msgid "移動失敗：%(err)s"
+msgstr "移動失敗：%(err)s"
+
+#: app/items/routes.py:798
+msgid "未指定保養日期"
+msgstr "未指定保養日期"
+
+#: app/items/routes.py:803
+msgid "保養日期格式錯誤或物品不存在"
+msgstr "保養日期格式錯誤或物品不存在"
+
+#: app/items/routes.py:809
+#, python-format
+msgid "成功更新 %(n)d 個物品的上次保養日"
+msgstr "成功更新 %(n)d 個物品的上次保養日"
+
+#: app/items/routes.py:948
+msgid "已加入收藏"
+msgstr "已加入收藏"
+
+#: app/items/routes.py:948
+msgid "已取消收藏"
+msgstr "已取消收藏"
+
+#: app/items/routes.py:953
+msgid "操作失敗"
+msgstr "操作失敗"
+
+#: app/items/routes.py:1028 app/items/routes.py:1032
+msgid "請選擇備份檔案"
+msgstr "請選擇備份檔案"
+
+#: app/items/routes.py:1034
+msgid "只支援 JSON 格式"
+msgstr "只支援 JSON 格式"
+
+#: app/items/routes.py:1040
+msgid "無效的備份檔案格式"
+msgstr "無效的備份檔案格式"
+
+#: app/items/routes.py:1052
+#, python-format
+msgid "還原完成：%(items)d 物品、%(types)d 類型、%(locs)d 位置"
+msgstr "還原完成：%(items)d 物品、%(types)d 類型、%(locs)d 位置"
+
+#: app/items/routes.py:1059
+msgid "JSON 解析失敗"
+msgstr "JSON 解析失敗"
+
+#: app/items/routes.py:1076
+msgid "請選擇要列印的物品"
+msgstr "請選擇要列印的物品"
+
+#: app/items/routes.py:1143
+msgid "無效的數量"
+msgstr "無效的數量"
+
+#: app/items/routes.py:1196
+msgid "未提供更新資料"
+msgstr "未提供更新資料"
+
+#: app/items/routes.py:1204
+#, python-format
+msgid "成功更新 %(n)d 個物品"
+msgstr "成功更新 %(n)d 個物品"
+
+#: app/types/routes.py:19
+msgid "類型名稱不能為空"
+msgstr "類型名稱不能為空"
+
+#: app/types/routes.py:24
+msgid "該類型已存在"
+msgstr "該類型已存在"
+
+#: app/types/routes.py:28
+msgid "類型新增成功！"
+msgstr "類型新增成功！"
+
+#: app/types/routes.py:48
+msgid "請提供原始名稱和新名稱"
+msgstr "請提供原始名稱和新名稱"
+
+#: templates/dashboard.html:8 templates/template.html:74
+msgid "Dashboard 概覽"
+msgstr "Dashboard 概覽"
+
+#: templates/dashboard.html:9
+msgid "掌握物品管理狀態，快速了解需要處理的事項"
+msgstr "掌握物品管理狀態，快速了解需要處理的事項"
+
+#: templates/dashboard.html:24 templates/template.html:442
+msgid "到期提醒"
+msgstr "到期提醒"
+
+#: templates/dashboard.html:29 templates/dashboard.html:43
+#: templates/dashboard.html:57 templates/dashboard.html:71
+#: templates/dashboard.html:87 templates/dashboard.html:121
+#: templates/dashboard.html:147 templates/dashboard.html:205
+msgid "查看全部"
+msgstr "查看全部"
+
+#: templates/dashboard.html:38 templates/dashboard.html:146
+msgid "保養到期"
+msgstr "保養到期"
+
+#: templates/dashboard.html:52
+msgid "低庫存"
+msgstr "低庫存"
+
+#: templates/dashboard.html:66
+msgid "總物品數"
+msgstr "總物品數"
+
+#: templates/dashboard.html:86
+msgid "即將到期的物品"
+msgstr "即將到期的物品"
+
+#: templates/dashboard.html:97
+msgid "已過期"
+msgstr "已過期"
+
+#: templates/dashboard.html:112
+msgid "目前沒有即將到期的物品"
+msgstr "目前沒有即將到期的物品"
+
+#: templates/dashboard.html:120
+msgid "低庫存物品"
+msgstr "低庫存物品"
+
+#: templates/dashboard.html:132
+msgid "庫存："
+msgstr "庫存："
+
+#: templates/dashboard.html:138
+msgid "目前沒有低庫存物品"
+msgstr "目前沒有低庫存物品"
+
+#: templates/dashboard.html:158
+msgid "需要保養"
+msgstr "需要保養"
+
+#: templates/dashboard.html:164
+msgid "目前沒有到期保養項目"
+msgstr "目前沒有到期保養項目"
+
+#: templates/dashboard.html:177
+msgid "快速操作"
+msgstr "快速操作"
+
+#: templates/dashboard.html:182 templates/template.html:117
+#: templates/template.html:337 templates/template.html:377
+#: templates/template.html:460
+msgid "新增物品"
+msgstr "新增物品"
+
+#: templates/dashboard.html:186 templates/template.html:403
+msgid "掃描條碼"
+msgstr "掃描條碼"
+
+#: templates/dashboard.html:189 templates/template.html:89
+#: templates/template.html:260 templates/template.html:390
+msgid "搜尋物品"
+msgstr "搜尋物品"
+
+#: templates/dashboard.html:192
+msgid "查看通知"
+msgstr "查看通知"
+
+#: templates/dashboard.html:195
+msgid "統計報表"
+msgstr "統計報表"
+
+#: templates/dashboard.html:203
+msgid "最近活動"
+msgstr "最近活動"
+
+#: templates/dashboard.html:225
+msgid "尚無操作記錄"
+msgstr "尚無操作記錄"
+
+#: templates/profile.html:3 templates/profile.html:11
+#: templates/template.html:275
+msgid "個人設定"
+msgstr "個人設定"
+
+#: templates/profile.html:3 templates/signin.html:6 templates/signin.html:8
+#: templates/signin.html:36 templates/signin.html:130
+#: templates/template.html:58
+msgid "物品管理系統"
+msgstr "物品管理系統"
+
+#: templates/profile.html:12
+msgid "管理您的帳號資訊與偏好設定"
+msgstr "管理您的帳號資訊與偏好設定"
+
+#: templates/profile.html:24
+msgid "基本資料"
+msgstr "基本資料"
+
+#: templates/profile.html:35
+msgid "顯示名稱"
+msgstr "顯示名稱"
+
+#: templates/profile.html:39
+msgid "顯示名稱（可留空）"
+msgstr "顯示名稱（可留空）"
+
+#: templates/profile.html:49 templates/profile.html:52
+msgid "電子郵件"
+msgstr "電子郵件"
+
+#: templates/profile.html:62
+msgid "偏好設定"
+msgstr "偏好設定"
+
+#: templates/profile.html:69
+msgid "淺色模式"
+msgstr "淺色模式"
+
+#: templates/profile.html:70
+msgid "深色模式"
+msgstr "深色模式"
+
+#: templates/profile.html:72
+msgid "主題"
+msgstr "主題"
+
+#: templates/profile.html:78
+msgid "繁體中文"
+msgstr "繁體中文"
+
+#: templates/profile.html:81
+msgid "語言"
+msgstr "語言"
+
+#: templates/profile.html:91 templates/signin.html:60
+msgid "密碼"
+msgstr "密碼"
+
+#: templates/profile.html:94
+msgid "如需修改密碼，請前往密碼修改頁面。"
+msgstr "如需修改密碼，請前往密碼修改頁面。"
+
+#: templates/profile.html:96
+msgid "修改密碼"
+msgstr "修改密碼"
+
+#: templates/profile.html:103
+msgid "儲存設定"
+msgstr "儲存設定"
+
+#: templates/profile.html:105 templates/template.html:319
+msgid "取消"
+msgstr "取消"
+
+#: templates/signin.html:6 templates/signin.html:8
+msgid "登入"
+msgstr "登入"
+
+#: templates/signin.html:37
+msgid "輕鬆管理家中物品，記錄放置位置"
+msgstr "輕鬆管理家中物品，記錄放置位置"
+
+#: templates/signin.html:45
+msgid "帳號"
+msgstr "帳號"
+
+#: templates/signin.html:51
+msgid "請輸入您的帳號"
+msgstr "請輸入您的帳號"
+
+#: templates/signin.html:66
+msgid "請輸入您的密碼"
+msgstr "請輸入您的密碼"
+
+#: templates/signin.html:76
+msgid "登入系統"
+msgstr "登入系統"
+
+#: templates/signin.html:83
+msgid "首次使用？請聯繫系統管理員取得帳號與密碼。"
+msgstr "首次使用？請聯繫系統管理員取得帳號與密碼。"
+
+#: templates/signin.html:88
+msgid "還沒有帳號？"
+msgstr "還沒有帳號？"
+
+#: templates/signin.html:88
+msgid "立即註冊"
+msgstr "立即註冊"
+
+#: templates/signin.html:94
+msgid "忘記密碼？"
+msgstr "忘記密碼？"
+
+#: templates/signin.html:100
+msgid "系統功能"
+msgstr "系統功能"
+
+#: templates/signin.html:106
+msgid "拍照記錄"
+msgstr "拍照記錄"
+
+#: templates/signin.html:112
+msgid "位置追蹤"
+msgstr "位置追蹤"
+
+#: templates/signin.html:118 templates/template.html:455
+msgid "快速搜尋"
+msgstr "快速搜尋"
+
+#: templates/signin.html:124
+msgid "條碼掃描"
+msgstr "條碼掃描"
+
+#: templates/signin.html:145
+msgid "登入失敗"
+msgstr "登入失敗"
+
+#: templates/signin.html:164
+msgid "重新輸入"
+msgstr "重新輸入"
+
+#: templates/signin.html:183
+msgid "忘記密碼"
+msgstr "忘記密碼"
+
+#: templates/signin.html:194
+msgid "需要重置密碼？"
+msgstr "需要重置密碼？"
+
+#: templates/signin.html:196
+msgid "為了確保帳戶安全，密碼重置需要由系統管理員協助處理。"
+msgstr "為了確保帳戶安全，密碼重置需要由系統管理員協助處理。"
+
+#: templates/signin.html:203
+msgid "重置步驟："
+msgstr "重置步驟："
+
+#: templates/signin.html:206
+msgid "聯繫您的系統管理員"
+msgstr "聯繫您的系統管理員"
+
+#: templates/signin.html:207
+msgid "提供您的帳號名稱"
+msgstr "提供您的帳號名稱"
+
+#: templates/signin.html:208
+msgid "管理員將為您重置密碼"
+msgstr "管理員將為您重置密碼"
+
+#: templates/signin.html:209
+msgid "使用新密碼登入後請立即修改"
+msgstr "使用新密碼登入後請立即修改"
+
+#: templates/signin.html:216
+msgid "提示："
+msgstr "提示："
+
+#: templates/signin.html:216
+msgid "預設管理員帳號為"
+msgstr "預設管理員帳號為"
+
+#: templates/signin.html:225
+msgid "我知道了"
+msgstr "我知道了"
+
+#: templates/template.html:49
+msgid "跳至主要內容"
+msgstr "跳至主要內容"
+
+#: templates/template.html:54
+msgid "物品管理系統導航"
+msgstr "物品管理系統導航"
+
+#: templates/template.html:67
+msgid "切換導航"
+msgstr "切換導航"
+
+#: templates/template.html:83
+msgid "查看所有物品"
+msgstr "查看所有物品"
+
+#: templates/template.html:85 templates/template.html:255
+msgid "首頁"
+msgstr "首頁"
+
+#: templates/template.html:90 templates/template.html:200
+msgid "搜尋"
+msgstr "搜尋"
+
+#: templates/template.html:94
+msgid "掃描條碼或QR碼"
+msgstr "掃描條碼或QR碼"
+
+#: templates/template.html:95
+msgid "掃描"
+msgstr "掃描"
+
+#: templates/template.html:99
+msgid "我的收藏"
+msgstr "我的收藏"
+
+#: templates/template.html:100
+msgid "收藏"
+msgstr "收藏"
+
+#: templates/template.html:104
+msgid "查看統計報表"
+msgstr "查看統計報表"
+
+#: templates/template.html:105
+msgid "統計"
+msgstr "統計"
+
+#: templates/template.html:111
+msgid "管理"
+msgstr "管理"
+
+#: templates/template.html:114
+msgid "物品作業"
+msgstr "物品作業"
+
+#: templates/template.html:122
+msgid "管理物品"
+msgstr "管理物品"
+
+#: templates/template.html:127
+msgid "列印標籤"
+msgstr "列印標籤"
+
+#: templates/template.html:132
+msgid "旅行清單"
+msgstr "旅行清單"
+
+#: templates/template.html:137
+msgid "借出管理"
+msgstr "借出管理"
+
+#: templates/template.html:141
+msgid "系統設定"
+msgstr "系統設定"
+
+#: templates/template.html:145
+msgid "分類管理"
+msgstr "分類管理"
+
+#: templates/template.html:150
+msgid "用戶管理"
+msgstr "用戶管理"
+
+#: templates/template.html:155
+msgid "備份還原"
+msgstr "備份還原"
+
+#: templates/template.html:160
+msgid "位置設定"
+msgstr "位置設定"
+
+#: templates/template.html:166
+msgid "操作日誌"
+msgstr "操作日誌"
+
+#: templates/template.html:170
+msgid "通知與匯入"
+msgstr "通知與匯入"
+
+#: templates/template.html:173
+msgid "通知設定"
+msgstr "通知設定"
+
+#: templates/template.html:178
+msgid "批量導入"
+msgstr "批量導入"
+
+#: templates/template.html:199
+msgid "搜尋物品..."
+msgstr "搜尋物品..."
+
+#: templates/template.html:216
+msgid "切換深色/淺色模式"
+msgstr "切換深色/淺色模式"
+
+#: templates/template.html:227
+msgid "到期通知"
+msgstr "到期通知"
+
+#: templates/template.html:250
+msgid "使用者"
+msgstr "使用者"
+
+#: templates/template.html:265 templates/template.html:363
+msgid "操作指引"
+msgstr "操作指引"
+
+#: templates/template.html:270
+msgid "安裝到裝置"
+msgstr "安裝到裝置"
+
+#: templates/template.html:281
+msgid "登出"
+msgstr "登出"
+
+#: templates/template.html:315 templates/template.html:1131
+msgid "確認操作"
+msgstr "確認操作"
+
+#: templates/template.html:320 templates/template.html:1133
+msgid "確認"
+msgstr "確認"
+
+#: templates/template.html:329
+msgid "提示：使用搜尋功能快速找到物品"
+msgstr "提示：使用搜尋功能快速找到物品"
+
+#: templates/template.html:348
+msgid "歡迎使用"
+msgstr "歡迎使用"
+
+#: templates/template.html:349
+msgid "讓我們開始了解系統功能吧！"
+msgstr "讓我們開始了解系統功能吧！"
+
+#: templates/template.html:351
+msgid "跳過"
+msgstr "跳過"
+
+#: templates/template.html:352
+msgid "下一步"
+msgstr "下一步"
+
+#: templates/template.html:378
+msgid "點擊右下角的「+」按鈕或從管理選單中選擇「新增物品」，填寫物品資訊和照片即可。"
+msgstr "點擊右下角的「+」按鈕或從管理選單中選擇「新增物品」，填寫物品資訊和照片即可。"
+
+#: templates/template.html:391
+msgid "使用頂部搜尋欄或進入搜尋頁面，可依名稱、位置、類型等條件篩選。"
+msgstr "使用頂部搜尋欄或進入搜尋頁面，可依名稱、位置、類型等條件篩選。"
+
+#: templates/template.html:404
+msgid "進入掃描頁面，使用相機掃描物品的 QR Code 或條碼，快速查看詳情。"
+msgstr "進入掃描頁面，使用相機掃描物品的 QR Code 或條碼，快速查看詳情。"
+
+#: templates/template.html:416
+msgid "位置管理"
+msgstr "位置管理"
+
+#: templates/template.html:417
+msgid "先在「位置設定」中建立樓層、房間、區域，方便記錄物品存放位置。"
+msgstr "先在「位置設定」中建立樓層、房間、區域，方便記錄物品存放位置。"
+
+#: templates/template.html:429
+msgid "類型分類"
+msgstr "類型分類"
+
+#: templates/template.html:430
+msgid "建立物品類型（如：電子產品、文具、工具等），方便分類管理。"
+msgstr "建立物品類型（如：電子產品、文具、工具等），方便分類管理。"
+
+#: templates/template.html:443
+msgid "設定保固截止和使用期限，系統會自動標記即將到期或已過期的物品。"
+msgstr "設定保固截止和使用期限，系統會自動標記即將到期或已過期的物品。"
+
+#: templates/template.html:451
+msgid "快捷操作"
+msgstr "快捷操作"
+
+#: templates/template.html:465
+msgid "顯示說明"
+msgstr "顯示說明"
+
+#: templates/template.html:471 templates/template.html:1173
+msgid "關閉"
+msgstr "關閉"
+
+#: templates/template.html:473
+msgid "開始導覽"
+msgstr "開始導覽"
+

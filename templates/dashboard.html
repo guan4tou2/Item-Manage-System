@@ -5,8 +5,8 @@
 {%block contain%}
 <div class="row animate-fadeInUp">
   <div class="col-12">
-    <h2 class="mb-1"><i class="fas fa-tachometer-alt text-primary me-2"></i>Dashboard 概覽</h2>
-    <p class="text-muted mb-0">掌握物品管理狀態，快速了解需要處理的事項</p>
+    <h2 class="mb-1"><i class="fas fa-tachometer-alt text-primary me-2"></i>{{ _('Dashboard 概覽') }}</h2>
+    <p class="text-muted mb-0">{{ _('掌握物品管理狀態，快速了解需要處理的事項') }}</p>
   </div>
 </div>
 {%endblock%}
@@ -21,12 +21,12 @@
         <div class="card-body d-flex align-items-center justify-content-between">
           <div>
             <div class="fs-1 fw-bold">{{expiring_count}}</div>
-            <div class="small">到期提醒</div>
+            <div class="small">{{ _('到期提醒') }}</div>
           </div>
           <i class="fas fa-clock fa-2x opacity-75"></i>
         </div>
         <div class="card-footer bg-transparent border-0 pt-0">
-          <a href="{{url_for('items.notifications')}}" class="text-white small">查看全部 &rsaquo;</a>
+          <a href="{{url_for('items.notifications')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
         </div>
       </div>
     </div>
@@ -35,12 +35,12 @@
         <div class="card-body d-flex align-items-center justify-content-between">
           <div>
             <div class="fs-1 fw-bold">{{maintenance_count}}</div>
-            <div class="small">保養到期</div>
+            <div class="small">{{ _('保養到期') }}</div>
           </div>
           <i class="fas fa-wrench fa-2x opacity-75"></i>
         </div>
         <div class="card-footer bg-transparent border-0 pt-0">
-          <a href="{{url_for('items.notifications')}}" class="text-white small">查看全部 &rsaquo;</a>
+          <a href="{{url_for('items.notifications')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
         </div>
       </div>
     </div>
@@ -49,12 +49,12 @@
         <div class="card-body d-flex align-items-center justify-content-between">
           <div>
             <div class="fs-1 fw-bold">{{low_stock_count}}</div>
-            <div class="small">低庫存</div>
+            <div class="small">{{ _('低庫存') }}</div>
           </div>
           <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
         </div>
         <div class="card-footer bg-transparent border-0 pt-0">
-          <a href="{{url_for('items.reorder_list')}}" class="text-white small">查看全部 &rsaquo;</a>
+          <a href="{{url_for('items.reorder_list')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
         </div>
       </div>
     </div>
@@ -63,12 +63,12 @@
         <div class="card-body d-flex align-items-center justify-content-between">
           <div>
             <div class="fs-1 fw-bold">{{stats.total if stats else 0}}</div>
-            <div class="small">總物品數</div>
+            <div class="small">{{ _('總物品數') }}</div>
           </div>
           <i class="fas fa-box fa-2x opacity-75"></i>
         </div>
         <div class="card-footer bg-transparent border-0 pt-0">
-          <a href="{{url_for('items.home')}}" class="text-white small">查看全部 &rsaquo;</a>
+          <a href="{{url_for('items.home')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
         </div>
       </div>
     </div>
@@ -83,8 +83,8 @@
       <!-- Expiring items -->
       <div class="card mb-4 animate-fadeInUp stagger-1">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-clock text-warning me-2"></i>即將到期的物品</span>
-          <a href="{{url_for('items.notifications')}}" class="small text-decoration-none">查看全部 &rsaquo;</a>
+          <span><i class="fas fa-clock text-warning me-2"></i>{{ _('即將到期的物品') }}</span>
+          <a href="{{url_for('items.notifications')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
         </div>
         <div class="card-body">
           {%if expiring_items or expired_items%}
@@ -94,7 +94,7 @@
               <a href="{{url_for('items.item_detail', item_id=item.ItemID)}}" class="text-decoration-none fw-semibold">
                 {{item.ItemName}}
               </a>
-              <span class="badge bg-danger">已過期</span>
+              <span class="badge bg-danger">{{ _('已過期') }}</span>
             </li>
             {%endfor%}
             {%for item in expiring_items%}
@@ -109,7 +109,7 @@
             {%endfor%}
           </ul>
           {%else%}
-          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>目前沒有即將到期的物品</p>
+          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>{{ _('目前沒有即將到期的物品') }}</p>
           {%endif%}
         </div>
       </div>
@@ -117,8 +117,8 @@
       <!-- Low stock items -->
       <div class="card mb-4 animate-fadeInUp stagger-2">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-exclamation-triangle text-danger me-2"></i>低庫存物品</span>
-          <a href="{{url_for('items.reorder_list')}}" class="small text-decoration-none">查看全部 &rsaquo;</a>
+          <span><i class="fas fa-exclamation-triangle text-danger me-2"></i>{{ _('低庫存物品') }}</span>
+          <a href="{{url_for('items.reorder_list')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
         </div>
         <div class="card-body">
           {%if low_stock_items%}
@@ -129,13 +129,13 @@
                 {{item.ItemName}}
               </a>
               <span class="badge {{'bg-danger' if item.stock_status == 'critical' else 'bg-warning text-dark'}}">
-                庫存：{{item.Quantity}}
+                {{ _('庫存：') }}{{item.Quantity}}
               </span>
             </li>
             {%endfor%}
           </ul>
           {%else%}
-          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>目前沒有低庫存物品</p>
+          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>{{ _('目前沒有低庫存物品') }}</p>
           {%endif%}
         </div>
       </div>
@@ -143,8 +143,8 @@
       <!-- Maintenance due items -->
       <div class="card animate-fadeInUp stagger-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-wrench text-info me-2"></i>保養到期</span>
-          <a href="{{url_for('items.notifications')}}" class="small text-decoration-none">查看全部 &rsaquo;</a>
+          <span><i class="fas fa-wrench text-info me-2"></i>{{ _('保養到期') }}</span>
+          <a href="{{url_for('items.notifications')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
         </div>
         <div class="card-body">
           {%if maintenance_due%}
@@ -155,13 +155,13 @@
                 {{item.ItemName}}
               </a>
               <span class="badge bg-info text-dark">
-                {{item.next_maintenance_date or '需要保養'}}
+                {{item.next_maintenance_date or _('需要保養')}}
               </span>
             </li>
             {%endfor%}
           </ul>
           {%else%}
-          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>目前沒有到期保養項目</p>
+          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>{{ _('目前沒有到期保養項目') }}</p>
           {%endif%}
         </div>
       </div>
@@ -174,25 +174,25 @@
       <!-- Quick actions -->
       <div class="card mb-4 animate-fadeInUp stagger-1">
         <div class="card-header">
-          <i class="fas fa-bolt text-warning me-2"></i>快速操作
+          <i class="fas fa-bolt text-warning me-2"></i>{{ _('快速操作') }}
         </div>
         <div class="card-body d-grid gap-2">
           {%if User.admin%}
           <a href="{{url_for('items.additem')}}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>新增物品
+            <i class="fas fa-plus me-2"></i>{{ _('新增物品') }}
           </a>
           {%endif%}
           <a href="{{url_for('items.scan')}}" class="btn btn-outline-secondary">
-            <i class="fas fa-qrcode me-2"></i>掃描條碼
+            <i class="fas fa-qrcode me-2"></i>{{ _('掃描條碼') }}
           </a>
           <a href="{{url_for('items.search')}}" class="btn btn-outline-secondary">
-            <i class="fas fa-search me-2"></i>搜尋物品
+            <i class="fas fa-search me-2"></i>{{ _('搜尋物品') }}
           </a>
           <a href="{{url_for('items.notifications')}}" class="btn btn-outline-warning">
-            <i class="fas fa-bell me-2"></i>查看通知
+            <i class="fas fa-bell me-2"></i>{{ _('查看通知') }}
           </a>
           <a href="{{url_for('items.statistics')}}" class="btn btn-outline-info">
-            <i class="fas fa-chart-bar me-2"></i>統計報表
+            <i class="fas fa-chart-bar me-2"></i>{{ _('統計報表') }}
           </a>
         </div>
       </div>
@@ -200,9 +200,9 @@
       <!-- Recent activity -->
       <div class="card animate-fadeInUp stagger-2">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-history me-2"></i>最近活動</span>
+          <span><i class="fas fa-history me-2"></i>{{ _('最近活動') }}</span>
           {%if User.admin%}
-          <a href="{{url_for('items.activity_logs')}}" class="small text-decoration-none">查看全部 &rsaquo;</a>
+          <a href="{{url_for('items.activity_logs')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
           {%endif%}
         </div>
         <div class="card-body p-0">
@@ -222,7 +222,7 @@
           </ul>
           {%else%}
           <div class="p-3">
-            <p class="text-muted mb-0 small">尚無操作記錄</p>
+            <p class="text-muted mb-0 small">{{ _('尚無操作記錄') }}</p>
           </div>
           {%endif%}
         </div>

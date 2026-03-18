@@ -2,6 +2,7 @@ from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 from app.repositories import item_repo, type_repo
+from app.repositories import quantity_log_repo
 from app.utils import storage, image
 from app.validators import items as item_validator
 
@@ -738,6 +739,20 @@ def import_items(items: List[Dict[str, Any]]) -> Tuple[int, int]:
     return success, failed
 
 
+def full_text_search(query: str, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    """Full-text search across ItemName, ItemDesc, ItemStorePlace.
+
+    Delegates to item_repo.full_text_search and annotates expiry/maintenance
+    fields on the returned items.
+
+    Returns dict with 'items' list and 'total' count.
+    """
+    result = item_repo.full_text_search(query, page=page, page_size=page_size)
+    _annotate_expiry(result["items"])
+    _annotate_maintenance_fields(result["items"])
+    return result
+
+
 def count_by_type(item_type: str) -> int:
     """依類型計算物品數量"""
     return item_repo.count_items({"ItemType": item_type})
@@ -889,25 +904,39 @@ def bulk_move_items(item_ids: List[str], target_location: str) -> Tuple[int, Lis
     return success_count, failed_ids
 
 
-def adjust_quantity(item_id: str, delta: int) -> Tuple[bool, int, str]:
+def adjust_quantity(item_id: str, delta: int, user: str = "", reason: Optional[str] = None) -> Tuple[bool, int, str]:
     """調整物品數量
-    
+
     Args:
         item_id: 物品 ID
         delta: 數量變化（正數增加，負數減少）
-    
+        user: 操作使用者
+        reason: 調整原因（選填）
+
     Returns:
         (成功與否, 新數量, 訊息)
     """
     item = item_repo.find_item_by_id(item_id)
     if not item:
         return False, 0, "找不到該物品"
-    
+
     current_qty = item.get("Quantity", 0) or 0
     new_qty = max(0, current_qty + delta)  # 不允許負數庫存
-    
+
     success = item_repo.update_item_field(item_id, "Quantity", new_qty)
     if success:
+        try:
+            quantity_log_repo.insert_log(
+                item_id=item_id,
+                item_name=item.get("ItemName", ""),
+                user=user,
+                delta=new_qty - current_qty,
+                old_qty=current_qty,
+                new_qty=new_qty,
+                reason=reason,
+            )
+        except Exception:
+            pass
         return True, new_qty, f"數量已更新為 {new_qty}"
     return False, current_qty, "更新失敗"
 

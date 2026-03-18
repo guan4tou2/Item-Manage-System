@@ -7,6 +7,8 @@ from app.models.location import Location
 from app.models.travel import Travel, TravelGroup, TravelItem, ShoppingList, ShoppingItem
 from app.models.line_link import LineUserLink
 from app.models.telegram_link import TelegramUserLink
+from app.models.quantity_log import QuantityLog
+from app.models.item_loan import ItemLoan
 
 __all__ = [
     "User",
@@ -21,4 +23,6 @@ __all__ = [
     "ShoppingItem",
     "LineUserLink",
     "TelegramUserLink",
+    "QuantityLog",
+    "ItemLoan",
 ]

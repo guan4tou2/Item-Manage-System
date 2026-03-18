@@ -12,11 +12,13 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_sqlalchemy import SQLAlchemy
 from flask_caching import Cache
+from flask_babel import Babel
 
 mongo = PyMongo()
 db = SQLAlchemy()
 cache = Cache()
 csrf = CSRFProtect()
+babel = Babel()
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=[],
@@ -127,6 +129,21 @@ def _ensure_user_profile_columns() -> None:
         db.session.commit()
 
 
+def _ensure_fulltext_extensions() -> None:
+    """Install pg_trgm extension for fuzzy full-text search.
+
+    Wrapped in try/except because the connected user may not have superuser
+    privileges; in that case full-text search gracefully falls back to ILIKE.
+    """
+    if get_db_type() != "postgres":
+        return
+    try:
+        db.session.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
 def create_app() -> Flask:
     app = Flask(
         __name__,
@@ -182,11 +199,28 @@ def create_app() -> Flask:
             db.create_all()
             _ensure_item_maintenance_columns()
             _ensure_user_profile_columns()
+            _ensure_fulltext_extensions()
     else:
         mongo.init_app(app)
     
     csrf.init_app(app)
     limiter.init_app(app)
+
+    # i18n 設定
+    app.config["BABEL_DEFAULT_LOCALE"] = "zh_TW"
+    app.config["BABEL_DEFAULT_TIMEZONE"] = "Asia/Taipei"
+    app.config["BABEL_TRANSLATION_DIRECTORIES"] = "translations"
+
+    def get_locale():
+        from flask import session as _sess
+        # 優先使用使用者設定的語言
+        user_lang = _sess.get("language")
+        if user_lang in ("zh_TW", "en"):
+            return user_lang
+        from flask import request as _req
+        return _req.accept_languages.best_match(["zh_TW", "en"], default="zh_TW")
+
+    babel.init_app(app, locale_selector=get_locale)
 
     cache_config = {
         "CACHE_TYPE": "RedisCache",
@@ -237,6 +271,7 @@ def create_app() -> Flask:
     from app.line.routes import bp as line_bp
     from app.telegram.routes import bp as telegram_bp
     from app.profile.routes import bp as profile_bp
+    from app.loans.routes import bp as loans_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
@@ -251,6 +286,7 @@ def create_app() -> Flask:
     app.register_blueprint(line_bp)
     app.register_blueprint(telegram_bp)
     app.register_blueprint(profile_bp)
+    app.register_blueprint(loans_bp)
     
     # 註冊自定義過濾器
     import re

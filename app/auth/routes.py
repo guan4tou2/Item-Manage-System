@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask_babel import gettext as _
 
 from app import limiter
 from app.services import user_service
@@ -15,8 +16,8 @@ def signin():
         password = request.form.get("Password", "")
 
         if not username or not password:
-            flash("請輸入帳號與密碼", "danger")
-            return render_template("signin.html", error="請輸入帳號與密碼")
+            flash(_("請輸入帳號與密碼"), "danger")
+            return render_template("signin.html", error=_("請輸入帳號與密碼"))
 
         # 取得用戶 IP（使用 remote_addr 避免 X-Forwarded-For 偽造）
         ip_address = request.remote_addr or ""
@@ -30,7 +31,7 @@ def signin():
             # 檢查是否需要強制修改密碼
             if user_service.needs_password_change(username):
                 session["force_password_change"] = True
-                flash("首次登入請修改預設密碼以確保安全", "warning")
+                flash(_("首次登入請修改預設密碼以確保安全"), "warning")
                 return redirect(url_for("auth.change_password"))
             
             return redirect(url_for("items.dashboard"))
@@ -51,28 +52,28 @@ def signup():
         
         # 驗證輸入
         if not username or not password:
-            flash("請填寫所有欄位", "danger")
-            return render_template("signup.html", error="請填寫所有欄位")
-        
+            flash(_("請填寫所有欄位"), "danger")
+            return render_template("signup.html", error=_("請填寫所有欄位"))
+
         if len(username) < 3:
-            flash("帳號至少需要 3 個字元", "danger")
-            return render_template("signup.html", error="帳號至少需要 3 個字元")
-        
+            flash(_("帳號至少需要 3 個字元"), "danger")
+            return render_template("signup.html", error=_("帳號至少需要 3 個字元"))
+
         if len(password) < 8:
-            flash("密碼至少需要 8 個字元", "danger")
-            return render_template("signup.html", error="密碼至少需要 8 個字元")
-        
+            flash(_("密碼至少需要 8 個字元"), "danger")
+            return render_template("signup.html", error=_("密碼至少需要 8 個字元"))
+
         if password != confirm_password:
-            flash("兩次輸入的密碼不一致", "danger")
-            return render_template("signup.html", error="兩次輸入的密碼不一致")
-        
+            flash(_("兩次輸入的密碼不一致"), "danger")
+            return render_template("signup.html", error=_("兩次輸入的密碼不一致"))
+
         # 嘗試建立用戶
         if user_service.create_user(username, password, admin=False):
-            flash("註冊成功！請登入", "success")
+            flash(_("註冊成功！請登入"), "success")
             return redirect(url_for("auth.signin"))
         else:
-            flash("該帳號已被使用", "danger")
-            return render_template("signup.html", error="該帳號已被使用")
+            flash(_("該帳號已被使用"), "danger")
+            return render_template("signup.html", error=_("該帳號已被使用"))
     
     return render_template("signup.html")
 
@@ -92,20 +93,20 @@ def change_password():
         confirm_password = request.form.get("ConfirmPassword", "")
         
         if not new_password or not confirm_password:
-            flash("請填寫所有欄位", "danger")
+            flash(_("請填寫所有欄位"), "danger")
             return render_template("change_password.html", is_forced=is_forced)
-        
+
         if new_password != confirm_password:
-            flash("兩次輸入的密碼不一致", "danger")
+            flash(_("兩次輸入的密碼不一致"), "danger")
             return render_template("change_password.html", is_forced=is_forced)
-        
+
         # 強制修改時不需要舊密碼
         if is_forced:
             ok, msg = user_service.force_change_password(username, new_password)
         else:
             old_password = request.form.get("OldPassword", "")
             if not old_password:
-                flash("請輸入舊密碼", "danger")
+                flash(_("請輸入舊密碼"), "danger")
                 return render_template("change_password.html", is_forced=is_forced)
             ok, msg = user_service.change_password(username, old_password, new_password)
         
@@ -136,7 +137,7 @@ def admin_users():
     
     user = user_service.get_user(username)
     if not user or not user.get("admin"):
-        flash("您沒有權限存取此頁面", "danger")
+        flash(_("您沒有權限存取此頁面"), "danger")
         return redirect(url_for("items.home"))
     
     users = user_service.list_users()
@@ -157,7 +158,7 @@ def admin_create_user():
 
     user = user_service.get_user(username)
     if not user or not user.get("admin"):
-        flash("您沒有權限執行此操作", "danger")
+        flash(_("您沒有權限執行此操作"), "danger")
         return redirect(url_for("items.home"))
 
     new_username = request.form.get("UserID", "").strip()
@@ -166,15 +167,15 @@ def admin_create_user():
     is_admin = request.form.get("admin") == "on"
 
     if not new_username or not password or not confirm_password:
-        flash("請填寫新增用戶所需欄位", "danger")
+        flash(_("請填寫新增用戶所需欄位"), "danger")
         return redirect(url_for("auth.admin_users"))
 
     if len(new_username) < 3:
-        flash("帳號至少需要 3 個字元", "danger")
+        flash(_("帳號至少需要 3 個字元"), "danger")
         return redirect(url_for("auth.admin_users"))
 
     if password != confirm_password:
-        flash("兩次輸入的密碼不一致", "danger")
+        flash(_("兩次輸入的密碼不一致"), "danger")
         return redirect(url_for("auth.admin_users"))
 
     ok, msg = user_service.validate_new_password(password)
@@ -183,10 +184,10 @@ def admin_create_user():
         return redirect(url_for("auth.admin_users"))
 
     if user_service.create_user(new_username, password, admin=is_admin):
-        role_label = "管理員" if is_admin else "一般用戶"
-        flash(f"已新增 {new_username}（{role_label}）", "success")
+        role_label = _("管理員") if is_admin else _("一般用戶")
+        flash(_("已新增 %(username)s（%(role)s）", username=new_username, role=role_label), "success")
     else:
-        flash("新增失敗，帳號可能已存在或密碼不符合規則", "danger")
+        flash(_("新增失敗，帳號可能已存在或密碼不符合規則"), "danger")
 
     return redirect(url_for("auth.admin_users"))
 
@@ -200,13 +201,13 @@ def admin_reset_password(target_user):
     
     user = user_service.get_user(username)
     if not user or not user.get("admin"):
-        flash("您沒有權限執行此操作", "danger")
+        flash(_("您沒有權限執行此操作"), "danger")
         return redirect(url_for("items.home"))
-    
+
     ok, msg, new_password = user_service.admin_reset_password(target_user)
-    
+
     if ok:
-        flash(f"{msg}，新密碼為：{new_password}", "success")
+        flash(_("%(msg)s，新密碼為：%(pw)s", msg=msg, pw=new_password), "success")
     else:
         flash(msg, "danger")
     
@@ -222,13 +223,13 @@ def admin_unlock_user(target_user):
     
     user = user_service.get_user(username)
     if not user or not user.get("admin"):
-        flash("您沒有權限執行此操作", "danger")
+        flash(_("您沒有權限執行此操作"), "danger")
         return redirect(url_for("items.home"))
-    
+
     if user_service.unlock_user(target_user):
-        flash(f"已解鎖 {target_user} 的帳號", "success")
+        flash(_("已解鎖 %(user)s 的帳號", user=target_user), "success")
     else:
-        flash("解鎖失敗", "danger")
+        flash(_("解鎖失敗"), "danger")
     
     return redirect(url_for("auth.admin_users"))
 
@@ -242,7 +243,7 @@ def admin_delete_user(target_user):
 
     user = user_service.get_user(username)
     if not user or not user.get("admin"):
-        flash("您沒有權限執行此操作", "danger")
+        flash(_("您沒有權限執行此操作"), "danger")
         return redirect(url_for("items.home"))
 
     ok, msg = user_service.delete_user(username, target_user)

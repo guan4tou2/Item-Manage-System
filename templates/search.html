@@ -23,6 +23,12 @@
       <span class="summary-chip-label">建議策略</span>
       <strong>先用名稱，再補位置條件縮小範圍</strong>
     </div>
+    {% if query %}
+    <div class="summary-chip">
+      <span class="summary-chip-label">搜尋模式</span>
+      <strong><i class="fas fa-bolt me-1 text-primary"></i>全文搜尋（名稱 / 描述 / 位置）</strong>
+    </div>
+    {% endif %}
   </div>
 
   <!-- 搜尋表單 -->

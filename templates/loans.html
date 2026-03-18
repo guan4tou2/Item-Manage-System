@@ -1,0 +1,134 @@
+{%extends "template.html"%}
+
+{%block title%}借出管理 - 物品管理系統{%endblock%}
+
+{%block user%}{{User.name}}{%endblock%}
+
+{%block contain%}
+<div class="row">
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-handshake text-primary me-2"></i>借出管理
+        </h2>
+        <p class="text-muted mb-0">追蹤借出物品與歸還狀態</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{url_for('items.home')}}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回首頁
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 統計摘要 -->
+  <div class="col-12 mb-4">
+    <div class="stats-summary-strip">
+      <div class="summary-chip">
+        <span class="summary-chip-label">進行中</span>
+        <strong>{{ active_count }} 筆借出</strong>
+      </div>
+      <div class="summary-chip">
+        <span class="summary-chip-label">已逾期</span>
+        <strong class="{% if overdue_count > 0 %}text-danger{% endif %}">{{ overdue_count }} 筆逾期</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- 借出列表 -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>進行中借出</h5>
+      </div>
+      <div class="card-body p-0">
+        {%if active_loans%}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>物品</th>
+                <th>借用人</th>
+                <th>借出日期</th>
+                <th>預計歸還</th>
+                <th>狀態</th>
+                {%if User.admin%}
+                <th class="text-end">操作</th>
+                {%endif%}
+              </tr>
+            </thead>
+            <tbody>
+              {%for loan in active_loans%}
+              <tr class="{% if loan.status == 'overdue' %}table-danger{% endif %}">
+                <td>
+                  <a href="{{ url_for('items.item_detail', item_id=loan.item_id) }}" class="text-decoration-none fw-semibold">
+                    {{ loan.item_name or loan.item_id }}
+                  </a>
+                  <div class="text-muted small">{{ loan.item_id }}</div>
+                </td>
+                <td>
+                  {{ loan.borrower }}
+                  {%if loan.borrower_contact%}
+                  <div class="text-muted small">{{ loan.borrower_contact }}</div>
+                  {%endif%}
+                </td>
+                <td>{{ loan.lent_date }}</td>
+                <td>{{ loan.expected_return or '—' }}</td>
+                <td>
+                  {%if loan.status == 'overdue'%}
+                  <span class="badge bg-danger"><i class="fas fa-exclamation-circle me-1"></i>已逾期</span>
+                  {%else%}
+                  <span class="badge bg-success"><i class="fas fa-clock me-1"></i>借出中</span>
+                  {%endif%}
+                </td>
+                {%if User.admin%}
+                <td class="text-end">
+                  <button type="button" class="btn btn-sm btn-outline-primary return-btn" data-loan-id="{{ loan.id }}">
+                    <i class="fas fa-undo me-1"></i>歸還
+                  </button>
+                </td>
+                {%endif%}
+              </tr>
+              {%endfor%}
+            </tbody>
+          </table>
+        </div>
+        {%else%}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-handshake fa-3x mb-3 opacity-50"></i>
+          <p class="mb-0">目前沒有借出記錄</p>
+        </div>
+        {%endif%}
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+document.querySelectorAll('.return-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const loanId = this.dataset.loanId;
+    showConfirm('確定要標記此借出為已歸還？', async function() {
+      try {
+        const resp = await fetch(`/api/loans/return/${loanId}`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+        });
+        const data = await resp.json();
+        if (data.success) {
+          showToast(data.message || '已標記歸還', 'success');
+          setTimeout(() => location.reload(), 800);
+        } else {
+          showToast(data.message || '操作失敗', 'danger');
+        }
+      } catch (e) {
+        showToast('操作失敗', 'danger');
+      }
+    }, { title: '確認歸還', confirmText: '歸還', icon: 'fas fa-undo text-primary' });
+  });
+});
+</script>
+{%endblock%}

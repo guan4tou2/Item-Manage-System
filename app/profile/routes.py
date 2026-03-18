@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask_babel import gettext as _
 
 from app.services import user_service
 from app.utils.auth import login_required, get_current_user

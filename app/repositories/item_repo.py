@@ -2,7 +2,7 @@
 from typing import Dict, Any, Iterable, Optional, List, Tuple
 from datetime import datetime, date, timedelta
 
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, text
 from app import mongo, db, get_db_type
 from app.models.item import Item
 
@@ -112,6 +112,86 @@ def count_items(filter_query: Dict[str, Any]) -> int:
         return query.count()
     
     return mongo.db.item.count_documents(filter_query)
+
+
+def full_text_search(query: str, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    """Full-text search across ItemName, ItemDesc, ItemStorePlace.
+
+    PostgreSQL: Uses pg_trgm similarity for fuzzy matching + ILIKE fallback.
+    MongoDB: Uses $regex for matching.
+
+    Returns dict with 'items' list and 'total' count.
+    """
+    db_type = get_db_type()
+    if db_type == "postgres":
+        pattern = f"%{query}%"
+        offset = (page - 1) * page_size
+
+        # Try pg_trgm similarity first; fall back to pure ILIKE if extension absent.
+        try:
+            sql = text(
+                'SELECT * FROM items WHERE '
+                'similarity("ItemName", :q) > 0.1 '
+                'OR "ItemName" ILIKE :pattern '
+                'OR "ItemDesc" ILIKE :pattern '
+                'OR "ItemStorePlace" ILIKE :pattern '
+                'ORDER BY similarity("ItemName", :q) DESC '
+                'LIMIT :limit OFFSET :offset'
+            )
+            count_sql = text(
+                'SELECT COUNT(*) FROM items WHERE '
+                'similarity("ItemName", :q) > 0.1 '
+                'OR "ItemName" ILIKE :pattern '
+                'OR "ItemDesc" ILIKE :pattern '
+                'OR "ItemStorePlace" ILIKE :pattern'
+            )
+            rows = db.session.execute(
+                sql, {"q": query, "pattern": pattern, "limit": page_size, "offset": offset}
+            ).fetchall()
+            total = db.session.execute(
+                count_sql, {"q": query, "pattern": pattern}
+            ).scalar() or 0
+        except Exception:
+            # pg_trgm not installed — fall back to pure ILIKE
+            db.session.rollback()
+            ilike_sql = text(
+                'SELECT * FROM items WHERE '
+                '"ItemName" ILIKE :pattern '
+                'OR "ItemDesc" ILIKE :pattern '
+                'OR "ItemStorePlace" ILIKE :pattern '
+                'ORDER BY "ItemName" '
+                'LIMIT :limit OFFSET :offset'
+            )
+            ilike_count_sql = text(
+                'SELECT COUNT(*) FROM items WHERE '
+                '"ItemName" ILIKE :pattern '
+                'OR "ItemDesc" ILIKE :pattern '
+                'OR "ItemStorePlace" ILIKE :pattern'
+            )
+            rows = db.session.execute(
+                ilike_sql, {"pattern": pattern, "limit": page_size, "offset": offset}
+            ).fetchall()
+            total = db.session.execute(
+                ilike_count_sql, {"pattern": pattern}
+            ).scalar() or 0
+
+        # Convert raw rows to dicts using the ORM model's column names
+        col_names = [col.name for col in Item.__table__.columns]
+        items = [dict(zip(col_names, row)) for row in rows]
+        return {"items": items, "total": int(total)}
+
+    # MongoDB fallback
+    mongo_filter = {
+        "$or": [
+            {"ItemName": {"$regex": query, "$options": "i"}},
+            {"ItemDesc": {"$regex": query, "$options": "i"}},
+            {"ItemStorePlace": {"$regex": query, "$options": "i"}},
+        ]
+    }
+    total = mongo.db.item.count_documents(mongo_filter)
+    offset = (page - 1) * page_size
+    cursor = mongo.db.item.find(mongo_filter, {"_id": 0}).skip(offset).limit(page_size)
+    return {"items": list(cursor), "total": total}
 
 
 def insert_item(item: Dict[str, Any]) -> None:

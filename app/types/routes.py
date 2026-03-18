@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_babel import gettext as _
 
 from app.services import type_service
 from app.utils.auth import admin_required, get_current_user
@@ -15,16 +16,16 @@ def manage_types():
     if request.method == "POST":
         type_name = request.form.get("name", "").strip()
         if not type_name:
-            flash("類型名稱不能為空", "danger")
+            flash(_("類型名稱不能為空"), "danger")
             return render_template("managetypes.html", User=user, itemtype=types)
 
         existing_names = [t.get("name") for t in types]
         if type_name in existing_names:
-            flash("該類型已存在", "danger")
+            flash(_("該類型已存在"), "danger")
             return render_template("managetypes.html", User=user, itemtype=types)
 
         type_service.create_type({"name": type_name})
-        flash("類型新增成功！", "success")
+        flash(_("類型新增成功！"), "success")
         return redirect(url_for("types.manage_types"))
 
     return render_template("managetypes.html", User=user, itemtype=types)
@@ -44,7 +45,7 @@ def edit_type():
     new_name = request.form.get("new_name", "").strip()
 
     if not old_name or not new_name:
-        flash("請提供原始名稱和新名稱", "danger")
+        flash(_("請提供原始名稱和新名稱"), "danger")
         return redirect(url_for("types.manage_types"))
 
     ok, msg = type_service.update_type(old_name, new_name)

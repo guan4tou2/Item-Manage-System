@@ -46,16 +46,16 @@
   </head>
 
   <body>
-    <a href="#main-content" class="skip-link">跳至主要內容</a>
+    <a href="#main-content" class="skip-link">{{ _('跳至主要內容') }}</a>
     <main>
       <!-- 導航列 -->
       <nav
         class="navbar navbar-expand-lg navbar-dark"
-        aria-label="物品管理系統導航"
+        aria-label="{{ _('物品管理系統導航') }}"
       >
         <div class="container">
           <a class="navbar-brand" href="{{url_for('items.home')}}">
-            <i class="fas fa-box-open me-2"></i>物品管理系統
+            <i class="fas fa-box-open me-2"></i>{{ _('物品管理系統') }}
           </a>
           <button
             class="navbar-toggler"
@@ -64,14 +64,14 @@
             data-bs-target="#mainNavbar"
             aria-controls="mainNavbar"
             aria-expanded="false"
-            aria-label="切換導航"
+            aria-label="{{ _('切換導航') }}"
           >
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('items.dashboard')}}" data-tooltip="Dashboard 概覽">
+                <a class="nav-link" href="{{url_for('items.dashboard')}}" data-tooltip="{{ _('Dashboard 概覽') }}">
                   <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                 </a>
               </li>
@@ -80,97 +80,102 @@
                   class="nav-link active"
                   aria-current="page"
                   href="{{url_for('items.home')}}"
-                  data-tooltip="查看所有物品"
+                  data-tooltip="{{ _('查看所有物品') }}"
                 >
-                  <i class="fas fa-home me-1"></i>首頁
+                  <i class="fas fa-home me-1"></i>{{ _('首頁') }}
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('items.search')}}" data-tooltip="搜尋物品">
-                  <i class="fas fa-search me-1"></i>搜尋
+                <a class="nav-link" href="{{url_for('items.search')}}" data-tooltip="{{ _('搜尋物品') }}">
+                  <i class="fas fa-search me-1"></i>{{ _('搜尋') }}
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('items.scan')}}" data-tooltip="掃描條碼或QR碼">
-                  <i class="fas fa-qrcode me-1"></i>掃描
+                <a class="nav-link" href="{{url_for('items.scan')}}" data-tooltip="{{ _('掃描條碼或QR碼') }}">
+                  <i class="fas fa-qrcode me-1"></i>{{ _('掃描') }}
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('items.favorites')}}" data-tooltip="我的收藏">
-                  <i class="fas fa-star me-1"></i>收藏
+                <a class="nav-link" href="{{url_for('items.favorites')}}" data-tooltip="{{ _('我的收藏') }}">
+                  <i class="fas fa-star me-1"></i>{{ _('收藏') }}
                 </a>
               </li>
               <li class="nav-item">
-                <a class="nav-link" href="{{url_for('items.statistics')}}" data-tooltip="查看統計報表">
-                  <i class="fas fa-chart-bar me-1"></i>統計
+                <a class="nav-link" href="{{url_for('items.statistics')}}" data-tooltip="{{ _('查看統計報表') }}">
+                  <i class="fas fa-chart-bar me-1"></i>{{ _('統計') }}
                 </a>
               </li>
               {%if User.admin%}
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="fas fa-cog me-1"></i>管理
+                  <i class="fas fa-cog me-1"></i>{{ _('管理') }}
                 </a>
                 <ul class="dropdown-menu admin-dropdown-menu dropdown-menu-end" aria-labelledby="adminDropdown">
-                  <li><h6 class="dropdown-header">物品作業</h6></li>
+                  <li><h6 class="dropdown-header">{{ _('物品作業') }}</h6></li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('items.additem')}}">
-                      <i class="fas fa-plus me-2 text-success"></i>新增物品
+                      <i class="fas fa-plus me-2 text-success"></i>{{ _('新增物品') }}
                     </a>
                   </li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('items.manageitem')}}">
-                      <i class="fas fa-edit me-2 text-primary"></i>管理物品
+                      <i class="fas fa-edit me-2 text-primary"></i>{{ _('管理物品') }}
                     </a>
                   </li>
                    <li>
                      <a class="dropdown-item" href="{{url_for('items.print_labels')}}">
-                       <i class="fas fa-print me-2 text-secondary"></i>列印標籤
+                       <i class="fas fa-print me-2 text-secondary"></i>{{ _('列印標籤') }}
                      </a>
                    </li>
                    <li>
                      <a class="dropdown-item" href="{{url_for('travel.list_page')}}">
-                       <i class="fas fa-suitcase-rolling me-2 text-success"></i>旅行清單
+                       <i class="fas fa-suitcase-rolling me-2 text-success"></i>{{ _('旅行清單') }}
+                     </a>
+                   </li>
+                   <li>
+                     <a class="dropdown-item" href="{{url_for('loans.loan_list')}}">
+                       <i class="fas fa-handshake me-2 text-primary"></i>{{ _('借出管理') }}
                      </a>
                    </li>
                    <li><hr class="dropdown-divider" /></li>
-                  <li><h6 class="dropdown-header">系統設定</h6></li>
+                  <li><h6 class="dropdown-header">{{ _('系統設定') }}</h6></li>
 
                   <li>
                     <a class="dropdown-item" href="{{url_for('types.manage_types')}}">
-                      <i class="fas fa-tags me-2 text-info"></i>分類管理
+                      <i class="fas fa-tags me-2 text-info"></i>{{ _('分類管理') }}
                     </a>
                   </li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('auth.admin_users')}}">
-                      <i class="fas fa-users me-2 text-warning"></i>用戶管理
+                      <i class="fas fa-users me-2 text-warning"></i>{{ _('用戶管理') }}
                     </a>
                   </li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('items.backup_page')}}">
-                      <i class="fas fa-database me-2 text-secondary"></i>備份還原
+                      <i class="fas fa-database me-2 text-secondary"></i>{{ _('備份還原') }}
                     </a>
                   </li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('locations.manage_locations')}}">
-                      <i class="fas fa-map-marker-alt me-2 text-warning"></i>位置設定
+                      <i class="fas fa-map-marker-alt me-2 text-warning"></i>{{ _('位置設定') }}
                     </a>
                   </li>
                   <li><hr class="dropdown-divider" /></li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('items.activity_logs')}}">
-                      <i class="fas fa-history me-2 text-secondary"></i>操作日誌
+                      <i class="fas fa-history me-2 text-secondary"></i>{{ _('操作日誌') }}
                     </a>
                   </li>
                   <li><hr class="dropdown-divider" /></li>
-                  <li><h6 class="dropdown-header">通知與匯入</h6></li>
+                  <li><h6 class="dropdown-header">{{ _('通知與匯入') }}</h6></li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('notifications.index')}}">
-                      <i class="fas fa-bell me-2 text-primary"></i>通知設定
+                      <i class="fas fa-bell me-2 text-primary"></i>{{ _('通知設定') }}
                     </a>
                   </li>
                   <li>
                     <a class="dropdown-item" href="{{url_for('import.index')}}">
-                      <i class="fas fa-file-import me-2 text-success"></i>批量導入
+                      <i class="fas fa-file-import me-2 text-success"></i>{{ _('批量導入') }}
                     </a>
                   </li>
                 </ul>
@@ -191,8 +196,8 @@
                   type="search"
                   name="q"
                   id="navSearchInput"
-                  placeholder="搜尋物品..."
-                  aria-label="搜尋"
+                  placeholder="{{ _('搜尋物品...') }}"
+                  aria-label="{{ _('搜尋') }}"
                 />
                 <button type="button" class="btn btn-outline-secondary d-none" id="navClearBtn" onclick="clearNavSearch()">
                   <i class="fas fa-times"></i>
@@ -208,7 +213,7 @@
                     <button type="button" 
                             class="btn btn-link nav-link theme-toggle" 
                             id="themeToggle"
-                            title="切換深色/淺色模式"
+                            title="{{ _('切換深色/淺色模式') }}"
                             onclick="toggleTheme()">
                       <i class="fas fa-moon" id="themeIcon"></i>
                     </button>
@@ -219,7 +224,7 @@
                     <a href="{{url_for('items.notifications_summary')}}" 
                        class="nav-link position-relative notification-bell" 
                        id="notificationBell"
-                       title="到期通知">
+                       title="{{ _('到期通知') }}">
                       <i class="fas fa-bell fa-lg"></i>
                       <span class="notification-badge d-none" id="notificationBadge">0</span>
                     </a>
@@ -242,38 +247,38 @@
               <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
                 <li class="dropdown-header">
                   <i class="fas fa-user-circle me-1"></i> 
-                  {%if User.admin%}管理員{%else%}使用者{%endif%}
+                  {%if User.admin%}{{ _('管理員') }}{%else%}{{ _('使用者') }}{%endif%}
                 </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li>
                   <a class="dropdown-item" href="{{url_for('items.home')}}">
-                    <i class="fas fa-home me-2"></i>首頁
+                    <i class="fas fa-home me-2"></i>{{ _('首頁') }}
                   </a>
                 </li>
                 <li>
                   <a class="dropdown-item" href="{{url_for('items.search')}}">
-                    <i class="fas fa-search me-2"></i>搜尋物品
+                    <i class="fas fa-search me-2"></i>{{ _('搜尋物品') }}
                   </a>
                 </li>
                 <li>
                   <a class="dropdown-item" href="#" onclick="showGuide()">
-                    <i class="fas fa-question-circle me-2"></i>操作指引
+                    <i class="fas fa-question-circle me-2"></i>{{ _('操作指引') }}
                   </a>
                 </li>
                 <li>
                   <button class="dropdown-item d-none pwa-install-btn" type="button" id="pwaInstallBtn">
-                    <i class="fas fa-download me-2"></i>安裝到裝置
+                    <i class="fas fa-download me-2"></i>{{ _('安裝到裝置') }}
                   </button>
                 </li>
                 <li>
                   <a class="dropdown-item" href="{{url_for('profile.profile')}}">
-                    <i class="fas fa-user-cog me-2"></i>個人設定
+                    <i class="fas fa-user-cog me-2"></i>{{ _('個人設定') }}
                   </a>
                 </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li>
                   <a class="dropdown-item text-danger" href="{{url_for('auth.signout')}}">
-                    <i class="fas fa-sign-out-alt me-2"></i>登出
+                    <i class="fas fa-sign-out-alt me-2"></i>{{ _('登出') }}
                   </a>
                 </li>
               </ul>
@@ -307,12 +312,12 @@
           <div class="modal-content">
             <div class="modal-body text-center py-4">
               <i class="fas fa-exclamation-triangle fa-2x text-warning mb-3" id="confirmModalIcon"></i>
-              <h6 class="fw-bold mb-2" id="confirmModalTitle">確認操作</h6>
+              <h6 class="fw-bold mb-2" id="confirmModalTitle">{{ _('確認操作') }}</h6>
               <p class="text-muted small mb-0" id="confirmModalMessage"></p>
             </div>
             <div class="modal-footer border-0 justify-content-center gap-2 pt-0 pb-3">
-              <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">取消</button>
-              <button type="button" class="btn btn-danger btn-sm px-3" id="confirmModalBtn">確認</button>
+              <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">{{ _('取消') }}</button>
+              <button type="button" class="btn btn-danger btn-sm px-3" id="confirmModalBtn">{{ _('確認') }}</button>
             </div>
           </div>
         </div>
@@ -321,7 +326,7 @@
       <!-- 快速操作提示 -->
       <div class="quick-tip" id="quickTip">
         <i class="fas fa-lightbulb"></i>
-        <span id="tipContent">提示：使用搜尋功能快速找到物品</span>
+        <span id="tipContent">{{ _('提示：使用搜尋功能快速找到物品') }}</span>
         <button class="close-tip" onclick="closeTip()">
           <i class="fas fa-times"></i>
         </button>
@@ -329,7 +334,7 @@
 
       <!-- 浮動操作按鈕 (管理員) -->
       {%if User.admin%}
-      <a href="{{url_for('items.additem')}}" class="fab btn btn-primary" data-tooltip="新增物品">
+      <a href="{{url_for('items.additem')}}" class="fab btn btn-primary" data-tooltip="{{ _('新增物品') }}">
         <i class="fas fa-plus"></i>
       </a>
       {%endif%}
@@ -340,11 +345,11 @@
       <!-- 操作指引提示框 -->
       <div class="guide-tooltip" id="guideTooltip">
         <div class="guide-progress" id="guideProgress"></div>
-        <h4 id="guideTitle">歡迎使用</h4>
-        <p id="guideContent">讓我們開始了解系統功能吧！</p>
+        <h4 id="guideTitle">{{ _('歡迎使用') }}</h4>
+        <p id="guideContent">{{ _('讓我們開始了解系統功能吧！') }}</p>
         <div class="guide-actions">
-          <button class="btn btn-sm btn-outline-secondary" onclick="skipGuide()">跳過</button>
-          <button class="btn btn-sm btn-primary" onclick="nextGuideStep()">下一步</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="skipGuide()">{{ _('跳過') }}</button>
+          <button class="btn btn-sm btn-primary" onclick="nextGuideStep()">{{ _('下一步') }}</button>
         </div>
       </div>
     </main>
@@ -355,7 +360,7 @@
         <div class="modal-content">
           <div class="modal-header bg-primary text-white">
             <h5 class="modal-title" id="helpModalLabel">
-              <i class="fas fa-question-circle me-2"></i>操作指引
+              <i class="fas fa-question-circle me-2"></i>{{ _('操作指引') }}
             </h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
@@ -369,8 +374,8 @@
                     </span>
                   </div>
                   <div class="flex-grow-1 ms-3">
-                    <h5>新增物品</h5>
-                    <p class="text-muted mb-0">點擊右下角的「+」按鈕或從管理選單中選擇「新增物品」，填寫物品資訊和照片即可。</p>
+                    <h5>{{ _('新增物品') }}</h5>
+                    <p class="text-muted mb-0">{{ _('點擊右下角的「+」按鈕或從管理選單中選擇「新增物品」，填寫物品資訊和照片即可。') }}</p>
                   </div>
                 </div>
               </div>
@@ -382,8 +387,8 @@
                     </span>
                   </div>
                   <div class="flex-grow-1 ms-3">
-                    <h5>搜尋物品</h5>
-                    <p class="text-muted mb-0">使用頂部搜尋欄或進入搜尋頁面，可依名稱、位置、類型等條件篩選。</p>
+                    <h5>{{ _('搜尋物品') }}</h5>
+                    <p class="text-muted mb-0">{{ _('使用頂部搜尋欄或進入搜尋頁面，可依名稱、位置、類型等條件篩選。') }}</p>
                   </div>
                 </div>
               </div>
@@ -395,8 +400,8 @@
                     </span>
                   </div>
                   <div class="flex-grow-1 ms-3">
-                    <h5>掃描條碼</h5>
-                    <p class="text-muted mb-0">進入掃描頁面，使用相機掃描物品的 QR Code 或條碼，快速查看詳情。</p>
+                    <h5>{{ _('掃描條碼') }}</h5>
+                    <p class="text-muted mb-0">{{ _('進入掃描頁面，使用相機掃描物品的 QR Code 或條碼，快速查看詳情。') }}</p>
                   </div>
                 </div>
               </div>
@@ -408,8 +413,8 @@
                     </span>
                   </div>
                   <div class="flex-grow-1 ms-3">
-                    <h5>位置管理</h5>
-                    <p class="text-muted mb-0">先在「位置設定」中建立樓層、房間、區域，方便記錄物品存放位置。</p>
+                    <h5>{{ _('位置管理') }}</h5>
+                    <p class="text-muted mb-0">{{ _('先在「位置設定」中建立樓層、房間、區域，方便記錄物品存放位置。') }}</p>
                   </div>
                 </div>
               </div>
@@ -421,8 +426,8 @@
                     </span>
                   </div>
                   <div class="flex-grow-1 ms-3">
-                    <h5>類型分類</h5>
-                    <p class="text-muted mb-0">建立物品類型（如：電子產品、文具、工具等），方便分類管理。</p>
+                    <h5>{{ _('類型分類') }}</h5>
+                    <p class="text-muted mb-0">{{ _('建立物品類型（如：電子產品、文具、工具等），方便分類管理。') }}</p>
                   </div>
                 </div>
               </div>
@@ -434,38 +439,38 @@
                     </span>
                   </div>
                   <div class="flex-grow-1 ms-3">
-                    <h5>到期提醒</h5>
-                    <p class="text-muted mb-0">設定保固截止和使用期限，系統會自動標記即將到期或已過期的物品。</p>
+                    <h5>{{ _('到期提醒') }}</h5>
+                    <p class="text-muted mb-0">{{ _('設定保固截止和使用期限，系統會自動標記即將到期或已過期的物品。') }}</p>
                   </div>
                 </div>
               </div>
             </div>
-            
+
             <hr class="my-4">
-            
-            <h6 class="mb-3"><i class="fas fa-keyboard me-2"></i>快捷操作</h6>
+
+            <h6 class="mb-3"><i class="fas fa-keyboard me-2"></i>{{ _('快捷操作') }}</h6>
             <div class="row g-2">
               <div class="col-auto">
                 <span class="badge bg-light text-dark border">
-                  <kbd>Ctrl</kbd> + <kbd>K</kbd> 快速搜尋
+                  <kbd>Ctrl</kbd> + <kbd>K</kbd> {{ _('快速搜尋') }}
                 </span>
               </div>
               <div class="col-auto">
                 <span class="badge bg-light text-dark border">
-                  <kbd>N</kbd> 新增物品
+                  <kbd>N</kbd> {{ _('新增物品') }}
                 </span>
               </div>
               <div class="col-auto">
                 <span class="badge bg-light text-dark border">
-                  <kbd>?</kbd> 顯示說明
+                  <kbd>?</kbd> {{ _('顯示說明') }}
                 </span>
               </div>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('關閉') }}</button>
             <button type="button" class="btn btn-primary" onclick="startGuide()">
-              <i class="fas fa-play me-1"></i>開始導覽
+              <i class="fas fa-play me-1"></i>{{ _('開始導覽') }}
             </button>
           </div>
         </div>
@@ -1123,9 +1128,9 @@
         const btnEl = document.getElementById('confirmModalBtn');
         const iconEl = document.getElementById('confirmModalIcon');
 
-        titleEl.textContent = options.title || '確認操作';
+        titleEl.textContent = options.title || '{{ _("確認操作") }}';
         msgEl.textContent = message;
-        btnEl.textContent = options.confirmText || '確認';
+        btnEl.textContent = options.confirmText || '{{ _("確認") }}';
         btnEl.className = 'btn btn-sm px-3 ' + (options.btnClass || 'btn-danger');
         iconEl.className = 'fa-2x mb-3 ' + (options.icon || 'fas fa-exclamation-triangle text-warning');
 
@@ -1165,7 +1170,7 @@
                 <i class="${icon}"></i>
                 <span>${message}</span>
               </div>
-              <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="關閉"></button>
+              <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="{{ _('關閉') }}"></button>
             </div>
           </div>`;
         container.insertAdjacentHTML('beforeend', html);
