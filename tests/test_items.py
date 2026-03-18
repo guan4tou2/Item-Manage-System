@@ -17,6 +17,10 @@ class FakeItemRepo:
                 if isinstance(condition, dict) and "$regex" in condition:
                     if condition["$regex"].lower() not in item.get(key, "").lower():
                         return False
+                elif key in ("ItemName", "ItemStorePlace") and isinstance(condition, str):
+                    # Postgres 模式：plain string 做 case-insensitive 部分匹配
+                    if condition.lower() not in item.get(key, "").lower():
+                        return False
                 else:
                     if item.get(key) != condition:
                         return False
@@ -42,6 +46,9 @@ class FakeItemRepo:
             for key, condition in filter_query.items():
                 if isinstance(condition, dict) and "$regex" in condition:
                     if condition["$regex"].lower() not in item.get(key, "").lower():
+                        return False
+                elif key in ("ItemName", "ItemStorePlace") and isinstance(condition, str):
+                    if condition.lower() not in item.get(key, "").lower():
                         return False
                 else:
                     if item.get(key) != condition:
@@ -151,7 +158,7 @@ class ItemServiceTestCase(unittest.TestCase):
         a1 = next(i for i in items if i["ItemID"] == "A1")
         b2 = next(i for i in items if i["ItemID"] == "B2")
         self.assertEqual(a1["WarrantyStatus"], "ok")
-        self.assertIn(b2["WarrantyStatus"], ["expired", "near", "ok", "invalid"])
+        self.assertEqual(b2["WarrantyStatus"], "expired")
 
     def test_sort_by_warranty(self):
         """測試依保固期限排序"""
@@ -360,6 +367,13 @@ class ItemServiceTestCase(unittest.TestCase):
         item_service.update_item_place("A1", updates)
         self.assertIn("A1", item_service.item_repo.updated_items)  # type: ignore[arg-type]
         self.assertEqual(item_service.item_repo.updated_items.get("A1", {}).get("ItemStorePlace"), "新位置")  # type: ignore[arg-type]
+
+    def test_bulk_update_last_maintenance_applies_suggested_rule_when_missing(self):
+        success_count, failed_ids = item_service.bulk_update_last_maintenance(["A1"], "2026-03-13")
+        self.assertEqual(success_count, 1)
+        self.assertEqual(failed_ids, [])
+        updated = item_service.item_repo.updated_items["A1"]  # type: ignore[index]
+        self.assertEqual(updated["LastMaintenanceDate"], "2026-03-13")
 
 
 if __name__ == "__main__":

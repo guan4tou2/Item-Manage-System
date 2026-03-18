@@ -5,7 +5,7 @@ import uuid
 
 from flask import Blueprint, jsonify, request, Response, redirect, url_for, session, render_template, flash, abort
 
-from app import db, csrf
+from app import db
 from app.models import Travel, TravelGroup, TravelItem, ShoppingList, ShoppingItem
 from app.utils.auth import get_current_user
 
@@ -91,7 +91,7 @@ def list_page():
 
 
 @bp.route("/create", methods=["POST"])
-@csrf.exempt
+
 def create_travel_form():
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -163,7 +163,7 @@ def detail(travel_id: int):
 
 
 @bp.route("/<int:travel_id>/group", methods=["POST"])
-@csrf.exempt
+
 def add_group_form(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -177,7 +177,7 @@ def add_group_form(travel_id: int):
 
 
 @bp.route("/<int:travel_id>/item", methods=["POST"])
-@csrf.exempt
+
 def add_item_form(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -212,7 +212,7 @@ def add_item_form(travel_id: int):
 
 
 @bp.route("/<int:travel_id>/items/<int:item_id>/update", methods=["POST"])
-@csrf.exempt
+
 def update_item_form(travel_id: int, item_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -232,7 +232,7 @@ def update_item_form(travel_id: int, item_id: int):
 
 
 @bp.route("/<int:travel_id>/items/<int:item_id>/delete", methods=["POST"])
-@csrf.exempt
+
 def delete_item_form(travel_id: int, item_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -293,7 +293,7 @@ def list_travels():
 
 
 @bp.route("/api", methods=["POST"])
-@csrf.exempt
+
 def create_travel():
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -318,7 +318,7 @@ def create_travel():
 
 
 @bp.route("/api/<int:travel_id>/groups", methods=["POST"])
-@csrf.exempt
+
 def create_group(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -349,7 +349,7 @@ def list_items(travel_id: int):
 
 
 @bp.route("/api/<int:travel_id>/items", methods=["POST"])
-@csrf.exempt
+
 def add_item(travel_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -381,7 +381,7 @@ def add_item(travel_id: int):
 
 
 @bp.route("/api/items/<int:item_id>", methods=["PATCH"])
-@csrf.exempt
+
 def update_item(item_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -501,7 +501,7 @@ def list_lists():
 
 
 @shopping_bp.route("/api", methods=["POST"])
-@csrf.exempt
+
 def create_list():
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -521,7 +521,7 @@ def create_list():
 
 
 @shopping_bp.route("/api/<int:list_id>/items", methods=["POST"])
-@csrf.exempt
+
 def add_shopping_item(list_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:
@@ -560,7 +560,7 @@ def add_shopping_item(list_id: int):
 
 
 @shopping_bp.route("/api/items/<int:item_id>", methods=["PATCH"])
-@csrf.exempt
+
 def update_shopping_item(item_id: int):
     ok, redirect_resp = _require_auth()
     if not ok:

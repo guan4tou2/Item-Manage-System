@@ -23,6 +23,16 @@
       <span class="summary-chip-label">主要類型</span>
       <strong>{{ type_stats[0].name if type_stats else '尚無資料' }}</strong>
     </div>
+    <div class="summary-chip">
+      <span class="summary-chip-label">保養提醒</span>
+      <strong>
+        {% if maintenance_stats.total > 0 %}
+        {{ maintenance_stats.total }} 項
+        {% else %}
+        目前正常
+        {% endif %}
+      </strong>
+    </div>
   </div>
   
   <!-- 概覽統計 -->
@@ -53,6 +63,20 @@
         <div class="icon"><i class="fas fa-clock"></i></div>
         <h2>{{ expiry_stats.near }}</h2>
         <h5>即將到期</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-danger text-white">
+        <div class="icon"><i class="fas fa-screwdriver-wrench"></i></div>
+        <h2>{{ maintenance_stats.due }}</h2>
+        <h5>需保養</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-info text-white">
+        <div class="icon"><i class="fas fa-calendar-check"></i></div>
+        <h2>{{ maintenance_stats.upcoming }}</h2>
+        <h5>即將保養</h5>
       </div>
     </div>
   </div>
@@ -203,6 +227,34 @@
         {%else%}
         <p class="text-muted text-center py-4">尚無物品資料</p>
         {%endif%}
+      </div>
+    </div>
+
+    <div class="col-lg-6 animate-fadeInUp stagger-6">
+      <div class="chart-container">
+        <h5 class="chart-title">
+          <i class="fas fa-screwdriver-wrench text-danger"></i>
+          保養狀態分佈
+        </h5>
+
+        <ul class="list-unstyled mb-4">
+          <li class="d-flex justify-content-between align-items-center mb-2">
+            <span><i class="fas fa-circle text-danger me-2"></i>需保養</span>
+            <strong>{{ maintenance_stats.due }}</strong>
+          </li>
+          <li class="d-flex justify-content-between align-items-center mb-2">
+            <span><i class="fas fa-circle text-info me-2"></i>即將保養</span>
+            <strong>{{ maintenance_stats.upcoming }}</strong>
+          </li>
+          <li class="d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-circle text-success me-2"></i>目前正常</span>
+            <strong>{{ stats.total - maintenance_stats.total if stats.total >= maintenance_stats.total else 0 }}</strong>
+          </li>
+        </ul>
+
+        <a href="{{ url_for('items.notifications') }}" class="btn btn-outline-danger">
+          <i class="fas fa-bell me-1"></i>前往通知摘要
+        </a>
       </div>
     </div>
   </div>

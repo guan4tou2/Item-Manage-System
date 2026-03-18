@@ -151,6 +151,11 @@
                 <p class="mb-0"><strong>{{ item.LastMaintenanceDate or item.ItemGetDate or '未設定' }}</strong></p>
               </div>
             </div>
+            <div class="mt-3">
+              <button type="button" class="btn btn-outline-warning btn-sm" onclick="markMaintenanceToday('{{ item.ItemID }}')">
+                <i class="fas fa-screwdriver-wrench me-1"></i>標記今天已保養
+              </button>
+            </div>
           </div>
           {% endif %}
           
@@ -266,7 +271,7 @@
               <i class="fas fa-edit me-2"></i>編輯物品
             </a>
             {%endif%}
-            <a href="{{ url_for('items.search') }}?q={{item.ItemName}}" class="btn btn-outline-secondary btn-lg">
+            <a href="{{ url_for('items.search') }}?q={{item.ItemName|urlencode}}" class="btn btn-outline-secondary btn-lg">
               <i class="fas fa-search me-2"></i>搜尋相似
             </a>
             <div class="btn-group btn-lg">
@@ -407,6 +412,7 @@
 .related-item-card .type-badge {
   font-size: 0.7rem;
 }
+</style>
 
 <style>
 .item-detail-card {
@@ -567,7 +573,30 @@ async function loadRelatedItems() {
   }
 }
 
-{%if User.admin%}
+async function markMaintenanceToday(itemId) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const response = await fetch('/api/bulk/maintenance', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ item_ids: [itemId], maintenance_date: today })
+    });
+
+    const data = await response.json();
+    if (response.ok && data.success) {
+      location.reload();
+      return;
+    }
+    alert(data.message || '更新失敗');
+  } catch (error) {
+    alert('更新失敗');
+  }
+}
+
 async function addRelatedItem() {
   const relatedId = document.getElementById('relatedItemId').value.trim();
   const relationType = document.getElementById('relationType').value;
@@ -625,7 +654,6 @@ async function removeRelatedItem(relatedId) {
     alert('移除失敗');
   }
 }
-{%endif%}
 
 // 頁面載入時載入關聯物品
 document.addEventListener('DOMContentLoaded', loadRelatedItems);
@@ -642,6 +670,7 @@ document.querySelectorAll('.qty-btn').forEach(btn => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}',
       },
       body: JSON.stringify({ delta: delta })
     })

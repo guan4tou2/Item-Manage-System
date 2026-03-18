@@ -1,7 +1,13 @@
 """Email 通知服務模組"""
+import html as html_module
 import os
 from typing import List, Dict, Any, Optional
 from datetime import datetime
+
+
+def _esc(value: Any) -> str:
+    """HTML-escape a value for safe insertion into email HTML."""
+    return html_module.escape(str(value)) if value else ""
 
 # Email 設定 (從環境變數讀取)
 MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
@@ -46,7 +52,7 @@ def send_expiry_notification(
         
         # 建立郵件
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"🔔 物品到期提醒 - {datetime.now().strftime('%Y-%m-%d')}"
+        msg["Subject"] = f"🔔 物品通知摘要 - {datetime.now().strftime('%Y-%m-%d')}"
         msg["From"] = MAIL_DEFAULT_SENDER or MAIL_USERNAME
         msg["To"] = to_email
         
@@ -91,6 +97,8 @@ def generate_text_content(
     replacement_upcoming: Optional[List[Dict[str, Any]]] = None,
 ) -> str:
     """產生純文字內容"""
+    replacement_due = replacement_due or []
+    replacement_upcoming = replacement_upcoming or []
     lines = [
         "物品提醒",
         "=" * 40,
@@ -120,17 +128,23 @@ def generate_text_content(
             lines.append("")
 
     if replacement_due:
-        lines.append(f"🧺 需要更換 ({len(replacement_due)} 項):")
+        lines.append(f"🧺 需保養 / 更換 ({len(replacement_due)} 項):")
         lines.append("-" * 30)
         for item in replacement_due:
-            lines.append(f"  • {item.get('ItemName', '未知物品')} (規則: {item.get('rule_name','')}, 已 {item.get('days_since',0)} 天)")
+            lines.append(f"  • {item.get('ItemName', '未知物品')}")
+            lines.append(f"    規則: {item.get('replacement_rule_name','')}")
+            lines.append(f"    下次保養日: {item.get('replacement_due_date','-')}")
+            lines.append(f"    已逾期 {item.get('days_overdue',0)} 天")
         lines.append("")
 
     if replacement_upcoming:
-        lines.append(f"⏳ 即將更換 ({len(replacement_upcoming)} 項):")
+        lines.append(f"⏳ 即將保養 / 更換 ({len(replacement_upcoming)} 項):")
         lines.append("-" * 30)
         for item in replacement_upcoming:
-            lines.append(f"  • {item.get('ItemName', '未知物品')} (剩餘 {item.get('days_remaining',0)} 天，規則: {item.get('rule_name','')})")
+            lines.append(f"  • {item.get('ItemName', '未知物品')}")
+            lines.append(f"    規則: {item.get('replacement_rule_name','')}")
+            lines.append(f"    下次保養日: {item.get('replacement_due_date','-')}")
+            lines.append(f"    剩餘 {item.get('days_left',0)} 天")
         lines.append("")
     
     lines.extend([
@@ -158,29 +172,29 @@ def generate_html_content(
         expired_rows += f"""
         <tr>
             <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                <strong>{item.get('ItemName', '未知物品')}</strong>
+                <strong>{_esc(item.get('ItemName', '未知物品'))}</strong>
             </td>
             <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                {item.get('WarrantyExpiry', '-')}
+                {_esc(item.get('WarrantyExpiry', '-'))}
             </td>
             <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                {item.get('UsageExpiry', '-')}
+                {_esc(item.get('UsageExpiry', '-'))}
             </td>
         </tr>
         """
-    
+
     near_rows = ""
     for item in near_expiry_items:
         near_rows += f"""
         <tr>
             <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                <strong>{item.get('ItemName', '未知物品')}</strong>
+                <strong>{_esc(item.get('ItemName', '未知物品'))}</strong>
             </td>
             <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                {item.get('WarrantyExpiry', '-')}
+                {_esc(item.get('WarrantyExpiry', '-'))}
             </td>
             <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                {item.get('UsageExpiry', '-')}
+                {_esc(item.get('UsageExpiry', '-'))}
             </td>
         </tr>
         """
@@ -193,7 +207,7 @@ def generate_html_content(
     </head>
     <body style="font-family: 'Noto Sans TC', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-            <h1 style="margin: 0; font-size: 24px;">🔔 物品到期提醒</h1>
+            <h1 style="margin: 0; font-size: 24px;">🔔 物品通知摘要</h1>
             <p style="margin: 10px 0 0; opacity: 0.9;">{datetime.now().strftime('%Y年%m月%d日')}</p>
         </div>
         
@@ -246,9 +260,10 @@ def generate_html_content(
         due_rows = "".join(
             f"""
             <tr>
-                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{item.get('ItemName','未知物品')}</td>
-                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{item.get('rule_name','')}</td>
-                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">已 {item.get('days_since',0)} 天</td>
+                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{_esc(item.get('ItemName','未知物品'))}</td>
+                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{_esc(item.get('replacement_rule_name',''))}</td>
+                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{_esc(item.get('replacement_due_date','-'))}</td>
+                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">已逾期 {_esc(item.get('days_overdue',0))} 天</td>
             </tr>
             """
             for item in replacement_due
@@ -256,14 +271,15 @@ def generate_html_content(
         html += f"""
             <div style="margin-bottom: 30px;">
                 <h2 style="color: #0d6efd; font-size: 18px; margin-bottom: 15px;">
-                    🧺 需要更換 ({len(replacement_due)} 項)
+                    🧺 需保養 / 更換 ({len(replacement_due)} 項)
                 </h2>
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="background: #eef4ff;">
                             <th style="padding: 12px; text-align: left; border-bottom: 2px solid #0d6efd;">物品名稱</th>
                             <th style="padding: 12px; text-align: left; border-bottom: 2px solid #0d6efd;">規則</th>
-                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #0d6efd;">已使用天數</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #0d6efd;">下次保養日</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #0d6efd;">狀態</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -277,9 +293,10 @@ def generate_html_content(
         upcoming_rows = "".join(
             f"""
             <tr>
-                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{item.get('ItemName','未知物品')}</td>
-                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{item.get('rule_name','')}</td>
-                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">剩餘 {item.get('days_remaining',0)} 天</td>
+                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{_esc(item.get('ItemName','未知物品'))}</td>
+                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{_esc(item.get('replacement_rule_name',''))}</td>
+                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">{_esc(item.get('replacement_due_date','-'))}</td>
+                <td style=\"padding: 12px; border-bottom: 1px solid #eee;\">剩餘 {_esc(item.get('days_left',0))} 天</td>
             </tr>
             """
             for item in replacement_upcoming
@@ -287,14 +304,15 @@ def generate_html_content(
         html += f"""
             <div style="margin-bottom: 30px;">
                 <h2 style="color: #20c997; font-size: 18px; margin-bottom: 15px;">
-                    ⏳ 即將更換 ({len(replacement_upcoming)} 項)
+                    ⏳ 即將保養 / 更換 ({len(replacement_upcoming)} 項)
                 </h2>
                 <table style="width: 100%; border-collapse: collapse;">
                     <thead>
                         <tr style="background: #e8fff6;">
                             <th style="padding: 12px; text-align: left; border-bottom: 2px solid #20c997;">物品名稱</th>
                             <th style="padding: 12px; text-align: left; border-bottom: 2px solid #20c997;">規則</th>
-                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #20c997;">剩餘天數</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #20c997;">下次保養日</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #20c997;">狀態</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -344,4 +362,3 @@ def send_test_email(to_email: str) -> bool:
     except Exception as e:
         print(f"❌ 測試郵件發送失敗: {e}")
         return False
-

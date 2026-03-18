@@ -19,6 +19,7 @@
       <div class="card-body">
         <h5 class="card-title">新增旅行</h5>
         <form method="post" action="{{ url_for('travel.create_travel_form') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="mb-2">
             <label class="form-label">旅行名稱</label>
             <input type="text" name="name" class="form-control" required placeholder="例如：日本行、商務差旅" />

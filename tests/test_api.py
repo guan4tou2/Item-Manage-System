@@ -42,65 +42,63 @@ class APITestCase(unittest.TestCase):
         """測試 API 健康檢查端點"""
         response = self.client.get('/api/health')
         self.assertIn(response.status_code, [200, 404])
-        
+
         if response.status_code == 200:
             data = response.get_json()
             self.assertIn('status', data)
             self.assertEqual(data['status'], 'healthy')
 
+    @unittest.skipUnless(
+        __import__('importlib').util.find_spec('flasgger'),
+        "flasgger not installed"
+    )
     def test_api_docs_structure(self):
         """測試 API 文檔結構"""
-        try:
-            from app.api.routes import api_docs
-            result = api_docs()
-            
-            if isinstance(result, dict):
-                # 檢查基本結構
-                if 'specs' in result:
-                    specs = result['specs']
-                    self.assertIsInstance(specs, list)
-                    if specs:
-                        spec = specs[0]
-                        self.assertIn('version', spec)
-                        self.assertIn('title', spec)
-        except Exception:
-            # 如果函數調用失敗（例如缺少依賴），跳過測試
-            pass
+        from app.api.routes import api_docs
+        result = api_docs()
 
+        if isinstance(result, dict) and 'specs' in result:
+            specs = result['specs']
+            self.assertIsInstance(specs, list)
+            if specs:
+                spec = specs[0]
+                self.assertIn('version', spec)
+                self.assertIn('title', spec)
+
+    @unittest.skipUnless(
+        __import__('importlib').util.find_spec('flasgger'),
+        "flasgger not installed"
+    )
     def test_api_docs_security_definitions(self):
         """測試 API 安全定義"""
-        try:
-            from app.api.routes import api_docs
-            result = api_docs()
-            
-            if isinstance(result, dict) and 'specs' in result:
-                specs = result['specs']
-                if specs and 'securityDefinitions' in specs[0]:
-                    security_defs = specs[0]['securityDefinitions']
-                    self.assertIn('BearerAuth', security_defs)
-                    self.assertEqual(security_defs['BearerAuth']['type'], 'apiKey')
-        except Exception:
-            pass
+        from app.api.routes import api_docs
+        result = api_docs()
 
+        if isinstance(result, dict) and 'specs' in result:
+            specs = result['specs']
+            if specs and 'securityDefinitions' in specs[0]:
+                security_defs = specs[0]['securityDefinitions']
+                self.assertIn('BearerAuth', security_defs)
+                self.assertEqual(security_defs['BearerAuth']['type'], 'apiKey')
+
+    @unittest.skipUnless(
+        __import__('importlib').util.find_spec('flasgger'),
+        "flasgger not installed"
+    )
     def test_api_docs_paths(self):
         """測試 API 路徑定義"""
-        try:
-            from app.api.routes import api_docs
-            result = api_docs()
-            
-            if isinstance(result, dict) and 'specs' in result:
-                specs = result['specs']
-                if specs and 'paths' in specs[0]:
-                    paths = specs[0]['paths']
-                    # 檢查是否定義了基本路徑
-                    self.assertIsInstance(paths, dict)
-                    # 常見的 API 端點
-                    expected_paths = ['/items', '/types', '/locations']
-                    for path in expected_paths:
-                        if path in paths:
-                            self.assertIn('get', paths[path])
-        except Exception:
-            pass
+        from app.api.routes import api_docs
+        result = api_docs()
+
+        if isinstance(result, dict) and 'specs' in result:
+            specs = result['specs']
+            if specs and 'paths' in specs[0]:
+                paths = specs[0]['paths']
+                self.assertIsInstance(paths, dict)
+                expected_paths = ['/items', '/types', '/locations']
+                for path in expected_paths:
+                    if path in paths:
+                        self.assertIn('get', paths[path])
 
 
 if __name__ == '__main__':

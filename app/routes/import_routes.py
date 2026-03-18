@@ -9,7 +9,7 @@ from typing import List, Dict, Any
 from flask import Blueprint, render_template, request, jsonify
 
 from app.repositories import item_repo
-from app.services import location_service
+from app.services import item_service, location_service
 from app.utils.auth import login_required, get_current_user
 
 from app.utils.logging import get_logger
@@ -99,6 +99,7 @@ def template():
     headers = [
         'ItemID', 'ItemName', 'ItemType', 'Location', 'PhotoPath',
         'Quantity', 'SafetyStock', 'ReorderLevel',
+        'MaintenanceCategory', 'MaintenanceIntervalDays', 'LastMaintenanceDate',
         'WarrantyExpiry', 'UsageExpiry', 'Notes'
     ]
 
@@ -117,6 +118,9 @@ def template():
         'Quantity': 1,
         'SafetyStock': 1,
         'ReorderLevel': 1,
+        'MaintenanceCategory': '充電保養',
+        'MaintenanceIntervalDays': 60,
+        'LastMaintenanceDate': '2025-12-01',
         'WarrantyExpiry': '2025-12-31',
         'UsageExpiry': '2026-06-30',
         'Notes': 'Example notes'
@@ -130,6 +134,9 @@ def template():
         'Quantity': 6,
         'SafetyStock': 2,
         'ReorderLevel': 1,
+        'MaintenanceCategory': '濾芯更換',
+        'MaintenanceIntervalDays': 180,
+        'LastMaintenanceDate': '2025-01-15',
         'WarrantyExpiry': '',
         'UsageExpiry': '2025-08-15',
         'Notes': ''
@@ -181,6 +188,9 @@ def parse_csv(content: str) -> List[Dict[str, Any]]:
                 'ItemType': row.get('ItemType', '').strip() or None,
                 'Location': row.get('Location', '').strip() or None,
                 'PhotoPath': row.get('PhotoPath', '').strip() or None,
+                'MaintenanceCategory': row.get('MaintenanceCategory', '').strip() or None,
+                'MaintenanceIntervalDays': parse_int(row.get('MaintenanceIntervalDays', '').strip()),
+                'LastMaintenanceDate': parse_date(row.get('LastMaintenanceDate', '').strip()),
                 'WarrantyExpiry': parse_date(row.get('WarrantyExpiry', '').strip()),
                 'UsageExpiry': parse_date(row.get('UsageExpiry', '').strip()),
                 'Notes': row.get('Notes', '').strip() or None
@@ -224,6 +234,9 @@ def parse_json(content: str) -> List[Dict[str, Any]]:
                 'ItemType': item.get('ItemType') and str(item['ItemType']).strip() or None,
                 'Location': item.get('Location') and str(item['Location']).strip() or None,
                 'PhotoPath': item.get('PhotoPath') and str(item['PhotoPath']).strip() or None,
+                'MaintenanceCategory': item.get('MaintenanceCategory') and str(item['MaintenanceCategory']).strip() or None,
+                'MaintenanceIntervalDays': parse_int(item.get('MaintenanceIntervalDays')),
+                'LastMaintenanceDate': parse_date(item.get('LastMaintenanceDate')),
                 'WarrantyExpiry': parse_date(item.get('WarrantyExpiry')),
                 'UsageExpiry': parse_date(item.get('UsageExpiry')),
                 'Notes': item.get('Notes') and str(item['Notes']).strip() or None
@@ -264,6 +277,15 @@ def parse_date(date_str: str) -> datetime.date or None:
         raise ValueError(f"Invalid date format: {date_str}. Expected YYYY-MM-DD")
 
 
+def parse_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        raise ValueError(f"Invalid integer value: {value}")
+
+
 def import_items(items: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Import items into the database.
@@ -291,6 +313,8 @@ def import_items(items: List[Dict[str, Any]]) -> Dict[str, Any]:
                 item_repo.update_item_by_id(normalized["ItemID"], normalized)
             else:
                 item_repo.insert_item(normalized)
+            # Note: 使用 item_repo 而非 item_service 因為匯入資料已經過
+            # _normalize_import_item 驗證，不需要重複走完整的 service 驗證流程
             _ensure_location_choice(
                 normalized.get("ItemFloor", ""),
                 normalized.get("ItemRoom", ""),
@@ -350,6 +374,9 @@ def _normalize_import_item(item_data: Dict[str, Any], index: int) -> Dict[str, A
         "Quantity": int(item_data.get("Quantity", 0) or 0),
         "SafetyStock": int(item_data.get("SafetyStock", 0) or 0),
         "ReorderLevel": int(item_data.get("ReorderLevel", 0) or 0),
+        "MaintenanceCategory": item_data.get("MaintenanceCategory") or "",
+        "MaintenanceIntervalDays": item_data.get("MaintenanceIntervalDays"),
+        "LastMaintenanceDate": item_data.get("LastMaintenanceDate"),
         "WarrantyExpiry": item_data.get("WarrantyExpiry"),
         "UsageExpiry": item_data.get("UsageExpiry"),
         "move_history": [],

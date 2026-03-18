@@ -235,6 +235,26 @@
         </div>
       </a>
     </div>
+    <div class="col">
+      <a href="{{ url_for('items.notifications') }}" class="text-decoration-none">
+        <div class="stats-card stats-tone-2">
+          <div class="icon"><i class="fas fa-screwdriver-wrench"></i></div>
+          <h2 id="maintenanceAlertCount" class="{% if maintenance_due_count > 0 %}text-danger{% elif maintenance_upcoming_count > 0 %}text-warning{% endif %}">
+            {{ maintenance_due_count + maintenance_upcoming_count }}
+          </h2>
+          <h5>即將保養</h5>
+          <small class="d-block mt-2 text-muted" id="maintenanceAlertMeta">
+            {% if maintenance_due_count > 0 %}
+            {{ maintenance_due_count }} 項需處理
+            {% elif maintenance_upcoming_count > 0 %}
+            {{ maintenance_upcoming_count }} 項即將到期
+            {% else %}
+            目前沒有待保養項目
+            {% endif %}
+          </small>
+        </div>
+      </a>
+    </div>
   </div>
 </div>
 {%endblock%}
@@ -305,6 +325,15 @@
           {% elif item.UsageStatus=='near' %}
           <span class="badge bg-warning text-dark"><i class="fas fa-hourglass-half me-1"></i>即將到期</span>
           {% endif %}
+          {% if item.MaintenanceAlertStatus == 'due' %}
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+            <i class="fas fa-screwdriver-wrench me-1"></i>需保養
+          </span>
+          {% elif item.MaintenanceAlertStatus == 'upcoming' %}
+          <span class="badge bg-warning-subtle text-dark border border-warning-subtle">
+            <i class="fas fa-screwdriver-wrench me-1"></i>即將保養
+          </span>
+          {% endif %}
         </div>
         
         <!-- 類型標籤 -->
@@ -369,6 +398,18 @@
           保固至 {{item.WarrantyExpiry}}
         </p>
         {%endif%}
+
+        {% if item.NextMaintenanceDate %}
+        <p class="card-text small mb-1">
+          <i class="fas fa-screwdriver-wrench text-primary me-1"></i>
+          下次保養 {{ item.NextMaintenanceDate }}
+          {% if item.MaintenanceAlertStatus == 'due' %}
+          <span class="text-danger">({{ item.MaintenanceDaysOverdue }} 天前)</span>
+          {% elif item.MaintenanceAlertStatus == 'upcoming' %}
+          <span class="text-warning">({{ item.MaintenanceDaysLeft }} 天後)</span>
+          {% endif %}
+        </p>
+        {% endif %}
       </div>
       
       <!-- 卡片底部操作 -->
@@ -382,7 +423,7 @@
               <i class="fas fa-edit"></i>
             </a>
             {%endif%}
-            <a href="{{ url_for('items.search') }}?q={{item.ItemName}}" 
+            <a href="{{ url_for('items.search') }}?q={{item.ItemName|urlencode}}"
                class="btn btn-outline-secondary"
                data-tooltip="搜尋相似">
               <i class="fas fa-search"></i>
@@ -839,6 +880,37 @@ async function toggleFavorite(itemId, btn) {
                 }
             })
             .catch(err => console.error('載入到期通知失敗:', err));
+
+        fetch('/api/maintenance/count')
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`maintenance_count_${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                const maintenanceEl = document.getElementById('maintenanceAlertCount');
+                const maintenanceMetaEl = document.getElementById('maintenanceAlertMeta');
+                if (maintenanceEl) {
+                    maintenanceEl.textContent = data.total || 0;
+                    maintenanceEl.classList.remove('text-danger', 'text-warning');
+                    if ((data.due || 0) > 0) {
+                        maintenanceEl.classList.add('text-danger');
+                    } else if ((data.upcoming || 0) > 0) {
+                        maintenanceEl.classList.add('text-warning');
+                    }
+                }
+                if (maintenanceMetaEl) {
+                    if ((data.due || 0) > 0) {
+                        maintenanceMetaEl.textContent = `${data.due} 項需處理`;
+                    } else if ((data.upcoming || 0) > 0) {
+                        maintenanceMetaEl.textContent = `${data.upcoming} 項即將到期`;
+                    } else {
+                        maintenanceMetaEl.textContent = '目前沒有待保養項目';
+                    }
+                }
+            })
+            .catch(err => console.error('載入保養提醒失敗:', err));
     });
 
   </script>

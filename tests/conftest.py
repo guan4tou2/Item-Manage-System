@@ -62,6 +62,11 @@ import app.repositories.user_repo as user_repo  # noqa: E402
 import app.repositories.type_repo as type_repo  # noqa: E402
 import app.repositories.item_repo as item_repo  # noqa: E402
 
+_original_get_db_type = app.get_db_type
+_original_db_init_app = app.db.init_app
+_original_db_create_all = app.db.create_all
+_original_cache_init_app = app.cache.init_app
+
 app.get_db_type = lambda: "postgres"  # type: ignore[assignment]
 app.db.init_app = lambda *args, **kwargs: None  # type: ignore[assignment]
 app.db.create_all = lambda *args, **kwargs: None  # type: ignore[assignment]

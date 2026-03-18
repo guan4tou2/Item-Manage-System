@@ -128,11 +128,20 @@ def build_search_filter(
     zone: str = "",
     visibility: str = "",
 ) -> Dict[str, Any]:
+    from app import get_db_type
+
     search_filter: Dict[str, Any] = {}
+    db_type = get_db_type()
     if name:
-        search_filter["ItemName"] = {"$regex": name, "$options": "i"}
+        if db_type == "mongo":
+            search_filter["ItemName"] = {"$regex": name, "$options": "i"}
+        else:
+            search_filter["ItemName"] = name
     if place:
-        search_filter["ItemStorePlace"] = {"$regex": place, "$options": "i"}
+        if db_type == "mongo":
+            search_filter["ItemStorePlace"] = {"$regex": place, "$options": "i"}
+        else:
+            search_filter["ItemStorePlace"] = place
     if item_type:
         search_filter["ItemType"] = item_type
     if floor:
@@ -147,6 +156,34 @@ def build_search_filter(
 
 
 DEFAULT_PAGE_SIZE = 12
+
+
+def paginate_items(items: List[Dict[str, Any]], page: int = 1, page_size: int = DEFAULT_PAGE_SIZE) -> Dict[str, Any]:
+    total = len(items)
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = items[start:end]
+    return {
+        "items": paginated,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+
+
+def filter_items_by_maintenance(items: List[Dict[str, Any]], maintenance_filter: str) -> List[Dict[str, Any]]:
+    if maintenance_filter == "due":
+        return [item for item in items if item.get("MaintenanceAlertStatus") == "due"]
+    if maintenance_filter == "upcoming":
+        return [item for item in items if item.get("MaintenanceAlertStatus") == "upcoming"]
+    if maintenance_filter == "all":
+        return [item for item in items if item.get("MaintenanceAlertStatus") in {"due", "upcoming"}]
+    return items
 
 
 def list_items(
@@ -381,11 +418,10 @@ def get_expiring_items(days_threshold: int = 30, ladder: Optional[List[int]] = N
     # 保留 ladder 參數以相容通知服務呼叫簽名。
     _ = ladder
     
-    projection = ITEM_PROJECTION.copy()
-    
-    # 查詢所有有設定到期日的物品
-    all_items = list(item_repo.list_items({}, projection))
-    _annotate_expiry(all_items)
+    # 使用 DB 層級的優化查詢取得到期/即將到期物品
+    db_items = item_repo.get_expiring_items(days_threshold)
+    _annotate_expiry(db_items)
+    all_items = db_items
     
     expired_items = []
     near_expiry_items = []
@@ -512,6 +548,9 @@ def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str
         "ItemType": 1,
         "ItemGetDate": 1,
         "size_notes": 1,
+        "MaintenanceCategory": 1,
+        "MaintenanceIntervalDays": 1,
+        "LastMaintenanceDate": 1,
     }
     all_items = list(item_repo.list_items({}, projection))
     today = date.today()
@@ -575,6 +614,67 @@ def get_replacement_items(settings: Optional[Dict[str, Any]] = None) -> Dict[str
         "upcoming": upcoming_items,
         "total_alerts": len(due_items) + len(upcoming_items),
     }
+
+
+def annotate_maintenance_alerts(items: List[Dict[str, Any]], settings: Optional[Dict[str, Any]] = None) -> None:
+    settings = settings or {}
+    if not settings.get("replacement_enabled", True):
+        return
+
+    rules = _parse_replacement_rules(settings.get("replacement_intervals"))
+    today = date.today()
+    upcoming_window_days = 14
+
+    for item in items:
+        item["MaintenanceAlertStatus"] = ""
+        item["MaintenanceAlertLabel"] = ""
+        item["NextMaintenanceDate"] = ""
+
+        name = str(item.get("ItemName") or "").strip()
+        got_date_raw = item.get("ItemGetDate")
+        if not name or not isinstance(got_date_raw, str) or not got_date_raw:
+            continue
+
+        try:
+            got_date = datetime.strptime(got_date_raw, "%Y-%m-%d").date()
+        except ValueError:
+            continue
+
+        base_date = got_date
+        explicit_maintenance = _extract_maintenance(item)
+        interval_days = explicit_maintenance.get("interval_days")
+        rule_name = explicit_maintenance.get("category") or name
+        if interval_days:
+            last_date_raw = explicit_maintenance.get("last_date")
+            if last_date_raw:
+                try:
+                    base_date = datetime.strptime(last_date_raw, "%Y-%m-%d").date()
+                except ValueError:
+                    base_date = got_date
+        else:
+            interval_days = rules.get(name)
+            if interval_days is None:
+                default_rule = _match_default_keyword_rule(item)
+                if not default_rule:
+                    continue
+                interval_days = int(default_rule["days"])
+                rule_name = str(default_rule["rule_name"])
+            else:
+                rule_name = name
+
+        due_date = base_date.fromordinal(base_date.toordinal() + int(interval_days))
+        days_left = (due_date - today).days
+        item["NextMaintenanceDate"] = due_date.strftime("%Y-%m-%d")
+        item["MaintenanceRuleName"] = rule_name
+
+        if days_left <= 0:
+            item["MaintenanceAlertStatus"] = "due"
+            item["MaintenanceAlertLabel"] = "需保養"
+            item["MaintenanceDaysOverdue"] = abs(days_left)
+        elif days_left <= upcoming_window_days:
+            item["MaintenanceAlertStatus"] = "upcoming"
+            item["MaintenanceAlertLabel"] = "即將保養"
+            item["MaintenanceDaysLeft"] = days_left
 
 
 def get_notification_count() -> Dict[str, int]:
@@ -859,7 +959,7 @@ def get_low_stock_items() -> Dict[str, Any]:
         "need_reorder": need_reorder_items,
         "low_stock_count": len(low_stock_items),
         "reorder_count": len(need_reorder_items),
-        "total_alerts": len(low_stock_items),
+        "total_alerts": len(low_stock_items) + len(need_reorder_items),
     }
 
 
@@ -896,4 +996,33 @@ def bulk_update_quantity(updates: List[Dict[str, Any]]) -> Tuple[int, List[str]]
         except (ValueError, TypeError):
             failed_ids.append(item_id)
     
+    return success_count, failed_ids
+
+
+def bulk_update_last_maintenance(item_ids: List[str], maintenance_date: str) -> Tuple[int, List[str]]:
+    """批量更新上次保養日"""
+    success_count = 0
+    failed_ids: List[str] = []
+
+    try:
+        datetime.strptime(maintenance_date, "%Y-%m-%d")
+    except ValueError:
+        return 0, item_ids
+
+    for item_id in item_ids:
+        item = item_repo.find_item_by_id(item_id)
+        if not item:
+            failed_ids.append(item_id)
+            continue
+
+        updates: Dict[str, Any] = {"LastMaintenanceDate": maintenance_date}
+        if not str(item.get("MaintenanceCategory") or "").strip():
+            suggestion = get_maintenance_suggestion(item.get("ItemName", ""), item.get("ItemType", ""))
+            if suggestion:
+                updates["MaintenanceCategory"] = suggestion["category"]
+                updates["MaintenanceIntervalDays"] = suggestion["interval_days"]
+
+        item_repo.update_item_by_id(item_id, updates)
+        success_count += 1
+
     return success_count, failed_ids

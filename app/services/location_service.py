@@ -7,6 +7,7 @@ from bson import ObjectId
 def list_locations() -> List[Dict[str, Any]]:
     locs = []
     for l in location_repo.list_locations():
+        l = dict(l)
         l["_id"] = str(l["_id"])
         locs.append(l)
     return locs

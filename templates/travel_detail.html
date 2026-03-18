@@ -20,6 +20,7 @@
       <div class="card-body">
         <h6 class="card-title">新增群組</h6>
         <form method="post" action="{{ url_for('travel.add_group_form', travel_id=travel.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="mb-2">
             <label class="form-label">群組名稱</label>
             <input type="text" name="name" class="form-control" placeholder="隨身、托運..." />
@@ -36,6 +37,7 @@
       <div class="card-body">
         <h6 class="card-title">新增物品（含臨時）</h6>
         <form method="post" action="{{ url_for('travel.add_item_form', travel_id=travel.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="mb-2">
             <label class="form-label">名稱</label>
             <input type="text" name="name" class="form-control" required />
@@ -126,6 +128,7 @@
                 <tr>
                   <td style="width:60px">
                     <form method="post" action="{{ url_for('travel.update_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <input type="hidden" name="toggle_carried" value="1" />
                       <button class="btn btn-sm {% if it.carried %}btn-success{%else%}btn-outline-secondary{%endif%}" type="submit" title="切換攜帶">
                         <i class="fas fa-check"></i>
@@ -136,6 +139,7 @@
                   <td><span class="badge bg-info text-dark">共同</span></td>
                   <td class="text-center">
                     <form method="post" action="{{ url_for('travel.update_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-flex justify-content-center align-items-center gap-1">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <input type="number" name="qty_packed" value="{{it.qty_packed}}" min="0" class="form-control form-control-sm" style="width:80px" />
                       <span class="text-muted">/</span>
                       <input type="number" name="qty_required" value="{{it.qty_required}}" min="0" class="form-control form-control-sm" style="width:80px" />
@@ -145,6 +149,7 @@
                   <td class="text-muted small">
                     {{it.note or ''}}
                     <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end" onsubmit="return confirm('確定刪除此物品？');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
                     </form>
                   </td>
@@ -154,6 +159,7 @@
                 <tr>
                   <td style="width:60px">
                     <form method="post" action="{{ url_for('travel.update_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <input type="hidden" name="toggle_carried" value="1" />
                       <button class="btn btn-sm {% if it.carried %}btn-success{%else%}btn-outline-secondary{%endif%}" type="submit" title="切換攜帶">
                         <i class="fas fa-check"></i>
@@ -164,6 +170,7 @@
                   <td><span class="badge bg-secondary">個人{% if it.assignee %}({{ it.assignee }}){% endif %}</span></td>
                   <td class="text-center">
                     <form method="post" action="{{ url_for('travel.update_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-flex justify-content-center align-items-center gap-1">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <input type="number" name="qty_packed" value="{{it.qty_packed}}" min="0" class="form-control form-control-sm" style="width:80px" />
                       <span class="text-muted">/</span>
                       <input type="number" name="qty_required" value="{{it.qty_required}}" min="0" class="form-control form-control-sm" style="width:80px" />
@@ -173,6 +180,7 @@
                   <td class="text-muted small">
                     {{it.note or ''}}
                     <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end" onsubmit="return confirm('確定刪除此物品？');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
                     </form>
                   </td>
@@ -205,6 +213,7 @@
                 <tr>
                   <td style="width:60px">
                     <form method="post" action="{{ url_for('travel.update_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <input type="hidden" name="toggle_carried" value="1" />
                       <button class="btn btn-sm {% if it.carried %}btn-success{%else%}btn-outline-secondary{%endif%}" type="submit" title="切換攜帶">
                         <i class="fas fa-check"></i>
@@ -215,6 +224,7 @@
                   <td><span class="badge bg-info text-dark">共同</span></td>
                   <td class="text-center">
                     <form method="post" action="{{ url_for('travel.update_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-flex justify-content-center align-items-center gap-1">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <input type="number" name="qty_packed" value="{{it.qty_packed}}" min="0" class="form-control form-control-sm" style="width:80px" />
                       <span class="text-muted">/</span>
                       <input type="number" name="qty_required" value="{{it.qty_required}}" min="0" class="form-control form-control-sm" style="width:80px" />
@@ -224,6 +234,7 @@
                   <td class="text-muted small">
                     {{it.note or ''}}
                     <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end" onsubmit="return confirm('確定刪除此物品？');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
                     </form>
                   </td>
@@ -234,6 +245,7 @@
                 <tr>
                   <td style="width:60px">
                     <form method="post" action="{{ url_for('travel.update_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <input type="hidden" name="toggle_carried" value="1" />
                       <button class="btn btn-sm {% if it.carried %}btn-success{%else%}btn-outline-secondary{%endif%}" type="submit" title="切換攜帶">
                         <i class="fas fa-check"></i>
@@ -244,6 +256,7 @@
                   <td><span class="badge bg-secondary">個人{% if it.assignee %}({{ it.assignee }}){% endif %}</span></td>
                   <td class="text-center">
                     <form method="post" action="{{ url_for('travel.update_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-flex justify-content-center align-items-center gap-1">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <input type="number" name="qty_packed" value="{{it.qty_packed}}" min="0" class="form-control form-control-sm" style="width:80px" />
                       <span class="text-muted">/</span>
                       <input type="number" name="qty_required" value="{{it.qty_required}}" min="0" class="form-control form-control-sm" style="width:80px" />
@@ -253,6 +266,7 @@
                   <td class="text-muted small">
                     {{it.note or ''}}
                     <form method="post" action="{{ url_for('travel.delete_item_form', item_id=it.id, travel_id=travel.id) }}" class="d-inline float-end" onsubmit="return confirm('確定刪除此物品？');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                       <button class="btn btn-sm btn-outline-danger" type="submit"><i class="fas fa-trash"></i></button>
                     </form>
                   </td>
@@ -299,6 +313,7 @@
           </tbody>
         </table>
         <form method="post" action="{{ url_for('shopping.add_shopping_item', list_id=shopping.id) }}" class="mt-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
           <div class="row g-2">
             <div class="col-md-4"><input name="name" class="form-control" placeholder="品名" required></div>
             <div class="col-md-2"><input name="qty" type="number" class="form-control" value="1" min="1"></div>

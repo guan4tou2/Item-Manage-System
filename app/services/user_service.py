@@ -27,7 +27,7 @@ def is_account_locked(username: str) -> Tuple[bool, str]:
         try:
             lock_time = datetime.strptime(locked_until, "%Y-%m-%d %H:%M:%S")
             if datetime.now() < lock_time:
-                remaining = (lock_time - datetime.now()).seconds // 60
+                remaining = int((lock_time - datetime.now()).total_seconds()) // 60
                 return True, f"帳號已被鎖定，請在 {remaining + 1} 分鐘後重試"
             else:
                 # 已過鎖定時間，解鎖
@@ -184,7 +184,8 @@ def change_password(username: str, old_password: str, new_password: str) -> Tupl
         (成功與否, 訊息)
     """
     # 驗證舊密碼
-    if not authenticate(username, old_password):
+    ok, _ = authenticate(username, old_password)
+    if not ok:
         return False, "舊密碼錯誤"
     
     # 驗證新密碼
@@ -271,7 +272,7 @@ def admin_reset_password(target_username: str) -> Tuple[bool, str, str]:
     # 記錄安全性事件
     from flask import session
     admin_user = session.get("UserID", "ADMIN")
-    log_service.log_action("security", admin_user, target_username, details={
+    log_service.log_action("security", admin_user, item_name=target_username, details={
         "message": f"管理員重置了使用者 {target_username} 的密碼"
     })
     
@@ -316,7 +317,7 @@ def delete_user(actor_username: str, target_username: str) -> Tuple[bool, str]:
     if not deleted:
         return False, "刪除失敗"
 
-    log_service.log_action("delete", actor_username, target_username, details={
+    log_service.log_action("delete", actor_username, item_name=target_username, details={
         "message": f"管理員刪除了使用者 {target_username}"
     })
     return True, f"已刪除 {target_username}"

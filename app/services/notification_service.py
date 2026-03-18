@@ -27,15 +27,15 @@ def _parse_reminder_ladder(value):
 
 
 def _build_plain_notification_text(expiry_info: Dict[str, Any], replacement_info: Dict[str, Any]) -> str:
-    lines = ["物品到期提醒"]
+    lines = ["物品提醒摘要"]
     if expiry_info.get("expired"):
         lines.append(f"已過期 {len(expiry_info['expired'])} 項")
     if expiry_info.get("near_expiry"):
         lines.append(f"即將到期 {len(expiry_info['near_expiry'])} 項")
     if replacement_info.get("due"):
-        lines.append(f"需要更換 {len(replacement_info['due'])} 項")
+        lines.append(f"需保養 / 更換 {len(replacement_info['due'])} 項")
     if replacement_info.get("upcoming"):
-        lines.append(f"即將更換 {len(replacement_info['upcoming'])} 項")
+        lines.append(f"即將保養 / 更換 {len(replacement_info['upcoming'])} 項")
     lines.append("請回到系統查看詳細清單。")
     return "\n".join(lines)
 
@@ -163,7 +163,7 @@ def check_and_send_notifications() -> Dict[str, Any]:
         total_alerts = expiry_info["total_alerts"] + replacement_info["total_alerts"]
         
         if total_alerts == 0:
-            user_result["reason"] = "無到期或更換提醒"
+            user_result["reason"] = "無到期或保養提醒"
             results["details"].append(user_result)
             continue
         
@@ -238,7 +238,7 @@ def send_manual_notification(username: str) -> Dict[str, Any]:
     if total_alerts == 0:
         return {
             "success": False,
-            "message": "無到期或更換提醒",
+            "message": "無到期或保養提醒",
             "expired_count": 0,
             "near_count": 0,
             "replacement_due_count": 0,

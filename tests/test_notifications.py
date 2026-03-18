@@ -44,8 +44,18 @@ class NotificationsTestCase(unittest.TestCase):
                 'email': 'test@example.com',
                 'notify_enabled': True,
                 'notify_days': 30,
+                'notify_time': '09:00',
+                'notify_channels': ['email'],
+                'reminder_ladder': '30,14,7',
+                'replacement_enabled': True,
+                'replacement_intervals': [],
             },
-            'expiry_info': {'total': 5, 'expiring_soon': 2},
+            'expiry_info': {'expired_count': 1, 'near_count': 2, 'total_alerts': 3},
+            'replacement_info': {
+                'due': [{'ItemID': 'A1', 'ItemName': '行動電源', 'replacement_rule_name': '充電保養', 'replacement_due_date': '2026-03-10', 'days_overdue': 4}],
+                'upcoming': [{'ItemID': 'B1', 'ItemName': '飲水機濾芯', 'replacement_rule_name': '濾芯更換', 'replacement_due_date': '2026-03-20', 'days_left': 6}],
+                'total_alerts': 2,
+            },
             'can_send': True,
         }
         mock_find_user.return_value = {'User': 'testuser', 'admin': False}
@@ -55,7 +65,12 @@ class NotificationsTestCase(unittest.TestCase):
 
         response = self.client.get('/notifications/')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'testuser', response.data)
+        content = response.data.decode('utf-8')
+        self.assertIn('testuser', content)
+        self.assertIn('需保養', content)
+        self.assertIn('即將保養', content)
+        self.assertIn('保養 / 更換提醒', content)
+        self.assertIn('通知摘要與保養提醒', content)
 
     @patch('app.services.notification_service.get_notification_summary')
     @patch('app.repositories.user_repo.find_by_username')
@@ -65,8 +80,14 @@ class NotificationsTestCase(unittest.TestCase):
                 'email': 'test@example.com',
                 'notify_enabled': True,
                 'notify_days': 30,
+                'notify_time': '09:00',
+                'notify_channels': ['email'],
+                'replacement_enabled': True,
+                'replacement_intervals': [],
+                'reminder_ladder': '30,14,7',
             },
-            'expiry_info': {'total': 5, 'expiring_soon': 2},
+            'expiry_info': {'expired_count': 0, 'near_count': 2, 'total_alerts': 2},
+            'replacement_info': {'due': [], 'upcoming': [], 'total_alerts': 0},
             'can_send': True,
         }
         mock_find_user.return_value = {'User': 'testuser', 'admin': False}
@@ -89,8 +110,14 @@ class NotificationsTestCase(unittest.TestCase):
                 'email': 'test@example.com',
                 'notify_enabled': True,
                 'notify_days': 30,
+                'notify_time': '09:00',
+                'notify_channels': ['email'],
+                'replacement_enabled': True,
+                'replacement_intervals': [],
+                'reminder_ladder': '30,14,7',
             },
-            'expiry_info': {'total': 5, 'expiring_soon': 2},
+            'expiry_info': {'expired_count': 0, 'near_count': 2, 'total_alerts': 2},
+            'replacement_info': {'due': [], 'upcoming': [], 'total_alerts': 0},
             'can_send': True,
         }
         mock_find_user.return_value = {'User': 'testuser', 'admin': False}
@@ -106,10 +133,46 @@ class NotificationsTestCase(unittest.TestCase):
 
     @patch('app.services.notification_service.get_notification_summary')
     @patch('app.repositories.user_repo.find_by_username')
-    @patch('app.notifications.routes.TelegramUserLink')
-    @patch('app.notifications.routes.LineUserLink')
+    def test_notifications_index_uses_new_send_feedback_wording(self, mock_find_user, mock_get_summary):
+        mock_get_summary.return_value = {
+            'settings': {
+                'email': 'test@example.com',
+                'notify_enabled': True,
+                'notify_days': 30,
+                'notify_time': '09:00',
+                'notify_channels': ['email'],
+                'replacement_enabled': True,
+                'replacement_intervals': [],
+                'reminder_ladder': '30,14,7',
+            },
+            'expiry_info': {'expired_count': 1, 'near_count': 2, 'total_alerts': 3},
+            'replacement_info': {
+                'due': [{'ItemID': 'A1', 'ItemName': '行動電源', 'replacement_rule_name': '充電保養', 'replacement_due_date': '2026-03-10', 'days_overdue': 4}],
+                'upcoming': [{'ItemID': 'B1', 'ItemName': '飲水機濾芯', 'replacement_rule_name': '濾芯更換', 'replacement_due_date': '2026-03-20', 'days_left': 6}],
+                'total_alerts': 2,
+            },
+            'can_send': True,
+        }
+        mock_find_user.return_value = {'User': 'testuser', 'admin': False}
+
+        with self.client.session_transaction() as sess:
+            sess['UserID'] = 'testuser'
+
+        response = self.client.get('/notifications/')
+        content = response.data.decode('utf-8')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('需保養', content)
+        self.assertIn('即將保養', content)
+        self.assertNotIn('需更換', content)
+
+    @patch('app.services.notification_service.get_notification_summary')
+    @patch('app.repositories.user_repo.find_by_username')
+    @patch('app.models.TelegramUserLink')
+    @patch('app.models.LineUserLink')
+    @patch('app.get_db_type', return_value='postgres')
     def test_notifications_index_enables_test_send_for_linked_chat_channels(
         self,
+        mock_db_type,
         mock_line_link,
         mock_tg_link,
         mock_find_user,
@@ -256,6 +319,85 @@ class NotificationsTestCase(unittest.TestCase):
         response = self.client.post('/notifications/api/send')
         data = response.get_json()
         self.assertFalse(data['success'])
+
+    def test_plain_notification_text_uses_new_maintenance_terms(self):
+        from app.services import notification_service
+
+        text = notification_service._build_plain_notification_text(
+            expiry_info={
+                'expired': [{'ItemID': 'E1'}],
+                'near_expiry': [{'ItemID': 'E2'}],
+            },
+            replacement_info={
+                'due': [{'ItemID': 'M1', 'replacement_rule_name': '充電保養'}],
+                'upcoming': [{'ItemID': 'M2', 'replacement_rule_name': '濾芯更換'}],
+            },
+        )
+
+        self.assertIn('已過期 1 項', text)
+        self.assertIn('即將到期 1 項', text)
+        self.assertIn('需保養 / 更換 1 項', text)
+        self.assertIn('即將保養 / 更換 1 項', text)
+        self.assertNotIn('需要更換', text)
+        self.assertNotIn('即將更換', text)
+
+    def test_email_text_content_uses_new_maintenance_contract(self):
+        from app.services import email_service
+
+        content = email_service.generate_text_content(
+            expired_items=[],
+            near_expiry_items=[],
+            replacement_due=[{
+                'ItemName': '行動電源',
+                'replacement_rule_name': '充電保養',
+                'replacement_due_date': '2026-03-10',
+                'days_overdue': 4,
+            }],
+            replacement_upcoming=[{
+                'ItemName': '飲水機濾芯',
+                'replacement_rule_name': '濾芯更換',
+                'replacement_due_date': '2026-03-20',
+                'days_left': 6,
+            }],
+        )
+
+        self.assertIn('需保養 / 更換 (1 項)', content)
+        self.assertIn('即將保養 / 更換 (1 項)', content)
+        self.assertIn('下次保養日: 2026-03-10', content)
+        self.assertIn('已逾期 4 天', content)
+        self.assertIn('剩餘 6 天', content)
+        self.assertIn('規則: 充電保養', content)
+        self.assertNotIn('days_since', content)
+        self.assertNotIn('需要更換', content)
+
+    def test_email_html_content_uses_new_maintenance_contract(self):
+        from app.services import email_service
+
+        content = email_service.generate_html_content(
+            expired_items=[],
+            near_expiry_items=[],
+            replacement_due=[{
+                'ItemName': '行動電源',
+                'replacement_rule_name': '充電保養',
+                'replacement_due_date': '2026-03-10',
+                'days_overdue': 4,
+            }],
+            replacement_upcoming=[{
+                'ItemName': '飲水機濾芯',
+                'replacement_rule_name': '濾芯更換',
+                'replacement_due_date': '2026-03-20',
+                'days_left': 6,
+            }],
+        )
+
+        self.assertIn('需保養 / 更換 (1 項)', content)
+        self.assertIn('即將保養 / 更換 (1 項)', content)
+        self.assertIn('下次保養日', content)
+        self.assertIn('已逾期 4 天', content)
+        self.assertIn('剩餘 6 天', content)
+        self.assertIn('充電保養', content)
+        self.assertNotIn('days_since', content)
+        self.assertNotIn('需要更換', content)
 
     def test_get_summary_requires_auth(self):
         """測試取得摘要 API 需要登入"""

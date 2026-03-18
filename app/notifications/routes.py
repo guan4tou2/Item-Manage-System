@@ -1,10 +1,8 @@
 """通知藍圖模組"""
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, session, current_app
 
-from app import csrf
 from app.services import notification_service
 from app.repositories import user_repo
-from app.models import LineUserLink, TelegramUserLink
 
 bp = Blueprint("notifications", __name__, url_prefix="/notifications")
 
@@ -19,12 +17,16 @@ def index():
     
     user_obj = user_repo.find_by_username(session["UserID"])
     
+    line_link = None
+    telegram_link = None
     try:
-        line_link = LineUserLink.query.filter_by(user_id=session["UserID"]).first()
-        telegram_link = TelegramUserLink.query.filter_by(user_id=session["UserID"]).first()
+        from app import get_db_type
+        if get_db_type() == "postgres":
+            from app.models import LineUserLink, TelegramUserLink
+            line_link = LineUserLink.query.filter_by(user_id=session["UserID"]).first()
+            telegram_link = TelegramUserLink.query.filter_by(user_id=session["UserID"]).first()
     except Exception:
-        line_link = None
-        telegram_link = None
+        pass
     telegram_bot_username = (current_app.config.get("TELEGRAM_BOT_USERNAME", "") or "").strip()
     integration = {
         "line_linked": bool(line_link),
@@ -38,6 +40,7 @@ def index():
         "notifications_settings.html",
         settings=summary["settings"],
         expiry_info=summary["expiry_info"],
+        replacement_info=summary.get("replacement_info", {"due": [], "upcoming": [], "total_alerts": 0}),
         can_send=summary["can_send"],
         integration=integration,
         User={"id": session["UserID"], "name": session["UserID"], "admin": user_obj.get("admin", False) if user_obj else False},
@@ -55,7 +58,6 @@ def get_settings():
 
 
 @bp.route("/api/settings", methods=["POST"])
-@csrf.exempt
 def update_settings():
     """更新使用者通知設定"""
     if "UserID" not in session:
@@ -103,7 +105,6 @@ def update_settings():
  
 
 @bp.route("/api/send", methods=["POST"])
-@csrf.exempt
 def send_notification():
     """手動發送通知"""
     if "UserID" not in session:
@@ -112,7 +113,7 @@ def send_notification():
     result = notification_service.send_manual_notification(session["UserID"])
     
     if result["success"]:
-        flash(f"通知已發送到您的 Email", "success")
+        flash("通知已送出到可用管道", "success")
     else:
         flash(f"發送失敗: {result['message']}", "error")
     

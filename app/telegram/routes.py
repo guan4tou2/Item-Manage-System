@@ -188,10 +188,11 @@ def _handle_callback(telegram_user_id: str, callback_data: str) -> tuple[str, li
 @csrf.exempt
 def webhook():
     secret = current_app.config.get("TELEGRAM_WEBHOOK_SECRET", "")
-    if secret:
-        header_secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
-        if header_secret != secret:
-            return jsonify({"error": "invalid_secret"}), 401
+    if not secret:
+        return jsonify({"error": "webhook_secret_not_configured"}), 401
+    header_secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    if header_secret != secret:
+        return jsonify({"error": "invalid_secret"}), 401
 
     payload = request.get_json(silent=True) or {}
 

@@ -7,7 +7,7 @@
   <!-- 頁面標題 -->
   <div class="page-header animate-fadeInUp">
     <h1>💾 備份與還原</h1>
-    <p class="lead">匯出完整資料備份或從備份檔案還原系統</p>
+    <p class="lead">匯出完整物品資料備份，或從備份檔案還原物品、類型與位置資料</p>
   </div>
 </div>
 {%endblock%}
@@ -23,7 +23,7 @@
         </div>
         <div class="card-body">
           <p class="text-muted mb-4">
-            將系統中的所有資料匯出為 JSON 檔案，包含物品、類型、位置等所有設定。
+            將系統中的物品、類型、位置與保養資料匯出為 JSON 檔案，適合做資料移轉或還原。
           </p>
           
           <!-- 目前資料統計 -->
@@ -50,7 +50,7 @@
           
           <div class="alert alert-info small">
             <i class="fas fa-info-circle me-1"></i>
-            備份檔案包含所有物品資料、類型設定和位置選項，但<strong>不包含</strong>圖片檔案。
+            備份檔案包含所有物品資料、類型設定、位置選項與保養欄位，但<strong>不包含</strong>圖片檔案、使用者帳號與通知設定。
           </div>
           
           <a href="{{ url_for('items.full_backup') }}" class="btn btn-primary btn-lg w-100">
@@ -138,6 +138,7 @@
           <h6 class="text-muted mt-3">備份內容</h6>
           <ul class="small text-muted">
             <li>所有物品資料（名稱、ID、描述、位置等）</li>
+            <li>保養資料（保養類型、週期、上次保養日）</li>
             <li>所有類型設定</li>
             <li>所有位置選項（樓層、房間、區域）</li>
           </ul>
@@ -147,6 +148,7 @@
           <ul class="small text-muted">
             <li>圖片檔案不包含在備份中，需另行備份</li>
             <li>使用者帳號資料不包含在備份中</li>
+            <li>通知設定與提醒規則不包含在備份中</li>
             <li>建議定期執行備份以防資料遺失</li>
           </ul>
         </div>

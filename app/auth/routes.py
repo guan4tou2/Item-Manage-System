@@ -18,14 +18,13 @@ def signin():
             flash("請輸入帳號與密碼", "danger")
             return render_template("signin.html", error="請輸入帳號與密碼")
 
-        # 取得用戶 IP
-        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
-        if ip_address:
-            ip_address = ip_address.split(',')[0].strip()
+        # 取得用戶 IP（使用 remote_addr 避免 X-Forwarded-For 偽造）
+        ip_address = request.remote_addr or ""
         
         success, error_msg = user_service.authenticate(username, password, ip_address)
         
         if success:
+            session.clear()
             session["UserID"] = username
             
             # 檢查是否需要強制修改密碼

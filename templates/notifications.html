@@ -1,8 +1,8 @@
 {%extends "template.html"%}
 
-{%block title%}到期通知 - 物品管理系統{%endblock%}
+{%block title%}通知摘要 - 物品管理系統{%endblock%}
 
-{%block user%}{{User.name}}{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
 
 {%block contain%}
 <div class="row">
@@ -11,9 +11,9 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div>
         <h2 class="mb-1">
-          <i class="fas fa-bell text-warning me-2"></i>到期通知
+          <i class="fas fa-bell text-warning me-2"></i>通知摘要
         </h2>
-        <p class="text-muted mb-0">追蹤物品的保固和使用期限狀態</p>
+        <p class="text-muted mb-0">集中處理到期、補貨與保養 / 更換提醒</p>
       </div>
       <div class="d-flex gap-2">
         <a href="{{url_for('items.home')}}" class="btn btn-outline-secondary">
@@ -26,15 +26,23 @@
   <div class="col-12 mb-4">
     <div class="stats-summary-strip">
       <div class="summary-chip">
-        <span class="summary-chip-label">到期提醒</span>
-        <strong>{{ expired_count + near_count }} 項</strong>
+        <span class="summary-chip-label">已過期</span>
+        <strong>{{ expired_count }} 項</strong>
       </div>
       <div class="summary-chip">
-        <span class="summary-chip-label">保養 / 更換提醒</span>
-        <strong>{{ replacement_due|length + replacement_upcoming|length }} 項</strong>
+        <span class="summary-chip-label">即將到期</span>
+        <strong>{{ near_count }} 項</strong>
       </div>
       <div class="summary-chip">
-        <span class="summary-chip-label">最近保養日</span>
+        <span class="summary-chip-label">需保養 / 更換</span>
+        <strong>{{ replacement_due|length }} 項</strong>
+      </div>
+      <div class="summary-chip">
+        <span class="summary-chip-label">即將保養 / 更換</span>
+        <strong>{{ replacement_upcoming|length }} 項</strong>
+      </div>
+      <div class="summary-chip">
+        <span class="summary-chip-label">最近到期保養</span>
         <strong>
           {% if replacement_due %}
             {{ replacement_due[0].replacement_due_date }}
@@ -46,12 +54,12 @@
         </strong>
       </div>
       <div class="summary-chip">
-        <span class="summary-chip-label">庫存警示</span>
-        <strong>{{ low_count }} 項</strong>
+        <span class="summary-chip-label">建議順序</span>
+        <strong>已過期 → 需保養 / 更換 → 低庫存 → 即將到期 / 即將保養</strong>
       </div>
       <div class="summary-chip">
-        <span class="summary-chip-label">建議順序</span>
-        <strong>先處理已過期，再看需補貨與即將到期</strong>
+        <span class="summary-chip-label">庫存警示</span>
+        <strong>{{ low_count }} 項</strong>
       </div>
     </div>
   </div>
@@ -133,8 +141,8 @@
         <div class="mb-4">
           <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
         </div>
-        <h4 class="text-success">太棒了！沒有到期通知</h4>
-        <p class="text-muted mb-4">所有物品的保固和使用期限都在有效範圍內</p>
+        <h4 class="text-success">目前沒有待處理通知</h4>
+        <p class="text-muted mb-4">目前沒有已過期、低庫存或保養 / 更換提醒需要處理</p>
         <div class="d-flex gap-2 justify-content-center flex-wrap">
           <a href="{{url_for('items.home')}}" class="btn btn-primary">
             <i class="fas fa-home me-1"></i>返回首頁
@@ -268,7 +276,14 @@
         </h5>
         <div class="d-flex gap-2 align-items-center">
           <span class="badge bg-light text-info">需處理 {{ replacement_due|length }}</span>
-          <span class="badge bg-dark">即將到期 {{ replacement_upcoming|length }}</span>
+          <span class="badge bg-dark">即將保養 {{ replacement_upcoming|length }}</span>
+        </div>
+      </div>
+      <div class="card-body border-bottom bg-light-subtle">
+        <div class="d-flex flex-wrap gap-3 small text-muted">
+          <span><i class="fas fa-circle-exclamation text-danger me-1"></i>標記後會更新上次保養日</span>
+          <span><i class="fas fa-arrow-rotate-right text-info me-1"></i>重新整理後會移出需保養清單</span>
+          <span><i class="fas fa-eye text-secondary me-1"></i>即將保養項目僅提供查看，不會提前完成</span>
         </div>
       </div>
       <div class="card-body p-0">
@@ -282,6 +297,7 @@
                 <th>天數</th>
                 <th>類型</th>
                 <th class="text-center">狀態</th>
+                <th class="text-center">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -293,6 +309,13 @@
                 <td>逾期 {{ item.days_overdue }} 天</td>
                 <td>{{ item.ItemType }}</td>
                 <td class="text-center"><span class="badge bg-danger">需保養 / 更換</span></td>
+                <td class="text-center">
+                  <button type="button"
+                          class="btn btn-sm btn-outline-warning mark-maintained-notify-btn"
+                          onclick="markMaintenanceToday('{{ item.ItemID }}')">
+                    <i class="fas fa-screwdriver-wrench me-1"></i>標記今天已保養
+                  </button>
+                </td>
               </tr>
               {% endfor %}
               {% for item in replacement_upcoming %}
@@ -303,6 +326,7 @@
                 <td>剩餘 {{ item.days_left }} 天</td>
                 <td>{{ item.ItemType }}</td>
                 <td class="text-center"><span class="badge bg-warning text-dark">即將保養 / 更換</span></td>
+                <td class="text-center">-</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -434,8 +458,8 @@
         </h5>
         <div class="d-flex align-items-center gap-2 flex-wrap">
           <span class="badge bg-light text-primary">共 {{ low_count }} 項</span>
-          <span class="badge bg-warning text-dark">警告 {{ warning_count }}</span>
-          <span class="badge bg-danger">需補貨 {{ critical_count }}</span>
+          <span class="badge bg-warning text-dark">警告 {{ low_stock_items|selectattr('stock_status','equalto','low')|list|length }}</span>
+          <span class="badge bg-danger">需補貨 {{ low_stock_items|selectattr('stock_status','equalto','critical')|list|length }}</span>
           <form action="{{ url_for('items.export_restock') }}" method="get" class="d-flex align-items-center gap-2">
             <select name="level" class="form-select form-select-sm">
               <option value="all">全部</option>
@@ -498,9 +522,9 @@
                   <span class="badge bg-secondary ms-1">補貨 {{ item.ReorderLevel }}</span>
                 </td>
                 <td>
-                  {% if item.StockLevel == 'critical' %}
+                  {% if item.stock_status == 'critical' %}
                   <span class="badge bg-danger">需補貨</span>
-                  {% elif item.StockLevel == 'warning' %}
+                  {% elif item.stock_status == 'low' %}
                   <span class="badge bg-warning text-dark">低於安全庫存</span>
                   {% else %}
                   <span class="badge bg-success">正常</span>
@@ -555,4 +579,31 @@
     margin-bottom: 0.2rem;
   }
 </style>
+
+<script>
+function markMaintenanceToday(itemId) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  fetch("/api/bulk/maintenance", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": "{{ csrf_token() }}"
+    },
+    body: JSON.stringify({
+      item_ids: [itemId],
+      maintenance_date: today
+    })
+  })
+  .then(res => res.json().then(data => ({ ok: res.ok, data })))
+  .then(({ ok, data }) => {
+    if (ok && data.success) {
+      location.reload();
+      return;
+    }
+    alert(data.message || "更新失敗");
+  })
+  .catch(() => alert("更新失敗"));
+}
+</script>
 {%endblock%}

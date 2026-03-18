@@ -7,6 +7,33 @@ from app import mongo, db, get_db_type
 from app.models.item import Item
 
 
+def _parse_optional_int(value: Any) -> Optional[int]:
+    if value in (None, ""):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_optional_date(value: Any) -> Optional[date]:
+    if value in (None, ""):
+        return None
+    if isinstance(value, date):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        try:
+            return datetime.strptime(raw, "%Y-%m-%d").date()
+        except ValueError:
+            return None
+    return None
+
+
 def list_items(
     filter_query: Dict[str, Any],
     projection: Dict[str, Any],
@@ -33,8 +60,15 @@ def list_items(
         if "visibility" in filter_query and filter_query["visibility"]:
             query = query.filter(Item.visibility == filter_query["visibility"])
         
+        ALLOWED_SORT_FIELDS = {
+            "ItemName", "ItemGetDate", "ItemType", "ItemStorePlace",
+            "ItemFloor", "ItemRoom", "ItemZone", "WarrantyExpiry",
+            "UsageExpiry", "Quantity", "visibility",
+        }
         if sort:
             for field, direction in sort:
+                if field not in ALLOWED_SORT_FIELDS:
+                    continue
                 attr = getattr(Item, field)
                 query = query.order_by(attr.asc() if direction == 1 else attr.desc())
         
@@ -175,18 +209,19 @@ def get_all_items_for_export(
 def toggle_favorite(item_id: str, user_id: str) -> bool:
     db_type = get_db_type()
     if db_type == "postgres":
-        item = Item.query.filter_by(ItemID=item_id).first()
+        item = Item.query.filter_by(ItemID=item_id).with_for_update().first()
         if not item:
             return False
-        
-        favorites = item.favorites or []
+
+        favorites = list(item.favorites or [])
         if user_id in favorites:
             favorites.remove(user_id)
             is_fav = False
         else:
-            favorites.append(user_id)
+            if user_id not in favorites:
+                favorites.append(user_id)
             is_fav = True
-        
+
         item.favorites = favorites
         db.session.commit()
         return is_fav
@@ -213,8 +248,15 @@ def toggle_favorite(item_id: str, user_id: str) -> bool:
 def get_favorites(user_id: str, projection: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     db_type = get_db_type()
     if db_type == "postgres":
-        # Avoid dialect-specific JSON operators so this works on sqlite-backed tests too.
-        items = Item.query.all()
+        from sqlalchemy import cast, String
+        try:
+            items = Item.query.filter(
+                Item.favorites.cast(String).contains(f'"{user_id}"')
+            ).all()
+        except Exception:
+            # Fallback for SQLite in tests
+            items = Item.query.all()
+            items = [item for item in items if user_id in (item.favorites or [])]
         return [item.to_dict() for item in items if user_id in (item.favorites or [])]
     if projection is None:
         projection = {"_id": 0}
@@ -453,7 +495,7 @@ def restore_items(items: List[Dict[str, Any]], mode: str = "merge") -> int:
 
             if mode == "replace" and existing:
                 db.session.delete(existing)
-                db.session.commit()
+                db.session.flush()
                 existing = None
 
             if not existing:
@@ -476,12 +518,21 @@ def restore_items(items: List[Dict[str, Any]], mode: str = "merge") -> int:
                     Quantity=item_data.get("Quantity", 0),
                     SafetyStock=item_data.get("SafetyStock", 0),
                     ReorderLevel=item_data.get("ReorderLevel", 0),
+                    WarrantyExpiry=_parse_optional_date(item_data.get("WarrantyExpiry")),
+                    UsageExpiry=_parse_optional_date(item_data.get("UsageExpiry")),
+                    MaintenanceCategory=item_data.get("MaintenanceCategory", "") or "",
+                    MaintenanceIntervalDays=_parse_optional_int(item_data.get("MaintenanceIntervalDays")),
+                    LastMaintenanceDate=_parse_optional_date(item_data.get("LastMaintenanceDate")),
                 )
                 db.session.add(item)
                 count += 1
             elif mode == "merge":
                 for key, value in item_data.items():
                     if hasattr(existing, key) and key != "ItemID":
+                        if key in {"WarrantyExpiry", "UsageExpiry", "LastMaintenanceDate"}:
+                            value = _parse_optional_date(value)
+                        elif key in {"Quantity", "SafetyStock", "ReorderLevel", "MaintenanceIntervalDays"}:
+                            value = _parse_optional_int(value)
                         setattr(existing, key, value)
                 count += 1
 

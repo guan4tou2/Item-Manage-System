@@ -37,6 +37,7 @@
         <ul class="mb-0 mt-1">
           <li>點擊「編輯」可修改物品完整資訊</li>
           <li>使用下方的位置選單可快速更新物品位置</li>
+          <li>匯出 CSV / JSON 會包含保養類型、週期與上次保養日</li>
           <li>下載 QR Code 貼在物品上方便識別</li>
         </ul>
       </div>
@@ -68,6 +69,20 @@
       </div>
     </div>
     <div class="col-6 col-md-3">
+      <div class="stats-card bg-danger text-white">
+        <div class="icon"><i class="fas fa-screwdriver-wrench"></i></div>
+        <h2>{{ items|selectattr('MaintenanceAlertStatus', 'eq', 'due')|list|length }}</h2>
+        <h5>需保養</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stats-card bg-info text-white">
+        <div class="icon"><i class="fas fa-calendar-check"></i></div>
+        <h2>{{ items|selectattr('MaintenanceAlertStatus', 'eq', 'upcoming')|list|length }}</h2>
+        <h5>即將保養</h5>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
       <a href="{{ url_for('items.additem') }}" class="text-decoration-none">
         <div class="stats-card bg-success text-white">
           <div class="icon"><i class="fas fa-plus"></i></div>
@@ -87,6 +102,39 @@
       <i class="fas fa-mobile-alt me-1"></i>手機可長按卡片進入選擇模式
     </div>
   </div>
+
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-4 animate-fadeInUp stagger-3">
+    <span class="text-muted small">保養篩選</span>
+    <a href="{{ url_for('items.manageitem') }}" class="btn btn-sm {% if not selected_maintenance %}btn-primary{% else %}btn-outline-secondary{% endif %}">全部</a>
+    <a href="{{ url_for('items.manageitem', maintenance='all') }}" class="btn btn-sm {% if selected_maintenance == 'all' %}btn-primary{% else %}btn-outline-secondary{% endif %}">全部提醒</a>
+    <a href="{{ url_for('items.manageitem', maintenance='due') }}" class="btn btn-sm {% if selected_maintenance == 'due' %}btn-danger{% else %}btn-outline-danger{% endif %}">只看需保養</a>
+    <a href="{{ url_for('items.manageitem', maintenance='upcoming') }}" class="btn btn-sm {% if selected_maintenance == 'upcoming' %}btn-warning{% else %}btn-outline-warning{% endif %}">只看即將保養</a>
+  </div>
+
+  <div class="stats-summary-strip animate-fadeInUp stagger-3 mb-4">
+    <div class="summary-chip">
+      <span class="summary-chip-label">管理焦點</span>
+      <strong>
+        {% if selected_maintenance == 'due' %}
+        目前只顯示需保養物品
+        {% elif selected_maintenance == 'upcoming' %}
+        目前只顯示即將保養物品
+        {% elif selected_maintenance == 'all' %}
+        目前只顯示所有保養提醒
+        {% else %}
+        可直接批次更新位置、刪除或回報保養
+        {% endif %}
+      </strong>
+    </div>
+    <div class="summary-chip">
+      <span class="summary-chip-label">保養批次</span>
+      <strong>勾選多筆後可一次更新上次保養日</strong>
+    </div>
+    <div class="summary-chip">
+      <span class="summary-chip-label">建議流程</span>
+      <strong>先篩出需保養，再批次回報保養完成</strong>
+    </div>
+  </div>
 </div>
 {%endblock%}
 
@@ -102,6 +150,9 @@
   <div class="btn-group btn-group-sm">
     <button type="button" class="btn btn-outline-light" onclick="batchMove()" title="批量移動">
       <i class="fas fa-arrows-alt me-1"></i><span class="d-none d-sm-inline">移動</span>
+    </button>
+    <button type="button" class="btn btn-outline-warning" onclick="batchMaintenance()" title="批量更新保養日">
+      <i class="fas fa-screwdriver-wrench me-1"></i><span class="d-none d-sm-inline">保養日</span>
     </button>
     <button type="button" class="btn btn-outline-danger" onclick="batchDelete()" title="批量刪除">
       <i class="fas fa-trash me-1"></i><span class="d-none d-sm-inline">刪除</span>
@@ -126,6 +177,9 @@
     <div class="btn-group btn-group-sm">
       <button type="button" class="btn btn-light" onclick="batchMove()">
         <i class="fas fa-arrows-alt"></i>
+      </button>
+      <button type="button" class="btn btn-warning" onclick="batchMaintenance()">
+        <i class="fas fa-screwdriver-wrench"></i>
       </button>
       <button type="button" class="btn btn-danger" onclick="batchDelete()">
         <i class="fas fa-trash"></i>
@@ -178,6 +232,15 @@
                   <i class="fas fa-clock"></i>
                 </span>
                 {% endif %}
+                {% if item.MaintenanceAlertStatus == 'due' %}
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle" data-tooltip="需保養">
+                  <i class="fas fa-screwdriver-wrench"></i>
+                </span>
+                {% elif item.MaintenanceAlertStatus == 'upcoming' %}
+                <span class="badge bg-warning-subtle text-dark border border-warning-subtle" data-tooltip="即將保養">
+                  <i class="fas fa-screwdriver-wrench"></i>
+                </span>
+                {% endif %}
               </div>
             </div>
             
@@ -199,6 +262,12 @@
               <i class="fas fa-home me-1"></i>{{item.ItemFloor}} {{item.ItemRoom}} {{item.ItemZone}}
             </p>
             {%endif%}
+            {% if item.NextMaintenanceDate %}
+            <p class="card-text small mb-2">
+              <i class="fas fa-screwdriver-wrench text-primary me-1"></i>
+              下次保養 {{ item.NextMaintenanceDate }}
+            </p>
+            {% endif %}
             
             <!-- 快速操作按鈕 -->
             <div class="d-flex gap-2 mt-3">
@@ -206,6 +275,12 @@
                  class="btn btn-primary btn-sm flex-grow-1">
                 <i class="fas fa-edit me-1"></i>編輯
               </a>
+              <button type="button"
+                      class="btn btn-outline-warning btn-sm mark-maintained-btn"
+                      onclick="markMaintenanceToday('{{ item.ItemID }}')"
+                      title="標記今天已保養">
+                <i class="fas fa-screwdriver-wrench"></i>
+              </button>
               <button type="button" 
                       class="btn btn-outline-secondary btn-sm"
                       data-bs-toggle="collapse" 
@@ -229,7 +304,7 @@
           <!-- 快速更新位置 (折疊區) -->
           <div class="collapse" id="location-{{loop.index}}">
             <div class="card-footer bg-light">
-              <form method="POST" class="row g-2">
+              <form method="POST" action="{{ url_for('items.manageitem') }}" class="row g-2">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <input type="hidden" name="item_id" value="{{item.ItemID}}" />
                 
@@ -394,6 +469,32 @@
     </div>
   </div>
 </div>
+
+<!-- 批量保養 Modal -->
+<div class="modal fade" id="batchMaintenanceModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title"><i class="fas fa-screwdriver-wrench me-2"></i>批量更新保養日</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>將更新 <strong id="batchMaintenanceCount">0</strong> 個物品的上次保養日</p>
+        <div class="mb-3">
+          <label class="form-label">上次保養日</label>
+          <input type="date" class="form-control" id="batchMaintenanceDate">
+        </div>
+        <small class="text-muted">若物品尚未設定保養類型，系統會依名稱自動補上可判斷的建議類型與週期。</small>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-warning" onclick="submitBatchMaintenance()">
+          <i class="fas fa-check me-1"></i>確認更新
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 {%endblock%}
 
 {%block js%}
@@ -521,6 +622,72 @@ function batchDelete() {
   listEl.innerHTML = selected.map(i => `<div class="small"><i class="fas fa-box me-2 text-muted"></i>${i.name}</div>`).join('');
   
   new bootstrap.Modal(document.getElementById('batchDeleteModal')).show();
+}
+
+function batchMaintenance() {
+  const selected = getSelectedItems();
+  if (selected.length === 0) return;
+
+  document.getElementById('batchMaintenanceCount').textContent = selected.length;
+  document.getElementById('batchMaintenanceDate').value = new Date().toISOString().slice(0, 10);
+  new bootstrap.Modal(document.getElementById('batchMaintenanceModal')).show();
+}
+
+function submitBatchMaintenance() {
+  const selected = getSelectedItems();
+  const maintenanceDate = document.getElementById('batchMaintenanceDate').value;
+  if (selected.length === 0) return;
+  if (!maintenanceDate) {
+    alert('請選擇保養日期');
+    return;
+  }
+
+  fetch("/api/bulk/maintenance", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': "{{ csrf_token() }}"
+    },
+    body: JSON.stringify({
+      item_ids: selected.map(i => i.id),
+      maintenance_date: maintenanceDate
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      location.reload();
+    } else {
+      alert('更新失敗：' + (data.message || '未知錯誤'));
+    }
+  })
+  .catch(() => alert('發生錯誤'));
+}
+
+function markMaintenanceToday(itemId) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  fetch("/api/bulk/maintenance", {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': "{{ csrf_token() }}"
+    },
+    body: JSON.stringify({
+      item_ids: [itemId],
+      maintenance_date: today
+    })
+  })
+  .then(res => res.json().then(data => ({ ok: res.ok, data })))
+  .then(({ ok, data }) => {
+    if (ok && data.success) {
+      location.reload();
+      return;
+    }
+    alert('更新失敗：' + (data.message || '未知錯誤'));
+  })
+  .catch(() => alert('發生錯誤'));
 }
 
 // 長按進入選擇模式（手機版）

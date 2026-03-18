@@ -40,13 +40,13 @@ def ensure_upload_folder(app: Flask) -> None:
 def _ensure_default_admin() -> None:
     """確保預設管理員帳號存在"""
     from werkzeug.security import generate_password_hash
-    
+
     db_type = get_db_type()
     hashed_password = generate_password_hash("admin")
-    
+
     if db_type == "postgres":
         from app.models import User
-        
+
         existing_admin = User.query.filter_by(User="admin").first()
         if not existing_admin:
             admin = User(
@@ -57,6 +57,16 @@ def _ensure_default_admin() -> None:
             )
             db.session.add(admin)
             db.session.commit()
+            print("✅ 已建立預設管理員帳號: admin / admin (首次登入請修改密碼)")
+    else:
+        existing_admin = mongo.db.user.find_one({"User": "admin"})
+        if not existing_admin:
+            mongo.db.user.insert_one({
+                "User": "admin",
+                "Password": hashed_password,
+                "admin": True,
+                "password_changed": False
+            })
             print("✅ 已建立預設管理員帳號: admin / admin (首次登入請修改密碼)")
 
 
@@ -87,16 +97,6 @@ def _ensure_item_maintenance_columns() -> None:
 
     if alter_statements:
         db.session.commit()
-    else:
-        existing_admin = mongo.db.user.find_one({"User": "admin"})
-        if not existing_admin:
-            mongo.db.user.insert_one({
-                "User": "admin",
-                "Password": hashed_password,
-                "admin": True,
-                "password_changed": False
-            })
-            print("✅ 已建立預設管理員帳號: admin / admin (首次登入請修改密碼)")
 
 
 def create_app() -> Flask:
@@ -108,6 +108,8 @@ def create_app() -> Flask:
 
     secret_key = os.environ.get("SECRET_KEY")
     if not secret_key:
+        if os.environ.get("FLASK_ENV") == "production":
+            raise RuntimeError("SECRET_KEY 環境變數未設定，生產環境中必須設定此值")
         secret_key = secrets.token_hex(32)
         print("⚠️  警告：未設定 SECRET_KEY 環境變數，使用隨機值（不建議用於生產環境）")
 
@@ -184,8 +186,8 @@ def create_app() -> Flask:
         if os.environ.get("TEST_MODE") != "true":
             _ensure_default_admin()
 
-        # 只在web进程（非worker）中初始化scheduler
-        if os.environ.get("WORKER_MODE") != "scheduler":
+        # 只在明確啟用 scheduler 的進程中初始化（避免多 worker 重複執行）
+        if os.environ.get("ENABLE_SCHEDULER") == "true":
             from app.utils import scheduler
             scheduler.init_scheduler()
 

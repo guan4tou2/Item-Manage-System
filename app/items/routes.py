@@ -43,6 +43,25 @@ bp = Blueprint("items", __name__)
 @bp.route("/uploads/<filename>")
 @login_required
 def uploaded_file(filename):
+    from app.repositories import item_repo
+    # 檢查檔案是否屬於使用者有權限存取的物品
+    user_id = session.get("UserID", "")
+    user = get_current_user()
+    if not user.get("admin"):
+        # 非管理員需驗證圖片歸屬
+        from app import db as _db, get_db_type
+        if get_db_type() == "postgres":
+            item = Item.query.filter(
+                (Item.ItemPic == filename) | (Item.ItemThumb == filename)
+            ).first()
+            if item:
+                visibility = getattr(item, "visibility", "private") or "private"
+                if visibility == "private":
+                    shared = item.shared_with or []
+                    owner = item.ItemOwner or ""
+                    if owner != user_id and user_id not in shared:
+                        from flask import abort
+                        abort(403)
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
 
 
@@ -65,6 +84,9 @@ def home():
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
     stats = item_service.get_stats()
+    notification_settings = user_repo.get_notification_settings(session.get("UserID", ""))
+    replacement = item_service.get_replacement_items(notification_settings)
+    item_service.annotate_maintenance_alerts(result["items"], notification_settings)
     return render_template(
         "home.html",
         User=user,
@@ -76,6 +98,8 @@ def home():
         selected_sort=filters["sort"],
         pagination=result,
         stats=stats,
+        maintenance_due_count=len(replacement["due"]),
+        maintenance_upcoming_count=len(replacement["upcoming"]),
     )
 
 
@@ -118,6 +142,7 @@ def additem():
 @admin_required
 def manageitem():
     user = get_current_user()
+    notification_settings = user_repo.get_notification_settings(session.get("UserID", ""))
 
     if request.method == "POST":
         item_id = request.form.get("item_id")
@@ -141,9 +166,17 @@ def manageitem():
             flash("請輸入位置資訊", "danger")
         return redirect(url_for("items.manageitem"))
 
+    maintenance = request.args.get("maintenance", "")
     filters = {"q": "", "place": "", "type": "", "floor": "", "room": "", "zone": "", "sort": ""}
     page = request.args.get("page", 1, type=int)
-    result = item_service.list_items(filters, page=page)
+    if maintenance:
+        base_result = item_service.list_items(filters, page=1, page_size=5000)
+        item_service.annotate_maintenance_alerts(base_result["items"], notification_settings)
+        filtered_items = item_service.filter_items_by_maintenance(base_result["items"], maintenance)
+        result = item_service.paginate_items(filtered_items, page=page)
+    else:
+        result = item_service.list_items(filters, page=page)
+    item_service.annotate_maintenance_alerts(result["items"], notification_settings)
     floors, rooms, zones = location_service.list_choices()
     return render_template(
         "manageitem.html",
@@ -153,6 +186,7 @@ def manageitem():
         rooms=rooms,
         zones=zones,
         pagination=result,
+        selected_maintenance=maintenance,
     )
 
 
@@ -271,6 +305,7 @@ def batch_delete():
 @login_required
 def search():
     user = get_current_user()
+    notification_settings = user_repo.get_notification_settings(session.get("UserID", ""))
     query = request.args.get("q", "")
     place = request.args.get("place", "")
     item_type = request.args.get("type", "")
@@ -279,21 +314,29 @@ def search():
     zone = request.args.get("zone", "")
     visibility = request.args.get("visibility", "")
     sort = request.args.get("sort", "")
+    maintenance = request.args.get("maintenance", "")
     page = request.args.get("page", 1, type=int)
-    
-    result = item_service.list_items(
-        {
-            "q": query,
-            "place": place,
-            "type": item_type,
-            "floor": floor,
-            "room": room,
-            "zone": zone,
-            "visibility": visibility,
-            "sort": sort,
-        },
-        page=page,
-    )
+
+    filters = {
+        "q": query,
+        "place": place,
+        "type": item_type,
+        "floor": floor,
+        "room": room,
+        "zone": zone,
+        "visibility": visibility,
+        "sort": sort,
+    }
+
+    if maintenance:
+        base_result = item_service.list_items(filters, page=1, page_size=5000)
+        item_service.annotate_maintenance_alerts(base_result["items"], notification_settings)
+        filtered_items = item_service.filter_items_by_maintenance(base_result["items"], maintenance)
+        result = item_service.paginate_items(filtered_items, page=page)
+    else:
+        result = item_service.list_items(filters, page=page)
+
+    item_service.annotate_maintenance_alerts(result["items"], notification_settings)
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
     return render_template(
@@ -308,6 +351,7 @@ def search():
         rooms=rooms,
         zones=zones,
         selected_sort=sort,
+        selected_maintenance=maintenance,
         pagination=result,
     )
 
@@ -435,7 +479,9 @@ def export_items(export_format: str):
         fieldnames = [
             "ItemID", "ItemName", "ItemDesc", "ItemPic", "ItemStorePlace",
             "ItemType", "ItemOwner", "ItemGetDate", "ItemFloor", "ItemRoom",
-            "ItemZone", "visibility", "shared_with", "Quantity", "SafetyStock", "ReorderLevel", "WarrantyExpiry", "UsageExpiry",
+            "ItemZone", "visibility", "shared_with", "Quantity", "SafetyStock", "ReorderLevel",
+            "WarrantyExpiry", "UsageExpiry", "MaintenanceCategory", "MaintenanceIntervalDays",
+            "LastMaintenanceDate",
         ]
 
         output = StringIO()
@@ -693,6 +739,32 @@ def bulk_move():
     })
 
 
+@bp.route("/api/bulk/maintenance", methods=["POST"])
+@admin_required
+def bulk_maintenance():
+    """批量更新保養日 API"""
+    data = request.get_json() or {}
+    item_ids = data.get("item_ids", [])
+    maintenance_date = str(data.get("maintenance_date", "")).strip()
+
+    if not item_ids:
+        return jsonify({"success": False, "message": "未選擇任何物品"})
+    if not maintenance_date:
+        return jsonify({"success": False, "message": "未指定保養日期"})
+
+    success_count, failed_ids = item_service.bulk_update_last_maintenance(item_ids, maintenance_date)
+
+    if success_count == 0 and failed_ids:
+        return jsonify({"success": False, "message": "保養日期格式錯誤或物品不存在", "failed_ids": failed_ids}), 400
+
+    return jsonify({
+        "success": True,
+        "success_count": success_count,
+        "failed_ids": failed_ids,
+        "message": f"成功更新 {success_count} 個物品的上次保養日"
+    })
+
+
 @bp.route("/api/search-suggestions")
 @login_required
 def search_suggestions():
@@ -702,6 +774,7 @@ def search_suggestions():
     if len(query) < 2:
         return jsonify({"suggestions": []})
     
+    from app.services import item_service
     from app.repositories import item_repo
     suggestions = item_repo.search_suggestions(query)
     
@@ -729,6 +802,7 @@ def activity_logs():
 def statistics():
     """統計圖表頁面"""
     user = get_current_user()
+    notification_settings = user_repo.get_notification_settings(session.get("UserID", ""))
     stats = {
         "total": 0,
         "with_photo": 0,
@@ -769,6 +843,12 @@ def statistics():
     
     # 到期統計
     expiry_stats = item_service.get_notification_count()
+    replacement = item_service.get_replacement_items(notification_settings)
+    maintenance_stats = {
+        "due": len(replacement.get("due", [])),
+        "upcoming": len(replacement.get("upcoming", [])),
+        "total": int(replacement.get("total_alerts", 0) or 0),
+    }
     
     return render_template(
         "statistics.html",
@@ -777,6 +857,7 @@ def statistics():
         type_stats=type_stats,
         floor_stats=floor_stats,
         expiry_stats=expiry_stats,
+        maintenance_stats=maintenance_stats,
     )
 
 
@@ -808,8 +889,10 @@ def favorites():
     """收藏物品頁面"""
     user = get_current_user()
     user_id = user.get("User", "")
+    notification_settings = user_repo.get_notification_settings(user_id)
     
     items = item_service.get_favorites(user_id)
+    item_service.annotate_maintenance_alerts(items, notification_settings)
     
     return render_template(
         "favorites.html",
@@ -845,7 +928,7 @@ def full_backup():
 
     db_type = get_db_type()
     backup_data = {
-        "version": "1.1",
+        "version": "1.2",
         "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "db_type": db_type,
         "items": item_repo.get_all_items_for_backup(),
@@ -1046,5 +1129,18 @@ def stock_alert_count():
     return jsonify({
         "low_stock": result["low_stock_count"],
         "reorder": result["reorder_count"],
+        "total": result["total_alerts"],
+    })
+
+
+@bp.route("/api/maintenance/count")
+@login_required
+def maintenance_alert_count():
+    """API: 取得保養提醒數量（用於首頁即時更新）"""
+    settings = user_repo.get_notification_settings(session.get("UserID", ""))
+    result = item_service.get_replacement_items(settings)
+    return jsonify({
+        "due": len(result["due"]),
+        "upcoming": len(result["upcoming"]),
         "total": result["total_alerts"],
     })

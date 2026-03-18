@@ -1,4 +1,5 @@
 """路由層測試"""
+import json
 import unittest
 from unittest.mock import Mock, patch, MagicMock
 from io import BytesIO
@@ -89,12 +90,24 @@ class RoutesTestCase(unittest.TestCase):
             )
         
         with patch("app.services.item_service.list_items") as mock_list, \
+             patch("app.repositories.user_repo.get_notification_settings", return_value={}), \
+             patch("app.services.item_service.get_replacement_items", return_value={"due": [], "upcoming": [], "total_alerts": 0, "enabled": True}), \
              patch("app.services.type_service.list_types", return_value=[]), \
              patch("app.services.location_service.list_choices", return_value=([], [], [])), \
              patch("app.utils.auth.get_current_user", return_value={"User": "admin"}):
             
             mock_list.return_value = {
-                "items": [],
+                "items": [{
+                    "ItemID": "P1",
+                    "ItemName": "行動電源",
+                    "ItemType": "3C配件",
+                    "ItemStorePlace": "書房",
+                    "ItemGetDate": "2026-01-01",
+                    "MaintenanceAlertStatus": "due",
+                    "MaintenanceDaysOverdue": 2,
+                    "NextMaintenanceDate": "2026-03-01",
+                    "favorites": [],
+                }],
                 "total": 0,
                 "page": 1,
                 "page_size": 12,
@@ -105,6 +118,10 @@ class RoutesTestCase(unittest.TestCase):
             
             response = self.client.get("/home")
             self.assertEqual(response.status_code, 200)
+            content = response.data.decode("utf-8")
+            self.assertIn("即將保養", content)
+            self.assertIn("下次保養", content)
+            self.assertIn("需保養", content)
 
     @patch("app.services.user_service.get_user", return_value={"User": "admin", "admin": True})
     def test_get_current_user_normalizes_name_field(self, _mock_get_user):
@@ -204,8 +221,12 @@ class RoutesTestCase(unittest.TestCase):
     @patch("app.services.type_service.list_types", return_value=[{"name": "工具"}, {"name": "文具"}])
     @patch("app.services.location_service.list_choices", return_value=(["1F", "2F"], [], []))
     @patch("app.services.item_service.get_notification_count", return_value={"expired": 0, "near": 0, "total": 0})
+    @patch("app.services.item_service.get_replacement_items", return_value={"due": [{"ItemID": "A1"}], "upcoming": [{"ItemID": "A2"}], "total_alerts": 2})
+    @patch("app.repositories.user_repo.get_notification_settings", return_value={"replacement_enabled": True, "replacement_intervals": []})
     def test_statistics_page_renders_from_aggregated_items(
         self,
+        _mock_notification_settings,
+        _mock_replacement_items,
         _mock_notification_count,
         _mock_location_choices,
         _mock_list_types,
@@ -227,6 +248,11 @@ class RoutesTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("工具", content)
         self.assertIn("1F", content)
+        self.assertIn("保養提醒", content)
+        self.assertIn("需保養", content)
+        self.assertIn("即將保養", content)
+        self.assertIn("保養狀態分佈", content)
+        self.assertIn("前往通知摘要", content)
 
     def test_additem_requires_admin(self):
         """測試新增物品需要管理員權限"""
@@ -341,6 +367,8 @@ class RoutesTestCase(unittest.TestCase):
         self.assertIn("保養資訊", content)
         self.assertIn("充電保養", content)
         self.assertIn("45 天", content)
+        self.assertIn("標記今天已保養", content)
+        self.assertIn("markMaintenanceToday", content)
 
     def test_search_requires_login(self):
         """測試搜尋頁面需要登入"""
@@ -371,7 +399,7 @@ class RoutesTestCase(unittest.TestCase):
             "has_next": False,
         }
 
-        response = self.client.get("/search?q=筆電&place=書房&type=電子產品&floor=1F&room=書房&zone=書桌&sort=name")
+        response = self.client.get("/search?q=筆電&place=書房&type=電子產品&floor=1F&room=書房&zone=書桌&sort=name&maintenance=due")
         content = response.data.decode("utf-8")
         self.assertEqual(response.status_code, 200)
         self.assertIn("place=%E6%9B%B8%E6%88%BF", content)
@@ -379,11 +407,224 @@ class RoutesTestCase(unittest.TestCase):
         self.assertIn("room=%E6%9B%B8%E6%88%BF", content)
         self.assertIn("zone=%E6%9B%B8%E6%A1%8C", content)
         self.assertIn("sort=name", content)
+        self.assertIn("maintenance=due", content)
+
+    @patch("app.repositories.user_repo.get_notification_settings", return_value={})
+    @patch("app.services.item_service.annotate_maintenance_alerts")
+    @patch("app.services.item_service.list_items")
+    @patch("app.services.type_service.list_types", return_value=[])
+    @patch("app.services.location_service.list_choices", return_value=([], [], []))
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_search_page_applies_maintenance_annotations(
+        self,
+        _mock_current_user,
+        _mock_location_choices,
+        _mock_types,
+        mock_list_items,
+        mock_annotate,
+        _mock_settings,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_list_items.return_value = {
+            "items": [{"ItemID": "P1", "ItemName": "行動電源"}],
+            "total": 1,
+            "page": 1,
+            "page_size": 12,
+            "total_pages": 1,
+            "has_prev": False,
+            "has_next": False,
+        }
+
+        response = self.client.get("/search?q=行動電源")
+        self.assertEqual(response.status_code, 200)
+        mock_annotate.assert_called_once()
+
+    @patch("app.repositories.user_repo.get_notification_settings", return_value={})
+    @patch("app.services.item_service.paginate_items")
+    @patch("app.services.item_service.filter_items_by_maintenance")
+    @patch("app.services.item_service.annotate_maintenance_alerts")
+    @patch("app.services.item_service.list_items")
+    @patch("app.services.type_service.list_types", return_value=[])
+    @patch("app.services.location_service.list_choices", return_value=([], [], []))
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_search_page_supports_maintenance_filter(
+        self,
+        _mock_current_user,
+        _mock_location_choices,
+        _mock_types,
+        mock_list_items,
+        mock_annotate,
+        mock_filter,
+        mock_paginate,
+        _mock_settings,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_list_items.return_value = {
+            "items": [{"ItemID": "P1", "ItemName": "行動電源"}],
+            "total": 1,
+            "page": 1,
+            "page_size": 12,
+            "total_pages": 1,
+            "has_prev": False,
+            "has_next": False,
+        }
+        mock_filter.return_value = [{"ItemID": "P1", "ItemName": "行動電源"}]
+        mock_paginate.return_value = {
+            "items": [{"ItemID": "P1", "ItemName": "行動電源"}],
+            "total": 1,
+            "page": 1,
+            "page_size": 12,
+            "total_pages": 1,
+            "has_prev": False,
+            "has_next": False,
+        }
+
+        response = self.client.get("/search?maintenance=due")
+        self.assertEqual(response.status_code, 200)
+        mock_filter.assert_called_once()
+        mock_paginate.assert_called_once()
 
     def test_scan_requires_login(self):
         """測試掃描頁面需要登入"""
         response = self.client.get("/scan", follow_redirects=False)
         self.assertEqual(response.status_code, 302)
+
+    @patch("app.repositories.user_repo.get_notification_settings", return_value={})
+    @patch("app.services.item_service.annotate_maintenance_alerts")
+    @patch("app.services.item_service.get_favorites", return_value=[{"ItemID": "F1", "ItemName": "飲水機濾芯"}])
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_favorites_page_applies_maintenance_annotations(
+        self,
+        _mock_current_user,
+        mock_get_favorites,
+        mock_annotate,
+        _mock_settings,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.get("/favorites")
+        self.assertEqual(response.status_code, 200)
+        mock_get_favorites.assert_called_once_with("admin")
+        mock_annotate.assert_called_once()
+
+    @patch("app.services.item_service.bulk_update_last_maintenance", return_value=(2, []))
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_bulk_maintenance_api_updates_last_maintenance_date(self, _mock_current_user, mock_bulk_update):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.post(
+            "/api/bulk/maintenance",
+            json={"item_ids": ["A1", "A2"], "maintenance_date": "2026-03-13"},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertTrue(data["success"])
+        mock_bulk_update.assert_called_once_with(["A1", "A2"], "2026-03-13")
+
+    @patch("app.repositories.user_repo.get_notification_settings", return_value={})
+    @patch("app.services.item_service.paginate_items")
+    @patch("app.services.item_service.filter_items_by_maintenance")
+    @patch("app.services.item_service.annotate_maintenance_alerts")
+    @patch("app.services.item_service.list_items")
+    @patch("app.services.location_service.list_choices", return_value=([], [], []))
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_manageitem_supports_maintenance_filter(
+        self,
+        _mock_current_user,
+        _mock_location_choices,
+        mock_list_items,
+        mock_annotate,
+        mock_filter,
+        mock_paginate,
+        _mock_settings,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_list_items.return_value = {
+            "items": [{"ItemID": "A1", "ItemName": "行動電源"}],
+            "total": 1,
+            "page": 1,
+            "page_size": 12,
+            "total_pages": 1,
+            "has_prev": False,
+            "has_next": False,
+        }
+        mock_filter.return_value = [{"ItemID": "A1", "ItemName": "行動電源"}]
+        mock_paginate.return_value = {
+            "items": [{"ItemID": "A1", "ItemName": "行動電源"}],
+            "total": 1,
+            "page": 1,
+            "page_size": 12,
+            "total_pages": 1,
+            "has_prev": False,
+            "has_next": False,
+        }
+
+        response = self.client.get("/manageitem?maintenance=due")
+        self.assertEqual(response.status_code, 200)
+        mock_filter.assert_called_once()
+        mock_paginate.assert_called_once()
+
+    @patch("app.repositories.user_repo.get_notification_settings", return_value={})
+    @patch("app.services.item_service.annotate_maintenance_alerts")
+    @patch("app.services.item_service.list_items")
+    @patch("app.services.location_service.list_choices", return_value=([], [], []))
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_manageitem_shows_maintenance_management_summary(
+        self,
+        _mock_current_user,
+        _mock_location_choices,
+        mock_list_items,
+        _mock_annotate,
+        _mock_settings,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_list_items.return_value = {
+            "items": [{
+                "ItemID": "A1",
+                "ItemName": "行動電源",
+                "MaintenanceAlertStatus": "due",
+                "NextMaintenanceDate": "2026-03-13",
+            }],
+            "total": 1,
+            "page": 1,
+            "page_size": 12,
+            "total_pages": 1,
+            "has_prev": False,
+            "has_next": False,
+        }
+
+        response = self.client.get("/manageitem")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("保養批次", content)
+        self.assertIn("先篩出需保養，再批次回報保養完成", content)
+        self.assertIn("mark-maintained-btn", content)
+        self.assertIn("標記今天已保養", content)
+
+    @patch("app.repositories.user_repo.get_notification_settings", return_value={})
+    @patch("app.services.item_service.get_replacement_items", return_value={"due": [{"ItemID": "A1"}], "upcoming": [{"ItemID": "A2"}], "total_alerts": 2})
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "name": "admin", "admin": True})
+    def test_maintenance_count_api_returns_due_and_upcoming(self, _mock_current_user, mock_get_replacement_items, _mock_settings):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        response = self.client.get("/api/maintenance/count")
+        self.assertEqual(response.status_code, 200)
+        data = response.get_json()
+        self.assertEqual(data["due"], 1)
+        self.assertEqual(data["upcoming"], 1)
+        self.assertEqual(data["total"], 2)
+        mock_get_replacement_items.assert_called_once()
 
     def test_qrcode_requires_login(self):
         """測試 QR Code 生成需要登入"""
@@ -431,6 +672,9 @@ class RoutesTestCase(unittest.TestCase):
         self.assertIn("Quantity", content)
         self.assertIn("SafetyStock", content)
         self.assertIn("ReorderLevel", content)
+        self.assertIn("MaintenanceCategory", content)
+        self.assertIn("MaintenanceIntervalDays", content)
+        self.assertIn("LastMaintenanceDate", content)
 
     @patch("app.routes.import_routes.location_service.create_location")
     @patch("app.routes.import_routes.item_repo.insert_item")
@@ -448,8 +692,8 @@ class RoutesTestCase(unittest.TestCase):
             sess["UserID"] = "admin"
 
         csv_content = (
-            "ItemName,ItemType,Location,WarrantyExpiry,UsageExpiry,Notes\n"
-            "筆電,電子產品,1F/書房/書桌,2026-12-31,,工作用\n"
+            "ItemName,ItemType,Location,MaintenanceCategory,MaintenanceIntervalDays,LastMaintenanceDate,WarrantyExpiry,UsageExpiry,Notes\n"
+            "筆電,電子產品,1F/書房/書桌,充電保養,45,2026-02-01,2026-12-31,,工作用\n"
         )
 
         response = self.client.post(
@@ -473,7 +717,135 @@ class RoutesTestCase(unittest.TestCase):
         self.assertEqual(inserted_item["ItemRoom"], "書房")
         self.assertEqual(inserted_item["ItemZone"], "書桌")
         self.assertEqual(inserted_item["ItemOwner"], "admin")
+        self.assertEqual(inserted_item["MaintenanceCategory"], "充電保養")
+        self.assertEqual(inserted_item["MaintenanceIntervalDays"], 45)
+        self.assertEqual(str(inserted_item["LastMaintenanceDate"]), "2026-02-01")
         mock_create_location.assert_called_once_with({"floor": "1F", "room": "書房", "zone": "書桌"})
+
+    @patch("app.services.item_service.get_all_items_for_export")
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_export_csv_includes_maintenance_fields(self, _mock_current_user, mock_get_all_items):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_get_all_items.return_value = [
+            {
+                "ItemID": "A1",
+                "ItemName": "行動電源",
+                "ItemStorePlace": "書房/抽屜",
+                "MaintenanceCategory": "充電保養",
+                "MaintenanceIntervalDays": 60,
+                "LastMaintenanceDate": "2026-03-01",
+            }
+        ]
+
+        response = self.client.get("/export/csv")
+        content = response.data.decode("utf-8")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("MaintenanceCategory", content)
+        self.assertIn("MaintenanceIntervalDays", content)
+        self.assertIn("LastMaintenanceDate", content)
+        self.assertIn("充電保養", content)
+        self.assertIn("2026-03-01", content)
+
+    @patch("app.services.item_service.get_all_items_for_export")
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_export_json_includes_maintenance_fields(self, _mock_current_user, mock_get_all_items):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_get_all_items.return_value = [
+            {
+                "ItemID": "A1",
+                "ItemName": "行動電源",
+                "MaintenanceCategory": "充電保養",
+                "MaintenanceIntervalDays": 60,
+                "LastMaintenanceDate": "2026-03-01",
+            }
+        ]
+
+        response = self.client.get("/export/json")
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(data[0]["MaintenanceCategory"], "充電保養")
+        self.assertEqual(data[0]["MaintenanceIntervalDays"], 60)
+        self.assertEqual(data[0]["LastMaintenanceDate"], "2026-03-01")
+
+    @patch("app.repositories.location_repo.get_all_locations_for_backup", return_value=[])
+    @patch("app.repositories.type_repo.get_all_types_for_backup", return_value=[])
+    @patch("app.repositories.item_repo.get_all_items_for_backup")
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_full_backup_includes_version_and_maintenance_fields(
+        self,
+        _mock_current_user,
+        mock_get_items,
+        _mock_get_types,
+        _mock_get_locations,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        mock_get_items.return_value = [
+            {
+                "ItemID": "A1",
+                "ItemName": "行動電源",
+                "MaintenanceCategory": "充電保養",
+                "MaintenanceIntervalDays": 60,
+                "LastMaintenanceDate": "2026-03-01",
+            }
+        ]
+
+        response = self.client.get("/api/backup/full")
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.data.decode("utf-8"))
+        self.assertEqual(data["version"], "1.2")
+        self.assertEqual(data["items"][0]["MaintenanceCategory"], "充電保養")
+        self.assertEqual(data["items"][0]["MaintenanceIntervalDays"], 60)
+        self.assertEqual(data["items"][0]["LastMaintenanceDate"], "2026-03-01")
+
+    @patch("app.repositories.location_repo.restore_locations", return_value=0)
+    @patch("app.repositories.type_repo.restore_types", return_value=0)
+    @patch("app.repositories.item_repo.restore_items", return_value=1)
+    @patch("app.utils.auth.get_current_user", return_value={"User": "admin", "admin": True})
+    def test_restore_backup_accepts_maintenance_fields(
+        self,
+        _mock_current_user,
+        mock_restore_items,
+        _mock_restore_types,
+        _mock_restore_locations,
+    ):
+        with self.client.session_transaction() as sess:
+            sess["UserID"] = "admin"
+
+        payload = {
+            "items": [
+                {
+                    "ItemID": "A1",
+                    "ItemName": "行動電源",
+                    "MaintenanceCategory": "充電保養",
+                    "MaintenanceIntervalDays": 60,
+                    "LastMaintenanceDate": "2026-03-01",
+                }
+            ],
+            "types": [],
+            "locations": [],
+        }
+
+        response = self.client.post(
+            "/api/backup/restore",
+            data={
+                "backup_file": (BytesIO(json.dumps(payload).encode("utf-8")), "backup.json"),
+                "mode": "merge",
+            },
+            content_type="multipart/form-data",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["success"])
+        restored_items = mock_restore_items.call_args[0][0]
+        self.assertEqual(restored_items[0]["MaintenanceCategory"], "充電保養")
+        self.assertEqual(restored_items[0]["MaintenanceIntervalDays"], 60)
+        self.assertEqual(restored_items[0]["LastMaintenanceDate"], "2026-03-01")
 
     @patch("app.services.item_service.get_expiring_items")
     @patch("app.services.item_service.get_low_stock_items")
@@ -525,8 +897,15 @@ class RoutesTestCase(unittest.TestCase):
         content = response.data.decode("utf-8")
         self.assertEqual(response.status_code, 200)
         self.assertIn("庫存不足", content)
+        self.assertIn("通知摘要", content)
         self.assertIn("保養 / 更換提醒", content)
         self.assertIn("下次保養日", content)
+        self.assertIn("標記今天已保養", content)
+        self.assertIn("mark-maintained-notify-btn", content)
+        self.assertIn("需保養 / 更換", content)
+        self.assertIn("建議順序", content)
+        self.assertIn("已過期 → 需保養 / 更換 → 低庫存 → 即將到期 / 即將保養", content)
+        self.assertIn("最近到期保養", content)
 
     @patch("app.locations.routes.location_service.list_choices", return_value=([], [], []))
     @patch("app.locations.routes.location_service.list_locations", return_value=[])
@@ -566,8 +945,12 @@ class RoutesTestCase(unittest.TestCase):
     @patch("app.services.type_service.list_types", return_value=[{"name": "工具"}, {"name": "文具"}])
     @patch("app.services.location_service.list_choices", return_value=(["2F", "1F"], [], []))
     @patch("app.services.item_service.get_notification_count", return_value={"expired": 0, "near": 0, "total": 0})
+    @patch("app.services.item_service.get_replacement_items", return_value={"due": [], "upcoming": [], "total_alerts": 0})
+    @patch("app.repositories.user_repo.get_notification_settings", return_value={"replacement_enabled": True, "replacement_intervals": []})
     def test_statistics_page_sorts_top_type_and_floor_by_count(
         self,
+        _mock_notification_settings,
+        _mock_replacement_items,
         _mock_notification_count,
         _mock_location_choices,
         _mock_list_types,

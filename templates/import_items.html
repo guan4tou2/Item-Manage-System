@@ -30,6 +30,7 @@
         <ul class="mb-0 mt-2">
           <li>先在位置設定建立常用樓層、房間與區域，匯入後更容易整理。</li>
           <li>第一次大量匯入前先下載模板，避免欄位名稱不一致。</li>
+          <li>目前匯出 CSV / JSON 也會包含保養欄位，適合先匯出一份既有資料再回填。</li>
         </ul>
       </div>
     </div>
@@ -141,6 +142,21 @@
                   <td>1</td>
                 </tr>
                 <tr>
+                  <td><code>MaintenanceCategory</code></td>
+                  <td class="text-center">-</td>
+                  <td>充電保養</td>
+                </tr>
+                <tr>
+                  <td><code>MaintenanceIntervalDays</code></td>
+                  <td class="text-center">-</td>
+                  <td>60</td>
+                </tr>
+                <tr>
+                  <td><code>LastMaintenanceDate</code></td>
+                  <td class="text-center">-</td>
+                  <td>2025-12-01</td>
+                </tr>
+                <tr>
                   <td><code>WarrantyExpiry</code></td>
                   <td class="text-center">-</td>
                   <td>2025-12-31</td>
@@ -165,6 +181,7 @@
               <li>`ItemID` 可留白，系統會自動產生。</li>
               <li>日期格式建議使用 `YYYY-MM-DD`。</li>
               <li>`Quantity / SafetyStock / ReorderLevel` 可一起匯入，建立後就能直接用補貨功能。</li>
+              <li>`MaintenanceCategory / MaintenanceIntervalDays / LastMaintenanceDate` 可直接匯入保養資料。</li>
               <li>若類型或位置尚未整理完成，可先匯入名稱與備註。</li>
               <li>發生錯誤時系統會列出失敗列，方便回頭修正原檔。</li>
             </ul>

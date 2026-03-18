@@ -136,6 +136,32 @@ class ReplacementReminderTestCase(unittest.TestCase):
         self.assertEqual(result["due"][0]["ItemID"], "M1")
         self.assertEqual(result["due"][0]["replacement_rule_name"], "充電保養")
 
+    def test_annotate_maintenance_alerts_marks_due_and_upcoming_items(self):
+        today = date.today()
+        items = [
+            {
+                "ItemName": "行動電源",
+                "ItemID": "P1",
+                "ItemType": "3C配件",
+                "ItemGetDate": (today - timedelta(days=62)).strftime("%Y-%m-%d"),
+            },
+            {
+                "ItemName": "飲水機濾芯",
+                "ItemID": "W1",
+                "ItemType": "家電",
+                "ItemGetDate": (today - timedelta(days=170)).strftime("%Y-%m-%d"),
+            },
+        ]
+
+        item_service.annotate_maintenance_alerts(items, {"replacement_enabled": True})
+
+        due_item = next(item for item in items if item["ItemID"] == "P1")
+        upcoming_item = next(item for item in items if item["ItemID"] == "W1")
+        self.assertEqual(due_item["MaintenanceAlertStatus"], "due")
+        self.assertEqual(upcoming_item["MaintenanceAlertStatus"], "upcoming")
+        self.assertTrue(due_item["NextMaintenanceDate"])
+        self.assertTrue(upcoming_item["NextMaintenanceDate"])
+
 
 if __name__ == "__main__":
     unittest.main()

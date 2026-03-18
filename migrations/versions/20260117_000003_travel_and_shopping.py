@@ -1,6 +1,5 @@
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 revision = "20260117_000003_travel_and_shopping"
 down_revision = "20260115_000002_add_notification_settings"
@@ -9,7 +8,7 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("items", sa.Column("size_notes", postgresql.JSON(astext_type=sa.Text()), nullable=True, server_default=sa.text("'{}'")))
+    op.add_column("items", sa.Column("size_notes", sa.JSON(), nullable=True, server_default=sa.text("'{}'")))
 
     op.create_table(
         "travels",
@@ -19,7 +18,7 @@ def upgrade():
         sa.Column("start_date", sa.Date(), nullable=True),
         sa.Column("end_date", sa.Date(), nullable=True),
         sa.Column("note", sa.Text(), nullable=True),
-        sa.Column("shared", postgresql.JSON(astext_type=sa.Text()), nullable=True, server_default=sa.text("'{}'")),
+        sa.Column("shared", sa.JSON(), nullable=True, server_default=sa.text("'{}'")),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
     )
 
@@ -43,7 +42,7 @@ def upgrade():
         sa.Column("qty_packed", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("carried", sa.Boolean(), nullable=False, server_default=sa.false()),
         sa.Column("note", sa.Text(), nullable=True),
-        sa.Column("size_notes", postgresql.JSON(astext_type=sa.Text()), nullable=True, server_default=sa.text("'{}'")),
+        sa.Column("size_notes", sa.JSON(), nullable=True, server_default=sa.text("'{}'")),
         sa.Column("is_temp", sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
     )
@@ -56,7 +55,7 @@ def upgrade():
         sa.Column("title", sa.String(length=120), nullable=False),
         sa.Column("owner", sa.String(length=50), nullable=True, index=True),
         sa.Column("note", sa.Text(), nullable=True),
-        sa.Column("shared", postgresql.JSON(astext_type=sa.Text()), nullable=True, server_default=sa.text("'{}'")),
+        sa.Column("shared", sa.JSON(), nullable=True, server_default=sa.text("'{}'")),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
     )
 
@@ -72,7 +71,7 @@ def upgrade():
         sa.Column("link", sa.String(length=255), nullable=True),
         sa.Column("priority", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("note", sa.Text(), nullable=True),
-        sa.Column("size_notes", postgresql.JSON(astext_type=sa.Text()), nullable=True, server_default=sa.text("'{}'")),
+        sa.Column("size_notes", sa.JSON(), nullable=True, server_default=sa.text("'{}'")),
         sa.Column("status", sa.String(length=20), nullable=False, server_default="todo"),
         sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.func.now()),
     )
