@@ -21,6 +21,9 @@
         <a href="{{ url_for('items.export_restock') }}" class="btn btn-outline-danger">
           <i class="fas fa-clipboard-list me-1"></i>補貨清單
         </a>
+        <a href="{{ url_for('items.export_zip') }}" class="btn btn-outline-dark">
+          <i class="fas fa-file-archive me-1"></i>匯出含照片 (ZIP)
+        </a>
         <a href="{{ url_for('import.index') }}" class="btn btn-warning">
           <i class="fas fa-upload me-1"></i>匯入
         </a>

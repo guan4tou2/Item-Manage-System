@@ -280,6 +280,25 @@
             </div>
           </div>
 
+          <!-- M11: 版本歷史 -->
+          {%if User.admin%}
+          <div class="info-section">
+            <h5 class="info-section-title" style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#versionHistoryCollapse" aria-expanded="false">
+              <i class="fas fa-history text-info"></i>
+              版本歷史
+              <i class="fas fa-chevron-down ms-auto small"></i>
+            </h5>
+            <div class="collapse" id="versionHistoryCollapse">
+              <div id="versionHistoryContainer">
+                <div class="text-center py-3" id="versionHistoryLoading">
+                  <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                  <span class="ms-2 text-muted">載入中...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {%endif%}
+
           <!-- 物品描述 -->
           {%if item.ItemDesc%}
           <div class="info-section">
@@ -789,6 +808,43 @@ async function loadLoans() {
   }
 }
 
+// M11: 載入版本歷史
+async function loadVersionHistory() {
+  const container = document.getElementById('versionHistoryContainer');
+  if (!container) return;
+  try {
+    const response = await fetch(`/api/items/{{item.ItemID}}/versions`);
+    const data = await response.json();
+    const versions = data.versions || [];
+    if (!versions.length) {
+      container.innerHTML = '<p class="text-muted small py-2">尚無版本記錄</p>';
+      return;
+    }
+    container.innerHTML = `
+      <div class="timeline mt-2">
+        ${versions.map((v, idx) => `
+          <div class="d-flex gap-3 mb-3">
+            <div class="flex-shrink-0 text-center" style="width:36px;">
+              <div class="rounded-circle bg-info text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-size:0.75rem;">
+                v${v.version}
+              </div>
+              ${idx < versions.length - 1 ? '<div style="width:2px;height:100%;background:#dee2e6;margin:4px auto;min-height:20px;"></div>' : ''}
+            </div>
+            <div class="flex-grow-1 border rounded p-2 bg-light">
+              <div class="d-flex justify-content-between align-items-start">
+                <small class="fw-semibold text-muted">${v.changed_at || ''}</small>
+                <span class="badge bg-secondary">${v.changed_by || ''}</span>
+              </div>
+              ${v.change_summary ? `<p class="mb-0 small mt-1">${v.change_summary}</p>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  } catch (e) {
+    if (container) container.innerHTML = '<p class="text-muted small py-2">無法載入版本記錄</p>';
+  }
+}
+
 // 頁面載入時載入關聯物品與綁定事件
 document.addEventListener('DOMContentLoaded', function() {
   loadRelatedItems();
@@ -799,6 +855,14 @@ document.addEventListener('DOMContentLoaded', function() {
   if (qtyCollapse) {
     qtyCollapse.addEventListener('show.bs.collapse', function() {
       loadQtyLog();
+    });
+  }
+
+  // M11: 當版本歷史展開時才載入
+  var versionCollapse = document.getElementById('versionHistoryCollapse');
+  if (versionCollapse) {
+    versionCollapse.addEventListener('show.bs.collapse', function() {
+      loadVersionHistory();
     });
   }
 

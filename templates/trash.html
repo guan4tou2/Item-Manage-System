@@ -1,0 +1,169 @@
+{%extends 'template.html' %}
+{%block title%}回收站 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <!-- 頁面標題 -->
+  <div class="page-header animate-fadeInUp">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h1><i class="fas fa-trash-restore me-2 text-warning"></i>回收站</h1>
+        <p class="lead mb-0">已刪除的物品暫存於此，可還原或永久刪除</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('items.manageitem') }}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回管理
+        </a>
+        {% if items %}
+        <button type="button" class="btn btn-danger" onclick="confirmEmptyTrash()">
+          <i class="fas fa-trash me-1"></i>清空回收站
+        </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {% if not items %}
+  <div class="empty-state animate-fadeInUp mt-5">
+    <i class="fas fa-trash-restore fa-5x text-muted mb-4"></i>
+    <h3>回收站是空的</h3>
+    <p class="text-muted">刪除的物品會出現在這裡，可以選擇還原或永久刪除。</p>
+    <a href="{{ url_for('items.home') }}" class="btn btn-primary mt-2">
+      <i class="fas fa-home me-1"></i>回首頁
+    </a>
+  </div>
+  {% else %}
+  <!-- 回收站物品列表 -->
+  <div class="animate-fadeInUp stagger-1">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="mb-0">共 {{ items|length }} 個物品在回收站</h5>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th style="width:60px;">照片</th>
+            <th>物品名稱</th>
+            <th>物品 ID</th>
+            <th>類型</th>
+            <th>位置</th>
+            <th>刪除時間</th>
+            <th style="width:180px;">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+          <tr id="trash-row-{{ item.ItemID }}">
+            <td>
+              {% if item.ItemPic %}
+              <img src="{{ url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic) }}"
+                   alt="{{ item.ItemName }}" class="rounded"
+                   style="width:50px;height:50px;object-fit:cover;">
+              {% else %}
+              <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                   style="width:50px;height:50px;">
+                <i class="fas fa-image text-muted"></i>
+              </div>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ item.ItemName }}</strong>
+              {% if item.ItemDesc %}
+              <br><small class="text-muted">{{ item.ItemDesc[:60] }}{% if item.ItemDesc|length > 60 %}...{% endif %}</small>
+              {% endif %}
+            </td>
+            <td><code>{{ item.ItemID }}</code></td>
+            <td>{{ item.ItemType or '—' }}</td>
+            <td>{{ item.ItemStorePlace or '—' }}</td>
+            <td>
+              <small class="text-muted">{{ item.deleted_at or '—' }}</small>
+            </td>
+            <td>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-success"
+                        onclick="restoreItem('{{ item.ItemID }}', '{{ item.ItemName }}')"
+                        title="還原">
+                  <i class="fas fa-trash-restore me-1"></i>還原
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger"
+                        onclick="permanentDelete('{{ item.ItemID }}', '{{ item.ItemName }}')"
+                        title="永久刪除">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+const CSRF_TOKEN = '{{ csrf_token() }}';
+
+async function restoreItem(itemId, itemName) {
+  if (!confirm(`確定要還原「${itemName}」嗎？`)) return;
+  try {
+    const res = await fetch(`/api/items/${itemId}/restore`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      const row = document.getElementById(`trash-row-${itemId}`);
+      if (row) row.remove();
+      showToast(data.message || '已還原', 'success');
+    } else {
+      showToast(data.message || '還原失敗', 'danger');
+    }
+  } catch (e) {
+    showToast('操作失敗', 'danger');
+  }
+}
+
+async function permanentDelete(itemId, itemName) {
+  if (!confirm(`確定要永久刪除「${itemName}」嗎？此操作無法復原！`)) return;
+  try {
+    const res = await fetch(`/api/items/${itemId}/permanent-delete`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      const row = document.getElementById(`trash-row-${itemId}`);
+      if (row) row.remove();
+      showToast('已永久刪除', 'success');
+    } else {
+      showToast(data.message || '刪除失敗', 'danger');
+    }
+  } catch (e) {
+    showToast('操作失敗', 'danger');
+  }
+}
+
+async function confirmEmptyTrash() {
+  if (!confirm('確定要清空回收站嗎？所有回收站內的物品將永久刪除，此操作無法復原！')) return;
+  try {
+    const res = await fetch('/api/trash/empty', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF_TOKEN, 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast(data.message, 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      showToast(data.message || '操作失敗', 'danger');
+    }
+  } catch (e) {
+    showToast('操作失敗', 'danger');
+  }
+}
+</script>
+{%endblock%}

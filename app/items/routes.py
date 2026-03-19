@@ -1425,6 +1425,95 @@ def purchase_links(item_id: str):
     })
 
 
+@bp.route("/trash")
+@admin_required
+def trash():
+    """M6: 回收站頁面"""
+    user = get_current_user()
+    items = item_service.list_trash()
+    return render_template("trash.html", User=user, items=items)
+
+
+@bp.route("/api/items/<item_id>/restore", methods=["POST"])
+@admin_required
+def restore_item(item_id: str):
+    """M6: 從回收站還原物品"""
+    ok, msg = item_service.restore_item(item_id)
+    return jsonify({"success": ok, "message": msg})
+
+
+@bp.route("/api/trash/empty", methods=["POST"])
+@admin_required
+def empty_trash():
+    """M6: 清空回收站（永久刪除所有軟刪除物品）"""
+    count = item_service.empty_trash()
+    return jsonify({"success": True, "message": f"已永久刪除 {count} 個物品", "count": count})
+
+
+@bp.route("/api/items/<item_id>/permanent-delete", methods=["POST"])
+@admin_required
+def permanent_delete_item(item_id: str):
+    """M6: 永久刪除單一物品（需先在回收站中）"""
+    from app.repositories import item_repo as _item_repo
+    from app.utils import storage as _storage
+    item = _item_repo.find_item_by_id(item_id)
+    if not item:
+        return jsonify({"success": False, "message": "找不到物品"}), 404
+    if item.get("ItemPic"):
+        _storage.delete_file(item["ItemPic"])
+    if item.get("ItemThumb"):
+        _storage.delete_file(item["ItemThumb"])
+    ok = _item_repo.permanent_delete_item(item_id)
+    return jsonify({"success": ok, "message": "已永久刪除" if ok else "刪除失敗"})
+
+
+@bp.route("/export-zip")
+@admin_required
+def export_zip():
+    """M7: 匯出物品資料為含照片的 ZIP 壓縮檔"""
+    from datetime import datetime as _dt
+    filters = {
+        key: value
+        for key, value in {
+            "ItemType": request.args.get("type"),
+            "ItemOwner": request.args.get("owner"),
+            "ItemFloor": request.args.get("floor"),
+            "ItemRoom": request.args.get("room"),
+            "ItemZone": request.args.get("zone"),
+        }.items()
+        if value
+    }
+    items = item_service.get_all_items_for_export(filters=filters)
+    timestamp = _dt.now().strftime("%Y%m%d_%H%M%S")
+    buf = item_service.export_items_with_photos(items)
+    return send_file(
+        buf,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"items_with_photos_{timestamp}.zip",
+    )
+
+
+@bp.route("/api/items/reorder", methods=["POST"])
+@admin_required
+def reorder_items():
+    """M10: 根據拖曳後的順序更新 sort_order"""
+    data = request.get_json() or {}
+    item_ids = data.get("item_ids", [])
+    if not isinstance(item_ids, list):
+        return jsonify({"success": False, "message": "item_ids 必須為陣列"}), 400
+    ok, msg = item_service.reorder_items(item_ids)
+    return jsonify({"success": ok, "message": msg})
+
+
+@bp.route("/api/items/<item_id>/versions")
+@login_required
+def item_versions(item_id: str):
+    """M11: 取得物品版本歷史"""
+    versions = item_service.get_item_versions(item_id)
+    return jsonify({"success": True, "versions": versions})
+
+
 @bp.route("/move-history")
 @login_required
 def move_history():

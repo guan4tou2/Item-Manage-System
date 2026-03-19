@@ -284,13 +284,20 @@
       {% endif %}
     </p>
   </div>
-  <div class="inventory-section-badge">
-    {{ pagination.total if pagination else items|length }} 筆
+  <div class="d-flex align-items-center gap-3">
+    {% if User.admin and items %}
+    <button type="button" id="sortToggleBtn" class="btn btn-outline-secondary btn-sm" onclick="toggleDragSort()" title="切換自訂排序模式">
+      <i class="fas fa-sort me-1"></i>自訂排序
+    </button>
+    {% endif %}
+    <div class="inventory-section-badge">
+      {{ pagination.total if pagination else items|length }} 筆
+    </div>
   </div>
 </div>
-<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4 item-grid">
+<div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4 item-grid" id="itemGrid">
   {%for item in items%}
-  <div class="col">
+  <div class="col sortable-item" data-item-id="{{ item.ItemID }}">
     <div class="card h-100 inventory-card">
       <!-- 收藏按鈕 -->
       <button type="button" 
@@ -933,6 +940,116 @@ async function toggleFavorite(itemId, btn) {
             })
             .catch(err => console.error('載入保養提醒失敗:', err));
     });
+
+    // ==========================================
+    // M10: 拖曳排序
+    // ==========================================
+    let dragSortActive = false;
+    let dragSrcEl = null;
+
+    function toggleDragSort() {
+      dragSortActive = !dragSortActive;
+      const btn = document.getElementById('sortToggleBtn');
+      const grid = document.getElementById('itemGrid');
+      const cards = grid ? grid.querySelectorAll('.sortable-item') : [];
+
+      if (dragSortActive) {
+        if (btn) {
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-warning');
+          btn.innerHTML = '<i class="fas fa-check me-1"></i>儲存排序';
+        }
+        cards.forEach(col => {
+          col.setAttribute('draggable', 'true');
+          col.style.cursor = 'grab';
+          col.style.transition = 'opacity 0.2s, box-shadow 0.2s';
+          col.addEventListener('dragstart', onDragStart);
+          col.addEventListener('dragover', onDragOver);
+          col.addEventListener('drop', onDrop);
+          col.addEventListener('dragend', onDragEnd);
+        });
+      } else {
+        // Save order
+        if (btn) {
+          btn.classList.add('btn-outline-secondary');
+          btn.classList.remove('btn-warning');
+          btn.innerHTML = '<i class="fas fa-sort me-1"></i>自訂排序';
+        }
+        cards.forEach(col => {
+          col.setAttribute('draggable', 'false');
+          col.style.cursor = '';
+          col.removeEventListener('dragstart', onDragStart);
+          col.removeEventListener('dragover', onDragOver);
+          col.removeEventListener('drop', onDrop);
+          col.removeEventListener('dragend', onDragEnd);
+        });
+        saveItemOrder();
+      }
+    }
+
+    function onDragStart(e) {
+      dragSrcEl = this;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', this.dataset.itemId);
+      this.style.opacity = '0.4';
+    }
+
+    function onDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      this.style.boxShadow = '0 0 0 3px #0d6efd';
+      return false;
+    }
+
+    function onDrop(e) {
+      e.stopPropagation();
+      if (dragSrcEl !== this) {
+        const grid = document.getElementById('itemGrid');
+        const cols = [...grid.querySelectorAll('.sortable-item')];
+        const srcIdx = cols.indexOf(dragSrcEl);
+        const dstIdx = cols.indexOf(this);
+        if (srcIdx < dstIdx) {
+          grid.insertBefore(dragSrcEl, this.nextSibling);
+        } else {
+          grid.insertBefore(dragSrcEl, this);
+        }
+      }
+      return false;
+    }
+
+    function onDragEnd(e) {
+      const grid = document.getElementById('itemGrid');
+      if (grid) {
+        grid.querySelectorAll('.sortable-item').forEach(col => {
+          col.style.opacity = '1';
+          col.style.boxShadow = '';
+        });
+      }
+    }
+
+    async function saveItemOrder() {
+      const grid = document.getElementById('itemGrid');
+      if (!grid) return;
+      const ids = [...grid.querySelectorAll('.sortable-item')].map(col => col.dataset.itemId);
+      try {
+        const res = await fetch('/api/items/reorder', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+          },
+          body: JSON.stringify({ item_ids: ids })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('排序已儲存', 'success');
+        } else {
+          showToast('排序儲存失敗', 'danger');
+        }
+      } catch (e) {
+        showToast('排序儲存失敗', 'danger');
+      }
+    }
 
   </script>
 {%endblock%}

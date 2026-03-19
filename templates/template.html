@@ -224,6 +224,11 @@
                       <i class="fas fa-route me-2 text-secondary"></i>{{ _('移動歷史') }}
                     </a>
                   </li>
+                  <li>
+                    <a class="dropdown-item" href="{{url_for('items.trash')}}">
+                      <i class="fas fa-trash-restore me-2 text-warning"></i>{{ _('回收站') }}
+                    </a>
+                  </li>
                 </ul>
               </li>
               {%endif%}

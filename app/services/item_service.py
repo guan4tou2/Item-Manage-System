@@ -341,11 +341,20 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None, extr
     existing = item_repo.find_item_by_id(item_id)
     if not existing:
         return False, "找不到該物品"
-    
+
+    # M11: 儲存版本歷史（更新前快照）
+    try:
+        from app.repositories import item_version_repo
+        from flask import session as _sess
+        current_user = _sess.get("UserID", "system")
+        item_version_repo.save_version(item_id, existing, current_user, "更新前快照")
+    except Exception:
+        pass
+
     valid_types = _filter_valid_types()
     from app.services import location_service
     floors, rooms, zones = location_service.list_choices()
-    
+
     ok, msg = item_validator.validate_item_fields(
         form_data,
         valid_types=valid_types,
@@ -358,7 +367,7 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None, extr
 
     form_data["visibility"] = (form_data.get("visibility") or existing.get("visibility") or "private").strip().lower()
     _apply_maintenance_form_data(form_data, existing=existing)
-    
+
     # 處理圖片上傳
     if file_storage and file_storage.filename:
         filename = storage.save_upload(file_storage)
@@ -377,7 +386,7 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None, extr
             form_data["ItemPic"] = filename
             if thumb:
                 form_data["ItemThumb"] = thumb
-    
+
     # 處理多張額外照片（追加到現有 ItemPics）
     if extra_files:
         current_pics = list(existing.get("ItemPics") or [])
@@ -408,18 +417,12 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None, extr
 
 
 def delete_item(item_id: str) -> Tuple[bool, str]:
-    """刪除物品"""
+    """M6: 軟刪除物品（移至回收站）"""
     existing = item_repo.find_item_by_id(item_id)
     if not existing:
         return False, "找不到該物品"
-    
-    # 刪除圖片檔案
-    if existing.get("ItemPic"):
-        storage.delete_file(existing["ItemPic"])
-    if existing.get("ItemThumb"):
-        storage.delete_file(existing["ItemThumb"])
-    
-    if item_repo.delete_item_by_id(item_id):
+
+    if item_repo.soft_delete_item(item_id):
         try:
             from app.services import webhook_service
             webhook_service.fire_event("item.deleted", {
@@ -428,8 +431,38 @@ def delete_item(item_id: str) -> Tuple[bool, str]:
             })
         except Exception:
             pass
-        return True, "物品已刪除"
+        return True, "物品已移至回收站"
     return False, "刪除失敗"
+
+
+def restore_item(item_id: str) -> Tuple[bool, str]:
+    """M6: 從回收站還原物品"""
+    if item_repo.restore_item_from_trash(item_id):
+        return True, "物品已還原"
+    return False, "還原失敗"
+
+
+def list_trash(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """M6: 列出回收站中的物品"""
+    return item_repo.list_deleted_items(user_id)
+
+
+def empty_trash(user_id: Optional[str] = None) -> int:
+    """M6: 永久清空回收站（刪除所有軟刪除物品）"""
+    deleted_items = item_repo.list_deleted_items(user_id)
+    count = 0
+    for item in deleted_items:
+        item_id = item.get("ItemID", "")
+        if not item_id:
+            continue
+        # Delete physical files
+        if item.get("ItemPic"):
+            storage.delete_file(item["ItemPic"])
+        if item.get("ItemThumb"):
+            storage.delete_file(item["ItemThumb"])
+        item_repo.permanent_delete_item(item_id)
+        count += 1
+    return count
 
 
 def get_item(item_id: str) -> Optional[Dict[str, Any]]:
@@ -1351,3 +1384,46 @@ def generate_purchase_links(item_name: str) -> List[Dict[str, Any]]:
         {"store": "Shopee", "url": f"https://shopee.tw/search?keyword={q}", "icon": "fas fa-store"},
         {"store": "Momo", "url": f"https://www.momoshop.com.tw/search/searchShop.jsp?keyword={q}", "icon": "fas fa-shopping-bag"},
     ]
+
+
+def export_items_with_photos(items: List[Dict[str, Any]], format: str = "zip"):
+    """M7: 匯出物品資料為含照片的 ZIP 壓縮檔。"""
+    import zipfile
+    import io
+    import json
+    import os
+    from flask import current_app
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        # Write items JSON
+        items_data = [item if isinstance(item, dict) else item.to_dict() for item in items]
+        zf.writestr("items.json", json.dumps(items_data, ensure_ascii=False, indent=2))
+        # Copy photos
+        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        for item in items_data:
+            pic = item.get("ItemPic", "")
+            if pic:
+                pic_path = os.path.join(upload_folder, pic)
+                if os.path.exists(pic_path):
+                    zf.write(pic_path, f"photos/{pic}")
+            for extra_pic in (item.get("ItemPics") or []):
+                extra_path = os.path.join(upload_folder, extra_pic)
+                if os.path.exists(extra_path):
+                    zf.write(extra_path, f"photos/{extra_pic}")
+    buffer.seek(0)
+    return buffer
+
+
+def reorder_items(item_ids: List[str]) -> Tuple[bool, str]:
+    """M10: 根據指定順序重新設定 sort_order"""
+    if not item_ids:
+        return False, "未提供物品 ID 列表"
+    item_repo.reorder_items(item_ids)
+    return True, "排序已更新"
+
+
+def get_item_versions(item_id: str) -> List[Dict[str, Any]]:
+    """M11: 取得物品版本歷史列表"""
+    from app.repositories import item_version_repo
+    return item_version_repo.list_versions(item_id)

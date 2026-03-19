@@ -2,7 +2,7 @@
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 
-from sqlalchemy import String, Text, JSON, Date, Integer, Numeric
+from sqlalchemy import String, Text, JSON, Date, Integer, Numeric, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app import db
@@ -54,6 +54,11 @@ class Item(db.Model):
     # Feature 21: Auto-Purchase Links
     purchase_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     preferred_store: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    # M6: Soft-delete / Trash
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="false")
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    # M10: Drag-and-drop sort order
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False, server_default="0")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -94,6 +99,9 @@ class Item(db.Model):
             "map_y": self.map_y,
             "purchase_url": self.purchase_url or "",
             "preferred_store": self.preferred_store or "",
+            "is_deleted": bool(self.is_deleted),
+            "deleted_at": self.deleted_at.strftime("%Y-%m-%d %H:%M:%S") if self.deleted_at else None,
+            "sort_order": int(self.sort_order or 0),
         }
 
     def __repr__(self) -> str:

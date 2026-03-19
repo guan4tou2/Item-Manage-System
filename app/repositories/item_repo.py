@@ -44,7 +44,9 @@ def list_items(
     db_type = get_db_type()
     if db_type == "postgres":
         query = db.session.query(Item)
-        
+        # M6: exclude soft-deleted items
+        query = query.filter(Item.is_deleted != True)
+
         if "ItemName" in filter_query and filter_query["ItemName"]:
             query = query.filter(Item.ItemName.ilike(f"%{filter_query['ItemName']}%"))
         if "ItemStorePlace" in filter_query and filter_query["ItemStorePlace"]:
@@ -73,17 +75,26 @@ def list_items(
                     continue
                 attr = getattr(Item, field)
                 query = query.order_by(attr.asc() if direction == 1 else attr.desc())
-        
+        else:
+            # M10: default sort by sort_order ASC, ItemID ASC
+            query = query.order_by(Item.sort_order.asc(), Item.ItemID.asc())
+
         if skip > 0:
             query = query.offset(skip)
         if limit > 0:
             query = query.limit(limit)
-        
+
         return [item.to_dict() for item in query.all()]
-    
-    cursor = mongo.db.item.find(filter_query, projection)
+
+    # MongoDB: exclude soft-deleted items
+    mongo_filter = dict(filter_query)
+    mongo_filter["$or"] = [{"is_deleted": {"$ne": True}}, {"is_deleted": {"$exists": False}}]
+    cursor = mongo.db.item.find(mongo_filter, projection)
     if sort:
         cursor = cursor.sort(sort)
+    else:
+        # M10: default sort by sort_order ASC
+        cursor = cursor.sort([("sort_order", 1), ("ItemID", 1)])
     if skip > 0:
         cursor = cursor.skip(skip)
     if limit > 0:
@@ -95,7 +106,9 @@ def count_items(filter_query: Dict[str, Any]) -> int:
     db_type = get_db_type()
     if db_type == "postgres":
         query = db.session.query(Item)
-        
+        # M6: exclude soft-deleted items
+        query = query.filter(Item.is_deleted != True)
+
         if "ItemName" in filter_query and filter_query["ItemName"]:
             query = query.filter(Item.ItemName.ilike(f"%{filter_query['ItemName']}%"))
         if "ItemStorePlace" in filter_query and filter_query["ItemStorePlace"]:
@@ -114,8 +127,10 @@ def count_items(filter_query: Dict[str, Any]) -> int:
             query = query.filter(Item.condition == filter_query["condition"])
 
         return query.count()
-    
-    return mongo.db.item.count_documents(filter_query)
+
+    mongo_filter = dict(filter_query)
+    mongo_filter["$or"] = [{"is_deleted": {"$ne": True}}, {"is_deleted": {"$exists": False}}]
+    return mongo.db.item.count_documents(mongo_filter)
 
 
 def full_text_search(query: str, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
@@ -562,6 +577,69 @@ def get_all_items_for_backup() -> List[Dict[str, Any]]:
     else:
         items = list(mongo.db.item.find({}, {"_id": 0}))
         return items
+
+
+def soft_delete_item(item_id: str) -> bool:
+    """M6: 軟刪除物品（移至回收站）"""
+    db_type = get_db_type()
+    now = datetime.now()
+    if db_type == "postgres":
+        result = Item.query.filter_by(ItemID=item_id).update({
+            "is_deleted": True,
+            "deleted_at": now,
+        })
+        db.session.commit()
+        return result > 0
+    result = mongo.db.item.update_one(
+        {"ItemID": item_id},
+        {"$set": {"is_deleted": True, "deleted_at": now.strftime("%Y-%m-%d %H:%M:%S")}}
+    )
+    return result.modified_count > 0
+
+
+def restore_item_from_trash(item_id: str) -> bool:
+    """M6: 從回收站還原物品"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        result = Item.query.filter_by(ItemID=item_id).update({
+            "is_deleted": False,
+            "deleted_at": None,
+        })
+        db.session.commit()
+        return result > 0
+    result = mongo.db.item.update_one(
+        {"ItemID": item_id},
+        {"$set": {"is_deleted": False, "deleted_at": None}}
+    )
+    return result.modified_count > 0
+
+
+def list_deleted_items(user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """M6: 列出回收站中的軟刪除物品"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        query = Item.query.filter(Item.is_deleted == True)
+        items = query.order_by(Item.deleted_at.desc()).all()
+        return [item.to_dict() for item in items]
+    docs = list(mongo.db.item.find({"is_deleted": True}, {"_id": 0}).sort("deleted_at", -1))
+    return docs
+
+
+def permanent_delete_item(item_id: str) -> bool:
+    """M6: 永久刪除物品（實際從資料庫移除）"""
+    return delete_item_by_id(item_id)
+
+
+def reorder_items(item_ids: List[str]) -> None:
+    """M10: 根據給定 ID 列表更新 sort_order"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        for idx, item_id in enumerate(item_ids):
+            Item.query.filter_by(ItemID=item_id).update({"sort_order": idx})
+        db.session.commit()
+    else:
+        for idx, item_id in enumerate(item_ids):
+            mongo.db.item.update_one({"ItemID": item_id}, {"$set": {"sort_order": idx}})
 
 
 def restore_items(items: List[Dict[str, Any]], mode: str = "merge") -> int:

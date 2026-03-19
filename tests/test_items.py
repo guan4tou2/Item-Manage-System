@@ -77,6 +77,9 @@ class FakeItemRepo:
                 return True
         return False
 
+    def soft_delete_item(self, item_id):
+        return self.delete_item_by_id(item_id)
+
     def add_move_history(self, item_id, old_location, new_location):
         history = self.updated_items.get(item_id, {})
         history["_move_history_called"] = True
@@ -347,7 +350,7 @@ class ItemServiceTestCase(unittest.TestCase):
         """測試成功刪除物品"""
         ok, msg = item_service.delete_item("A1")
         self.assertTrue(ok)
-        self.assertIn("刪除", msg)
+        self.assertTrue("刪除" in msg or "回收站" in msg)
         self.assertIn("A1", item_service.item_repo.deleted_items)  # type: ignore[arg-type]
 
     def test_delete_item_not_found(self):

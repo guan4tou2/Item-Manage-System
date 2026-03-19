@@ -227,6 +227,44 @@ def _ensure_item_warehouse_column() -> None:
         db.session.commit()
 
 
+def _ensure_item_soft_delete_columns() -> None:
+    """補齊 items 表缺少的軟刪除欄位（M6）。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("items"):
+        return
+    existing_columns = {col["name"] for col in inspector.get_columns("items")}
+    alter_statements = []
+    if "is_deleted" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN is_deleted BOOLEAN NOT NULL DEFAULT FALSE;")
+    if "deleted_at" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN deleted_at TIMESTAMP;")
+    for statement in alter_statements:
+        db.session.execute(text(statement))
+    if alter_statements:
+        db.session.commit()
+
+
+def _ensure_item_sort_order_column() -> None:
+    """補齊 items 表缺少的 sort_order 欄位（M10）。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("items"):
+        return
+    existing_columns = {col["name"] for col in inspector.get_columns("items")}
+    if "sort_order" not in existing_columns:
+        db.session.execute(text("ALTER TABLE items ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;"))
+        db.session.commit()
+
+
 def _ensure_item_purchase_columns() -> None:
     """補齊 items 表缺少的購買連結欄位（Feature 21）。"""
     if get_db_type() != "postgres":
@@ -380,6 +418,8 @@ def create_app() -> Flask:
             _ensure_map_columns()
             _ensure_item_purchase_columns()
             _ensure_email_verify_columns()
+            _ensure_item_soft_delete_columns()
+            _ensure_item_sort_order_column()
     else:
         mongo.init_app(app)
     
