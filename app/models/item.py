@@ -2,7 +2,7 @@
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
 
-from sqlalchemy import String, Text, JSON, Date, Integer
+from sqlalchemy import String, Text, JSON, Date, Integer, Numeric
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app import db
@@ -39,6 +39,13 @@ class Item(db.Model):
     favorites: Mapped[Optional[List[str]]] = mapped_column(JSON, default=list)
     related_items: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=list)
     size_notes: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, default=dict)
+    # Feature 14: Item Condition
+    condition: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, default="good")
+    # Feature 13: Asset Depreciation
+    purchase_price: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
+    current_value: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
+    depreciation_method: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    depreciation_rate: Mapped[Optional[float]] = mapped_column(Numeric(5, 2), nullable=True)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -69,6 +76,11 @@ class Item(db.Model):
             "favorites": list(self.favorites or []),
             "related_items": list(self.related_items or []),
             "size_notes": self.size_notes or {},
+            "condition": self.condition or "good",
+            "purchase_price": float(self.purchase_price) if self.purchase_price is not None else None,
+            "current_value": float(self.current_value) if self.current_value is not None else None,
+            "depreciation_method": self.depreciation_method or "",
+            "depreciation_rate": float(self.depreciation_rate) if self.depreciation_rate is not None else None,
         }
 
     def __repr__(self) -> str:

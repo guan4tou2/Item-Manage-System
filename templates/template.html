@@ -172,6 +172,11 @@
                   </li>
                   <li><hr class="dropdown-divider" /></li>
                   <li>
+                    <a class="dropdown-item" href="{{url_for('items.assets')}}">
+                      <i class="fas fa-coins me-2 text-warning"></i>{{ _('資產報表') }}
+                    </a>
+                  </li>
+                  <li>
                     <a class="dropdown-item" href="{{url_for('items.activity_logs')}}">
                       <i class="fas fa-history me-2 text-secondary"></i>{{ _('操作日誌') }}
                     </a>

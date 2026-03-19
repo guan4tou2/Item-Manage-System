@@ -59,7 +59,9 @@ def list_items(
             query = query.filter(Item.ItemZone == filter_query["ItemZone"])
         if "visibility" in filter_query and filter_query["visibility"]:
             query = query.filter(Item.visibility == filter_query["visibility"])
-        
+        if "condition" in filter_query and filter_query["condition"]:
+            query = query.filter(Item.condition == filter_query["condition"])
+
         ALLOWED_SORT_FIELDS = {
             "ItemName", "ItemGetDate", "ItemType", "ItemStorePlace",
             "ItemFloor", "ItemRoom", "ItemZone", "WarrantyExpiry",
@@ -108,7 +110,9 @@ def count_items(filter_query: Dict[str, Any]) -> int:
             query = query.filter(Item.ItemZone == filter_query["ItemZone"])
         if "visibility" in filter_query and filter_query["visibility"]:
             query = query.filter(Item.visibility == filter_query["visibility"])
-        
+        if "condition" in filter_query and filter_query["condition"]:
+            query = query.filter(Item.condition == filter_query["condition"])
+
         return query.count()
     
     return mongo.db.item.count_documents(filter_query)

@@ -3,10 +3,15 @@
 {%block user%}{{User.User}}{%endblock%}
 
 {%block contain%}
-<div class="row animate-fadeInUp">
-  <div class="col-12">
+<div class="row animate-fadeInUp align-items-center">
+  <div class="col">
     <h2 class="mb-1"><i class="fas fa-tachometer-alt text-primary me-2"></i>{{ _('Dashboard 概覽') }}</h2>
     <p class="text-muted mb-0">{{ _('掌握物品管理狀態，快速了解需要處理的事項') }}</p>
+  </div>
+  <div class="col-auto">
+    <button id="customizeBtn" class="btn btn-outline-secondary btn-sm" onclick="toggleCustomize()">
+      <i class="fas fa-sliders-h me-1"></i>{{ _('自訂版面') }}
+    </button>
   </div>
 </div>
 {%endblock%}
@@ -14,221 +19,120 @@
 {%block body%}
 <div class="container-fluid py-4">
 
-  <!-- Row 1: Summary alert cards -->
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3 animate-fadeInUp stagger-1">
-      <div class="card text-white bg-warning h-100">
-        <div class="card-body d-flex align-items-center justify-content-between">
-          <div>
-            <div class="fs-1 fw-bold">{{expiring_count}}</div>
-            <div class="small">{{ _('到期提醒') }}</div>
-          </div>
-          <i class="fas fa-clock fa-2x opacity-75"></i>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0">
-          <a href="{{url_for('items.notifications')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
-        </div>
-      </div>
+  <!-- Widget customization panel (hidden by default) -->
+  <div id="customizePanel" class="card mb-4 border-primary d-none animate-fadeInUp">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+      <span><i class="fas fa-sliders-h me-2"></i>{{ _('自訂版面') }}</span>
+      <button class="btn btn-sm btn-light" onclick="toggleCustomize()">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
-    <div class="col-6 col-md-3 animate-fadeInUp stagger-2">
-      <div class="card text-white bg-info h-100">
-        <div class="card-body d-flex align-items-center justify-content-between">
-          <div>
-            <div class="fs-1 fw-bold">{{maintenance_count}}</div>
-            <div class="small">{{ _('保養到期') }}</div>
+    <div class="card-body">
+      <p class="text-muted small mb-3">{{ _('選擇要顯示的小工具，然後點擊「儲存設定」。') }}</p>
+      <div class="row g-3" id="widgetCheckboxes">
+        {%set widget_labels = {
+          'alerts': _('摘要警示'),
+          'expiring': _('即將到期'),
+          'low_stock': _('低庫存'),
+          'maintenance': _('保養到期'),
+          'quick_actions': _('快速操作'),
+          'activity': _('最近活動')
+        }%}
+        {%for widget in widget_config%}
+        <div class="col-6 col-md-4 col-lg-2">
+          <div class="form-check form-switch">
+            <input class="form-check-input widget-toggle" type="checkbox"
+              id="widget_{{widget.type}}"
+              data-widget-type="{{widget.type}}"
+              {%if widget.visible%}checked{%endif%}>
+            <label class="form-check-label" for="widget_{{widget.type}}">
+              {{widget_labels.get(widget.type, widget.type)}}
+            </label>
           </div>
-          <i class="fas fa-wrench fa-2x opacity-75"></i>
         </div>
-        <div class="card-footer bg-transparent border-0 pt-0">
-          <a href="{{url_for('items.notifications')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
-        </div>
+        {%endfor%}
       </div>
-    </div>
-    <div class="col-6 col-md-3 animate-fadeInUp stagger-3">
-      <div class="card text-white bg-danger h-100">
-        <div class="card-body d-flex align-items-center justify-content-between">
-          <div>
-            <div class="fs-1 fw-bold">{{low_stock_count}}</div>
-            <div class="small">{{ _('低庫存') }}</div>
-          </div>
-          <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0">
-          <a href="{{url_for('items.reorder_list')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
-        </div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3 animate-fadeInUp stagger-4">
-      <div class="card text-white bg-primary h-100">
-        <div class="card-body d-flex align-items-center justify-content-between">
-          <div>
-            <div class="fs-1 fw-bold">{{stats.total if stats else 0}}</div>
-            <div class="small">{{ _('總物品數') }}</div>
-          </div>
-          <i class="fas fa-box fa-2x opacity-75"></i>
-        </div>
-        <div class="card-footer bg-transparent border-0 pt-0">
-          <a href="{{url_for('items.home')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
-        </div>
+      <div class="mt-3 d-flex gap-2">
+        <button class="btn btn-primary btn-sm" onclick="saveWidgets()">
+          <i class="fas fa-save me-1"></i>{{ _('儲存設定') }}
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" onclick="toggleCustomize()">
+          {{ _('取消') }}
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- Row 1: Alerts widget -->
+  {%if widget_visibility.get('alerts', True)%}
+  {% include 'partials/widget_alerts.html' %}
+  {%endif%}
 
   <!-- Row 2: Main content -->
   <div class="row g-4">
 
-    <!-- Left column (8/12): Task lists -->
+    <!-- Left column (8/12): Data widgets -->
     <div class="col-lg-8">
 
-      <!-- Expiring items -->
-      <div class="card mb-4 animate-fadeInUp stagger-1">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-clock text-warning me-2"></i>{{ _('即將到期的物品') }}</span>
-          <a href="{{url_for('items.notifications')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
-        </div>
-        <div class="card-body">
-          {%if expiring_items or expired_items%}
-          <ul class="list-group list-group-flush">
-            {%for item in expired_items%}
-            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-              <a href="{{url_for('items.item_detail', item_id=item.ItemID)}}" class="text-decoration-none fw-semibold">
-                {{item.ItemName}}
-              </a>
-              <span class="badge bg-danger">{{ _('已過期') }}</span>
-            </li>
-            {%endfor%}
-            {%for item in expiring_items%}
-            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-              <a href="{{url_for('items.item_detail', item_id=item.ItemID)}}" class="text-decoration-none fw-semibold">
-                {{item.ItemName}}
-              </a>
-              <span class="badge bg-warning text-dark">
-                {{item.UsageExpiry or item.WarrantyExpiry or ''}}
-              </span>
-            </li>
-            {%endfor%}
-          </ul>
-          {%else%}
-          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>{{ _('目前沒有即將到期的物品') }}</p>
-          {%endif%}
-        </div>
-      </div>
+      {%if widget_visibility.get('expiring', True)%}
+      {% include 'partials/widget_expiring.html' %}
+      {%endif%}
 
-      <!-- Low stock items -->
-      <div class="card mb-4 animate-fadeInUp stagger-2">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-exclamation-triangle text-danger me-2"></i>{{ _('低庫存物品') }}</span>
-          <a href="{{url_for('items.reorder_list')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
-        </div>
-        <div class="card-body">
-          {%if low_stock_items%}
-          <ul class="list-group list-group-flush">
-            {%for item in low_stock_items%}
-            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-              <a href="{{url_for('items.item_detail', item_id=item.ItemID)}}" class="text-decoration-none fw-semibold">
-                {{item.ItemName}}
-              </a>
-              <span class="badge {{'bg-danger' if item.stock_status == 'critical' else 'bg-warning text-dark'}}">
-                {{ _('庫存：') }}{{item.Quantity}}
-              </span>
-            </li>
-            {%endfor%}
-          </ul>
-          {%else%}
-          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>{{ _('目前沒有低庫存物品') }}</p>
-          {%endif%}
-        </div>
-      </div>
+      {%if widget_visibility.get('low_stock', True)%}
+      {% include 'partials/widget_low_stock.html' %}
+      {%endif%}
 
-      <!-- Maintenance due items -->
-      <div class="card animate-fadeInUp stagger-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-wrench text-info me-2"></i>{{ _('保養到期') }}</span>
-          <a href="{{url_for('items.notifications')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
-        </div>
-        <div class="card-body">
-          {%if maintenance_due%}
-          <ul class="list-group list-group-flush">
-            {%for item in maintenance_due%}
-            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-              <a href="{{url_for('items.item_detail', item_id=item.ItemID)}}" class="text-decoration-none fw-semibold">
-                {{item.ItemName}}
-              </a>
-              <span class="badge bg-info text-dark">
-                {{item.next_maintenance_date or _('需要保養')}}
-              </span>
-            </li>
-            {%endfor%}
-          </ul>
-          {%else%}
-          <p class="text-muted mb-0"><i class="fas fa-check-circle text-success me-1"></i>{{ _('目前沒有到期保養項目') }}</p>
-          {%endif%}
-        </div>
-      </div>
+      {%if widget_visibility.get('maintenance', True)%}
+      {% include 'partials/widget_maintenance.html' %}
+      {%endif%}
 
     </div>
 
-    <!-- Right column (4/12): Quick actions + Recent activity -->
+    <!-- Right column (4/12): Actions + Activity -->
     <div class="col-lg-4">
 
-      <!-- Quick actions -->
-      <div class="card mb-4 animate-fadeInUp stagger-1">
-        <div class="card-header">
-          <i class="fas fa-bolt text-warning me-2"></i>{{ _('快速操作') }}
-        </div>
-        <div class="card-body d-grid gap-2">
-          {%if User.admin%}
-          <a href="{{url_for('items.additem')}}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i>{{ _('新增物品') }}
-          </a>
-          {%endif%}
-          <a href="{{url_for('items.scan')}}" class="btn btn-outline-secondary">
-            <i class="fas fa-qrcode me-2"></i>{{ _('掃描條碼') }}
-          </a>
-          <a href="{{url_for('items.search')}}" class="btn btn-outline-secondary">
-            <i class="fas fa-search me-2"></i>{{ _('搜尋物品') }}
-          </a>
-          <a href="{{url_for('items.notifications')}}" class="btn btn-outline-warning">
-            <i class="fas fa-bell me-2"></i>{{ _('查看通知') }}
-          </a>
-          <a href="{{url_for('items.statistics')}}" class="btn btn-outline-info">
-            <i class="fas fa-chart-bar me-2"></i>{{ _('統計報表') }}
-          </a>
-        </div>
-      </div>
+      {%if widget_visibility.get('quick_actions', True)%}
+      {% include 'partials/widget_quick_actions.html' %}
+      {%endif%}
 
-      <!-- Recent activity -->
-      <div class="card animate-fadeInUp stagger-2">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span><i class="fas fa-history me-2"></i>{{ _('最近活動') }}</span>
-          {%if User.admin%}
-          <a href="{{url_for('items.activity_logs')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
-          {%endif%}
-        </div>
-        <div class="card-body p-0">
-          {%if recent_logs%}
-          <ul class="list-group list-group-flush">
-            {%for log in recent_logs%}
-            <li class="list-group-item small py-2">
-              <strong>{{log.user}}</strong>
-              {{log.action}}
-              {%if log.item_name%}
-              <span class="text-muted">：{{log.item_name}}</span>
-              {%endif%}
-              <br>
-              <small class="text-muted">{{log.timestamp or ''}}</small>
-            </li>
-            {%endfor%}
-          </ul>
-          {%else%}
-          <div class="p-3">
-            <p class="text-muted mb-0 small">{{ _('尚無操作記錄') }}</p>
-          </div>
-          {%endif%}
-        </div>
-      </div>
+      {%if widget_visibility.get('activity', True)%}
+      {% include 'partials/widget_activity.html' %}
+      {%endif%}
 
     </div>
   </div>
 </div>
+
+<script>
+function toggleCustomize() {
+  const panel = document.getElementById('customizePanel');
+  panel.classList.toggle('d-none');
+}
+
+function saveWidgets() {
+  const checkboxes = document.querySelectorAll('.widget-toggle');
+  const config = Array.from(checkboxes).map(cb => ({
+    type: cb.dataset.widgetType,
+    visible: cb.checked
+  }));
+
+  fetch('{{ url_for("items.save_dashboard_widgets") }}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify(config)
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      window.location.reload();
+    } else {
+      alert('{{ _("儲存失敗，請再試一次。") }}');
+    }
+  })
+  .catch(() => alert('{{ _("網路錯誤，請再試一次。") }}'));
+}
+</script>
 {%endblock%}

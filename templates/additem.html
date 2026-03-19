@@ -387,6 +387,21 @@
             </div>
           </div>
 
+          <!-- 物品狀態 -->
+          <div class="col-md-4">
+            <div class="form-floating">
+              <select class="form-select" id="condition" name="condition">
+                {% set current_condition = form.condition if form else 'good' %}
+                <option value="new" {% if current_condition == 'new' %}selected{% endif %}>全新</option>
+                <option value="good" {% if current_condition == 'good' or not current_condition %}selected{% endif %}>良好</option>
+                <option value="fair" {% if current_condition == 'fair' %}selected{% endif %}>普通</option>
+                <option value="poor" {% if current_condition == 'poor' %}selected{% endif %}>老舊</option>
+                <option value="broken" {% if current_condition == 'broken' %}selected{% endif %}>損壞</option>
+              </select>
+              <label for="condition"><i class="fas fa-star-half-alt me-1"></i>物品狀態</label>
+            </div>
+          </div>
+
           <div class="col-md-4">
             <div class="form-floating">
               <select class="form-select" id="MaintenanceCategory" name="MaintenanceCategory">
@@ -477,6 +492,50 @@
               <label for="ItemDesc"><i class="fas fa-align-left me-1"></i>物品描述（選填）</label>
             </div>
             <small class="text-muted">可記錄購買資訊、規格、備註等</small>
+          </div>
+
+          <!-- 資產資訊區塊（可折疊） -->
+          <div class="col-12">
+            <div class="card border-0 bg-light">
+              <div class="card-header bg-light border-0 p-0">
+                <button type="button" class="btn btn-link text-decoration-none text-dark w-100 text-start p-3"
+                  data-bs-toggle="collapse" data-bs-target="#assetInfoCollapse" aria-expanded="false">
+                  <i class="fas fa-coins text-warning me-2"></i>
+                  <strong>資產資訊（選填）</strong>
+                  <i class="fas fa-chevron-down ms-2 small"></i>
+                </button>
+              </div>
+              <div class="collapse" id="assetInfoCollapse">
+                <div class="card-body pt-0">
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input type="number" min="0" step="0.01" class="form-control" id="purchase_price" name="purchase_price"
+                          placeholder="購入價格" value="{{ form.purchase_price if form else '' }}" />
+                        <label for="purchase_price"><i class="fas fa-dollar-sign me-1"></i>購入價格</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <select class="form-select" id="depreciation_method" name="depreciation_method">
+                          <option value="">不計算折舊</option>
+                          <option value="straight_line" {% if form and form.depreciation_method == 'straight_line' %}selected{% endif %}>直線法</option>
+                          <option value="declining_balance" {% if form and form.depreciation_method == 'declining_balance' %}selected{% endif %}>餘額遞減法</option>
+                        </select>
+                        <label for="depreciation_method"><i class="fas fa-chart-line me-1"></i>折舊方法</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input type="number" min="0" max="100" step="0.01" class="form-control" id="depreciation_rate" name="depreciation_rate"
+                          placeholder="年折舊率%" value="{{ form.depreciation_rate if form else '' }}" />
+                        <label for="depreciation_rate"><i class="fas fa-percent me-1"></i>年折舊率 (%)</label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- 自訂欄位區塊 -->

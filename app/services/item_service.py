@@ -33,6 +33,11 @@ ITEM_PROJECTION = {
     "favorites": 1,  # 收藏使用者列表
     "related_items": 1,  # 關聯物品
     "size_notes": 1,
+    "condition": 1,
+    "purchase_price": 1,
+    "current_value": 1,
+    "depreciation_method": 1,
+    "depreciation_rate": 1,
 }
 
 
@@ -128,6 +133,7 @@ def build_search_filter(
     room: str = "",
     zone: str = "",
     visibility: str = "",
+    condition: str = "",
 ) -> Dict[str, Any]:
     from app import get_db_type
 
@@ -153,6 +159,8 @@ def build_search_filter(
         search_filter["ItemZone"] = zone
     if visibility:
         search_filter["visibility"] = visibility
+    if condition:
+        search_filter["condition"] = condition
     return search_filter
 
 
@@ -214,6 +222,7 @@ def list_items(
         room=filters.get("room", ""),
         zone=filters.get("zone", ""),
         visibility=filters.get("visibility", ""),
+        condition=filters.get("condition", ""),
     )
     projection = ITEM_PROJECTION.copy()
     sort = None
@@ -1033,6 +1042,95 @@ def bulk_update_quantity(updates: List[Dict[str, Any]]) -> Tuple[int, List[str]]
             failed_ids.append(item_id)
     
     return success_count, failed_ids
+
+
+def calculate_current_value(item: Dict[str, Any]) -> Optional[float]:
+    """Calculate current depreciated value of an item.
+
+    Supports two methods:
+    - straight_line: purchase_price - (purchase_price * rate/100 * years)
+    - declining_balance: purchase_price * (1 - rate/100) ^ years
+
+    Returns the calculated value clamped to 0 minimum, or None if data is missing.
+    """
+    purchase_price = item.get("purchase_price")
+    depreciation_rate = item.get("depreciation_rate")
+    depreciation_method = item.get("depreciation_method") or ""
+    get_date_raw = item.get("ItemGetDate") or ""
+
+    if purchase_price is None or not depreciation_rate or not depreciation_method or not get_date_raw:
+        return None
+
+    try:
+        purchase_price = float(purchase_price)
+        rate = float(depreciation_rate)
+        get_date = datetime.strptime(get_date_raw, "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return None
+
+    today = date.today()
+    years = (today - get_date).days / 365.25
+    if years < 0:
+        years = 0
+
+    if depreciation_method == "straight_line":
+        value = purchase_price - (purchase_price * rate / 100 * years)
+    elif depreciation_method == "declining_balance":
+        value = purchase_price * ((1 - rate / 100) ** years)
+    else:
+        return None
+
+    return max(0.0, round(value, 2))
+
+
+def get_asset_report() -> Dict[str, Any]:
+    """Return summary asset report for all items with purchase_price set.
+
+    Returns:
+        {
+            "total_purchase_value": float,
+            "total_current_value": float,
+            "depreciation_this_year": float,
+            "items_with_value": [...],  # sorted by current_value desc
+        }
+    """
+    all_items = item_repo.get_all_items_for_export()
+    items_with_value = []
+    total_purchase = 0.0
+    total_current = 0.0
+
+    for item in all_items:
+        price = item.get("purchase_price")
+        if price is None:
+            continue
+        try:
+            price = float(price)
+        except (TypeError, ValueError):
+            continue
+
+        calculated = calculate_current_value(item)
+        current = calculated if calculated is not None else price
+        depreciation_amount = round(price - current, 2)
+
+        enriched = dict(item)
+        enriched["purchase_price"] = price
+        enriched["calculated_current_value"] = current
+        enriched["depreciation_amount"] = depreciation_amount
+        items_with_value.append(enriched)
+        total_purchase += price
+        total_current += current
+
+    items_with_value.sort(key=lambda x: x.get("calculated_current_value", 0), reverse=True)
+
+    # Depreciation this year: approximate as total_purchase * avg_rate / 100
+    depreciation_this_year = round(total_purchase - total_current, 2) if items_with_value else 0.0
+
+    return {
+        "total_purchase_value": round(total_purchase, 2),
+        "total_current_value": round(total_current, 2),
+        "depreciation_this_year": depreciation_this_year,
+        "items_with_value": items_with_value,
+    }
 
 
 def bulk_update_last_maintenance(item_ids: List[str], maintenance_date: str) -> Tuple[int, List[str]]:

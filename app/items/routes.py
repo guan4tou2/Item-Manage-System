@@ -80,6 +80,53 @@ def uploaded_file(filename):
         abort(404)
 
 
+_DEFAULT_DASHBOARD_WIDGETS = json.dumps([
+    {"type": "alerts", "visible": True},
+    {"type": "expiring", "visible": True},
+    {"type": "low_stock", "visible": True},
+    {"type": "maintenance", "visible": True},
+    {"type": "quick_actions", "visible": True},
+    {"type": "activity", "visible": True},
+])
+
+
+@bp.route("/api/dashboard/widgets", methods=["POST"])
+@login_required
+def save_dashboard_widgets():
+    """Save user's dashboard widget configuration."""
+    from app import db, get_db_type
+    from flask import abort
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, list):
+        return jsonify({"error": "invalid payload"}), 400
+
+    # Validate each entry has required keys
+    for entry in data:
+        if not isinstance(entry, dict) or "type" not in entry or "visible" not in entry:
+            return jsonify({"error": "invalid widget entry"}), 400
+
+    widgets_json = json.dumps(data)
+
+    db_type = get_db_type()
+    if db_type == "postgres":
+        from app.models.user import User as UserModel
+        user_id = session.get("UserID")
+        user_obj = UserModel.query.get(user_id)
+        if not user_obj:
+            abort(404)
+        user_obj.dashboard_widgets = widgets_json
+        db.session.commit()
+    else:
+        from app import mongo
+        mongo.db.user.update_one(
+            {"_id": session.get("UserID")},
+            {"$set": {"dashboard_widgets": widgets_json}},
+        )
+
+    return jsonify({"ok": True})
+
+
 @bp.route("/dashboard")
 @login_required
 def dashboard():
@@ -90,6 +137,26 @@ def dashboard():
     replacement = item_service.get_replacement_items(settings)
     stats = item_service.get_stats()
     recent_logs = log_service.get_recent_logs(limit=10)
+
+    # Load widget config – fall back to default if not yet set
+    raw_widgets = getattr(user, "dashboard_widgets", None)
+    if not raw_widgets:
+        raw_widgets = _DEFAULT_DASHBOARD_WIDGETS
+    try:
+        widget_config = json.loads(raw_widgets)
+    except (TypeError, ValueError):
+        widget_config = json.loads(_DEFAULT_DASHBOARD_WIDGETS)
+
+    # Build a quick-access dict: type -> visible
+    widget_visibility = {w["type"]: w.get("visible", True) for w in widget_config}
+
+    overdue_loans_count = 0
+    try:
+        from app.services import loan_service
+        overdue_loans_count = loan_service.get_overdue_count()
+    except Exception:
+        pass
+
     return render_template(
         "dashboard.html",
         User=user,
@@ -102,6 +169,9 @@ def dashboard():
         maintenance_count=len(replacement.get("due", [])),
         stats=stats,
         recent_logs=recent_logs,
+        overdue_loans_count=overdue_loans_count,
+        widget_config=widget_config,
+        widget_visibility=widget_visibility,
     )
 
 
@@ -117,6 +187,7 @@ def home():
         "zone": request.args.get("zone", ""),
         "visibility": request.args.get("visibility", ""),
         "sort": request.args.get("sort", ""),
+        "condition": request.args.get("condition", ""),
     }
     page = request.args.get("page", 1, type=int)
     result = item_service.list_items(filters, page=page)
@@ -1267,3 +1338,16 @@ def maintenance_alert_count():
         "upcoming": len(result["upcoming"]),
         "total": result["total_alerts"],
     })
+
+
+@bp.route("/assets")
+@login_required
+def assets():
+    """資產報表頁面"""
+    user = get_current_user()
+    report = item_service.get_asset_report()
+    return render_template(
+        "assets.html",
+        User=user,
+        report=report,
+    )

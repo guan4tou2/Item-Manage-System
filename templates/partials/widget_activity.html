@@ -1,0 +1,30 @@
+<!-- Widget: Recent activity -->
+<div class="card animate-fadeInUp stagger-2" data-widget-type="activity">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="fas fa-history me-2"></i>{{ _('最近活動') }}</span>
+    {%if User.admin%}
+    <a href="{{url_for('items.activity_logs')}}" class="small text-decoration-none">{{ _('查看全部') }} &rsaquo;</a>
+    {%endif%}
+  </div>
+  <div class="card-body p-0">
+    {%if recent_logs%}
+    <ul class="list-group list-group-flush">
+      {%for log in recent_logs%}
+      <li class="list-group-item small py-2">
+        <strong>{{log.user}}</strong>
+        {{log.action}}
+        {%if log.item_name%}
+        <span class="text-muted">：{{log.item_name}}</span>
+        {%endif%}
+        <br>
+        <small class="text-muted">{{log.timestamp or ''}}</small>
+      </li>
+      {%endfor%}
+    </ul>
+    {%else%}
+    <div class="p-3">
+      <p class="text-muted mb-0 small">{{ _('尚無操作記錄') }}</p>
+    </div>
+    {%endif%}
+  </div>
+</div>

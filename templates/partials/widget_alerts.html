@@ -1,0 +1,59 @@
+<!-- Widget: Alerts summary -->
+<div class="row g-3 mb-4" data-widget-type="alerts">
+  <div class="col-6 col-md-3 animate-fadeInUp stagger-1">
+    <div class="card text-white bg-warning h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fs-1 fw-bold">{{expiring_count}}</div>
+          <div class="small">{{ _('到期提醒') }}</div>
+        </div>
+        <i class="fas fa-clock fa-2x opacity-75"></i>
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0">
+        <a href="{{url_for('items.notifications')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-fadeInUp stagger-2">
+    <div class="card text-white bg-info h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fs-1 fw-bold">{{maintenance_count}}</div>
+          <div class="small">{{ _('保養到期') }}</div>
+        </div>
+        <i class="fas fa-wrench fa-2x opacity-75"></i>
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0">
+        <a href="{{url_for('items.notifications')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-fadeInUp stagger-3">
+    <div class="card text-white bg-danger h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fs-1 fw-bold">{{low_stock_count}}</div>
+          <div class="small">{{ _('低庫存') }}</div>
+        </div>
+        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0">
+        <a href="{{url_for('items.reorder_list')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 animate-fadeInUp stagger-4">
+    <div class="card text-white bg-primary h-100">
+      <div class="card-body d-flex align-items-center justify-content-between">
+        <div>
+          <div class="fs-1 fw-bold">{{overdue_loans_count}}</div>
+          <div class="small">{{ _('逾期借出') }}</div>
+        </div>
+        <i class="fas fa-hand-holding fa-2x opacity-75"></i>
+      </div>
+      <div class="card-footer bg-transparent border-0 pt-0">
+        <a href="{{url_for('loans.loan_list')}}" class="text-white small">{{ _('查看全部') }} &rsaquo;</a>
+      </div>
+    </div>
+  </div>
+</div>

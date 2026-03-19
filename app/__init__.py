@@ -129,6 +129,24 @@ def _ensure_user_profile_columns() -> None:
         db.session.commit()
 
 
+def _ensure_dashboard_widgets_column() -> None:
+    """補齊 users 表缺少的 dashboard_widgets 欄位，支援可設定儀表板小工具。"""
+    if get_db_type() != "postgres":
+        return
+
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("users"):
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "dashboard_widgets" not in existing_columns:
+        db.session.execute(text('ALTER TABLE users ADD COLUMN dashboard_widgets TEXT;'))
+        db.session.commit()
+
+
 def _ensure_type_parent_column() -> None:
     """補齊 item_types 表缺少的 parent_id 欄位，支援子分類階層結構。"""
     if get_db_type() != "postgres":
@@ -146,6 +164,50 @@ def _ensure_type_parent_column() -> None:
         db.session.execute(text(
             'ALTER TABLE item_types ADD COLUMN parent_id INTEGER REFERENCES item_types(id) ON DELETE SET NULL;'
         ))
+        db.session.commit()
+
+
+def _ensure_item_condition_column() -> None:
+    """補齊 items 表缺少的 condition 欄位（物品狀態）。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("items"):
+        return
+    existing_columns = {column["name"] for column in inspector.get_columns("items")}
+    if "condition" not in existing_columns:
+        db.session.execute(text(
+            "ALTER TABLE items ADD COLUMN condition VARCHAR(20) DEFAULT 'good';"
+        ))
+        db.session.commit()
+
+
+def _ensure_item_asset_columns() -> None:
+    """補齊 items 表缺少的資產折舊欄位。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("items"):
+        return
+    existing_columns = {column["name"] for column in inspector.get_columns("items")}
+    alter_statements = []
+    if "purchase_price" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN purchase_price NUMERIC(10,2);")
+    if "current_value" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN current_value NUMERIC(10,2);")
+    if "depreciation_method" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN depreciation_method VARCHAR(20);")
+    if "depreciation_rate" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN depreciation_rate NUMERIC(5,2);")
+    for statement in alter_statements:
+        db.session.execute(text(statement))
+    if alter_statements:
         db.session.commit()
 
 
@@ -219,8 +281,11 @@ def create_app() -> Flask:
             db.create_all()
             _ensure_item_maintenance_columns()
             _ensure_user_profile_columns()
+            _ensure_dashboard_widgets_column()
             _ensure_type_parent_column()
             _ensure_fulltext_extensions()
+            _ensure_item_condition_column()
+            _ensure_item_asset_columns()
     else:
         mongo.init_app(app)
     

@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional, List
 
-from sqlalchemy import String, Boolean, Integer, DateTime, JSON
+from sqlalchemy import String, Boolean, Integer, DateTime, JSON, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from flask_login import UserMixin
 
@@ -28,6 +28,9 @@ class User(UserMixin, db.Model):
     replacement_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     replacement_intervals: Mapped[Optional[List[dict]]] = mapped_column(JSON, default=list)
     
+    # Dashboard 小工具設定
+    dashboard_widgets: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     # 個人設定
     display_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     theme_preference: Mapped[str] = mapped_column(String(20), default="light")
