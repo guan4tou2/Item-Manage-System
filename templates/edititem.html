@@ -527,11 +527,22 @@
               <div class="collapse {{ 'show' if item.purchase_price else '' }}" id="assetInfoCollapse">
                 <div class="card-body pt-0">
                   <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                       <div class="form-floating">
                         <input type="number" min="0" step="0.01" class="form-control" id="purchase_price" name="purchase_price"
                           placeholder="購入價格" value="{{ item.purchase_price if item.purchase_price is not none else '' }}" />
                         <label for="purchase_price"><i class="fas fa-dollar-sign me-1"></i>購入價格</label>
+                      </div>
+                    </div>
+                    <div class="col-md-2">
+                      <div class="form-floating">
+                        <select class="form-select" id="currency" name="currency">
+                          {% set cur = item.currency if item.currency else 'TWD' %}
+                          {% for c in ['TWD', 'USD', 'EUR', 'JPY', 'CNY', 'HKD', 'GBP'] %}
+                          <option value="{{ c }}" {% if cur == c %}selected{% endif %}>{{ c }}</option>
+                          {% endfor %}
+                        </select>
+                        <label for="currency"><i class="fas fa-globe me-1"></i>幣別</label>
                       </div>
                     </div>
                     <div class="col-md-4">

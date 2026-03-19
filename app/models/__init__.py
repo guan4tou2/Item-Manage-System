@@ -17,6 +17,7 @@ from app.models.api_token import APIToken
 from app.models.webhook import Webhook
 from app.models.backup_config import BackupConfig
 from app.models.item_version import ItemVersion
+from app.models.item_template import ItemTemplate
 
 __all__ = [
     "User",
@@ -44,4 +45,5 @@ __all__ = [
     "Webhook",
     "BackupConfig",
     "ItemVersion",
+    "ItemTemplate",
 ]

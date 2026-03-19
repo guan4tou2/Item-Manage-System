@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>盤點報表 - {{ session.name }}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      font-size: 12pt;
+      color: #1e293b;
+      background: #fff;
+      padding: 2rem;
+    }
+    .report-header {
+      text-align: center;
+      border-bottom: 2px solid #2f658f;
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .report-header h1 { font-size: 20pt; color: #2f658f; }
+    .report-header p { color: #64748b; margin-top: 0.25rem; }
+    .meta-row { display: flex; gap: 2rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .meta-item { font-size: 10pt; }
+    .meta-item .label { color: #64748b; }
+    .meta-item .value { font-weight: bold; }
+    .summary-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .summary-box {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.6rem 0.9rem;
+      min-width: 100px;
+    }
+    .summary-box .label { font-size: 9pt; color: #64748b; }
+    .summary-box .value { font-size: 15pt; font-weight: bold; color: #2f658f; }
+    .summary-box.danger .value { color: #dc3545; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+    }
+    thead th {
+      background: #2f658f;
+      color: #fff;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody tr.discrepancy { background: #fff5f5; }
+    tbody tr.counted { background: #f0fff4; }
+    tbody td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #e2e8f0; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 9pt;
+      font-weight: bold;
+    }
+    .badge-pending { background: #e2e8f0; color: #475569; }
+    .badge-counted { background: #d1fae5; color: #065f46; }
+    .badge-discrepancy { background: #fee2e2; color: #991b1b; }
+    .no-print-btn {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .no-print-btn button {
+      padding: 0.5rem 1.25rem;
+      background: #2f658f;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11pt;
+    }
+    .no-print-btn a {
+      padding: 0.5rem 1rem;
+      color: #2f658f;
+      text-decoration: none;
+      border: 1px solid #2f658f;
+      border-radius: 4px;
+      font-size: 11pt;
+    }
+
+    @page {
+      size: A4;
+      margin: 15mm 10mm;
+    }
+    @media print {
+      .no-print-btn { display: none !important; }
+      body { padding: 0; }
+      table { page-break-inside: auto; }
+      tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print-btn">
+    <button onclick="window.print()">&#128438; 列印 / 儲存 PDF</button>
+    <a href="{{ url_for('stocktake.stocktake_detail', session_id=session.id) }}">← 返回盤點詳情</a>
+  </div>
+
+  <div class="report-header">
+    <h1>庫存盤點報表</h1>
+    <p>{{ session.name }}</p>
+    <p>產生時間：{{ now }}</p>
+  </div>
+
+  <div class="meta-row">
+    <div class="meta-item">
+      <span class="label">建立人：</span>
+      <span class="value">{{ session.created_by }}</span>
+    </div>
+    <div class="meta-item">
+      <span class="label">建立時間：</span>
+      <span class="value">{{ session.created_at }}</span>
+    </div>
+    {% if session.committed_at %}
+    <div class="meta-item">
+      <span class="label">提交時間：</span>
+      <span class="value">{{ session.committed_at }}</span>
+    </div>
+    {% endif %}
+    <div class="meta-item">
+      <span class="label">狀態：</span>
+      <span class="value">
+        {% if session.status == 'draft' %}草稿
+        {% elif session.status == 'in_progress' %}盤點中
+        {% elif session.status == 'review' %}審核中
+        {% elif session.status == 'committed' %}已提交
+        {% else %}{{ session.status }}{% endif %}
+      </span>
+    </div>
+  </div>
+
+  {% set summary = session.summary %}
+  <div class="summary-row">
+    <div class="summary-box">
+      <div class="label">物品總數</div>
+      <div class="value">{{ summary.total }}</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">已盤點</div>
+      <div class="value">{{ summary.counted }}</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">待盤點</div>
+      <div class="value">{{ summary.pending }}</div>
+    </div>
+    <div class="summary-box {% if summary.discrepancy > 0 %}danger{% endif %}">
+      <div class="label">數量差異</div>
+      <div class="value">{{ summary.discrepancy }}</div>
+    </div>
+  </div>
+
+  {% if session.items %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>物品名稱</th>
+        <th>物品 ID</th>
+        <th>帳面數量</th>
+        <th>實際數量</th>
+        <th>差異</th>
+        <th>狀態</th>
+        <th>盤點人</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for si in session.items %}
+      <tr class="{% if si.status == 'discrepancy' %}discrepancy{% elif si.status == 'counted' %}counted{% endif %}">
+        <td>{{ loop.index }}</td>
+        <td>{{ si.item_name }}</td>
+        <td><code>{{ si.item_id }}</code></td>
+        <td>{{ si.expected_qty }}</td>
+        <td>{{ si.actual_qty if si.actual_qty is not none else '--' }}</td>
+        <td>
+          {% if si.actual_qty is not none %}
+            {% set diff = si.actual_qty - si.expected_qty %}
+            {% if diff > 0 %}+{{ diff }}
+            {% elif diff < 0 %}{{ diff }}
+            {% else %}0{% endif %}
+          {% else %}--{% endif %}
+        </td>
+        <td>
+          {% if si.status == 'pending' %}<span class="badge badge-pending">待盤點</span>
+          {% elif si.status == 'counted' %}<span class="badge badge-counted">已盤點</span>
+          {% elif si.status == 'discrepancy' %}<span class="badge badge-discrepancy">數量差異</span>
+          {% endif %}
+        </td>
+        <td>{{ si.counted_by or '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="text-align:center; color:#64748b; padding:2rem;">無盤點明細</p>
+  {% endif %}
+
+  <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () { window.print(); }, 600);
+    });
+  </script>
+</body>
+</html>

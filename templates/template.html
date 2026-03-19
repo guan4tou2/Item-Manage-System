@@ -105,6 +105,11 @@
                   <i class="fas fa-chart-bar me-1"></i>{{ _('統計') }}
                 </a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{{url_for('items.calendar_view')}}" data-tooltip="{{ _('行事曆視圖') }}">
+                  <i class="fas fa-calendar-alt me-1"></i>{{ _('行事曆') }}
+                </a>
+              </li>
               {%if User.admin%}
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

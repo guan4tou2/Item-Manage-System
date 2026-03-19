@@ -1,0 +1,221 @@
+{%extends 'template.html' %}
+{%block title%}行事曆 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container">
+  <div class="page-header animate-fadeInUp">
+    <h1><i class="fas fa-calendar-alt me-2 text-primary"></i>行事曆</h1>
+    <p class="lead">追蹤保固到期、使用期限、保養排程與借出歸還</p>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container">
+
+  <!-- 月份導航 -->
+  <div class="d-flex align-items-center justify-content-between mb-3 animate-fadeInUp">
+    <button id="prevMonth" class="btn btn-outline-primary">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <h4 id="monthLabel" class="mb-0 fw-bold"></h4>
+    <button id="nextMonth" class="btn btn-outline-primary">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+
+  <!-- 圖例 -->
+  <div class="d-flex flex-wrap gap-3 mb-3 animate-fadeInUp stagger-1">
+    <span class="calendar-legend"><span class="legend-dot" style="background:#dc3545;"></span>保固到期</span>
+    <span class="calendar-legend"><span class="legend-dot" style="background:#fd7e14;"></span>使用期限</span>
+    <span class="calendar-legend"><span class="legend-dot" style="background:#0d6efd;"></span>保養到期</span>
+    <span class="calendar-legend"><span class="legend-dot" style="background:#198754;"></span>借出歸還</span>
+  </div>
+
+  <!-- 星期標題 -->
+  <div class="calendar-grid calendar-header-row mb-1 animate-fadeInUp stagger-2">
+    {% for day in ['日', '一', '二', '三', '四', '五', '六'] %}
+    <div class="calendar-day-header text-center fw-bold text-muted">{{ day }}</div>
+    {% endfor %}
+  </div>
+
+  <!-- 日曆格子 -->
+  <div class="calendar-grid animate-fadeInUp stagger-3" id="calendarGrid">
+    <!-- filled by JS -->
+  </div>
+
+  <!-- 當日事件面板 -->
+  <div class="card mt-4 animate-fadeInUp stagger-4" id="dayPanel" style="display:none;">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h6 class="mb-0" id="dayPanelTitle"></h6>
+      <button class="btn btn-sm btn-outline-secondary" onclick="closeDayPanel()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="card-body" id="dayPanelBody"></div>
+  </div>
+
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+(function () {
+  const COLORS = {
+    warranty: '#dc3545',
+    usage: '#fd7e14',
+    maintenance: '#0d6efd',
+    loan_return: '#198754',
+  };
+  const LABELS = {
+    warranty: '保固到期',
+    usage: '使用期限',
+    maintenance: '保養到期',
+    loan_return: '借出歸還',
+  };
+
+  let currentYear, currentMonth;
+  let allEvents = {};  // keyed by "YYYY-MM-DD"
+
+  // Initialise to today
+  const today = new Date();
+  currentYear = today.getFullYear();
+  currentMonth = today.getMonth() + 1;  // 1-based
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function monthStr() { return currentYear + '-' + pad(currentMonth); }
+  function todayStr() { return today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate()); }
+
+  function updateLabel() {
+    document.getElementById('monthLabel').textContent = currentYear + ' 年 ' + currentMonth + ' 月';
+  }
+
+  function fetchEvents(cb) {
+    fetch('/api/calendar/events?month=' + monthStr())
+      .then(r => r.json())
+      .then(data => {
+        allEvents = {};
+        (data.events || []).forEach(ev => {
+          if (!allEvents[ev.date]) allEvents[ev.date] = [];
+          allEvents[ev.date].push(ev);
+        });
+        cb();
+      })
+      .catch(() => cb());
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('calendarGrid');
+    grid.innerHTML = '';
+
+    const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();  // 0=Sun
+    const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+    const prevDays = new Date(currentYear, currentMonth - 1, 0).getDate();
+
+    let cells = [];
+
+    // Leading days from prev month
+    for (let i = firstDay - 1; i >= 0; i--) {
+      cells.push({ day: prevDays - i, thisMonth: false, dateStr: null });
+    }
+    // This month
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = currentYear + '-' + pad(currentMonth) + '-' + pad(d);
+      cells.push({ day: d, thisMonth: true, dateStr: ds });
+    }
+    // Trailing days
+    let trailing = 1;
+    while (cells.length % 7 !== 0) {
+      cells.push({ day: trailing++, thisMonth: false, dateStr: null });
+    }
+
+    const todStr = todayStr();
+
+    cells.forEach(cell => {
+      const div = document.createElement('div');
+      div.className = 'calendar-day' + (cell.thisMonth ? '' : ' other-month');
+      if (cell.dateStr === todStr) div.classList.add('today');
+
+      const dayNum = document.createElement('div');
+      dayNum.className = 'calendar-day-num';
+      dayNum.textContent = cell.day;
+      div.appendChild(dayNum);
+
+      if (cell.dateStr && allEvents[cell.dateStr]) {
+        allEvents[cell.dateStr].forEach(ev => {
+          const badge = document.createElement('div');
+          badge.className = 'calendar-event';
+          badge.style.background = COLORS[ev.type] || '#6c757d';
+          badge.style.color = '#fff';
+          badge.textContent = ev.label;
+          badge.title = ev.label;
+          div.appendChild(badge);
+        });
+
+        div.style.cursor = 'pointer';
+        div.addEventListener('click', () => showDayPanel(cell.dateStr));
+      }
+
+      grid.appendChild(div);
+    });
+  }
+
+  function showDayPanel(dateStr) {
+    const panel = document.getElementById('dayPanel');
+    const title = document.getElementById('dayPanelTitle');
+    const body = document.getElementById('dayPanelBody');
+
+    title.textContent = dateStr + ' 的事件';
+    body.innerHTML = '';
+
+    const events = allEvents[dateStr] || [];
+    if (events.length === 0) {
+      body.innerHTML = '<p class="text-muted mb-0">無事件</p>';
+    } else {
+      events.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = 'd-flex align-items-center gap-2 mb-2';
+        const dot = document.createElement('span');
+        dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + (COLORS[ev.type]||'#6c757d') + ';flex-shrink:0;';
+        const text = document.createElement('span');
+        text.innerHTML = '<strong>' + (LABELS[ev.type]||ev.type) + '</strong>：';
+        if (ev.item_id) {
+          text.innerHTML += '<a href="/item/' + ev.item_id + '">' + ev.label.split('：')[1] + '</a>';
+        } else {
+          text.textContent += ev.label;
+        }
+        item.appendChild(dot);
+        item.appendChild(text);
+        body.appendChild(item);
+      });
+    }
+
+    panel.style.display = '';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function closeDayPanel() {
+    document.getElementById('dayPanel').style.display = 'none';
+  }
+
+  function loadMonth() {
+    updateLabel();
+    fetchEvents(renderGrid);
+  }
+
+  document.getElementById('prevMonth').addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+    loadMonth();
+  });
+  document.getElementById('nextMonth').addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+    loadMonth();
+  });
+
+  loadMonth();
+})();
+</script>
+{%endblock%}

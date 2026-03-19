@@ -165,7 +165,7 @@
                 </label>
               </div>
               <small class="text-muted d-block mt-1">
-                小：30×30mm | 中：50×50mm | 大：70×70mm
+                小：25×50mm | 中：50×70mm | 大：70×100mm
               </small>
             </div>
             
@@ -176,21 +176,53 @@
               </label>
               <div class="form-check">
                 <input type="checkbox" class="form-check-input" name="show_name" id="showName" checked>
-                <label class="form-check-label" for="showName">
-                  物品名稱
-                </label>
+                <label class="form-check-label" for="showName">物品名稱</label>
               </div>
               <div class="form-check">
                 <input type="checkbox" class="form-check-input" name="show_id" id="showId" checked>
-                <label class="form-check-label" for="showId">
-                  物品 ID
-                </label>
+                <label class="form-check-label" for="showId">物品 ID</label>
               </div>
               <div class="form-check">
                 <input type="checkbox" class="form-check-input" name="show_location" id="showLocation">
-                <label class="form-check-label" for="showLocation">
-                  放置位置
-                </label>
+                <label class="form-check-label" for="showLocation">放置位置</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="show_type" id="showType">
+                <label class="form-check-label" for="showType">物品類型</label>
+              </div>
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" name="show_qr" id="showQr" checked>
+                <label class="form-check-label" for="showQr">QR Code</label>
+              </div>
+            </div>
+
+            <!-- M20: 每列標籤數 -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">
+                <i class="fas fa-th me-1"></i>每列標籤數
+              </label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="labels_per_row" id="lpr2" value="2">
+                <label class="btn btn-outline-secondary" for="lpr2">2</label>
+                <input type="radio" class="btn-check" name="labels_per_row" id="lpr3" value="3" checked>
+                <label class="btn btn-outline-secondary" for="lpr3">3</label>
+                <input type="radio" class="btn-check" name="labels_per_row" id="lpr4" value="4">
+                <label class="btn btn-outline-secondary" for="lpr4">4</label>
+              </div>
+            </div>
+
+            <!-- M20: 字型大小 -->
+            <div class="mb-4">
+              <label class="form-label fw-bold">
+                <i class="fas fa-text-height me-1"></i>字型大小
+              </label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" name="font_size" id="fsSmall" value="small">
+                <label class="btn btn-outline-secondary" for="fsSmall">小</label>
+                <input type="radio" class="btn-check" name="font_size" id="fsMedium" value="medium" checked>
+                <label class="btn btn-outline-secondary" for="fsMedium">中</label>
+                <input type="radio" class="btn-check" name="font_size" id="fsLarge" value="large">
+                <label class="btn btn-outline-secondary" for="fsLarge">大</label>
               </div>
             </div>
             

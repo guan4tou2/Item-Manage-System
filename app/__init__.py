@@ -265,6 +265,100 @@ def _ensure_item_sort_order_column() -> None:
         db.session.commit()
 
 
+def _seed_item_templates() -> None:
+    """M19: 預設物品模板（若尚未建立）。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        from app.models.item_template import ItemTemplate
+        import json
+
+        if ItemTemplate.query.count() > 0:
+            return
+
+        templates = [
+            ItemTemplate(
+                name="3C 電子產品",
+                category="electronics",
+                default_type="電子產品",
+                icon="fas fa-laptop",
+                default_fields=json.dumps({
+                    "WarrantyIntervalDays": 365,
+                    "MaintenanceIntervalDays": 180,
+                    "MaintenanceCategory": "其他保養",
+                    "depreciation_method": "straight_line",
+                    "depreciation_rate": 20,
+                }),
+                created_by="system",
+            ),
+            ItemTemplate(
+                name="家電",
+                category="appliances",
+                default_type="家電",
+                icon="fas fa-blender",
+                default_fields=json.dumps({
+                    "WarrantyIntervalDays": 730,
+                    "MaintenanceIntervalDays": 90,
+                    "MaintenanceCategory": "濾網保養",
+                    "depreciation_method": "straight_line",
+                    "depreciation_rate": 10,
+                }),
+                created_by="system",
+            ),
+            ItemTemplate(
+                name="文具用品",
+                category="stationery",
+                default_type="文具",
+                icon="fas fa-pencil-alt",
+                default_fields=json.dumps({}),
+                created_by="system",
+            ),
+            ItemTemplate(
+                name="食品/耗材",
+                category="consumables",
+                default_type="耗材",
+                icon="fas fa-box",
+                default_fields=json.dumps({
+                    "SafetyStock": 2,
+                    "ReorderLevel": 1,
+                }),
+                created_by="system",
+            ),
+            ItemTemplate(
+                name="家具",
+                category="furniture",
+                default_type="家具",
+                icon="fas fa-couch",
+                default_fields=json.dumps({
+                    "depreciation_method": "straight_line",
+                    "depreciation_rate": 10,
+                }),
+                created_by="system",
+            ),
+        ]
+        for t in templates:
+            db.session.add(t)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+
+def _ensure_item_currency_column() -> None:
+    """補齊 items 表缺少的 currency 欄位（M18 多幣別支援）。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("items"):
+        return
+    existing_columns = {col["name"] for col in inspector.get_columns("items")}
+    if "currency" not in existing_columns:
+        db.session.execute(text("ALTER TABLE items ADD COLUMN currency VARCHAR(5) DEFAULT 'TWD';"))
+        db.session.commit()
+
+
 def _ensure_item_purchase_columns() -> None:
     """補齊 items 表缺少的購買連結欄位（Feature 21）。"""
     if get_db_type() != "postgres":
@@ -417,6 +511,7 @@ def create_app() -> Flask:
             _ensure_item_warehouse_column()
             _ensure_map_columns()
             _ensure_item_purchase_columns()
+            _ensure_item_currency_column()
             _ensure_email_verify_columns()
             _ensure_item_soft_delete_columns()
             _ensure_item_sort_order_column()
@@ -468,6 +563,7 @@ def create_app() -> Flask:
     with app.app_context():
         if os.environ.get("TEST_MODE") != "true":
             _ensure_default_admin()
+            _seed_item_templates()
 
         # 只在明確啟用 scheduler 的進程中初始化（避免多 worker 重複執行）
         if os.environ.get("ENABLE_SCHEDULER") == "true":

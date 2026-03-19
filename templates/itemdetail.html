@@ -310,6 +310,43 @@
           </div>
           {%endif%}
 
+          <!-- M18: 資產價值（purchase_price + currency） -->
+          {% if item.purchase_price %}
+          <div class="info-section">
+            <h5 class="info-section-title">
+              <i class="fas fa-coins text-warning"></i>
+              資產價值
+            </h5>
+            <div class="row g-2">
+              <div class="col-sm-4">
+                <p class="text-muted small mb-1">購入價格</p>
+                <p class="mb-0"><strong>{{ "{:,.0f}".format(item.purchase_price) }}</strong>
+                  <span class="badge bg-secondary ms-1">{{ item.currency or 'TWD' }}</span>
+                </p>
+              </div>
+              {% if item.current_value is not none %}
+              <div class="col-sm-4">
+                <p class="text-muted small mb-1">現值</p>
+                <p class="mb-0"><strong>{{ "{:,.0f}".format(item.current_value) }}</strong>
+                  <span class="badge bg-secondary ms-1">{{ item.currency or 'TWD' }}</span>
+                </p>
+              </div>
+              {% endif %}
+              {% if item.depreciation_method %}
+              <div class="col-sm-4">
+                <p class="text-muted small mb-1">折舊方法</p>
+                <p class="mb-0">
+                  {% if item.depreciation_method == 'straight_line' %}直線法
+                  {% elif item.depreciation_method == 'declining_balance' %}餘額遞減法
+                  {% else %}{{ item.depreciation_method }}{% endif %}
+                  {% if item.depreciation_rate %} / {{ item.depreciation_rate }}%{% endif %}
+                </p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
           <!-- 購買連結 -->
           <div class="info-section">
             <h5 class="info-section-title">

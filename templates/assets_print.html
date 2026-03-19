@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>資產報表 - 物品管理系統</title>
+  <style>
+    /* 一般顯示樣式 */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      font-size: 12pt;
+      color: #1e293b;
+      background: #fff;
+      padding: 2rem;
+    }
+    .report-header {
+      text-align: center;
+      border-bottom: 2px solid #2f658f;
+      padding-bottom: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .report-header h1 { font-size: 20pt; color: #2f658f; }
+    .report-header p { color: #64748b; margin-top: 0.25rem; }
+    .summary-row {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .summary-box {
+      flex: 1;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      min-width: 140px;
+    }
+    .summary-box .label { font-size: 9pt; color: #64748b; }
+    .summary-box .value { font-size: 16pt; font-weight: bold; color: #2f658f; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10pt;
+    }
+    thead th {
+      background: #2f658f;
+      color: #fff;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    tbody td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #e2e8f0; }
+    tfoot td { padding: 0.5rem 0.75rem; font-weight: bold; border-top: 2px solid #2f658f; }
+    .text-end { text-align: right; }
+    .text-danger { color: #dc3545; }
+    .no-print-btn {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .no-print-btn button {
+      padding: 0.5rem 1.25rem;
+      background: #2f658f;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11pt;
+    }
+    .no-print-btn a {
+      padding: 0.5rem 1rem;
+      color: #2f658f;
+      text-decoration: none;
+      border: 1px solid #2f658f;
+      border-radius: 4px;
+      font-size: 11pt;
+    }
+
+    /* 列印優化 */
+    @page {
+      size: A4;
+      margin: 15mm 10mm;
+    }
+    @media print {
+      .no-print-btn { display: none !important; }
+      body { padding: 0; }
+      table { page-break-inside: auto; }
+      tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 列印/返回按鈕（不列印） -->
+  <div class="no-print-btn">
+    <button onclick="window.print()">&#128438; 列印 / 儲存 PDF</button>
+    <a href="{{ url_for('items.assets') }}">← 返回資產報表</a>
+  </div>
+
+  <!-- 報表標題 -->
+  <div class="report-header">
+    <h1>資產報表</h1>
+    <p>產生時間：{{ now }}</p>
+  </div>
+
+  <!-- 摘要 -->
+  <div class="summary-row">
+    <div class="summary-box">
+      <div class="label">追蹤物品數</div>
+      <div class="value">{{ report.items_with_value | length }}</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">購入總價值</div>
+      <div class="value">{{ "{:,.0f}".format(report.total_purchase_value) }}</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">現值合計</div>
+      <div class="value">{{ "{:,.0f}".format(report.total_current_value) }}</div>
+    </div>
+    <div class="summary-box">
+      <div class="label">累計折舊</div>
+      <div class="value text-danger">{{ "{:,.0f}".format(report.depreciation_this_year) }}</div>
+    </div>
+  </div>
+
+  <!-- 資產明細表 -->
+  {% if report.items_with_value %}
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>物品名稱</th>
+        <th>類型</th>
+        <th class="text-end">購入價格</th>
+        <th class="text-end">現值</th>
+        <th class="text-end">折舊額</th>
+        <th>折舊方法</th>
+        <th>年折舊率</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in report.items_with_value %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ item.ItemName }}</td>
+        <td>{{ item.ItemType or '-' }}</td>
+        <td class="text-end">
+          {{ "{:,.0f}".format(item.purchase_price) }}
+          {% if item.currency %}<small> {{ item.currency }}</small>{% endif %}
+        </td>
+        <td class="text-end">
+          {% if item.calculated_current_value == 0 %}
+          <span class="text-danger">0</span>
+          {% else %}
+          {{ "{:,.0f}".format(item.calculated_current_value) }}
+          {% endif %}
+        </td>
+        <td class="text-end text-danger">
+          {% if item.depreciation_amount > 0 %}-{{ "{:,.0f}".format(item.depreciation_amount) }}{% else %}-{% endif %}
+        </td>
+        <td>
+          {% if item.depreciation_method == 'straight_line' %}直線法
+          {% elif item.depreciation_method == 'declining_balance' %}餘額遞減法
+          {% else %}-{% endif %}
+        </td>
+        <td>{{ item.depreciation_rate ~ '%' if item.depreciation_rate else '-' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">合計</td>
+        <td class="text-end">{{ "{:,.0f}".format(report.total_purchase_value) }}</td>
+        <td class="text-end">{{ "{:,.0f}".format(report.total_current_value) }}</td>
+        <td class="text-end text-danger">
+          {% if report.depreciation_this_year > 0 %}-{{ "{:,.0f}".format(report.depreciation_this_year) }}{% else %}-{% endif %}
+        </td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+  {% else %}
+  <p style="text-align:center; color:#64748b; padding:2rem;">尚未設定任何物品的購入價格</p>
+  {% endif %}
+
+  <script>
+    // 載入後自動開啟列印對話框
+    window.addEventListener('load', function () {
+      // 略微延遲，確保字型載入
+      setTimeout(function () { window.print(); }, 600);
+    });
+  </script>
+</body>
+</html>

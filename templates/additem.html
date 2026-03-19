@@ -35,6 +35,22 @@
             <strong>照片、樓層房間區域、保固與補貨門檻</strong>
           </div>
         </div>
+        <!-- M19: 使用模板 -->
+        <div class="mb-3 p-3 bg-light rounded border animate-fadeInUp stagger-1" id="templateSelector">
+          <label class="form-label fw-bold mb-2">
+            <i class="fas fa-magic text-primary me-2"></i>使用模板快速填入
+          </label>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            <select class="form-select w-auto" id="templateSelect">
+              <option value="">選擇模板…</option>
+            </select>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="applyTemplateBtn" disabled>
+              套用模板
+            </button>
+          </div>
+          <small class="text-muted d-block mt-1">套用後可自行調整各欄位</small>
+        </div>
+
         <form
           class="row g-4"
           action="{{ url_for('items.additem') }}"
@@ -511,11 +527,22 @@
               <div class="collapse" id="assetInfoCollapse">
                 <div class="card-body pt-0">
                   <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                       <div class="form-floating">
                         <input type="number" min="0" step="0.01" class="form-control" id="purchase_price" name="purchase_price"
                           placeholder="購入價格" value="{{ form.purchase_price if form else '' }}" />
                         <label for="purchase_price"><i class="fas fa-dollar-sign me-1"></i>購入價格</label>
+                      </div>
+                    </div>
+                    <div class="col-md-2">
+                      <div class="form-floating">
+                        <select class="form-select" id="currency" name="currency">
+                          {% set cur = form.currency if form and form.currency else 'TWD' %}
+                          {% for c in ['TWD', 'USD', 'EUR', 'JPY', 'CNY', 'HKD', 'GBP'] %}
+                          <option value="{{ c }}" {% if cur == c %}selected{% endif %}>{{ c }}</option>
+                          {% endfor %}
+                        </select>
+                        <label for="currency"><i class="fas fa-globe me-1"></i>幣別</label>
                       </div>
                     </div>
                     <div class="col-md-4">
@@ -1235,5 +1262,76 @@
   });
 
   syncStorePlaceFromSelectors();
+
+  // M19: 物品模板
+  (function () {
+    const sel = document.getElementById('templateSelect');
+    const btn = document.getElementById('applyTemplateBtn');
+
+    fetch('/api/templates')
+      .then(r => r.json())
+      .then(templates => {
+        templates.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.id;
+          opt.textContent = (t.icon ? '' : '') + t.name;
+          sel.appendChild(opt);
+        });
+      })
+      .catch(() => {});
+
+    sel.addEventListener('change', function () {
+      btn.disabled = !this.value;
+    });
+
+    btn.addEventListener('click', function () {
+      const id = sel.value;
+      if (!id) return;
+      fetch('/api/templates/' + id)
+        .then(r => r.json())
+        .then(t => {
+          const df = t.default_fields || {};
+          if (df.depreciation_method) {
+            const el = document.getElementById('depreciation_method');
+            if (el) el.value = df.depreciation_method;
+          }
+          if (df.depreciation_rate) {
+            const el = document.getElementById('depreciation_rate');
+            if (el) el.value = df.depreciation_rate;
+          }
+          if (df.MaintenanceIntervalDays) {
+            const el = document.getElementById('MaintenanceIntervalDays');
+            if (el) el.value = df.MaintenanceIntervalDays;
+          }
+          if (df.MaintenanceCategory) {
+            const el = document.getElementById('MaintenanceCategory');
+            if (el) el.value = df.MaintenanceCategory;
+          }
+          if (df.SafetyStock !== undefined) {
+            const el = document.getElementById('SafetyStock');
+            if (el) el.value = df.SafetyStock;
+          }
+          if (df.ReorderLevel !== undefined) {
+            const el = document.getElementById('ReorderLevel');
+            if (el) el.value = df.ReorderLevel;
+          }
+          // open asset info collapse if depreciation fields were set
+          if (df.depreciation_method || df.depreciation_rate) {
+            const collapse = document.getElementById('assetInfoCollapse');
+            if (collapse && !collapse.classList.contains('show')) {
+              collapse.classList.add('show');
+            }
+          }
+          // flash feedback
+          btn.textContent = '已套用！';
+          btn.classList.replace('btn-outline-primary', 'btn-success');
+          setTimeout(() => {
+            btn.textContent = '套用模板';
+            btn.classList.replace('btn-success', 'btn-outline-primary');
+          }, 2000);
+        })
+        .catch(() => alert('載入模板失敗'));
+    });
+  })();
 </script>
 {%endblock%}

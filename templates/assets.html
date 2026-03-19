@@ -50,6 +50,9 @@
   <div class="card shadow-sm animate-fadeInUp stagger-1">
     <div class="card-header d-flex justify-content-between align-items-center">
       <h5 class="mb-0"><i class="fas fa-table me-2"></i>資產明細（依現值排序）</h5>
+      <a href="{{ url_for('items.assets_print') }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-print me-1"></i>列印報表
+      </a>
     </div>
     <div class="card-body p-0">
       {% if report.items_with_value %}
@@ -76,7 +79,7 @@
                 <br><small class="text-muted">{{ item.ItemType }}</small>
                 {% endif %}
               </td>
-              <td class="text-end">{{ "{:,.0f}".format(item.purchase_price) }}</td>
+              <td class="text-end">{{ "{:,.0f}".format(item.purchase_price) }} <small class="text-muted">{{ item.currency or 'TWD' }}</small></td>
               <td class="text-end fw-semibold">
                 {% if item.calculated_current_value == 0 %}
                 <span class="text-danger">0</span>

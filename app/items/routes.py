@@ -1256,12 +1256,16 @@ def print_labels():
                 item['qr_code'] = f"data:image/png;base64,{qr_base64}"
                 items.append(item)
         
-        # 取得列印設定
+        # 取得列印設定 (M20: 支援更多版面參數)
         label_size = request.form.get("label_size", "medium")
         show_name = request.form.get("show_name") == "on"
         show_id = request.form.get("show_id") == "on"
         show_location = request.form.get("show_location") == "on"
-        
+        show_type = request.form.get("show_type") == "on"
+        show_qr = request.form.get("show_qr", "on") == "on"
+        labels_per_row = request.form.get("labels_per_row", "3")
+        font_size = request.form.get("font_size", "medium")
+
         return render_template(
             "print_preview.html",
             User=user,
@@ -1270,6 +1274,10 @@ def print_labels():
             show_name=show_name,
             show_id=show_id,
             show_location=show_location,
+            show_type=show_type,
+            show_qr=show_qr,
+            labels_per_row=labels_per_row,
+            font_size=font_size,
         )
     
     # GET: 顯示選擇頁面
@@ -1406,6 +1414,160 @@ def assets():
         User=user,
         report=report,
     )
+
+
+@bp.route("/assets/print")
+@login_required
+def assets_print():
+    """M14: 可列印的資產報表"""
+    from app import get_db_type
+    user = get_current_user()
+    report = item_service.get_asset_report()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    return render_template(
+        "assets_print.html",
+        User=user,
+        report=report,
+        now=now,
+    )
+
+
+@bp.route("/stocktake/<int:session_id>/print")
+@login_required
+def stocktake_print(session_id: int):
+    """M14: 可列印的盤點報表"""
+    from app.services import stocktake_service
+    user = get_current_user()
+    sess = stocktake_service.get_session_detail(session_id)
+    if not sess:
+        flash(_("找不到盤點作業"), "danger")
+        return redirect(url_for("stocktake.stocktake_list"))
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    return render_template(
+        "stocktake_print.html",
+        User=user,
+        session=sess,
+        now=now,
+    )
+
+
+@bp.route("/calendar")
+@login_required
+def calendar_view():
+    """M15: 行事曆視圖"""
+    user = get_current_user()
+    return render_template("calendar.html", User=user)
+
+
+@bp.route("/api/calendar/events")
+@login_required
+def calendar_events():
+    """M15: 行事曆事件 API（依月份）"""
+    month_str = request.args.get("month", "")
+    if not month_str:
+        from datetime import date as _date
+        month_str = _date.today().strftime("%Y-%m")
+
+    try:
+        year, month = int(month_str[:4]), int(month_str[5:7])
+    except (ValueError, IndexError):
+        return jsonify({"error": "invalid month"}), 400
+
+    from app import get_db_type
+    from datetime import date as _date, timedelta
+    import calendar as _cal
+
+    events: list = []
+    db_type = get_db_type()
+
+    if db_type == "postgres":
+        # 計算月份範圍
+        first_day = _date(year, month, 1)
+        last_day = _date(year, month, _cal.monthrange(year, month)[1])
+
+        # WarrantyExpiry 到期 (紅)
+        warranty_items = Item.query.filter(
+            Item.WarrantyExpiry >= first_day,
+            Item.WarrantyExpiry <= last_day,
+            Item.is_deleted == False,
+        ).all()
+        for item in warranty_items:
+            events.append({
+                "date": item.WarrantyExpiry.strftime("%Y-%m-%d"),
+                "type": "warranty",
+                "color": "red",
+                "label": f"保固到期：{item.ItemName}",
+                "item_id": item.ItemID,
+            })
+
+        # UsageExpiry 到期 (橙)
+        usage_items = Item.query.filter(
+            Item.UsageExpiry >= first_day,
+            Item.UsageExpiry <= last_day,
+            Item.is_deleted == False,
+        ).all()
+        for item in usage_items:
+            events.append({
+                "date": item.UsageExpiry.strftime("%Y-%m-%d"),
+                "type": "usage",
+                "color": "orange",
+                "label": f"使用期限：{item.ItemName}",
+                "item_id": item.ItemID,
+            })
+
+        # 保養到期 (藍) - LastMaintenanceDate + MaintenanceIntervalDays 落在此月
+        maintenance_items = Item.query.filter(
+            Item.LastMaintenanceDate.isnot(None),
+            Item.MaintenanceIntervalDays.isnot(None),
+            Item.is_deleted == False,
+        ).all()
+        for item in maintenance_items:
+            if item.LastMaintenanceDate and item.MaintenanceIntervalDays:
+                due = item.LastMaintenanceDate + timedelta(days=int(item.MaintenanceIntervalDays))
+                if first_day <= due <= last_day:
+                    events.append({
+                        "date": due.strftime("%Y-%m-%d"),
+                        "type": "maintenance",
+                        "color": "blue",
+                        "label": f"保養到期：{item.ItemName}",
+                        "item_id": item.ItemID,
+                    })
+
+        # 借出歸還 (綠) — 尚未還回 (status != returned)
+        from app.models.item_loan import ItemLoan
+        loans = ItemLoan.query.filter(
+            ItemLoan.expected_return >= first_day,
+            ItemLoan.expected_return <= last_day,
+            ItemLoan.status != "returned",
+        ).all()
+        for loan in loans:
+            events.append({
+                "date": loan.expected_return.strftime("%Y-%m-%d"),
+                "type": "loan_return",
+                "color": "green",
+                "label": f"借出歸還：{loan.item_name or loan.item_id}",
+                "item_id": loan.item_id,
+            })
+
+    return jsonify({"month": month_str, "events": events})
+
+
+@bp.route("/api/templates")
+@login_required
+def api_templates():
+    """M19: 列出所有物品模板"""
+    from app.models.item_template import ItemTemplate
+    templates = ItemTemplate.query.order_by(ItemTemplate.name).all()
+    return jsonify([t.to_dict() for t in templates])
+
+
+@bp.route("/api/templates/<int:template_id>")
+@login_required
+def api_template_detail(template_id: int):
+    """M19: 取得單一物品模板"""
+    from app.models.item_template import ItemTemplate
+    t = ItemTemplate.query.get_or_404(template_id)
+    return jsonify(t.to_dict())
 
 
 @bp.route("/api/items/<item_id>/purchase-links")
