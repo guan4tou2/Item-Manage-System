@@ -227,7 +227,10 @@ def additem():
 
     if request.method == "POST":
         form = dict(request.form)
-        ok, msg = item_service.create_item(form, request.files.get("ItemPic"))
+        all_pics = request.files.getlist("ItemPic")
+        main_pic = all_pics[0] if all_pics else None
+        extra_pics = all_pics[1:] if len(all_pics) > 1 else []
+        ok, msg = item_service.create_item(form, main_pic, extra_files=extra_pics)
         if ok:
             # Save custom field values after item creation
             item_id = form.get("ItemID", "").strip()
@@ -338,7 +341,10 @@ def edititem(item_id: str):
 
     if request.method == "POST":
         form = dict(request.form)
-        ok, msg = item_service.update_item(item_id, form, request.files.get("ItemPic"))
+        all_pics = request.files.getlist("ItemPic")
+        main_pic = all_pics[0] if all_pics else None
+        extra_pics = all_pics[1:] if len(all_pics) > 1 else []
+        ok, msg = item_service.update_item(item_id, form, main_pic, extra_files=extra_pics)
         if ok:
             try:
                 if custom_fields:
@@ -565,6 +571,12 @@ def notifications():
     settings = user_repo.get_notification_settings(session.get("UserID", ""))
     low_stock = item_service.get_low_stock_items()
     replacement = item_service.get_replacement_items(settings)
+    overdue_loans = []
+    try:
+        from app.services.loan_service import get_overdue_loans
+        overdue_loans = get_overdue_loans()
+    except Exception:
+        pass
     return render_template(
         "notifications.html",
         User=user,
@@ -576,7 +588,8 @@ def notifications():
         low_count=low_stock["low_stock_count"],
         replacement_due=replacement["due"],
         replacement_upcoming=replacement["upcoming"],
-        total_alerts=result["total_alerts"] + low_stock["low_stock_count"] + replacement["total_alerts"],
+        overdue_loans=overdue_loans,
+        total_alerts=result["total_alerts"] + low_stock["low_stock_count"] + replacement["total_alerts"] + len(overdue_loans),
     )
 
 

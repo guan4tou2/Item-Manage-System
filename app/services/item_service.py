@@ -257,7 +257,7 @@ def list_items(
     }
 
 
-def create_item(form_data: Dict[str, Any], file_storage) -> Tuple[bool, str]:
+def create_item(form_data: Dict[str, Any], file_storage, extra_files=None) -> Tuple[bool, str]:
     valid_types = _filter_valid_types()
     from app.services import location_service
 
@@ -286,6 +286,18 @@ def create_item(form_data: Dict[str, Any], file_storage) -> Tuple[bool, str]:
             form_data["ItemThumb"] = thumb
     else:
         form_data["ItemPic"] = ""
+
+    # 處理多張額外照片
+    extra_pics = []
+    if extra_files:
+        for ef in extra_files:
+            if ef and getattr(ef, "filename", ""):
+                ef_name = storage.save_upload(ef)
+                if ef_name:
+                    ef_compressed = image.compress_image(ef_name)
+                    extra_pics.append(ef_compressed if ef_compressed else ef_name)
+    if extra_pics:
+        form_data["ItemPics"] = extra_pics
 
     item_repo.insert_item(form_data)
 
@@ -323,7 +335,7 @@ def update_item_place(item_id: str, updates: Dict[str, Any]) -> None:
     item_repo.update_item_by_id(item_id, updates)
 
 
-def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None) -> Tuple[bool, str]:
+def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None, extra_files=None) -> Tuple[bool, str]:
     """更新物品完整資訊"""
     # 檢查物品是否存在
     existing = item_repo.find_item_by_id(item_id)
@@ -366,10 +378,21 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None) -> T
             if thumb:
                 form_data["ItemThumb"] = thumb
     
+    # 處理多張額外照片（追加到現有 ItemPics）
+    if extra_files:
+        current_pics = list(existing.get("ItemPics") or [])
+        for ef in extra_files:
+            if ef and getattr(ef, "filename", ""):
+                ef_name = storage.save_upload(ef)
+                if ef_name:
+                    ef_compressed = image.compress_image(ef_name)
+                    current_pics.append(ef_compressed if ef_compressed else ef_name)
+        form_data["ItemPics"] = current_pics
+
     # 移除不應該更新的欄位
     form_data.pop("csrf_token", None)
     form_data.pop("ItemID", None)  # ItemID 不可更改
-    
+
     item_repo.update_item_by_id(item_id, form_data)
 
     try:

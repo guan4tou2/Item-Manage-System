@@ -26,7 +26,7 @@ def _parse_reminder_ladder(value):
     return None
 
 
-def _build_plain_notification_text(expiry_info: Dict[str, Any], replacement_info: Dict[str, Any]) -> str:
+def _build_plain_notification_text(expiry_info: Dict[str, Any], replacement_info: Dict[str, Any], overdue_loans: list = None) -> str:
     lines = ["物品提醒摘要"]
     if expiry_info.get("expired"):
         lines.append(f"已過期 {len(expiry_info['expired'])} 項")
@@ -36,6 +36,8 @@ def _build_plain_notification_text(expiry_info: Dict[str, Any], replacement_info
         lines.append(f"需保養 / 更換 {len(replacement_info['due'])} 項")
     if replacement_info.get("upcoming"):
         lines.append(f"即將保養 / 更換 {len(replacement_info['upcoming'])} 項")
+    if overdue_loans:
+        lines.append(f"借出逾期 {len(overdue_loans)} 筆")
     lines.append("請回到系統查看詳細清單。")
     return "\n".join(lines)
 
@@ -305,17 +307,27 @@ def get_notification_summary(username: str) -> Dict[str, Any]:
     )
 
     replacement_info = item_service.get_replacement_items(settings)
-    combined_total = expiry_info["total_alerts"] + replacement_info["total_alerts"]
-    
+
+    # 借出逾期
+    overdue_loans = []
+    try:
+        from app.services.loan_service import get_overdue_loans
+        overdue_loans = get_overdue_loans()
+    except Exception:
+        pass
+
+    combined_total = expiry_info["total_alerts"] + replacement_info["total_alerts"] + len(overdue_loans)
+
     # 檢查今天是否已發送通知
     today = date.today()
     today_str = today.strftime("%Y-%m-%d")
     last_sent = settings.get("last_notification_date", "")
     can_send = last_sent != today_str and combined_total > 0
-    
+
     return {
         "settings": settings,
         "expiry_info": expiry_info,
         "replacement_info": replacement_info,
+        "overdue_loans": overdue_loans,
         "can_send": can_send,
     }

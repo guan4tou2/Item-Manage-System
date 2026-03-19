@@ -307,11 +307,12 @@ def get_profile(username: str) -> Dict[str, Any]:
                 "theme_preference": user.theme_preference or "light",
                 "language": user.language or "zh_TW",
                 "email": user.email or "",
+                "email_verified": bool(getattr(user, "email_verified", False)),
             }
         return {}
     user = mongo.db.user.find_one(
         {"User": username},
-        {"display_name": 1, "theme_preference": 1, "language": 1, "email": 1}
+        {"display_name": 1, "theme_preference": 1, "language": 1, "email": 1, "email_verified": 1}
     )
     if user:
         return {
@@ -319,6 +320,7 @@ def get_profile(username: str) -> Dict[str, Any]:
             "theme_preference": user.get("theme_preference", "light"),
             "language": user.get("language", "zh_TW"),
             "email": user.get("email", ""),
+            "email_verified": bool(user.get("email_verified", False)),
         }
     return {}
 
@@ -384,3 +386,45 @@ def get_all_users_for_notification() -> List[Dict[str, Any]]:
             "replacement_intervals": 1,
         }
     ))
+
+
+def set_email_verify_token(username: str, token: str) -> None:
+    """儲存 email 驗證 token"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        user = User.query.filter_by(User=username).first()
+        if user:
+            user.email_verify_token = token
+            db.session.commit()
+    else:
+        mongo.db.user.update_one(
+            {"User": username},
+            {"$set": {"email_verify_token": token}},
+        )
+
+
+def find_by_email_verify_token(token: str) -> Optional[Dict[str, Any]]:
+    """依 token 查詢使用者"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        user = User.query.filter_by(email_verify_token=token).first()
+        return user.to_dict() if user else None
+    else:
+        doc = mongo.db.user.find_one({"email_verify_token": token}, {"_id": 0, "Password": 0})
+        return doc
+
+
+def mark_email_verified(username: str) -> None:
+    """標記 email 已驗證，清除 token"""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        user = User.query.filter_by(User=username).first()
+        if user:
+            user.email_verified = True
+            user.email_verify_token = None
+            db.session.commit()
+    else:
+        mongo.db.user.update_one(
+            {"User": username},
+            {"$set": {"email_verified": True}, "$unset": {"email_verify_token": ""}},
+        )

@@ -51,6 +51,21 @@
             />
             <label for="email">{{ _('電子郵件') }}</label>
           </div>
+          {% if profile.email %}
+          <div class="mt-2 d-flex align-items-center gap-2">
+            {% if profile.email_verified %}
+            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>已驗證</span>
+            {% else %}
+            <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-circle me-1"></i>未驗證</span>
+            <form method="POST" action="{{url_for('profile.resend_verification')}}" class="d-inline">
+              <input type="hidden" name="csrf_token" value="{{csrf_token()}}">
+              <button type="submit" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-paper-plane me-1"></i>重新發送驗證信
+              </button>
+            </form>
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>

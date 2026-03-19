@@ -75,3 +75,25 @@ def get_active_loans() -> List[Dict[str, Any]]:
 def get_overdue_count() -> int:
     """取得逾期借出數量"""
     return len(loan_repo.get_overdue_loans())
+
+
+def get_overdue_loans() -> List[Dict[str, Any]]:
+    """取得所有逾期借出（expected_return < today 且 status='active'）"""
+    loan_repo.mark_overdue_loans()
+    return loan_repo.get_overdue_loans()
+
+
+def check_and_notify_overdue() -> None:
+    """檢查並記錄逾期借出（供排程器每日呼叫）。
+
+    目前實作：標記逾期並印出摘要。若系統已整合 Email，可在此擴充發送通知。
+    """
+    try:
+        updated = loan_repo.mark_overdue_loans()
+        overdue = loan_repo.get_overdue_loans()
+        if overdue:
+            print(f"⚠️  逾期借出提醒：共 {len(overdue)} 筆逾期，本次標記 {updated} 筆")
+            for loan in overdue:
+                print(f"   - {loan.get('item_name')} 借給 {loan.get('borrower')}，預計歸還 {loan.get('expected_return')}")
+    except Exception as e:
+        print(f"❌ 逾期借出檢查失敗: {e}")

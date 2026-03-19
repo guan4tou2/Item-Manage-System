@@ -161,6 +161,7 @@
                     name="ItemPic"
                     accept="image/*"
                     capture="environment"
+                    multiple
                   />
                   <div class="upload-placeholder" id="uploadPlaceholder">
                     <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-3"></i>
@@ -182,10 +183,29 @@
                     </button>
                   </div>
                 </div>
-                <small class="text-muted d-block mt-2">手機可直接啟用後鏡頭拍照；桌機可使用瀏覽器相機預覽拍攝。</small>
+                <small class="text-muted d-block mt-2">手機可直接啟用後鏡頭拍照；桌機可使用瀏覽器相機預覽拍攝。可同時選取多張照片。</small>
               </div>
             </div>
           </div>
+
+          <!-- 額外照片 -->
+          {%if item.ItemPics%}
+          <div class="col-12">
+            <label class="form-label"><i class="fas fa-images me-1"></i>額外照片</label>
+            <div class="d-flex flex-wrap gap-2">
+              {%for pic in item.ItemPics%}
+              <div class="position-relative" style="width:100px;">
+                <img src="{{url_for('items.uploaded_file', filename=pic)}}"
+                     class="img-thumbnail"
+                     style="width:100px;height:100px;object-fit:cover;"
+                     alt="額外照片"/>
+                <small class="d-block text-muted text-truncate" style="max-width:100px;" title="{{pic}}">{{pic}}</small>
+              </div>
+              {%endfor%}
+            </div>
+            <small class="text-muted">共 {{item.ItemPics|length}} 張額外照片。上傳新照片時會追加，不會刪除現有照片。</small>
+          </div>
+          {%endif%}
 
           <!-- 位置資訊區塊 -->
           <div class="col-12">

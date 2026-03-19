@@ -448,6 +448,54 @@
   </div>
   {% endif %}
 
+  <!-- 借出逾期 -->
+  {% if overdue_loans %}
+  <div class="col-12 mb-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+          <i class="fas fa-hand-holding me-2"></i>借出逾期
+        </h5>
+        <span class="badge bg-danger">{{ overdue_loans|length }} 筆</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>物品名稱</th>
+                <th>借用人</th>
+                <th>借出日期</th>
+                <th>預計歸還</th>
+                <th class="text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for loan in overdue_loans %}
+              <tr class="align-middle">
+                <td><strong>{{ loan.item_name }}</strong></td>
+                <td>{{ loan.borrower }}</td>
+                <td>{{ loan.lent_date }}</td>
+                <td>
+                  <span class="badge bg-danger">
+                    <i class="fas fa-exclamation-circle me-1"></i>{{ loan.expected_return }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <a href="{{ url_for('loans.index') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-external-link-alt me-1"></i>查看借出
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- 庫存不足物品 -->
   {% if low_stock_items %}
   <div class="col-12 mb-4">

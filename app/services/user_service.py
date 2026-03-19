@@ -336,6 +336,24 @@ def unlock_user(username: str) -> bool:
     return True
 
 
+def generate_email_verify_token(username: str) -> str:
+    """產生 email 驗證 token，儲存至使用者資料後回傳 token 字串。"""
+    import secrets
+    token = secrets.token_urlsafe(32)
+    user_repo.set_email_verify_token(username, token)
+    return token
+
+
+def verify_email(token: str) -> Tuple[bool, str]:
+    """驗證 email token，成功則標記 email_verified=True。"""
+    user = user_repo.find_by_email_verify_token(token)
+    if not user:
+        return False, "驗證連結無效或已過期"
+    username = user.get("User")
+    user_repo.mark_email_verified(username)
+    return True, "Email 驗證成功！"
+
+
 def delete_user(actor_username: str, target_username: str) -> Tuple[bool, str]:
     """刪除使用者，避免刪除自己或最後一個管理員。"""
     target_user = user_repo.find_by_username(target_username)

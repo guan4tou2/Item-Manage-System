@@ -16,6 +16,28 @@ def profile():
     return render_template("profile.html", User=user, profile=profile_data)
 
 
+@bp.route("/profile/resend-verification", methods=["POST"])
+@login_required
+def resend_verification():
+    """重新發送 Email 驗證信"""
+    username = session.get("UserID")
+    profile_data = user_service.get_profile(username)
+    email = profile_data.get("email", "")
+    if not email:
+        flash("請先在個人設定中填寫 Email", "warning")
+        return redirect(url_for("profile.profile"))
+    try:
+        from flask import url_for as _url_for
+        from app.services.email_service import send_email_verification
+        token = user_service.generate_email_verify_token(username)
+        verify_url = _url_for("auth.verify_email_route", token=token, _external=True)
+        send_email_verification(email, verify_url)
+        flash("驗證信已重新發送，請檢查您的信箱", "success")
+    except Exception:
+        flash("驗證信發送失敗，請確認系統 Email 設定", "danger")
+    return redirect(url_for("profile.profile"))
+
+
 @bp.route("/profile", methods=["POST"])
 @login_required
 def update_profile():

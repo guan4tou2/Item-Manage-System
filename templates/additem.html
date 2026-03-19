@@ -134,11 +134,13 @@
                 name="ItemPic"
                 accept="image/*"
                 capture="environment"
+                multiple
               />
+              <input type="hidden" name="ExtraPhotos" id="extraPhotosData">
               <div class="upload-placeholder" id="uploadPlaceholder">
                 <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
                 <p class="mb-1">點擊或拖曳照片到此處上傳</p>
-                <small class="text-muted">支援 JPG, PNG, GIF 格式，最大 16MB，目前一次上傳 1 張主圖</small>
+                <small class="text-muted">支援 JPG, PNG, GIF 格式，最大 16MB，可同時選取多張照片</small>
                 <div class="photo-action-row">
                   <button type="button" class="btn btn-primary btn-sm" id="cameraCaptureBtn">
                     <i class="fas fa-camera me-1"></i>直接拍照

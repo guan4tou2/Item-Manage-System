@@ -362,3 +362,39 @@ def send_test_email(to_email: str) -> bool:
     except Exception as e:
         print(f"❌ 測試郵件發送失敗: {e}")
         return False
+
+
+
+def send_email_verification(to_email: str, verify_url: str) -> bool:
+    """發送 Email 驗證信"""
+    if not is_email_configured():
+        print(f"⚠️ Email 未設定，驗證連結: {verify_url}")
+        return False
+    try:
+        import smtplib
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = "物品管理系統 - Email 驗證"
+        msg["From"] = MAIL_DEFAULT_SENDER or MAIL_USERNAME
+        msg["To"] = to_email
+
+        text_body = f"請點擊以下連結驗證您的 Email：\n{verify_url}\n\n連結有效期間不限，驗證後即可享有完整功能。"
+        html_body = f"""<p>感謝您註冊物品管理系統！</p>
+<p>請點擊以下連結驗證您的 Email：</p>
+<p><a href="{_esc(verify_url)}">驗證 Email</a></p>
+<p>或複製此連結到瀏覽器：{_esc(verify_url)}</p>"""
+
+        msg.attach(MIMEText(text_body, "plain", "utf-8"))
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
+            if MAIL_USE_TLS:
+                server.starttls()
+            server.login(MAIL_USERNAME, MAIL_PASSWORD)
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        print(f"❌ Email 驗證信發送失敗: {e}")
+        return False

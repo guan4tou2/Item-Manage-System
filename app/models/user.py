@@ -36,6 +36,10 @@ class User(UserMixin, db.Model):
     theme_preference: Mapped[str] = mapped_column(String(20), default="light")
     language: Mapped[str] = mapped_column(String(10), default="zh_TW")
 
+    # Email 驗證
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    email_verify_token: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
     # 密碼修改相關
     password_changed: Mapped[bool] = mapped_column(Boolean, default=False)
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0)
@@ -64,6 +68,8 @@ class User(UserMixin, db.Model):
             "display_name": self.display_name,
             "theme_preference": self.theme_preference or "light",
             "language": self.language or "zh_TW",
+            "email_verified": self.email_verified,
+            "email_verify_token": self.email_verify_token,
             "password_changed": self.password_changed,
             "failed_attempts": self.failed_attempts,
             "locked_until": self.locked_until,

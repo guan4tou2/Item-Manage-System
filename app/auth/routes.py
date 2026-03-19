@@ -3,6 +3,7 @@ from flask_babel import gettext as _
 
 from app import limiter
 from app.services import user_service
+from app.utils.validators import validate_password_strength
 
 bp = Blueprint("auth", __name__)
 
@@ -59,16 +60,28 @@ def signup():
             flash(_("帳號至少需要 3 個字元"), "danger")
             return render_template("signup.html", error=_("帳號至少需要 3 個字元"))
 
-        if len(password) < 8:
-            flash(_("密碼至少需要 8 個字元"), "danger")
-            return render_template("signup.html", error=_("密碼至少需要 8 個字元"))
+        pw_errors = validate_password_strength(password)
+        if pw_errors:
+            for err in pw_errors:
+                flash(_(err), "danger")
+            return render_template("signup.html", error=_(pw_errors[0]))
 
         if password != confirm_password:
             flash(_("兩次輸入的密碼不一致"), "danger")
             return render_template("signup.html", error=_("兩次輸入的密碼不一致"))
 
         # 嘗試建立用戶
+        email = request.form.get("Email", "").strip()
         if user_service.create_user(username, password, admin=False):
+            # 若有提供 email，發送驗證信
+            if email:
+                try:
+                    from app.services.email_service import send_email_verification
+                    token = user_service.generate_email_verify_token(username)
+                    verify_url = url_for("auth.verify_email_route", token=token, _external=True)
+                    send_email_verification(email, verify_url)
+                except Exception:
+                    pass
             flash(_("註冊成功！請登入"), "success")
             return redirect(url_for("auth.signin"))
         else:
@@ -100,6 +113,12 @@ def change_password():
             flash(_("兩次輸入的密碼不一致"), "danger")
             return render_template("change_password.html", is_forced=is_forced)
 
+        pw_errors = validate_password_strength(new_password)
+        if pw_errors:
+            for err in pw_errors:
+                flash(_(err), "danger")
+            return render_template("change_password.html", is_forced=is_forced)
+
         # 強制修改時不需要舊密碼
         if is_forced:
             ok, msg = user_service.force_change_password(username, new_password)
@@ -119,6 +138,14 @@ def change_password():
             return render_template("change_password.html", is_forced=is_forced)
     
     return render_template("change_password.html", is_forced=is_forced)
+
+
+@bp.route("/verify-email/<token>")
+def verify_email_route(token: str):
+    """Email 驗證連結"""
+    ok, msg = user_service.verify_email(token)
+    flash(_(msg), "success" if ok else "danger")
+    return redirect(url_for("auth.signin"))
 
 
 @bp.route("/signout")

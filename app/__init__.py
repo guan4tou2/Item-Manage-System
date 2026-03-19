@@ -279,6 +279,28 @@ def _ensure_map_columns() -> None:
             db.session.commit()
 
 
+def _ensure_email_verify_columns() -> None:
+    """補齊 users 表缺少的 email_verified 與 email_verify_token 欄位。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("users"):
+        return
+    existing_columns = {col["name"] for col in inspector.get_columns("users")}
+    alter_statements = []
+    if "email_verified" not in existing_columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;")
+    if "email_verify_token" not in existing_columns:
+        alter_statements.append("ALTER TABLE users ADD COLUMN email_verify_token VARCHAR(100);")
+    for statement in alter_statements:
+        db.session.execute(text(statement))
+    if alter_statements:
+        db.session.commit()
+
+
 def _ensure_fulltext_extensions() -> None:
     """Install pg_trgm extension for fuzzy full-text search.
 
@@ -357,6 +379,7 @@ def create_app() -> Flask:
             _ensure_item_warehouse_column()
             _ensure_map_columns()
             _ensure_item_purchase_columns()
+            _ensure_email_verify_columns()
     else:
         mongo.init_app(app)
     

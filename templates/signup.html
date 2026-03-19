@@ -77,6 +77,12 @@
               <div class="password-strength-bar" id="strengthBar"></div>
             </div>
             <p class="password-hint" id="strengthHint">密碼強度</p>
+            <ul class="list-unstyled small mt-1" id="pwChecklist" style="display:none;">
+              <li id="chk-len"><i class="fas fa-circle text-secondary me-1"></i>至少 8 個字元</li>
+              <li id="chk-upper"><i class="fas fa-circle text-secondary me-1"></i>至少一個大寫字母</li>
+              <li id="chk-lower"><i class="fas fa-circle text-secondary me-1"></i>至少一個小寫字母</li>
+              <li id="chk-digit"><i class="fas fa-circle text-secondary me-1"></i>至少一個數字</li>
+            </ul>
           </div>
 
           <div class="form-group">
@@ -134,21 +140,36 @@
         if (/[^a-zA-Z0-9]/.test(password)) strength++;
 
         strengthBar.className = 'password-strength-bar';
-        
+
         if (password.length === 0) {
           hint = '密碼強度';
+          document.getElementById('pwChecklist').style.display = 'none';
         } else if (strength <= 2) {
           strengthBar.classList.add('weak');
           hint = '密碼強度：弱';
+          document.getElementById('pwChecklist').style.display = 'block';
         } else if (strength <= 3) {
           strengthBar.classList.add('medium');
           hint = '密碼強度：中等';
+          document.getElementById('pwChecklist').style.display = 'block';
         } else {
           strengthBar.classList.add('strong');
           hint = '密碼強度：強';
+          document.getElementById('pwChecklist').style.display = 'block';
         }
 
         strengthHint.textContent = hint;
+
+        // Update requirement checklist
+        function setChk(id, ok) {
+          const el = document.getElementById(id);
+          const icon = el.querySelector('i');
+          icon.className = ok ? 'fas fa-check-circle text-success me-1' : 'fas fa-circle text-secondary me-1';
+        }
+        setChk('chk-len',   password.length >= 8);
+        setChk('chk-upper', /[A-Z]/.test(password));
+        setChk('chk-lower', /[a-z]/.test(password));
+        setChk('chk-digit', /\d/.test(password));
       });
 
       // 確認密碼匹配檢查
