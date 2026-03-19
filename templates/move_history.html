@@ -1,0 +1,259 @@
+{%extends 'template.html' %}
+{%block title%}移動歷史 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <div class="page-header animate-fadeInUp">
+    <h1><i class="fas fa-route me-2"></i>移動歷史</h1>
+    <p class="lead">查看所有物品的位置移動記錄</p>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container-fluid">
+
+  <!-- 篩選列 -->
+  <div class="card mb-4 animate-fadeInUp stagger-1">
+    <div class="card-body">
+      <form method="GET" action="{{ url_for('items.move_history') }}">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label fw-bold">物品名稱</label>
+            <input type="text" class="form-control" name="item" value="{{ item_filter }}" placeholder="搜尋物品名稱...">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">位置</label>
+            <input type="text" class="form-control" name="location" value="{{ location_filter }}" placeholder="搜尋起點或終點...">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">開始日期</label>
+            <input type="date" class="form-control" name="date_from" value="{{ date_from }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-bold">結束日期</label>
+            <input type="date" class="form-control" name="date_to" value="{{ date_to }}">
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-search me-1"></i>篩選
+            </button>
+          </div>
+        </div>
+        {% if item_filter or location_filter or date_from or date_to %}
+        <div class="mt-2">
+          <a href="{{ url_for('items.move_history') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-times me-1"></i>清除篩選
+          </a>
+          <small class="text-muted ms-2">共找到 {{ pagination.total }} 筆記錄</small>
+        </div>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+
+  {% if records %}
+  <!-- 統計摘要 -->
+  <div class="row g-3 mb-4 animate-fadeInUp stagger-2">
+    <div class="col-md-4">
+      <div class="card text-center border-0 bg-primary bg-opacity-10">
+        <div class="card-body py-3">
+          <div class="fs-3 fw-bold text-primary">{{ pagination.total }}</div>
+          <small class="text-muted">總移動記錄數</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center border-0 bg-success bg-opacity-10">
+        <div class="card-body py-3">
+          <div class="fs-3 fw-bold text-success">{{ records | map(attribute='item_id') | list | unique | list | length }}</div>
+          <small class="text-muted">本頁涉及物品數</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-center border-0 bg-info bg-opacity-10">
+        <div class="card-body py-3">
+          <div class="fs-3 fw-bold text-info">{{ pagination.total_pages }}</div>
+          <small class="text-muted">總頁數</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 時間軸 -->
+  <div class="card animate-fadeInUp stagger-3">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-history me-2"></i>移動記錄時間軸</h5>
+    </div>
+    <div class="card-body p-0 p-md-3">
+      <div class="timeline">
+        {% set ns = namespace(last_date='') %}
+        {% for rec in records %}
+          {% set rec_date = rec.date[:10] if rec.date|length >= 10 else rec.date %}
+          {% if rec_date != ns.last_date %}
+          {% set ns.last_date = rec_date %}
+          <div class="timeline-date-marker">
+            <span class="badge bg-secondary">{{ rec_date }}</span>
+          </div>
+          {% endif %}
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content card shadow-sm">
+              <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                  <div>
+                    <a href="{{ url_for('items.item_detail', item_id=rec.item_id) }}" class="fw-bold text-decoration-none">
+                      <i class="fas fa-box me-1 text-primary"></i>{{ rec.item_name }}
+                    </a>
+                    <small class="text-muted ms-2">{{ rec.item_id }}</small>
+                  </div>
+                  <small class="text-muted">{{ rec.date }}</small>
+                </div>
+                <div class="mt-1 d-flex align-items-center gap-2 flex-wrap">
+                  <span class="badge bg-light text-dark border">
+                    <i class="fas fa-map-marker-alt me-1 text-danger"></i>
+                    {{ rec.from_location or '（未知）' }}
+                  </span>
+                  <i class="fas fa-arrow-right text-muted"></i>
+                  <span class="badge bg-light text-dark border">
+                    <i class="fas fa-map-marker-alt me-1 text-success"></i>
+                    {{ rec.to_location or '（未知）' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 分頁 -->
+  {% if pagination.total_pages > 1 %}
+  <nav class="mt-4 animate-fadeInUp stagger-4" aria-label="移動歷史分頁">
+    <ul class="pagination justify-content-center flex-wrap">
+      <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('items.move_history', page=pagination.page-1, item=item_filter, location=location_filter, date_from=date_from, date_to=date_to) }}">
+          <i class="fas fa-chevron-left"></i>
+        </a>
+      </li>
+      {% for p in range(1, pagination.total_pages + 1) %}
+        {% if p == pagination.page or p == 1 or p == pagination.total_pages or (p >= pagination.page - 2 and p <= pagination.page + 2) %}
+        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('items.move_history', page=p, item=item_filter, location=location_filter, date_from=date_from, date_to=date_to) }}">{{ p }}</a>
+        </li>
+        {% elif p == pagination.page - 3 or p == pagination.page + 3 %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('items.move_history', page=pagination.page+1, item=item_filter, location=location_filter, date_from=date_from, date_to=date_to) }}">
+          <i class="fas fa-chevron-right"></i>
+        </a>
+      </li>
+    </ul>
+    <p class="text-center text-muted small">
+      第 {{ pagination.page }} / {{ pagination.total_pages }} 頁，共 {{ pagination.total }} 筆記錄
+    </p>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <!-- 空狀態 -->
+  <div class="card animate-fadeInUp stagger-2">
+    <div class="card-body text-center py-5 text-muted">
+      <i class="fas fa-route fa-4x mb-3 opacity-25"></i>
+      <h5>沒有移動記錄</h5>
+      {% if item_filter or location_filter or date_from or date_to %}
+      <p>目前篩選條件下找不到任何移動記錄，請嘗試調整篩選條件。</p>
+      <a href="{{ url_for('items.move_history') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-times me-1"></i>清除篩選
+      </a>
+      {% else %}
+      <p>當物品位置被更新時，移動記錄將自動儲存在此。</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{%endblock%}
+
+{%block css%}
+<style>
+.timeline {
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+.timeline-date-marker {
+  text-align: center;
+  margin: 1.5rem 0 0.5rem;
+  position: relative;
+}
+
+.timeline-date-marker::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #dee2e6;
+  z-index: 0;
+}
+
+.timeline-date-marker .badge {
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: 1.45rem;
+  top: 2rem;
+  bottom: -0.75rem;
+  width: 2px;
+  background: #dee2e6;
+}
+
+.timeline-item:last-child::before {
+  display: none;
+}
+
+.timeline-dot {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  background: #0d6efd;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #0d6efd;
+  margin-top: 0.6rem;
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-content {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 576px) {
+  .timeline-item {
+    padding-left: 0.25rem;
+  }
+}
+</style>
+{%endblock%}

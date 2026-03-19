@@ -197,13 +197,22 @@
                   {% endif %}
                 </td>
                 <td class="text-center">
-                  {% if User.admin %}
-                  <a href="{{url_for('items.edititem', item_id=item.ItemID)}}" 
-                     class="btn btn-sm btn-outline-primary" 
-                     title="編輯物品">
-                    <i class="fas fa-edit"></i>
-                  </a>
-                  {% endif %}
+                  <div class="d-flex gap-1 justify-content-center">
+                    <a href="/api/items/{{ item.ItemID }}/purchase-links"
+                       class="btn btn-sm btn-outline-success purchase-link-btn"
+                       data-item-id="{{ item.ItemID }}"
+                       data-item-name="{{ item.ItemName }}"
+                       title="購買連結">
+                      <i class="fas fa-shopping-cart"></i>
+                    </a>
+                    {% if User.admin %}
+                    <a href="{{url_for('items.edititem', item_id=item.ItemID)}}"
+                       class="btn btn-sm btn-outline-primary"
+                       title="編輯物品">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    {% endif %}
+                  </div>
                 </td>
               </tr>
               {% endfor %}
@@ -297,13 +306,22 @@
                   {% endif %}
                 </td>
                 <td class="text-center">
-                  {% if User.admin %}
-                  <a href="{{url_for('items.edititem', item_id=item.ItemID)}}" 
-                     class="btn btn-sm btn-outline-primary" 
-                     title="編輯物品">
-                    <i class="fas fa-edit"></i>
-                  </a>
-                  {% endif %}
+                  <div class="d-flex gap-1 justify-content-center">
+                    <a href="/api/items/{{ item.ItemID }}/purchase-links"
+                       class="btn btn-sm btn-outline-success purchase-link-btn"
+                       data-item-id="{{ item.ItemID }}"
+                       data-item-name="{{ item.ItemName }}"
+                       title="購買連結">
+                      <i class="fas fa-shopping-cart"></i>
+                    </a>
+                    {% if User.admin %}
+                    <a href="{{url_for('items.edititem', item_id=item.ItemID)}}"
+                       class="btn btn-sm btn-outline-primary"
+                       title="編輯物品">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    {% endif %}
+                  </div>
                 </td>
               </tr>
               {% endif %}
@@ -362,6 +380,31 @@ document.addEventListener('DOMContentLoaded', function() {
         this.disabled = false;
       });
     });
+  });
+});
+
+// ---- Purchase Link Buttons (Feature 21) ----
+document.querySelectorAll('.purchase-link-btn').forEach(function(btn) {
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    var itemId = this.dataset.itemId;
+    var itemName = this.dataset.itemName;
+    fetch('/api/items/' + itemId + '/purchase-links')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var linksHtml = (data.links || []).map(function(l) {
+          return '<a href="' + l.url + '" target="_blank" rel="noopener noreferrer" ' +
+            'class="btn btn-sm btn-outline-secondary me-1 mb-1">' +
+            '<i class="' + l.icon + ' me-1"></i>' + l.store + '</a>';
+        }).join('');
+        if (data.purchase_url) {
+          linksHtml = '<a href="' + data.purchase_url + '" target="_blank" rel="noopener noreferrer" ' +
+            'class="btn btn-sm btn-success me-1 mb-1">' +
+            '<i class="fas fa-external-link-alt me-1"></i>儲存的連結</a>' + linksHtml;
+        }
+        showToast('搜尋「' + itemName + '」：<br>' + linksHtml, 'info', 8000);
+      })
+      .catch(function() { showToast('無法載入購買連結', 'danger'); });
   });
 });
 </script>

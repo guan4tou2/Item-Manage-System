@@ -1171,6 +1171,39 @@ def restore_backup():
         return jsonify({"success": False, "message": str(e)}), 500
 
 
+@bp.route("/api/backup/config", methods=["GET"])
+@admin_required
+def get_backup_config():
+    """API: 取得排程備份設定"""
+    from app.services import backup_service
+    cfg = backup_service.get_config()
+    return jsonify({"success": True, "config": cfg})
+
+
+@bp.route("/api/backup/config", methods=["POST"])
+@admin_required
+def save_backup_config():
+    """API: 儲存排程備份設定"""
+    from app.services import backup_service
+    data = request.get_json() or {}
+    try:
+        cfg = backup_service.update_config(data)
+        return jsonify({"success": True, "config": cfg})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+@bp.route("/api/backup/run-now", methods=["POST"])
+@admin_required
+def run_backup_now():
+    """API: 立即執行備份"""
+    from app.services import backup_service
+    result = backup_service.run_backup()
+    if result["success"]:
+        return jsonify(result)
+    return jsonify(result), 500
+
+
 @bp.route("/print-labels", methods=["GET", "POST"])
 @admin_required
 def print_labels():
@@ -1350,4 +1383,53 @@ def assets():
         "assets.html",
         User=user,
         report=report,
+    )
+
+
+@bp.route("/api/items/<item_id>/purchase-links")
+@login_required
+def purchase_links(item_id: str):
+    """API: 取得物品的購買連結（Feature 21）。"""
+    item = item_service.get_item(item_id)
+    if not item:
+        return jsonify({"error": "找不到物品"}), 404
+    links = item_service.generate_purchase_links(item.get("ItemName", item_id))
+    return jsonify({
+        "item_id": item_id,
+        "item_name": item.get("ItemName", ""),
+        "purchase_url": item.get("purchase_url", ""),
+        "preferred_store": item.get("preferred_store", ""),
+        "links": links,
+    })
+
+
+@bp.route("/move-history")
+@login_required
+def move_history():
+    """移動歷史頁面"""
+    user = get_current_user()
+    page = request.args.get("page", 1, type=int)
+    item_filter = request.args.get("item", "").strip()
+    location_filter = request.args.get("location", "").strip()
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
+
+    result = item_service.get_all_move_history(
+        page=page,
+        page_size=50,
+        item_filter=item_filter,
+        location_filter=location_filter,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+    return render_template(
+        "move_history.html",
+        User=user,
+        records=result["items"],
+        pagination=result,
+        item_filter=item_filter,
+        location_filter=location_filter,
+        date_from=date_from,
+        date_to=date_to,
     )

@@ -291,6 +291,29 @@
           </div>
           {%endif%}
 
+          <!-- 購買連結 -->
+          <div class="info-section">
+            <h5 class="info-section-title">
+              <i class="fas fa-shopping-cart text-success"></i>
+              購買連結
+            </h5>
+            {% if item.purchase_url %}
+            <div class="mb-3">
+              <p class="text-muted small mb-1">儲存的購買連結{% if item.preferred_store %}（{{ item.preferred_store }}）{% endif %}</p>
+              <a href="{{ item.purchase_url }}" target="_blank" rel="noopener noreferrer"
+                 class="btn btn-sm btn-outline-success">
+                <i class="fas fa-external-link-alt me-1"></i>前往購買頁面
+              </a>
+            </div>
+            {% endif %}
+            <div id="purchaseLinksContainer">
+              <p class="text-muted small mb-2">在各電商平台搜尋「{{ item.ItemName }}」：</p>
+              <div class="d-flex flex-wrap gap-2" id="purchaseLinkBtns">
+                <span class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>載入中...</span>
+              </div>
+            </div>
+          </div>
+
           <!-- 自訂欄位 -->
           {% if custom_field_values %}
           <div class="info-section">
@@ -888,5 +911,27 @@ document.querySelectorAll('.qty-btn').forEach(btn => {
     });
   });
 });
+
+// ---- Purchase Links (Feature 21) ----
+(function() {
+  var container = document.getElementById('purchaseLinkBtns');
+  if (!container) return;
+  fetch('/api/items/{{ item.ItemID }}/purchase-links')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.links || !data.links.length) {
+        container.innerHTML = '<span class="text-muted small">無可用連結</span>';
+        return;
+      }
+      container.innerHTML = data.links.map(function(l) {
+        return '<a href="' + l.url + '" target="_blank" rel="noopener noreferrer" ' +
+          'class="btn btn-sm btn-outline-secondary">' +
+          '<i class="' + l.icon + ' me-1"></i>' + l.store + '</a>';
+      }).join('');
+    })
+    .catch(function() {
+      container.innerHTML = '<span class="text-muted small">無法載入連結</span>';
+    });
+})();
 </script>
 {%endblock%}

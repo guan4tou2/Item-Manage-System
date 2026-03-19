@@ -617,6 +617,46 @@
           {% endfor %}
           {% endif %}
 
+          <!-- 購買連結區塊 (Feature 21) -->
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-shopping-cart text-success"></i>
+              購買連結
+            </h5>
+          </div>
+          <div class="col-md-8">
+            <div class="form-floating">
+              <input
+                type="url"
+                class="form-control"
+                id="purchase_url"
+                name="purchase_url"
+                placeholder="購買連結"
+                value="{{ item.purchase_url or '' }}"
+              />
+              <label for="purchase_url">
+                <i class="fas fa-link me-1"></i>購買連結（選填）
+              </label>
+            </div>
+            <small class="text-muted">儲存此物品的購買頁面 URL</small>
+          </div>
+          <div class="col-md-4">
+            <div class="form-floating">
+              <input
+                type="text"
+                class="form-control"
+                id="preferred_store"
+                name="preferred_store"
+                placeholder="偏好商店"
+                value="{{ item.preferred_store or '' }}"
+              />
+              <label for="preferred_store">
+                <i class="fas fa-store me-1"></i>偏好商店（選填）
+              </label>
+            </div>
+            <small class="text-muted">例如：Amazon、PChome</small>
+          </div>
+
           <!-- 提交按鈕 -->
           <div class="col-12">
             <div id="editFormFeedback" class="alert alert-danger d-none" role="alert"></div>

@@ -13,6 +13,9 @@ from app.models.stocktake import StocktakeSession, StocktakeItem
 from app.models.custom_field import CustomField, CustomFieldValue
 from app.models.group import Group, GroupMember
 from app.models.warehouse import Warehouse
+from app.models.api_token import APIToken
+from app.models.webhook import Webhook
+from app.models.backup_config import BackupConfig
 
 __all__ = [
     "User",
@@ -36,4 +39,7 @@ __all__ = [
     "Group",
     "GroupMember",
     "Warehouse",
+    "APIToken",
+    "Webhook",
+    "BackupConfig",
 ]

@@ -227,6 +227,28 @@ def _ensure_item_warehouse_column() -> None:
         db.session.commit()
 
 
+def _ensure_item_purchase_columns() -> None:
+    """補齊 items 表缺少的購買連結欄位（Feature 21）。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("items"):
+        return
+    existing_columns = {col["name"] for col in inspector.get_columns("items")}
+    alter_statements = []
+    if "purchase_url" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN purchase_url VARCHAR(500);")
+    if "preferred_store" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN preferred_store VARCHAR(100);")
+    for statement in alter_statements:
+        db.session.execute(text(statement))
+    if alter_statements:
+        db.session.commit()
+
+
 def _ensure_map_columns() -> None:
     """補齊 items 表缺少的地圖座標欄位，以及 locations 表缺少的平面圖圖片欄位。"""
     if get_db_type() != "postgres":
@@ -334,6 +356,7 @@ def create_app() -> Flask:
             _ensure_item_asset_columns()
             _ensure_item_warehouse_column()
             _ensure_map_columns()
+            _ensure_item_purchase_columns()
     else:
         mongo.init_app(app)
     
@@ -410,6 +433,8 @@ def create_app() -> Flask:
     from app.custom_fields.routes import bp as custom_fields_bp
     from app.groups.routes import bp as groups_bp
     from app.warehouses.routes import bp as warehouses_bp
+    from app.tokens.routes import bp as tokens_bp
+    from app.webhooks.routes import bp as webhooks_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
@@ -429,6 +454,8 @@ def create_app() -> Flask:
     app.register_blueprint(custom_fields_bp)
     app.register_blueprint(groups_bp)
     app.register_blueprint(warehouses_bp)
+    app.register_blueprint(tokens_bp)
+    app.register_blueprint(webhooks_bp)
 
     # 註冊自定義過濾器
     import re

@@ -1,0 +1,254 @@
+{%extends 'template.html' %}
+{%block title%}Webhooks 設定 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container-fluid">
+  <div class="page-header animate-fadeInUp">
+    <h1><i class="fas fa-plug me-2"></i>Webhooks 設定</h1>
+    <p class="lead">設定 Webhook 以在物品事件發生時自動通知外部服務</p>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container-fluid">
+  <div class="row g-4">
+    <!-- 左側：建立 Webhook -->
+    <div class="col-lg-5">
+      <div class="card animate-fadeInUp stagger-1">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-plus me-2"></i>新增 Webhook</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">目標 URL <span class="text-danger">*</span></label>
+            <input type="url" class="form-control" id="whUrl" placeholder="https://example.com/webhook">
+            <small class="text-muted">接收 POST 請求的端點</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">訂閱事件</label>
+            <div class="border rounded p-3">
+              {% for ev in all_events %}
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="events" value="{{ ev }}" id="ev_{{ loop.index }}" checked>
+                <label class="form-check-label" for="ev_{{ loop.index }}">
+                  <code class="small">{{ ev }}</code>
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+            <small class="text-muted">未勾選任何事件等同訂閱全部</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">簽章密鑰（Secret）</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="whSecret" placeholder="留空自動產生">
+              <button class="btn btn-outline-secondary" type="button" onclick="generateSecret()">
+                <i class="fas fa-random"></i>
+              </button>
+            </div>
+            <small class="text-muted">用於 HMAC-SHA256 簽章驗證，儲存後請妥善保管</small>
+          </div>
+
+          <button class="btn btn-primary w-100" onclick="createWebhook()">
+            <i class="fas fa-plus me-2"></i>新增 Webhook
+          </button>
+
+          <!-- 顯示新建結果 -->
+          <div id="createResult" class="mt-3 d-none"></div>
+        </div>
+      </div>
+
+      <div class="card mt-4 animate-fadeInUp stagger-2">
+        <div class="card-body">
+          <h6><i class="fas fa-info-circle me-2 text-primary"></i>簽章驗證說明</h6>
+          <p class="small text-muted mb-2">每個請求的 <code>X-Webhook-Signature</code> 標頭格式為：</p>
+          <pre class="bg-light rounded p-2 small">sha256=HMAC_SHA256(secret, body)</pre>
+          <p class="small text-muted mb-0">其中 <code>body</code> 是 JSON 請求本體（UTF-8 字串）。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右側：Webhook 列表 -->
+    <div class="col-lg-7">
+      <div class="card animate-fadeInUp stagger-1">
+        <div class="card-header">
+          <h5 class="mb-0"><i class="fas fa-list me-2"></i>已設定的 Webhooks</h5>
+        </div>
+        <div class="card-body p-0" id="webhookTableWrapper">
+          {% if webhooks %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="webhookTable">
+              <thead class="table-light">
+                <tr>
+                  <th>URL</th>
+                  <th>事件</th>
+                  <th>狀態</th>
+                  <th>上次觸發</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for wh in webhooks %}
+                <tr id="wh-row-{{ wh.id }}">
+                  <td class="text-break" style="max-width:180px;">
+                    <small>{{ wh.url }}</small>
+                  </td>
+                  <td>
+                    {% if wh.events %}
+                      {% for ev in wh.events %}
+                      <span class="badge bg-secondary me-1 mb-1" style="font-size:0.7em;">{{ ev }}</span>
+                      {% endfor %}
+                    {% else %}
+                      <span class="badge bg-info" style="font-size:0.7em;">全部</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if wh.is_active %}
+                      <span class="badge bg-success">啟用</span>
+                    {% else %}
+                      <span class="badge bg-danger">停用</span>
+                    {% endif %}
+                    {% if wh.failure_count > 0 %}
+                    <br><small class="text-danger">失敗 {{ wh.failure_count }} 次</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <small class="text-muted">{{ wh.last_triggered_at or '從未' }}</small>
+                  </td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn btn-outline-info" onclick="testWebhook({{ wh.id }})" title="測試">
+                        <i class="fas fa-paper-plane"></i>
+                      </button>
+                      <button class="btn btn-outline-danger" onclick="deleteWebhook({{ wh.id }})" title="刪除">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted" id="emptyState">
+            <i class="fas fa-plug fa-3x mb-3 opacity-25"></i>
+            <p>尚未設定任何 Webhook</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+const CSRF_TOKEN = "{{ csrf_token() }}";
+
+function generateSecret() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 40; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+  document.getElementById('whSecret').value = result;
+}
+
+async function createWebhook() {
+  const url = document.getElementById('whUrl').value.trim();
+  const secret = document.getElementById('whSecret').value.trim();
+  const checkedEvents = [...document.querySelectorAll('input[name="events"]:checked')].map(e => e.value);
+  const resultDiv = document.getElementById('createResult');
+
+  if (!url) {
+    resultDiv.innerHTML = '<div class="alert alert-warning small">請填寫 URL</div>';
+    resultDiv.classList.remove('d-none');
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/webhooks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      body: JSON.stringify({ url, events: checkedEvents, secret }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      resultDiv.innerHTML = `<div class="alert alert-success small">
+        <strong>Webhook 建立成功！</strong><br>
+        Secret: <code>${data.secret}</code><br>
+        <small class="text-danger">請立即複製 Secret，之後無法再次查看。</small>
+      </div>`;
+      resultDiv.classList.remove('d-none');
+      setTimeout(() => location.reload(), 3000);
+    } else {
+      resultDiv.innerHTML = `<div class="alert alert-danger small">${data.message}</div>`;
+      resultDiv.classList.remove('d-none');
+    }
+  } catch (e) {
+    resultDiv.innerHTML = '<div class="alert alert-danger small">建立失敗，請稍後再試</div>';
+    resultDiv.classList.remove('d-none');
+  }
+}
+
+async function testWebhook(id) {
+  try {
+    const resp = await fetch(`/api/webhooks/${id}/test`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': CSRF_TOKEN },
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showToast(data.message || '測試事件已傳送', 'success');
+    } else {
+      showToast(data.message || '測試傳送失敗', 'danger');
+    }
+  } catch (e) {
+    showToast('測試傳送失敗', 'danger');
+  }
+}
+
+function deleteWebhook(id) {
+  showConfirm('確定要刪除此 Webhook 嗎？', async function() {
+    try {
+      const resp = await fetch(`/api/webhooks/${id}/delete`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF_TOKEN },
+      });
+      const data = await resp.json();
+      if (data.success) {
+        const row = document.getElementById(`wh-row-${id}`);
+        if (row) row.remove();
+        showToast('Webhook 已刪除', 'success');
+        // Show empty state if no rows left
+        const tbody = document.querySelector('#webhookTable tbody');
+        if (tbody && tbody.querySelectorAll('tr').length === 0) {
+          document.getElementById('webhookTableWrapper').innerHTML = `
+            <div class="text-center py-5 text-muted">
+              <i class="fas fa-plug fa-3x mb-3 opacity-25"></i>
+              <p>尚未設定任何 Webhook</p>
+            </div>`;
+        }
+      } else {
+        showToast(data.message || '刪除失敗', 'danger');
+      }
+    } catch (e) {
+      showToast('刪除失敗', 'danger');
+    }
+  }, { title: '刪除 Webhook', confirmText: '確定刪除', btnClass: 'btn-danger', icon: 'fa-trash' });
+}
+
+function showToast(msg, type) {
+  const toast = document.createElement('div');
+  toast.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3 shadow`;
+  toast.style.zIndex = 9999;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+</script>
+{%endblock%}

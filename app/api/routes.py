@@ -1,6 +1,8 @@
-"""API documentation endpoints."""
+"""API documentation and RESTful endpoints."""
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request, g
+
+from app.utils.auth import api_token_or_login_required
 
 bp = Blueprint("api", __name__)
 
@@ -53,4 +55,38 @@ def api_health():
         return jsonify({"status": "flasgger not available"}), 404
 
 
-__all__ = ["api_docs", "api_health"]
+@bp.route("/api/v1/items", methods=["GET"])
+@api_token_or_login_required
+def api_v1_list_items():
+    """List items (RESTful). Supports q, page, page_size params."""
+    from app.services import item_service
+
+    q = request.args.get("q", "").strip()
+    page = max(1, request.args.get("page", 1, type=int))
+    page_size = min(100, max(1, request.args.get("page_size", 20, type=int)))
+
+    filters = {"q": q}
+    result = item_service.list_items(filters, page=page, page_size=page_size)
+
+    items = result.get("items", [])
+    return jsonify({
+        "items": items,
+        "total": result.get("total", len(items)),
+        "page": page,
+        "page_size": page_size,
+    })
+
+
+@bp.route("/api/v1/items/<item_id>", methods=["GET"])
+@api_token_or_login_required
+def api_v1_get_item(item_id: str):
+    """Get a single item by ItemID."""
+    from app.services import item_service
+
+    item = item_service.get_item(item_id)
+    if not item:
+        return jsonify({"error": "找不到物品"}), 404
+    return jsonify(item)
+
+
+__all__ = ["api_docs", "api_health", "api_v1_list_items", "api_v1_get_item"]

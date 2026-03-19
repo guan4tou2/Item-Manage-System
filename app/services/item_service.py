@@ -288,6 +288,16 @@ def create_item(form_data: Dict[str, Any], file_storage) -> Tuple[bool, str]:
         form_data["ItemPic"] = ""
 
     item_repo.insert_item(form_data)
+
+    try:
+        from app.services import webhook_service
+        webhook_service.fire_event("item.created", {
+            "item_id": form_data.get("ItemID", ""),
+            "item_name": form_data.get("ItemName", ""),
+        })
+    except Exception:
+        pass
+
     return True, "物品新增成功"
 
 
@@ -361,6 +371,16 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None) -> T
     form_data.pop("ItemID", None)  # ItemID 不可更改
     
     item_repo.update_item_by_id(item_id, form_data)
+
+    try:
+        from app.services import webhook_service
+        webhook_service.fire_event("item.updated", {
+            "item_id": item_id,
+            "item_name": existing.get("ItemName", ""),
+        })
+    except Exception:
+        pass
+
     return True, "物品更新成功"
 
 
@@ -377,6 +397,14 @@ def delete_item(item_id: str) -> Tuple[bool, str]:
         storage.delete_file(existing["ItemThumb"])
     
     if item_repo.delete_item_by_id(item_id):
+        try:
+            from app.services import webhook_service
+            webhook_service.fire_event("item.deleted", {
+                "item_id": item_id,
+                "item_name": existing.get("ItemName", ""),
+            })
+        except Exception:
+            pass
         return True, "物品已刪除"
     return False, "刪除失敗"
 
@@ -946,6 +974,17 @@ def adjust_quantity(item_id: str, delta: int, user: str = "", reason: Optional[s
             )
         except Exception:
             pass
+        try:
+            from app.services import webhook_service
+            webhook_service.fire_event("item.quantity.changed", {
+                "item_id": item_id,
+                "item_name": item.get("ItemName", ""),
+                "old_quantity": current_qty,
+                "new_quantity": new_qty,
+                "delta": new_qty - current_qty,
+            })
+        except Exception:
+            pass
         return True, new_qty, f"數量已更新為 {new_qty}"
     return False, current_qty, "更新失敗"
 
@@ -1160,3 +1199,132 @@ def bulk_update_last_maintenance(item_ids: List[str], maintenance_date: str) -> 
         success_count += 1
 
     return success_count, failed_ids
+
+
+
+def get_all_move_history(
+    page: int = 1,
+    page_size: int = 50,
+    item_filter: str = "",
+    location_filter: str = "",
+    date_from: str = "",
+    date_to: str = "",
+) -> Dict[str, Any]:
+    """取得所有物品的移動歷史，扁平化排序後分頁回傳。
+
+    Returns:
+        {
+            "items": [{"item_id", "item_name", "date", "from_location", "to_location"}, ...],
+            "total": N,
+            "page": P,
+            "page_size": PS,
+            "total_pages": T,
+        }
+    """
+    from app import get_db_type
+
+    db_type = get_db_type()
+    records: List[Dict[str, Any]] = []
+
+    if db_type == "postgres":
+        from app.models.item import Item as ItemModel
+        from sqlalchemy import cast, String
+
+        # Fetch only items that have a non-empty move_history JSON array
+        try:
+            items_with_history = ItemModel.query.filter(
+                ItemModel.move_history.isnot(None),
+                cast(ItemModel.move_history, String) != "[]",
+                cast(ItemModel.move_history, String) != "null",
+            ).all()
+        except Exception:
+            items_with_history = [
+                item for item in ItemModel.query.all()
+                if item.move_history
+            ]
+    else:
+        from app import mongo
+
+        docs = list(mongo.db.item.find(
+            {"move_history": {"$exists": True, "$not": {"$size": 0}}},
+            {"ItemID": 1, "ItemName": 1, "move_history": 1, "_id": 0},
+        ))
+        items_with_history = docs
+
+    item_filter_lower = item_filter.lower()
+    location_filter_lower = location_filter.lower()
+
+    for item in items_with_history:
+        if db_type == "postgres":
+            item_id = item.ItemID
+            item_name = item.ItemName
+            history = item.move_history or []
+        else:
+            item_id = item.get("ItemID", "")
+            item_name = item.get("ItemName", "")
+            history = item.get("move_history") or []
+
+        if not isinstance(history, list):
+            continue
+
+        if item_filter_lower and item_filter_lower not in item_name.lower():
+            continue
+
+        for record in history:
+            if not isinstance(record, dict):
+                continue
+
+            rec_date = str(record.get("date") or "")
+            from_loc = str(record.get("from_location") or "")
+            to_loc = str(record.get("to_location") or "")
+
+            if location_filter_lower and (
+                location_filter_lower not in from_loc.lower()
+                and location_filter_lower not in to_loc.lower()
+            ):
+                continue
+
+            if date_from and rec_date < date_from:
+                continue
+            if date_to and rec_date[:10] > date_to:
+                continue
+
+            records.append({
+                "item_id": item_id,
+                "item_name": item_name,
+                "date": rec_date,
+                "from_location": from_loc,
+                "to_location": to_loc,
+            })
+
+    # Sort by date descending
+    records.sort(key=lambda r: r["date"], reverse=True)
+
+    total = len(records)
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    page = max(1, min(page, total_pages))
+    start = (page - 1) * page_size
+    end = start + page_size
+
+    return {
+        "items": records[start:end],
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+    }
+
+
+def generate_purchase_links(item_name: str) -> List[Dict[str, Any]]:
+    """產生主要電商平台的搜尋連結（Feature 21）。"""
+    import urllib.parse
+
+    q = urllib.parse.quote(item_name)
+    return [
+        {"store": "Amazon", "url": f"https://www.amazon.com/s?k={q}", "icon": "fab fa-amazon"},
+        {"store": "PChome", "url": f"https://ecshweb.pchome.com.tw/search/v4.3/?q={q}", "icon": "fas fa-shopping-cart"},
+        {"store": "Shopee", "url": f"https://shopee.tw/search?keyword={q}", "icon": "fas fa-store"},
+        {"store": "Momo", "url": f"https://www.momoshop.com.tw/search/searchShop.jsp?keyword={q}", "icon": "fas fa-shopping-bag"},
+    ]

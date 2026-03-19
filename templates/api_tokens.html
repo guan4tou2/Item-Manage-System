@@ -1,0 +1,265 @@
+{%extends 'template.html' %}
+{%block title%}API Token 管理 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="container">
+  <div class="page-header animate-fadeInUp">
+    <h1><i class="fas fa-key text-warning me-2"></i>API Token 管理</h1>
+    <p class="lead">建立並管理您的 API 存取 Token，以透過程式介面存取本系統</p>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container">
+  <div class="row g-4">
+
+    <!-- 建立 Token 表單 -->
+    <div class="col-lg-5 animate-fadeInUp">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>建立新 Token</h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="tokenName" class="form-label fw-semibold">Token 名稱 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="tokenName" placeholder="例如：家庭自動化腳本" maxlength="100">
+            <div class="form-text">為您的 Token 取一個易識別的名稱</div>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">權限範圍（Scopes）</label>
+            <div class="d-flex flex-column gap-2">
+              {% for scope_id, scope_label in available_scopes %}
+              <div class="form-check">
+                <input class="form-check-input scope-checkbox" type="checkbox"
+                       value="{{ scope_id }}" id="scope_{{ loop.index }}">
+                <label class="form-check-label" for="scope_{{ loop.index }}">
+                  <code class="text-primary">{{ scope_id }}</code>
+                  <span class="text-muted ms-2">{{ scope_label }}</span>
+                </label>
+              </div>
+              {% endfor %}
+            </div>
+            <div class="form-text mt-2">不選擇任何範圍代表唯讀權限</div>
+          </div>
+          <button type="button" class="btn btn-primary w-100" id="createTokenBtn">
+            <i class="fas fa-key me-2"></i>建立 Token
+          </button>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body">
+          <h6 class="fw-semibold mb-2"><i class="fas fa-info-circle text-info me-1"></i>使用說明</h6>
+          <p class="small text-muted mb-2">在 HTTP 請求的 Authorization 標頭中帶入 Token：</p>
+          <pre class="bg-light p-2 rounded small mb-0"><code>Authorization: Bearer &lt;your_token&gt;</code></pre>
+          <hr class="my-3">
+          <h6 class="fw-semibold mb-2">可用 API 端點</h6>
+          <ul class="small text-muted mb-0">
+            <li><code>GET /api/v1/items</code> — 列出物品（支援 <code>q</code>, <code>page</code>, <code>page_size</code>）</li>
+            <li><code>GET /api/v1/items/&lt;item_id&gt;</code> — 取得單一物品</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Token 列表 -->
+    <div class="col-lg-7 animate-fadeInUp stagger-1">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-list me-2 text-secondary"></i>您的 Token</h5>
+          <span class="badge bg-secondary">{{ tokens | length }} 個</span>
+        </div>
+        <div class="card-body p-0" id="tokenListContainer">
+          {% if not tokens %}
+          <div class="text-center text-muted py-5">
+            <i class="fas fa-key fa-3x mb-3 opacity-25"></i>
+            <p class="mb-0">尚未建立任何 Token</p>
+          </div>
+          {% else %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>名稱</th>
+                  <th>前綴</th>
+                  <th>範圍</th>
+                  <th>建立時間</th>
+                  <th>最後使用</th>
+                  <th>狀態</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="tokenTableBody">
+                {% for token in tokens %}
+                <tr id="token-row-{{ token.id }}" class="{{ 'text-muted' if not token.is_active else '' }}">
+                  <td class="fw-semibold">{{ token.name }}</td>
+                  <td><code class="text-secondary">{{ token.token_prefix }}...</code></td>
+                  <td>
+                    {% if token.scopes %}
+                      {% for scope in token.scopes %}
+                      <span class="badge bg-light text-dark border me-1 small">{{ scope }}</span>
+                      {% endfor %}
+                    {% else %}
+                      <span class="text-muted small">唯讀</span>
+                    {% endif %}
+                  </td>
+                  <td class="small text-muted">{{ token.created_at[:10] if token.created_at else '-' }}</td>
+                  <td class="small text-muted">{{ token.last_used_at[:10] if token.last_used_at else '從未' }}</td>
+                  <td>
+                    {% if token.is_active %}
+                    <span class="badge bg-success">有效</span>
+                    {% else %}
+                    <span class="badge bg-secondary">已撤銷</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if token.is_active %}
+                    <button type="button" class="btn btn-sm btn-outline-danger revoke-btn"
+                            data-token-id="{{ token.id }}" data-token-name="{{ token.name }}">
+                      <i class="fas fa-ban me-1"></i>撤銷
+                    </button>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 新 Token 顯示 Modal -->
+<div class="modal fade" id="newTokenModal" tabindex="-1" aria-labelledby="newTokenModalLabel" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="newTokenModalLabel">
+          <i class="fas fa-check-circle me-2"></i>Token 建立成功
+        </h5>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          <strong>請立即複製！</strong>此 Token 只會顯示一次，關閉後將無法再看到完整內容。
+        </div>
+        <label class="form-label fw-semibold">您的 API Token</label>
+        <div class="input-group">
+          <input type="text" class="form-control font-monospace" id="newTokenValue" readonly>
+          <button class="btn btn-outline-secondary" type="button" id="copyTokenBtn" title="複製 Token">
+            <i class="fas fa-copy"></i>
+          </button>
+        </div>
+        <div class="form-text mt-2">將此 Token 加入您的 <code>Authorization: Bearer &lt;token&gt;</code> 標頭</div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" data-bs-dismiss="modal" onclick="location.reload()">
+          <i class="fas fa-check me-1"></i>我已複製，關閉
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Obtain CSRF token from the warehouse dropdown data attribute (set by template.html)
+  const csrfEl = document.getElementById('warehouseDropdown');
+  const csrfToken = csrfEl ? (csrfEl.getAttribute('data-csrf') || '') : '';
+
+  // ---- Create Token ----
+  document.getElementById('createTokenBtn').addEventListener('click', function() {
+    const name = document.getElementById('tokenName').value.trim();
+    if (!name) {
+      showToast('請輸入 Token 名稱', 'warning');
+      return;
+    }
+
+    const scopes = Array.from(
+      document.querySelectorAll('.scope-checkbox:checked')
+    ).map(el => el.value);
+
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>建立中...';
+
+    fetch('/api/tokens/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ name, scopes }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        document.getElementById('newTokenValue').value = data.token;
+        const modal = new bootstrap.Modal(document.getElementById('newTokenModal'));
+        modal.show();
+        document.getElementById('tokenName').value = '';
+        document.querySelectorAll('.scope-checkbox').forEach(el => el.checked = false);
+      } else {
+        showToast(data.error || '建立失敗', 'danger');
+      }
+    })
+    .catch(() => showToast('網路錯誤，請稍後再試', 'danger'))
+    .finally(() => {
+      this.disabled = false;
+      this.innerHTML = '<i class="fas fa-key me-2"></i>建立 Token';
+    });
+  });
+
+  // ---- Copy Token ----
+  document.getElementById('copyTokenBtn').addEventListener('click', function() {
+    const val = document.getElementById('newTokenValue').value;
+    navigator.clipboard.writeText(val).then(() => {
+      this.innerHTML = '<i class="fas fa-check text-success"></i>';
+      setTimeout(() => { this.innerHTML = '<i class="fas fa-copy"></i>'; }, 2000);
+    });
+  });
+
+  // ---- Revoke Token ----
+  document.querySelectorAll('.revoke-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tokenId = this.dataset.tokenId;
+      const tokenName = this.dataset.tokenName;
+      if (!confirm(`確定要撤銷 Token「${tokenName}」嗎？撤銷後無法復原。`)) return;
+
+      this.disabled = true;
+
+      fetch(`/api/tokens/revoke/${tokenId}`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          const row = document.getElementById(`token-row-${tokenId}`);
+          if (row) {
+            row.classList.add('text-muted');
+            const statusCell = row.querySelector('td:nth-child(6)');
+            if (statusCell) statusCell.innerHTML = '<span class="badge bg-secondary">已撤銷</span>';
+            this.remove();
+          }
+          showToast('Token 已撤銷', 'success');
+        } else {
+          showToast(data.error || '撤銷失敗', 'danger');
+          this.disabled = false;
+        }
+      })
+      .catch(() => {
+        showToast('網路錯誤', 'danger');
+        this.disabled = false;
+      });
+    });
+  });
+});
+</script>
+{%endblock%}

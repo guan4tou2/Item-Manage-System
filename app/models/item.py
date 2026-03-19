@@ -51,6 +51,9 @@ class Item(db.Model):
     # Feature 18: Location Map Visualization
     map_x: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     map_y: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # Feature 21: Auto-Purchase Links
+    purchase_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    preferred_store: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -89,6 +92,8 @@ class Item(db.Model):
             "warehouse_id": self.warehouse_id,
             "map_x": self.map_x,
             "map_y": self.map_y,
+            "purchase_url": self.purchase_url or "",
+            "preferred_store": self.preferred_store or "",
         }
 
     def __repr__(self) -> str:
