@@ -2,7 +2,7 @@
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
-from flask import flash, redirect, request, session, url_for, g
+from flask import flash, jsonify, redirect, request, session, url_for, g
 
 from app.services import user_service
 
@@ -30,6 +30,10 @@ def login_required(f: Callable) -> Callable:
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if "UserID" not in session:
+            if (request.is_json
+                    or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+                    or "application/json" in request.headers.get("Accept", "")):
+                return jsonify({"error": "unauthorized", "message": "請重新登入"}), 401
             flash("請先登入", "warning")
             return redirect(url_for("auth.signin"))
         return f(*args, **kwargs)

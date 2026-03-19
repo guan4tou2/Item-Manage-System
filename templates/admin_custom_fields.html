@@ -309,23 +309,24 @@ async function submitEditField() {
   }
 }
 
-async function deleteField(id, name) {
-  if (!confirm(`確定要刪除欄位「${name}」嗎？相關的所有欄位值也會一併刪除。`)) return;
-  try {
-    const resp = await fetch(`/api/custom-fields/${id}/delete`, {
-      method: 'POST',
-      headers: { 'X-CSRFToken': csrfToken },
-    });
-    const data = await resp.json();
-    if (data.success) {
-      showToast('欄位已刪除', 'success');
-      location.reload();
-    } else {
-      showToast(data.message || '刪除失敗', 'danger');
+function deleteField(id, name) {
+  showConfirm(`確定要刪除欄位「${name}」嗎？相關的所有欄位值也會一併刪除。`, async function() {
+    try {
+      const resp = await fetch(`/api/custom-fields/${id}/delete`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+      });
+      const data = await resp.json();
+      if (data.success) {
+        showToast('欄位已刪除', 'success');
+        location.reload();
+      } else {
+        showToast(data.message || '刪除失敗', 'danger');
+      }
+    } catch (e) {
+      showToast('網路錯誤', 'danger');
     }
-  } catch (e) {
-    showToast('網路錯誤', 'danger');
-  }
+  }, { title: '確認刪除', confirmText: '刪除' });
 }
 
 // init type selects on load

@@ -149,6 +149,53 @@ def cleanup_old_backups(retention_days: int, local_path: str) -> int:
     return deleted
 
 
+def list_backups() -> list:
+    """列出備份目錄中的所有備份檔案，回傳 [{filename, size, date}]"""
+    cfg = get_config()
+    local_path = cfg.get("local_path") or ""
+    if not local_path:
+        local_path = str(Path(__file__).resolve().parent.parent.parent / "backups")
+
+    results = []
+    try:
+        for f in sorted(Path(local_path).glob("backup_*.json"), reverse=True):
+            stat = f.stat()
+            results.append({
+                "filename": f.name,
+                "size": stat.st_size,
+                "date": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+            })
+    except Exception:
+        pass
+    return results
+
+
+def restore_from_backup(file_path: str) -> Dict[str, Any]:
+    """Restore items from a backup JSON file."""
+    from app.services import item_service
+
+    with open(file_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    items = data.get("items", [])
+    restored = 0
+    skipped = 0
+
+    for item_data in items:
+        item_id = item_data.get("ItemID", "")
+        if not item_id:
+            skipped += 1
+            continue
+        existing = item_service.get_item(item_id)
+        if existing:
+            item_service.update_item(item_id, item_data, None)
+        else:
+            item_service.create_item(item_data, None)
+        restored += 1
+
+    return {"restored": restored, "skipped": skipped, "total": len(items)}
+
+
 def _update_last_status(status: str) -> None:
     """更新備份設定中的最後備份時間與狀態"""
     db_type = get_db_type()

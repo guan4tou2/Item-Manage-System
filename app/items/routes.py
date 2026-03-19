@@ -1204,6 +1204,15 @@ def run_backup_now():
     return jsonify(result), 500
 
 
+@bp.route("/api/backups/list", methods=["GET"])
+@admin_required
+def list_backups():
+    """API: 列出所有本地備份檔案"""
+    from app.services import backup_service
+    backups = backup_service.list_backups()
+    return jsonify({"success": True, "backups": backups})
+
+
 @bp.route("/print-labels", methods=["GET", "POST"])
 @admin_required
 def print_labels():

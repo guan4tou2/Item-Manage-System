@@ -230,34 +230,36 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.addEventListener('click', function() {
       const tokenId = this.dataset.tokenId;
       const tokenName = this.dataset.tokenName;
-      if (!confirm(`確定要撤銷 Token「${tokenName}」嗎？撤銷後無法復原。`)) return;
+      const self = this;
 
-      this.disabled = true;
+      showConfirm(`確定要撤銷 Token「${tokenName}」嗎？撤銷後無法復原。`, function() {
+        self.disabled = true;
 
-      fetch(`/api/tokens/revoke/${tokenId}`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': csrfToken },
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.ok) {
-          const row = document.getElementById(`token-row-${tokenId}`);
-          if (row) {
-            row.classList.add('text-muted');
-            const statusCell = row.querySelector('td:nth-child(6)');
-            if (statusCell) statusCell.innerHTML = '<span class="badge bg-secondary">已撤銷</span>';
-            this.remove();
+        fetch(`/api/tokens/revoke/${tokenId}`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
+        })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            const row = document.getElementById(`token-row-${tokenId}`);
+            if (row) {
+              row.classList.add('text-muted');
+              const statusCell = row.querySelector('td:nth-child(6)');
+              if (statusCell) statusCell.innerHTML = '<span class="badge bg-secondary">已撤銷</span>';
+              self.remove();
+            }
+            showToast('Token 已撤銷', 'success');
+          } else {
+            showToast(data.error || '撤銷失敗', 'danger');
+            self.disabled = false;
           }
-          showToast('Token 已撤銷', 'success');
-        } else {
-          showToast(data.error || '撤銷失敗', 'danger');
-          this.disabled = false;
-        }
-      })
-      .catch(() => {
-        showToast('網路錯誤', 'danger');
-        this.disabled = false;
-      });
+        })
+        .catch(() => {
+          showToast('網路錯誤', 'danger');
+          self.disabled = false;
+        });
+      }, { title: '確認撤銷', confirmText: '撤銷' });
     });
   });
 });

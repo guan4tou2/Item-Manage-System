@@ -75,7 +75,7 @@
                 {%if group.owner == User.User%}
                 <td class="text-center">
                   {%if member.username != group.owner%}
-                  <form method="post" action="{{url_for('groups.remove_member', id=group.id, username=member.username)}}" class="d-inline" onsubmit="return confirm('確定要移除成員 {{ member.username }} 嗎？')">
+                  <form method="post" action="{{url_for('groups.remove_member', id=group.id, username=member.username)}}" class="d-inline" onsubmit="event.preventDefault(); showConfirm('確定要移除成員 {{ member.username }} 嗎？', () => this.submit(), {title: '確認移除', confirmText: '移除'})">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <button type="submit" class="btn btn-outline-danger btn-sm">
                       <i class="fas fa-user-minus me-1"></i>移除

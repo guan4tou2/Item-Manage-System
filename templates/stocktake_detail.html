@@ -50,7 +50,7 @@
         </form>
         {% elif session.status == 'in_progress' %}
         <form method="POST" action="{{ url_for('stocktake.stocktake_complete', session_id=session.id) }}"
-              onsubmit="return confirm('確定完成盤點並進入審核？')">
+              onsubmit="event.preventDefault(); showConfirm('確定完成盤點並進入審核？', () => this.submit(), {title: '確認完成', confirmText: '確認完成'})">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-info text-white">
             <i class="fas fa-check me-1"></i>完成盤點
@@ -58,7 +58,7 @@
         </form>
         {% elif session.status == 'review' %}
         <form method="POST" action="{{ url_for('stocktake.stocktake_commit', session_id=session.id) }}"
-              onsubmit="return confirm('確定提交盤點？將以實際數量更新所有庫存，此操作無法撤銷。')">
+              onsubmit="event.preventDefault(); showConfirm('確定提交盤點？將以實際數量更新所有庫存，此操作無法撤銷。', () => this.submit(), {title: '確認提交', confirmText: '確認提交'})">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-success">
             <i class="fas fa-upload me-1"></i>提交盤點

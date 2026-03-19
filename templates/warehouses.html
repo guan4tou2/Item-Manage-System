@@ -75,7 +75,7 @@
             {%endif%}
             <form method="post" action="{{url_for('warehouses.delete_warehouse', id=warehouse.id)}}"
                   class="d-inline"
-                  onsubmit="return confirm('確定要刪除倉庫「{{ warehouse.name }}」嗎？')">
+                  onsubmit="event.preventDefault(); showConfirm('確定要刪除倉庫「{{ warehouse.name }}」嗎？', () => this.submit(), {title: '確認刪除', confirmText: '刪除'})">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <button type="submit" class="btn btn-outline-danger btn-sm">
                 <i class="fas fa-trash"></i>
@@ -141,24 +141,24 @@
 
 <script>
 function switchWarehouse(id, name) {
-  if (!confirm('確定要切換至倉庫「' + name + '」嗎？')) return;
-
-  fetch('/api/warehouses/switch/' + id, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': document.querySelector('#switchForm [name=csrf_token]').value
-    },
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      location.reload();
-    } else {
-      alert('切換失敗：' + data.message);
-    }
-  })
-  .catch(() => alert('操作失敗，請稍後再試'));
+  showConfirm('確定要切換至倉庫「' + name + '」嗎？', function() {
+    fetch('/api/warehouses/switch/' + id, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('#switchForm [name=csrf_token]').value
+      },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        showToast('切換失敗：' + data.message, 'danger');
+      }
+    })
+    .catch(() => showToast('操作失敗，請稍後再試', 'danger'));
+  }, { title: '確認切換', confirmText: '切換' });
 }
 </script>
 {%endblock%}

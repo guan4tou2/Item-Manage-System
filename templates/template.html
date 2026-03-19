@@ -1250,6 +1250,24 @@
         toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
       }
 
+      // ========================================
+      // 防止表單重複提交
+      // ========================================
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('form[method="post"], form[method="POST"]').forEach(function(form) {
+          if (form.dataset.noAutoGuard) return;
+          form.addEventListener('submit', function(e) {
+            const btn = form.querySelector('button[type="submit"]');
+            if (!btn) return;
+            if (btn.disabled) { e.preventDefault(); return; }
+            btn.disabled = true;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>處理中...';
+            setTimeout(function() { btn.disabled = false; btn.innerHTML = originalHTML; }, 10000);
+          });
+        });
+      });
+
       // 頁面載入時更新通知
       document.addEventListener('DOMContentLoaded', function() {
         initSearchAutocomplete();
@@ -1290,6 +1308,24 @@
           btn.classList.add('d-none');
         }
       }
+
+      // ========================================
+      // Session 過期攔截
+      // ========================================
+      (function() {
+        var _sessionExpired = false;
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+          return originalFetch.apply(this, arguments).then(function(response) {
+            if (!_sessionExpired && (response.status === 401 || (response.redirected && response.url.includes('/signin')))) {
+              _sessionExpired = true;
+              showToast('登入已過期，請重新登入', 'warning');
+              setTimeout(function() { window.location.href = '/signin'; }, 2000);
+            }
+            return response;
+          });
+        };
+      })();
     </script>
     
     <!-- 倉庫選擇器腳本 -->

@@ -180,8 +180,25 @@
     </div>
   </div>
 
+  <!-- 本地備份檔案列表 -->
+  <div class="card mt-4 animate-fadeInUp stagger-4" id="backupListCard">
+    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+      <h5 class="mb-0"><i class="fas fa-folder-open me-2"></i>本地備份檔案</h5>
+      <button class="btn btn-sm btn-outline-light" onclick="loadBackupList()">
+        <i class="fas fa-sync me-1"></i>重新整理
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <div id="backupListContainer">
+        <div class="text-center py-4 text-muted small">
+          <i class="fas fa-spinner fa-spin me-1"></i>載入中...
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 說明 -->
-  <div class="card mt-4 animate-fadeInUp stagger-4">
+  <div class="card mt-4 animate-fadeInUp stagger-5">
     <div class="card-body">
       <h6><i class="fas fa-question-circle me-2 text-primary"></i>備份與還原說明</h6>
       <div class="row">
@@ -375,6 +392,87 @@ async function runBackupNow() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', loadBackupConfig);
+async function loadBackupList() {
+  const container = document.getElementById('backupListContainer');
+  container.innerHTML = '<div class="text-center py-4 text-muted small"><i class="fas fa-spinner fa-spin me-1"></i>載入中...</div>';
+  try {
+    const resp = await fetch('/api/backups/list');
+    const data = await resp.json();
+    if (!data.success || !data.backups || data.backups.length === 0) {
+      container.innerHTML = '<div class="text-center py-4 text-muted small"><i class="fas fa-inbox me-1"></i>尚無本地備份檔案</div>';
+      return;
+    }
+    const rows = data.backups.map(b => {
+      const sizekb = Math.max(1, Math.round(b.size / 1024));
+      return `<tr>
+        <td class="ps-3"><i class="fas fa-file-code text-secondary me-2"></i>${b.filename}</td>
+        <td>${b.date}</td>
+        <td>${sizekb} KB</td>
+        <td class="pe-3 text-end">
+          <button class="btn btn-sm btn-outline-warning" onclick="restoreFromServer('${b.filename}')">
+            <i class="fas fa-undo me-1"></i>還原
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+    container.innerHTML = `<div class="table-responsive"><table class="table table-hover mb-0">
+      <thead class="table-light"><tr>
+        <th class="ps-3">檔案名稱</th><th>建立時間</th><th>大小</th><th class="pe-3 text-end">操作</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  } catch (e) {
+    container.innerHTML = '<div class="text-center py-4 text-muted small"><i class="fas fa-exclamation-triangle me-1"></i>載入失敗</div>';
+  }
+}
+
+function restoreFromServer(filename) {
+  showConfirm(`確定要從備份檔案「${filename}」還原資料嗎？這可能會影響現有資料。`, async function() {
+    const resultDiv = document.getElementById('restoreResult');
+    const alertDiv = document.getElementById('restoreAlert');
+    const icon = document.getElementById('restoreIcon');
+    const messageSpan = document.getElementById('restoreMessage');
+    const statsList = document.getElementById('restoreStats');
+
+    const fd = new FormData();
+    fd.append('csrf_token', CSRF_TOKEN);
+    fd.append('server_filename', filename);
+    fd.append('mode', 'merge');
+
+    try {
+      const response = await fetch('{{ url_for("items.restore_backup") }}', {
+        method: 'POST',
+        body: fd
+      });
+      const data = await response.json();
+      resultDiv.classList.remove('d-none');
+      if (response.ok && data.success) {
+        alertDiv.className = 'alert alert-success';
+        icon.className = 'fas fa-check-circle mt-1';
+        messageSpan.textContent = data.message;
+        if (data.stats) {
+          statsList.innerHTML = `<li>物品: ${data.stats.items || 0}</li><li>類型: ${data.stats.types || 0}</li><li>位置: ${data.stats.locations || 0}</li>`;
+          statsList.classList.remove('d-none');
+        }
+      } else {
+        alertDiv.className = 'alert alert-danger';
+        icon.className = 'fas fa-triangle-exclamation mt-1';
+        messageSpan.textContent = data.message || '還原失敗';
+        statsList.classList.add('d-none');
+      }
+    } catch (e) {
+      resultDiv.classList.remove('d-none');
+      alertDiv.className = 'alert alert-danger';
+      icon.className = 'fas fa-triangle-exclamation mt-1';
+      messageSpan.textContent = '還原過程發生錯誤';
+      statsList.classList.add('d-none');
+    }
+  }, { title: '確認還原', confirmText: '確定還原', btnClass: 'btn-warning' });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadBackupConfig();
+  loadBackupList();
+});
 </script>
 {%endblock%}
