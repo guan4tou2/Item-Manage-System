@@ -15,6 +15,8 @@ class Location(db.Model):
     room: Mapped[Optional[str]] = mapped_column(String(50))
     zone: Mapped[Optional[str]] = mapped_column(String(50))
     order: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    # Feature 18: Location Map Visualization
+    floor_plan_image: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     def to_dict(self) -> dict:
         """轉換為字典格式"""
@@ -24,6 +26,7 @@ class Location(db.Model):
             "room": self.room,
             "zone": self.zone,
             "order": self.order,
+            "floor_plan_image": self.floor_plan_image,
         }
 
     def __repr__(self) -> str:

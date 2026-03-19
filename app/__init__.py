@@ -211,6 +211,52 @@ def _ensure_item_asset_columns() -> None:
         db.session.commit()
 
 
+def _ensure_item_warehouse_column() -> None:
+    """補齊 items 表缺少的 warehouse_id 欄位（Feature 17）。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("items"):
+        return
+    existing_columns = {column["name"] for column in inspector.get_columns("items")}
+    if "warehouse_id" not in existing_columns:
+        db.session.execute(text("ALTER TABLE items ADD COLUMN warehouse_id INTEGER;"))
+        db.session.commit()
+
+
+def _ensure_map_columns() -> None:
+    """補齊 items 表缺少的地圖座標欄位，以及 locations 表缺少的平面圖圖片欄位。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+
+    if inspector.has_table("items"):
+        existing_item_columns = {col["name"] for col in inspector.get_columns("items")}
+        item_statements = []
+        if "map_x" not in existing_item_columns:
+            item_statements.append("ALTER TABLE items ADD COLUMN map_x INTEGER;")
+        if "map_y" not in existing_item_columns:
+            item_statements.append("ALTER TABLE items ADD COLUMN map_y INTEGER;")
+        for stmt in item_statements:
+            db.session.execute(text(stmt))
+        if item_statements:
+            db.session.commit()
+
+    if inspector.has_table("locations"):
+        existing_loc_columns = {col["name"] for col in inspector.get_columns("locations")}
+        if "floor_plan_image" not in existing_loc_columns:
+            db.session.execute(text(
+                "ALTER TABLE locations ADD COLUMN floor_plan_image VARCHAR(255);"
+            ))
+            db.session.commit()
+
+
 def _ensure_fulltext_extensions() -> None:
     """Install pg_trgm extension for fuzzy full-text search.
 
@@ -286,6 +332,8 @@ def create_app() -> Flask:
             _ensure_fulltext_extensions()
             _ensure_item_condition_column()
             _ensure_item_asset_columns()
+            _ensure_item_warehouse_column()
+            _ensure_map_columns()
     else:
         mongo.init_app(app)
     
@@ -360,6 +408,8 @@ def create_app() -> Flask:
     from app.loans.routes import bp as loans_bp
     from app.stocktake.routes import bp as stocktake_bp
     from app.custom_fields.routes import bp as custom_fields_bp
+    from app.groups.routes import bp as groups_bp
+    from app.warehouses.routes import bp as warehouses_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
@@ -377,6 +427,8 @@ def create_app() -> Flask:
     app.register_blueprint(loans_bp)
     app.register_blueprint(stocktake_bp)
     app.register_blueprint(custom_fields_bp)
+    app.register_blueprint(groups_bp)
+    app.register_blueprint(warehouses_bp)
 
     # 註冊自定義過濾器
     import re

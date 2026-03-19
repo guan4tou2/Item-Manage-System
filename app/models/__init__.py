@@ -11,6 +11,8 @@ from app.models.quantity_log import QuantityLog
 from app.models.item_loan import ItemLoan
 from app.models.stocktake import StocktakeSession, StocktakeItem
 from app.models.custom_field import CustomField, CustomFieldValue
+from app.models.group import Group, GroupMember
+from app.models.warehouse import Warehouse
 
 __all__ = [
     "User",
@@ -31,4 +33,7 @@ __all__ = [
     "StocktakeItem",
     "CustomField",
     "CustomFieldValue",
+    "Group",
+    "GroupMember",
+    "Warehouse",
 ]

@@ -46,6 +46,11 @@ class Item(db.Model):
     current_value: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)
     depreciation_method: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     depreciation_rate: Mapped[Optional[float]] = mapped_column(Numeric(5, 2), nullable=True)
+    # Feature 17: Multi-Location/Warehouse
+    warehouse_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # Feature 18: Location Map Visualization
+    map_x: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    map_y: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -81,6 +86,9 @@ class Item(db.Model):
             "current_value": float(self.current_value) if self.current_value is not None else None,
             "depreciation_method": self.depreciation_method or "",
             "depreciation_rate": float(self.depreciation_rate) if self.depreciation_rate is not None else None,
+            "warehouse_id": self.warehouse_id,
+            "map_x": self.map_x,
+            "map_y": self.map_y,
         }
 
     def __repr__(self) -> str:

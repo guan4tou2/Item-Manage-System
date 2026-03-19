@@ -1,0 +1,428 @@
+{% extends 'template.html' %}
+{% block title %}位置地圖 - 物品管理系統{% endblock %}
+{% block user %}{{ User.User }}{% endblock %}
+
+{% block contain %}
+<div class="page-header animate-fadeInUp">
+  <h1><i class="fas fa-map me-2 text-primary"></i>位置地圖</h1>
+  <p class="lead">在平面圖上檢視並拖曳物品的存放位置</p>
+</div>
+
+<div class="animate-fadeInUp stagger-1">
+  <!-- 工具列 -->
+  <div class="card mb-3">
+    <div class="card-body py-2">
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <!-- 樓層選擇 -->
+        <div class="d-flex align-items-center gap-2">
+          <label for="floorSelect" class="form-label mb-0 fw-semibold">
+            <i class="fas fa-building me-1"></i>樓層：
+          </label>
+          <select id="floorSelect" class="form-select form-select-sm" style="width: auto;">
+            {% if floors %}
+              {% for f in floors %}
+                <option value="{{ f }}" {% if f == selected_floor %}selected{% endif %}>{{ f }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="">（尚無樓層資料）</option>
+            {% endif %}
+          </select>
+        </div>
+
+        <!-- 上傳平面圖（管理員限定） -->
+        {% if User.admin %}
+        <div class="d-flex align-items-center gap-2">
+          <label class="form-label mb-0 fw-semibold">
+            <i class="fas fa-image me-1"></i>平面圖：
+          </label>
+          <input type="file" id="floorPlanInput" accept="image/*" class="form-control form-control-sm" style="width: auto;">
+          <button id="uploadFloorPlanBtn" class="btn btn-sm btn-outline-primary">
+            <i class="fas fa-upload me-1"></i>上傳
+          </button>
+        </div>
+        {% endif %}
+
+        <div class="ms-auto">
+          <span class="badge bg-secondary" id="pinCountBadge">0 個定位物品</span>
+          {% if User.admin %}
+          <span class="text-muted small ms-2">拖曳圖釘以調整位置</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 平面圖容器 -->
+  <div class="card">
+    <div class="card-body p-2">
+      <div class="map-container" id="mapContainer">
+        {% if floor_plan_image %}
+        <img
+          id="floorPlanImg"
+          src="{{ url_for('static', filename='uploads/' ~ floor_plan_image) }}"
+          alt="平面圖"
+          style="max-width: 100%; display: block; user-select: none;"
+          draggable="false"
+        >
+        {% else %}
+        <div id="noImagePlaceholder" class="d-flex flex-column align-items-center justify-content-center h-100 text-muted" style="min-height: 400px;">
+          <i class="fas fa-image fa-4x mb-3 opacity-25"></i>
+          <p class="mb-1">尚未上傳此樓層的平面圖</p>
+          {% if User.admin %}
+          <p class="small">請使用上方「上傳」按鈕新增平面圖</p>
+          {% endif %}
+        </div>
+        {% endif %}
+        <!-- 物品圖釘由 JS 動態插入 -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 物品詳情浮動提示 (點擊圖釘時顯示) -->
+<div id="pinTooltip" class="card shadow" style="display:none; position:fixed; z-index:9999; min-width:180px; max-width:240px;">
+  <div class="card-body py-2 px-3">
+    <h6 class="card-title mb-1" id="tooltipItemName"></h6>
+    <a id="tooltipItemLink" href="#" class="btn btn-sm btn-outline-primary mt-1">
+      <i class="fas fa-external-link-alt me-1"></i>查看詳情
+    </a>
+    <button class="btn btn-sm btn-link text-muted ms-1" id="tooltipClose">關閉</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  const IS_ADMIN = {{ 'true' if User.admin else 'false' }};
+  const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')
+    ? document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+    : '';
+
+  let currentFloor = {{ selected_floor | tojson }};
+  let mapItems = [];     // array of { ItemID, ItemName, map_x, map_y }
+  let draggingPin = null;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  const floorSelect       = document.getElementById('floorSelect');
+  const mapContainer      = document.getElementById('mapContainer');
+  const floorPlanImg      = document.getElementById('floorPlanImg');
+  const pinCountBadge     = document.getElementById('pinCountBadge');
+  const tooltip           = document.getElementById('pinTooltip');
+  const tooltipItemName   = document.getElementById('tooltipItemName');
+  const tooltipItemLink   = document.getElementById('tooltipItemLink');
+  const tooltipClose      = document.getElementById('tooltipClose');
+
+  // ----------------------------------------------------------------
+  // Floor selector
+  // ----------------------------------------------------------------
+  if (floorSelect) {
+    floorSelect.addEventListener('change', function () {
+      currentFloor = this.value;
+      loadMapData(currentFloor);
+    });
+  }
+
+  // ----------------------------------------------------------------
+  // Load map data for a floor
+  // ----------------------------------------------------------------
+  function loadMapData(floor) {
+    fetch('/api/locations/map-data?floor=' + encodeURIComponent(floor))
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) return;
+
+        // Update floor plan image
+        const img = document.getElementById('floorPlanImg');
+        const placeholder = document.getElementById('noImagePlaceholder');
+
+        if (data.floor_plan_image) {
+          if (img) {
+            img.src = data.floor_plan_image;
+            img.style.display = 'block';
+          } else {
+            // Create image element
+            const newImg = document.createElement('img');
+            newImg.id = 'floorPlanImg';
+            newImg.src = data.floor_plan_image;
+            newImg.alt = '平面圖';
+            newImg.style.cssText = 'max-width:100%;display:block;user-select:none;';
+            newImg.draggable = false;
+            mapContainer.insertBefore(newImg, mapContainer.firstChild);
+            if (placeholder) placeholder.style.display = 'none';
+          }
+        } else {
+          if (img) img.style.display = 'none';
+          if (placeholder) placeholder.style.display = 'flex';
+        }
+
+        // Render pins
+        mapItems = data.items || [];
+        renderPins();
+      })
+      .catch(err => console.error('Failed to load map data:', err));
+  }
+
+  // ----------------------------------------------------------------
+  // Render all pins
+  // ----------------------------------------------------------------
+  function renderPins() {
+    // Remove existing pins
+    mapContainer.querySelectorAll('.map-pin').forEach(p => p.remove());
+    pinCountBadge.textContent = mapItems.length + ' 個定位物品';
+
+    mapItems.forEach(item => {
+      const pin = createPin(item);
+      mapContainer.appendChild(pin);
+    });
+  }
+
+  function createPin(item) {
+    const pin = document.createElement('div');
+    pin.className = 'map-pin';
+    pin.dataset.itemId = item.ItemID;
+    pin.style.left = item.map_x + 'px';
+    pin.style.top  = item.map_y + 'px';
+
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-map-marker-alt';
+
+    const label = document.createElement('span');
+    label.className = 'pin-label';
+    label.textContent = item.ItemName;
+
+    pin.appendChild(icon);
+    pin.appendChild(label);
+
+    // Click to show tooltip
+    pin.addEventListener('click', function (e) {
+      e.stopPropagation();
+      showTooltip(e, item);
+    });
+
+    // Drag (admin only)
+    if (IS_ADMIN) {
+      pin.addEventListener('mousedown', onPinMouseDown);
+      pin.addEventListener('touchstart', onPinTouchStart, { passive: false });
+    }
+
+    return pin;
+  }
+
+  // ----------------------------------------------------------------
+  // Tooltip
+  // ----------------------------------------------------------------
+  function showTooltip(e, item) {
+    tooltipItemName.textContent = item.ItemName;
+    tooltipItemLink.href = '/items/' + encodeURIComponent(item.ItemID);
+    tooltip.style.display = 'block';
+    positionTooltip(e.clientX, e.clientY);
+  }
+
+  function positionTooltip(cx, cy) {
+    const tw = tooltip.offsetWidth || 200;
+    const th = tooltip.offsetHeight || 80;
+    let left = cx + 12;
+    let top  = cy - 10;
+    if (left + tw > window.innerWidth - 10)  left = cx - tw - 12;
+    if (top  + th > window.innerHeight - 10) top  = cy - th - 10;
+    tooltip.style.left = left + 'px';
+    tooltip.style.top  = top  + 'px';
+  }
+
+  if (tooltipClose) {
+    tooltipClose.addEventListener('click', function () {
+      tooltip.style.display = 'none';
+    });
+  }
+
+  document.addEventListener('click', function () {
+    tooltip.style.display = 'none';
+  });
+
+  // ----------------------------------------------------------------
+  // Drag & Drop (mouse)
+  // ----------------------------------------------------------------
+  function onPinMouseDown(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    startDrag(e.currentTarget, e.clientX, e.clientY);
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup',   onMouseUp);
+  }
+
+  function onMouseMove(e) {
+    if (!draggingPin) return;
+    moveDragging(e.clientX, e.clientY);
+  }
+
+  function onMouseUp(e) {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup',   onMouseUp);
+    endDrag();
+  }
+
+  // ----------------------------------------------------------------
+  // Drag & Drop (touch)
+  // ----------------------------------------------------------------
+  function onPinTouchStart(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    startDrag(e.currentTarget, touch.clientX, touch.clientY);
+
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend',  onTouchEnd);
+  }
+
+  function onTouchMove(e) {
+    e.preventDefault();
+    if (!draggingPin) return;
+    const touch = e.touches[0];
+    moveDragging(touch.clientX, touch.clientY);
+  }
+
+  function onTouchEnd() {
+    document.removeEventListener('touchmove', onTouchMove);
+    document.removeEventListener('touchend',  onTouchEnd);
+    endDrag();
+  }
+
+  // ----------------------------------------------------------------
+  // Drag helpers
+  // ----------------------------------------------------------------
+  function startDrag(pin, clientX, clientY) {
+    draggingPin = pin;
+    draggingPin.classList.add('dragging');
+    tooltip.style.display = 'none';
+
+    const rect = mapContainer.getBoundingClientRect();
+    const pinLeft = parseInt(pin.style.left, 10) || 0;
+    const pinTop  = parseInt(pin.style.top,  10) || 0;
+
+    // Offset between cursor and pin's anchor point
+    dragOffsetX = clientX - rect.left - pinLeft;
+    dragOffsetY = clientY - rect.top  - pinTop;
+  }
+
+  function moveDragging(clientX, clientY) {
+    if (!draggingPin) return;
+    const rect = mapContainer.getBoundingClientRect();
+    let x = clientX - rect.left - dragOffsetX;
+    let y = clientY - rect.top  - dragOffsetY;
+
+    // Clamp within container
+    x = Math.max(0, Math.min(x, mapContainer.offsetWidth));
+    y = Math.max(0, Math.min(y, mapContainer.offsetHeight));
+
+    draggingPin.style.left = x + 'px';
+    draggingPin.style.top  = y + 'px';
+  }
+
+  function endDrag() {
+    if (!draggingPin) return;
+    draggingPin.classList.remove('dragging');
+
+    const itemId = draggingPin.dataset.itemId;
+    const x = parseInt(draggingPin.style.left, 10) || 0;
+    const y = parseInt(draggingPin.style.top,  10) || 0;
+
+    // Update local cache
+    const local = mapItems.find(i => i.ItemID === itemId);
+    if (local) { local.map_x = x; local.map_y = y; }
+
+    // Persist to server
+    savePosition(itemId, x, y);
+
+    draggingPin = null;
+  }
+
+  function savePosition(itemId, x, y) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (CSRF_TOKEN) headers['X-CSRFToken'] = CSRF_TOKEN;
+
+    fetch('/api/items/' + encodeURIComponent(itemId) + '/position', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ x: x, y: y }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) {
+        console.warn('Failed to save position:', data.error);
+      }
+    })
+    .catch(err => console.error('Error saving position:', err));
+  }
+
+  // ----------------------------------------------------------------
+  // Floor plan upload
+  // ----------------------------------------------------------------
+  const uploadBtn   = document.getElementById('uploadFloorPlanBtn');
+  const fileInput   = document.getElementById('floorPlanInput');
+
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', function () {
+      const file = fileInput.files[0];
+      if (!file) { alert('請先選擇圖片檔案'); return; }
+
+      const formData = new FormData();
+      formData.append('floor', currentFloor);
+      formData.append('floor_plan', file);
+
+      const headers = {};
+      if (CSRF_TOKEN) headers['X-CSRFToken'] = CSRF_TOKEN;
+
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>上傳中…';
+
+      fetch('/api/locations/floor-plan', {
+        method: 'POST',
+        headers: headers,
+        body: formData,
+      })
+      .then(r => r.json())
+      .then(data => {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload me-1"></i>上傳';
+        if (data.success) {
+          // Update map image immediately
+          let img = document.getElementById('floorPlanImg');
+          const placeholder = document.getElementById('noImagePlaceholder');
+          if (!img) {
+            img = document.createElement('img');
+            img.id = 'floorPlanImg';
+            img.alt = '平面圖';
+            img.style.cssText = 'max-width:100%;display:block;user-select:none;';
+            img.draggable = false;
+            mapContainer.insertBefore(img, mapContainer.firstChild);
+          }
+          img.src = data.image_url;
+          img.style.display = 'block';
+          if (placeholder) placeholder.style.display = 'none';
+          fileInput.value = '';
+        } else {
+          alert('上傳失敗：' + (data.error || '未知錯誤'));
+        }
+      })
+      .catch(err => {
+        uploadBtn.disabled = false;
+        uploadBtn.innerHTML = '<i class="fas fa-upload me-1"></i>上傳';
+        console.error('Upload error:', err);
+        alert('上傳時發生錯誤');
+      });
+    });
+  }
+
+  // ----------------------------------------------------------------
+  // Init: load map data for the initially-selected floor
+  // ----------------------------------------------------------------
+  if (currentFloor) {
+    loadMapData(currentFloor);
+  }
+})();
+</script>
+{% endblock %}

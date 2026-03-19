@@ -1,0 +1,164 @@
+{%extends "template.html"%}
+
+{%block title%}倉庫管理 - 物品管理系統{%endblock%}
+
+{%block user%}{{User.name}}{%endblock%}
+
+{%block contain%}
+<div class="row">
+  <!-- 頁面標題 -->
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-warehouse text-primary me-2"></i>倉庫管理
+        </h2>
+        <p class="text-muted mb-0">管理多個儲存位置或倉庫</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createWarehouseModal">
+          <i class="fas fa-plus me-1"></i>新增倉庫
+        </button>
+        <a href="{{url_for('items.home')}}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回首頁
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {%if active_warehouse%}
+  <div class="col-12 mb-3">
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-0">
+      <i class="fas fa-map-marker-alt"></i>
+      <span>目前作用中倉庫：<strong>{{ active_warehouse.name }}</strong>
+        {%if active_warehouse.address%}（{{ active_warehouse.address }}）{%endif%}
+      </span>
+    </div>
+  </div>
+  {%endif%}
+
+  <!-- 倉庫列表 -->
+  <div class="col-12">
+    {%if warehouses%}
+    <div class="row g-3">
+      {%for warehouse in warehouses%}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 {%if active_warehouse and warehouse.id == active_warehouse.id%}border-primary{%endif%}">
+          {%if warehouse.is_default%}
+          <div class="card-header bg-primary text-white py-2">
+            <small><i class="fas fa-star me-1"></i>預設倉庫</small>
+          </div>
+          {%endif%}
+          <div class="card-body">
+            <h5 class="card-title mb-1">
+              <i class="fas fa-warehouse me-2 text-primary"></i>{{ warehouse.name }}
+            </h5>
+            {%if warehouse.address%}
+            <p class="text-muted small mb-2">
+              <i class="fas fa-map-marker-alt me-1"></i>{{ warehouse.address }}
+            </p>
+            {%endif%}
+            <p class="text-muted small mb-0">
+              <i class="fas fa-calendar-alt me-1"></i>建立於 {{ warehouse.created_at }}
+            </p>
+          </div>
+          <div class="card-footer bg-transparent d-flex gap-2">
+            {%if not warehouse.is_default%}
+            <button class="btn btn-outline-primary btn-sm flex-fill"
+                    onclick="switchWarehouse({{ warehouse.id }}, '{{ warehouse.name }}')">
+              <i class="fas fa-exchange-alt me-1"></i>切換
+            </button>
+            {%else%}
+            <button class="btn btn-primary btn-sm flex-fill" disabled>
+              <i class="fas fa-check me-1"></i>使用中
+            </button>
+            {%endif%}
+            <form method="post" action="{{url_for('warehouses.delete_warehouse', id=warehouse.id)}}"
+                  class="d-inline"
+                  onsubmit="return confirm('確定要刪除倉庫「{{ warehouse.name }}」嗎？')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+              <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="fas fa-trash"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {%endfor%}
+    </div>
+    {%else%}
+    <div class="card">
+      <div class="card-body text-center py-5">
+        <i class="fas fa-warehouse fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">尚未建立任何倉庫</h5>
+        <p class="text-muted mb-3">建立倉庫以便管理不同地點的物品</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createWarehouseModal">
+          <i class="fas fa-plus me-1"></i>新增第一個倉庫
+        </button>
+      </div>
+    </div>
+    {%endif%}
+  </div>
+</div>
+
+<!-- 新增倉庫 Modal -->
+<div class="modal fade" id="createWarehouseModal" tabindex="-1" aria-labelledby="createWarehouseModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{url_for('warehouses.create_warehouse')}}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="modal-header">
+          <h5 class="modal-title" id="createWarehouseModalLabel">
+            <i class="fas fa-plus-circle me-2 text-primary"></i>新增倉庫
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">倉庫名稱 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="name" placeholder="例如：家中倉庫、辦公室、租用倉庫" required maxlength="100">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">地址（選填）</label>
+            <input type="text" class="form-control" name="address" placeholder="例如：台北市中山區XX路XX號" maxlength="255">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check me-1"></i>新增倉庫
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Switch CSRF form (hidden) -->
+<form id="switchForm" method="post" class="d-none">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+</form>
+
+<script>
+function switchWarehouse(id, name) {
+  if (!confirm('確定要切換至倉庫「' + name + '」嗎？')) return;
+
+  fetch('/api/warehouses/switch/' + id, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('#switchForm [name=csrf_token]').value
+    },
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('切換失敗：' + data.message);
+    }
+  })
+  .catch(() => alert('操作失敗，請稍後再試'));
+}
+</script>
+{%endblock%}
