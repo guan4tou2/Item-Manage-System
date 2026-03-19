@@ -1,0 +1,156 @@
+{%extends "template.html"%}
+{%block title%}物品轉讓 - 物品管理系統{%endblock%}
+{%block user%}{{User.User}}{%endblock%}
+
+{%block contain%}
+<div class="row">
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-exchange-alt text-warning me-2"></i>物品轉讓
+        </h2>
+        <p class="text-muted mb-0">管理物品的轉讓請求（二手交易/轉讓）</p>
+      </div>
+      <a href="{{ url_for('items.home') }}" class="btn btn-outline-secondary">
+        <i class="fas fa-arrow-left me-1"></i>返回首頁
+      </a>
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block body%}
+<div class="container py-3">
+
+  <!-- 收到的轉讓請求 -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-inbox me-2 text-primary"></i>收到的請求</h5>
+    </div>
+    <div class="card-body p-0">
+      {% if incoming %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>物品</th>
+              <th>從誰</th>
+              <th>附言</th>
+              <th>時間</th>
+              <th>狀態</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tr in incoming %}
+            <tr>
+              <td><a href="{{ url_for('items.item_detail', item_id=tr.item_id) }}">{{ tr.item_name }}</a></td>
+              <td>{{ tr.from_user }}</td>
+              <td>{{ tr.message or '-' }}</td>
+              <td><small class="text-muted">{{ tr.created_at }}</small></td>
+              <td>
+                {% if tr.status == 'pending' %}
+                <span class="badge bg-warning text-dark">待處理</span>
+                {% elif tr.status == 'accepted' %}
+                <span class="badge bg-success">已接受</span>
+                {% else %}
+                <span class="badge bg-secondary">已拒絕</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if tr.status == 'pending' %}
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-success" onclick="respondTransfer({{ tr.id }}, 'accept')">
+                    <i class="fas fa-check"></i> 接受
+                  </button>
+                  <button class="btn btn-outline-danger" onclick="respondTransfer({{ tr.id }}, 'reject')">
+                    <i class="fas fa-times"></i> 拒絕
+                  </button>
+                </div>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-inbox fa-3x mb-3 opacity-50"></i>
+        <p>目前沒有收到轉讓請求</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 送出的轉讓請求 -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-paper-plane me-2 text-secondary"></i>送出的請求</h5>
+    </div>
+    <div class="card-body p-0">
+      {% if outgoing %}
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>物品</th>
+              <th>給誰</th>
+              <th>附言</th>
+              <th>時間</th>
+              <th>狀態</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tr in outgoing %}
+            <tr>
+              <td><a href="{{ url_for('items.item_detail', item_id=tr.item_id) }}">{{ tr.item_name }}</a></td>
+              <td>{{ tr.to_user }}</td>
+              <td>{{ tr.message or '-' }}</td>
+              <td><small class="text-muted">{{ tr.created_at }}</small></td>
+              <td>
+                {% if tr.status == 'pending' %}
+                <span class="badge bg-warning text-dark">等待回應</span>
+                {% elif tr.status == 'accepted' %}
+                <span class="badge bg-success">已接受</span>
+                {% else %}
+                <span class="badge bg-secondary">已拒絕</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="fas fa-paper-plane fa-3x mb-3 opacity-50"></i>
+        <p>目前沒有送出轉讓請求</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{%endblock%}
+
+{%block js%}
+<script>
+function respondTransfer(id, action) {
+  const url = `/api/transfers/${id}/${action}`;
+  fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    } else {
+      alert('操作失敗：' + (data.error || '未知錯誤'));
+    }
+  })
+  .catch(() => alert('網路錯誤，請稍後再試'));
+}
+</script>
+{%endblock%}

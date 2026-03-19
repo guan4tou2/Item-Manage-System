@@ -595,6 +595,33 @@
                       </div>
                     </div>
                   </div>
+                  <!-- M28: 保險記錄 -->
+                  <div class="row g-3 mt-2">
+                    <div class="col-12">
+                      <small class="text-muted fw-semibold"><i class="fas fa-shield-halved me-1 text-info"></i>保險記錄（選填）</small>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input type="text" class="form-control" id="insurance_provider" name="insurance_provider"
+                          placeholder="保險公司" value="{{ form.insurance_provider if form else '' }}" />
+                        <label for="insurance_provider"><i class="fas fa-building me-1"></i>保險公司</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input type="text" class="form-control" id="insurance_policy" name="insurance_policy"
+                          placeholder="保單號碼" value="{{ form.insurance_policy if form else '' }}" />
+                        <label for="insurance_policy"><i class="fas fa-file-contract me-1"></i>保單號碼</label>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="form-floating">
+                        <input type="date" class="form-control" id="insurance_expiry" name="insurance_expiry"
+                          value="{{ form.insurance_expiry if form else '' }}" />
+                        <label for="insurance_expiry"><i class="fas fa-calendar-times me-1"></i>保險到期日</label>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

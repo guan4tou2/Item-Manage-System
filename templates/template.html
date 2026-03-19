@@ -258,6 +258,11 @@
                 <button type="button" class="btn btn-outline-secondary d-none" id="navClearBtn" onclick="clearNavSearch()">
                   <i class="fas fa-times"></i>
                 </button>
+                <!-- M27: 語音搜尋按鈕 -->
+                <button type="button" class="btn btn-outline-light d-none" id="voiceSearchBtn" onclick="startVoiceSearch()" title="{{ _('語音搜尋') }}">
+                  <i class="fas fa-microphone" id="voiceIcon"></i>
+                  <span class="voice-listening-dot d-none" id="voiceDot" style="width:8px;height:8px;background:red;border-radius:50%;display:inline-block;animation:pulse 1s infinite;"></span>
+                </button>
                 <button class="btn btn-outline-light" type="submit">
                   <i class="fas fa-search"></i>
                 </button>
@@ -1317,6 +1322,53 @@
         if (btn) {
           btn.classList.add('d-none');
         }
+      }
+
+      // ========================================
+      // M27: 語音搜尋 (Web Speech API)
+      // ========================================
+      (function() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRec) {
+          const btn = document.getElementById('voiceSearchBtn');
+          if (btn) btn.classList.remove('d-none');
+        }
+      })();
+
+      function startVoiceSearch() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) return;
+        const btn = document.getElementById('voiceSearchBtn');
+        const icon = document.getElementById('voiceIcon');
+        const dot = document.getElementById('voiceDot');
+        const input = document.getElementById('navSearchInput');
+        const recognition = new SpeechRec();
+        recognition.lang = 'zh-TW';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        // Visual: pulsing red dot
+        if (icon) icon.classList.add('d-none');
+        if (dot) dot.classList.remove('d-none');
+        if (btn) btn.disabled = true;
+        recognition.start();
+        recognition.onresult = function(event) {
+          const transcript = event.results[0][0].transcript;
+          if (input) {
+            input.value = transcript;
+            // Submit the search form
+            input.closest('form').submit();
+          }
+        };
+        recognition.onerror = function() {
+          if (icon) icon.classList.remove('d-none');
+          if (dot) dot.classList.add('d-none');
+          if (btn) btn.disabled = false;
+        };
+        recognition.onend = function() {
+          if (icon) icon.classList.remove('d-none');
+          if (dot) dot.classList.add('d-none');
+          if (btn) btn.disabled = false;
+        };
       }
 
       // ========================================

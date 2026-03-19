@@ -347,6 +347,36 @@
           </div>
           {% endif %}
 
+          <!-- M28: 保險記錄 -->
+          {% if item.insurance_provider or item.insurance_policy or item.insurance_expiry %}
+          <div class="info-section">
+            <h5 class="info-section-title">
+              <i class="fas fa-shield-halved text-info"></i>
+              保險記錄
+            </h5>
+            <div class="row g-2">
+              {% if item.insurance_provider %}
+              <div class="col-sm-4">
+                <p class="text-muted small mb-1">保險公司</p>
+                <p class="mb-0"><strong>{{ item.insurance_provider }}</strong></p>
+              </div>
+              {% endif %}
+              {% if item.insurance_policy %}
+              <div class="col-sm-4">
+                <p class="text-muted small mb-1">保單號碼</p>
+                <p class="mb-0"><strong>{{ item.insurance_policy }}</strong></p>
+              </div>
+              {% endif %}
+              {% if item.insurance_expiry %}
+              <div class="col-sm-4">
+                <p class="text-muted small mb-1">到期日</p>
+                <p class="mb-0"><strong>{{ item.insurance_expiry }}</strong></p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
           <!-- 購買連結 -->
           <div class="info-section">
             <h5 class="info-section-title">
@@ -418,7 +448,21 @@
                 <i class="fas fa-barcode me-1"></i>條碼
               </a>
             </div>
+            <!-- M16: 寫入 NFC（僅管理員，瀏覽器支援時顯示） -->
+            {%if User.admin%}
+            <button type="button" class="btn btn-outline-info btn-lg d-none" id="nfcWriteBtn"
+              onclick="writeNfcTag('{{ item.ItemID }}')">
+              <i class="fas fa-wifi me-1"></i>寫入 NFC
+            </button>
+            {%endif%}
+            <!-- M29: 轉讓按鈕（物品擁有者） -->
+            {% if item.ItemOwner == User.User %}
+            <button type="button" class="btn btn-outline-warning btn-lg" data-bs-toggle="modal" data-bs-target="#transferModal">
+              <i class="fas fa-exchange-alt me-1"></i>轉讓
+            </button>
+            {% endif %}
           </div>
+          <div id="nfcWriteStatus" class="mt-2 small text-muted d-none"></div>
         </div>
       </div>
     </div>
@@ -576,6 +620,75 @@
   </div>
 </div>
 {%endif%}
+
+<!-- M29: 轉讓 Modal -->
+{% if item.ItemOwner == User.User %}
+<div class="modal fade" id="transferModal" tabindex="-1" aria-labelledby="transferModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="transferModalLabel">
+          <i class="fas fa-exchange-alt me-2"></i>轉讓物品
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3">將「{{ item.ItemName }}」轉讓給其他使用者</p>
+        <div class="mb-3">
+          <label for="transferToUser" class="form-label">轉讓給（帳號）<span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="transferToUser" placeholder="請輸入對方帳號">
+        </div>
+        <div class="mb-3">
+          <label for="transferMessage" class="form-label">附言（選填）</label>
+          <textarea class="form-control" id="transferMessage" rows="2" placeholder="可輸入轉讓說明"></textarea>
+        </div>
+        <div id="transferResult" class="d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-warning" id="confirmTransferBtn">
+          <i class="fas fa-exchange-alt me-1"></i>送出轉讓請求
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('confirmTransferBtn').addEventListener('click', function() {
+  const toUser = document.getElementById('transferToUser').value.trim();
+  const message = document.getElementById('transferMessage').value.trim();
+  const resultEl = document.getElementById('transferResult');
+  if (!toUser) {
+    resultEl.className = 'alert alert-danger';
+    resultEl.textContent = '請輸入對方帳號';
+    resultEl.classList.remove('d-none');
+    return;
+  }
+  fetch('/api/items/{{ item.ItemID }}/transfer', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+    body: JSON.stringify({to_user: toUser, message: message})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      resultEl.className = 'alert alert-success';
+      resultEl.textContent = '轉讓請求已送出！';
+      document.getElementById('confirmTransferBtn').disabled = true;
+    } else {
+      resultEl.className = 'alert alert-danger';
+      resultEl.textContent = data.error || '操作失敗';
+    }
+    resultEl.classList.remove('d-none');
+  })
+  .catch(() => {
+    resultEl.className = 'alert alert-danger';
+    resultEl.textContent = '網路錯誤，請稍後再試';
+    resultEl.classList.remove('d-none');
+  });
+});
+</script>
+{% endif %}
 
 {%endblock%}
 
@@ -1034,5 +1147,33 @@ document.querySelectorAll('.qty-btn').forEach(btn => {
       container.innerHTML = '<span class="text-muted small">無法載入連結</span>';
     });
 })();
+
+// M16: NFC 寫入（管理員）
+if ('NDEFReader' in window) {
+  const nfcBtn = document.getElementById('nfcWriteBtn');
+  if (nfcBtn) nfcBtn.classList.remove('d-none');
+}
+async function writeNfcTag(itemId) {
+  const statusEl = document.getElementById('nfcWriteStatus');
+  const btn = document.getElementById('nfcWriteBtn');
+  if (!('NDEFReader' in window)) {
+    statusEl.textContent = '您的瀏覽器不支援 Web NFC';
+    statusEl.classList.remove('d-none');
+    return;
+  }
+  try {
+    btn.disabled = true;
+    statusEl.textContent = '請靠近 NFC 標籤...';
+    statusEl.classList.remove('d-none');
+    const writer = new NDEFReader();
+    const itemUrl = window.location.href;
+    await writer.write({ records: [{ recordType: 'url', data: itemUrl }] });
+    statusEl.textContent = 'NFC 標籤已寫入成功！';
+  } catch (err) {
+    statusEl.textContent = '寫入失敗：' + (err.message || err);
+  } finally {
+    btn.disabled = false;
+  }
+}
 </script>
 {%endblock%}

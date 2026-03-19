@@ -106,6 +106,20 @@
       {% include 'partials/widget_activity.html' %}
       {%endif%}
 
+      <!-- M30: 智慧推薦 Widget -->
+      <div class="card border-0 shadow-sm mb-4" id="recommendationsWidget">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i class="fas fa-lightbulb text-warning"></i>
+          <h6 class="mb-0">{{ _('智慧推薦') }}</h6>
+        </div>
+        <div class="card-body p-2" id="recommendationsBody">
+          <div class="text-center py-3 text-muted small">
+            <div class="spinner-border spinner-border-sm me-1" role="status"></div>
+            {{ _('載入中...') }}
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -204,5 +218,35 @@ function saveWidgets() {
   })
   .catch(() => alert('{{ _("網路錯誤，請再試一次。") }}'));
 }
+
+// M30: 載入智慧推薦
+(function loadRecommendations() {
+  fetch('/api/recommendations')
+    .then(r => r.json())
+    .then(data => {
+      const body = document.getElementById('recommendationsBody');
+      if (!body) return;
+      const recs = (data.recommendations || []).slice(0, 5);
+      if (recs.length === 0) {
+        body.innerHTML = '<p class="text-muted small text-center py-2 mb-0">目前沒有推薦事項</p>';
+        return;
+      }
+      const colorMap = {danger:'text-danger', warning:'text-warning', info:'text-info', secondary:'text-secondary'};
+      body.innerHTML = recs.map(r => `
+        <div class="d-flex align-items-start gap-2 p-2 border-bottom">
+          <i class="${r.icon} ${colorMap[r.color] || ''} mt-1"></i>
+          <div>
+            <div class="small fw-semibold">${r.title}</div>
+            <div class="text-muted" style="font-size:0.78rem;">${r.detail}</div>
+            ${r.item_id ? `<a href="/item/${r.item_id}" class="small">查看物品 &rarr;</a>` : ''}
+          </div>
+        </div>
+      `).join('');
+    })
+    .catch(() => {
+      const body = document.getElementById('recommendationsBody');
+      if (body) body.innerHTML = '<p class="text-muted small text-center py-2 mb-0">無法載入推薦</p>';
+    });
+})();
 </script>
 {%endblock%}

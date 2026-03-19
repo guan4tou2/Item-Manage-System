@@ -61,6 +61,10 @@ class Item(db.Model):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     # M10: Drag-and-drop sort order
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False, server_default="0")
+    # M28: Insurance Records
+    insurance_provider: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    insurance_policy: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    insurance_expiry: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -105,6 +109,9 @@ class Item(db.Model):
             "is_deleted": bool(self.is_deleted),
             "deleted_at": self.deleted_at.strftime("%Y-%m-%d %H:%M:%S") if self.deleted_at else None,
             "sort_order": int(self.sort_order or 0),
+            "insurance_provider": self.insurance_provider or "",
+            "insurance_policy": self.insurance_policy or "",
+            "insurance_expiry": self.insurance_expiry.strftime("%Y-%m-%d") if self.insurance_expiry else "",
         }
 
     def __repr__(self) -> str:

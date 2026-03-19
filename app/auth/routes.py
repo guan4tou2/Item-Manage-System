@@ -8,6 +8,48 @@ from app.utils.validators import validate_password_strength
 bp = Blueprint("auth", __name__)
 
 
+@bp.route("/auth/google")
+def google_login():
+    """Redirect to Google OAuth2 login page."""
+    from app.services.oauth_service import get_google_auth_url
+    redirect_uri = url_for("auth.google_callback", _external=True)
+    auth_url = get_google_auth_url(redirect_uri)
+    if not auth_url:
+        flash(_("Google 登入尚未啟用，請聯繫管理員設定"), "warning")
+        return redirect(url_for("auth.signin"))
+    return redirect(auth_url)
+
+
+@bp.route("/auth/google/callback")
+def google_callback():
+    """Handle Google OAuth2 callback."""
+    from app.services.oauth_service import exchange_google_code
+    code = request.args.get("code")
+    if not code:
+        flash(_("Google 登入失敗：未取得授權碼"), "danger")
+        return redirect(url_for("auth.signin"))
+    redirect_uri = url_for("auth.google_callback", _external=True)
+    user_info = exchange_google_code(code, redirect_uri)
+    if not user_info or not user_info.get("email"):
+        flash(_("Google 登入失敗：無法取得使用者資訊"), "danger")
+        return redirect(url_for("auth.signin"))
+    email = user_info["email"]
+    name = user_info.get("name") or email.split("@")[0]
+    # Use email prefix as username, sanitised
+    username = email.split("@")[0].replace(".", "_").replace("+", "_")[:50]
+    # Create user if not exists
+    existing = user_service.get_user(username)
+    if not existing:
+        # Create with random password (OAuth users don't use password)
+        import secrets
+        random_pw = secrets.token_urlsafe(32)
+        user_service.create_user(username, random_pw, admin=False)
+    session.clear()
+    session["UserID"] = username
+    flash(_("已使用 Google 帳號登入"), "success")
+    return redirect(url_for("items.dashboard"))
+
+
 @bp.route("/", methods=["GET", "POST"])
 @bp.route("/signin", methods=["GET", "POST"])
 @limiter.limit("10 per minute", methods=["POST"])
@@ -16,30 +58,33 @@ def signin():
         username = request.form.get("UserID", "").strip()
         password = request.form.get("Password", "")
 
+        from app.services.oauth_service import is_oauth_enabled
+        _oauth = is_oauth_enabled()
         if not username or not password:
             flash(_("請輸入帳號與密碼"), "danger")
-            return render_template("signin.html", error=_("請輸入帳號與密碼"))
+            return render_template("signin.html", error=_("請輸入帳號與密碼"), oauth_enabled=_oauth)
 
         # 取得用戶 IP（使用 remote_addr 避免 X-Forwarded-For 偽造）
         ip_address = request.remote_addr or ""
-        
+
         success, error_msg = user_service.authenticate(username, password, ip_address)
-        
+
         if success:
             session.clear()
             session["UserID"] = username
-            
+
             # 檢查是否需要強制修改密碼
             if user_service.needs_password_change(username):
                 session["force_password_change"] = True
                 flash(_("首次登入請修改預設密碼以確保安全"), "warning")
                 return redirect(url_for("auth.change_password"))
-            
+
             return redirect(url_for("items.dashboard"))
         else:
-            return render_template("signin.html", error=error_msg)
+            return render_template("signin.html", error=error_msg, oauth_enabled=_oauth)
 
-    return render_template("signin.html")
+    from app.services.oauth_service import is_oauth_enabled
+    return render_template("signin.html", oauth_enabled=is_oauth_enabled())
 
 
 @bp.route("/signup", methods=["GET", "POST"])

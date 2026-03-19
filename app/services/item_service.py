@@ -283,6 +283,10 @@ def create_item(form_data: Dict[str, Any], file_storage, extra_files=None) -> Tu
     form_data["visibility"] = (form_data.get("visibility") or "private").strip().lower()
     _apply_maintenance_form_data(form_data)
 
+    # M28: 將保險到期日空字串轉為 None，避免 Date 欄位寫入錯誤
+    if form_data.get("insurance_expiry") == "":
+        form_data["insurance_expiry"] = None
+
     filename = storage.save_upload(file_storage) if file_storage else None
     if filename:
         compressed = image.compress_image(filename)
@@ -409,6 +413,11 @@ def update_item(item_id: str, form_data: Dict[str, Any], file_storage=None, extr
     # 移除不應該更新的欄位
     form_data.pop("csrf_token", None)
     form_data.pop("ItemID", None)  # ItemID 不可更改
+
+    # M28: 將保險到期日空字串轉為 None，避免 Date 欄位寫入錯誤
+    for _date_key in ("insurance_expiry",):
+        if _date_key in form_data and form_data[_date_key] == "":
+            form_data[_date_key] = None
 
     item_repo.update_item_by_id(item_id, form_data)
 
@@ -1435,3 +1444,103 @@ def get_item_versions(item_id: str) -> List[Dict[str, Any]]:
     """M11: 取得物品版本歷史列表"""
     from app.repositories import item_version_repo
     return item_version_repo.list_versions(item_id)
+
+
+def get_recommendations(user_id: str) -> List[Dict[str, Any]]:
+    """M30: 根據使用模式產生智慧推薦。"""
+    recommendations: List[Dict[str, Any]] = []
+    today = date.today()
+
+    try:
+        from app import get_db_type
+        db_type = get_db_type()
+
+        if db_type == "postgres":
+            from app.models.item import Item
+            items = Item.query.filter_by(ItemOwner=user_id, is_deleted=False).all()
+
+            for item in items:
+                # 1. Items with expired warranty → suggest renewal
+                if item.WarrantyExpiry and item.WarrantyExpiry < today:
+                    recommendations.append({
+                        "type": "warranty_expired",
+                        "icon": "fas fa-shield-alt",
+                        "color": "danger",
+                        "title": f"保固已過期：{item.ItemName}",
+                        "detail": f"保固於 {item.WarrantyExpiry} 到期",
+                        "item_id": item.ItemID,
+                        "item_name": item.ItemName,
+                    })
+
+                # 2. Low stock items → suggest reorder
+                if (item.ReorderLevel or 0) > 0 and (item.Quantity or 0) <= (item.ReorderLevel or 0):
+                    recommendations.append({
+                        "type": "low_stock",
+                        "icon": "fas fa-boxes",
+                        "color": "warning",
+                        "title": f"庫存不足：{item.ItemName}",
+                        "detail": f"目前庫存 {item.Quantity}，補貨門檻 {item.ReorderLevel}",
+                        "item_id": item.ItemID,
+                        "item_name": item.ItemName,
+                    })
+
+                # 3. Maintenance overdue → suggest maintenance
+                if item.MaintenanceIntervalDays and item.LastMaintenanceDate:
+                    from datetime import timedelta
+                    next_maintenance = item.LastMaintenanceDate + timedelta(days=item.MaintenanceIntervalDays)
+                    if next_maintenance <= today:
+                        recommendations.append({
+                            "type": "maintenance_overdue",
+                            "icon": "fas fa-screwdriver-wrench",
+                            "color": "info",
+                            "title": f"保養逾期：{item.ItemName}",
+                            "detail": f"應於 {next_maintenance} 前完成保養",
+                            "item_id": item.ItemID,
+                            "item_name": item.ItemName,
+                        })
+
+                # 4. Items not accessed in 6+ months → suggest declutter (based on get date)
+                if item.ItemGetDate:
+                    try:
+                        get_date = datetime.strptime(str(item.ItemGetDate), "%Y-%m-%d").date()
+                        months_owned = (today - get_date).days / 30
+                        if months_owned >= 6 and (item.Quantity or 0) == 0:
+                            recommendations.append({
+                                "type": "declutter",
+                                "icon": "fas fa-recycle",
+                                "color": "secondary",
+                                "title": f"考慮整理：{item.ItemName}",
+                                "detail": f"此物品已存放超過 {int(months_owned)} 個月且數量為零",
+                                "item_id": item.ItemID,
+                                "item_name": item.ItemName,
+                            })
+                    except (ValueError, TypeError):
+                        pass
+
+        else:
+            # MongoDB fallback – basic implementation
+            from app import mongo
+            cursor = mongo.db.items.find(
+                {"ItemOwner": user_id, "is_deleted": {"$ne": True}},
+                {"ItemID": 1, "ItemName": 1, "Quantity": 1, "ReorderLevel": 1,
+                 "WarrantyExpiry": 1, "MaintenanceIntervalDays": 1, "LastMaintenanceDate": 1},
+            )
+            for item in cursor:
+                qty = item.get("Quantity") or 0
+                reorder = item.get("ReorderLevel") or 0
+                if reorder > 0 and qty <= reorder:
+                    recommendations.append({
+                        "type": "low_stock",
+                        "icon": "fas fa-boxes",
+                        "color": "warning",
+                        "title": f"庫存不足：{item.get('ItemName', '')}",
+                        "detail": f"目前庫存 {qty}",
+                        "item_id": item.get("ItemID", ""),
+                        "item_name": item.get("ItemName", ""),
+                    })
+
+    except Exception:
+        pass
+
+    return recommendations[:10]
+

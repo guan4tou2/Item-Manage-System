@@ -19,6 +19,7 @@ from app.models.backup_config import BackupConfig
 from app.models.item_version import ItemVersion
 from app.models.item_template import ItemTemplate
 from app.models.transfer import WarehouseTransfer
+from app.models.item_transfer import ItemTransferRequest
 
 __all__ = [
     "User",
@@ -48,4 +49,5 @@ __all__ = [
     "ItemVersion",
     "ItemTemplate",
     "WarehouseTransfer",
+    "ItemTransferRequest",
 ]

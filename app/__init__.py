@@ -265,6 +265,30 @@ def _ensure_item_sort_order_column() -> None:
         db.session.commit()
 
 
+def _ensure_item_insurance_columns() -> None:
+    """補齊 items 表缺少的保險記錄欄位（M28）。"""
+    if get_db_type() != "postgres":
+        return
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("items"):
+        return
+    existing_columns = {col["name"] for col in inspector.get_columns("items")}
+    alter_statements = []
+    if "insurance_provider" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN insurance_provider VARCHAR(100);")
+    if "insurance_policy" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN insurance_policy VARCHAR(100);")
+    if "insurance_expiry" not in existing_columns:
+        alter_statements.append("ALTER TABLE items ADD COLUMN insurance_expiry DATE;")
+    for statement in alter_statements:
+        db.session.execute(text(statement))
+    if alter_statements:
+        db.session.commit()
+
+
 def _seed_item_templates() -> None:
     """M19: 預設物品模板（若尚未建立）。"""
     if get_db_type() != "postgres":
@@ -515,11 +539,28 @@ def create_app() -> Flask:
             _ensure_email_verify_columns()
             _ensure_item_soft_delete_columns()
             _ensure_item_sort_order_column()
+            _ensure_item_insurance_columns()
     else:
         mongo.init_app(app)
     
     csrf.init_app(app)
-    limiter.init_app(app)
+
+    # Redis Fallback: wrap limiter and cache init so the app starts even without Redis
+    try:
+        limiter.init_app(app)
+        # Probe Redis connectivity; if it fails, reinitialise with in-memory storage
+        import redis as _redis_lib
+        _redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+        _r = _redis_lib.from_url(_redis_url, socket_connect_timeout=2)
+        _r.ping()
+    except Exception:
+        # Redis unavailable — fall back to in-memory storage for limiter
+        print("⚠️  Redis 不可用，限流器將改用記憶體模式（不支援多進程共享）")
+        limiter._storage_uri = "memory://"
+        try:
+            limiter.init_app(app)
+        except Exception:
+            pass
 
     # i18n 設定
     app.config["BABEL_DEFAULT_LOCALE"] = "zh_TW"
@@ -537,12 +578,25 @@ def create_app() -> Flask:
 
     babel.init_app(app, locale_selector=get_locale)
 
-    cache_config = {
-        "CACHE_TYPE": "RedisCache",
-        "CACHE_REDIS_URL": os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
-        "CACHE_DEFAULT_TIMEOUT": 300
-    }
-    cache.init_app(app, config=cache_config)
+    # Redis Fallback: try RedisCache first, fall back to SimpleCache
+    try:
+        _redis_url = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+        cache_config = {
+            "CACHE_TYPE": "RedisCache",
+            "CACHE_REDIS_URL": _redis_url,
+            "CACHE_DEFAULT_TIMEOUT": 300,
+        }
+        cache.init_app(app, config=cache_config)
+        # Verify connection
+        with app.app_context():
+            cache.get("__probe__")
+    except Exception:
+        print("⚠️  Redis 快取不可用，改用 SimpleCache（記憶體模式）")
+        cache_config = {
+            "CACHE_TYPE": "SimpleCache",
+            "CACHE_DEFAULT_TIMEOUT": 300,
+        }
+        cache.init_app(app, config=cache_config)
 
     # Initialize structured logging
     from app.utils.logging import init_flask_logging

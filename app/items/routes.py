@@ -1750,3 +1750,130 @@ def scan_receipt():
     image_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
     result = _scan(image_path)
     return jsonify({"success": True, **result})
+
+
+# ====================================================
+# M29: Item Marketplace / Transfer
+# ====================================================
+
+@bp.route("/api/items/<item_id>/transfer", methods=["POST"])
+@login_required
+def create_transfer(item_id):
+    """建立物品轉讓請求"""
+    from app import get_db_type
+    from app.models.item_transfer import ItemTransferRequest
+    from app import db as _db
+
+    user_id = session.get("UserID", "")
+    data = request.get_json(silent=True) or {}
+    to_user = (data.get("to_user") or "").strip()
+    message = (data.get("message") or "").strip()
+
+    if not to_user:
+        return jsonify({"success": False, "error": "請指定轉讓對象"}), 400
+    if to_user == user_id:
+        return jsonify({"success": False, "error": "不能轉讓給自己"}), 400
+
+    # Verify item ownership
+    db_type = get_db_type()
+    if db_type == "postgres":
+        item = Item.query.filter_by(ItemID=item_id, is_deleted=False).first()
+        if not item:
+            return jsonify({"success": False, "error": "物品不存在"}), 404
+        if item.ItemOwner != user_id:
+            return jsonify({"success": False, "error": "只有物品擁有者可以轉讓"}), 403
+        item_name = item.ItemName
+    else:
+        return jsonify({"success": False, "error": "此功能僅支援 PostgreSQL"}), 400
+
+    tr = ItemTransferRequest(
+        item_id=item_id,
+        item_name=item_name,
+        from_user=user_id,
+        to_user=to_user,
+        message=message,
+        status="pending",
+    )
+    _db.session.add(tr)
+    _db.session.commit()
+    return jsonify({"success": True, "id": tr.id})
+
+
+@bp.route("/api/transfers/<int:transfer_id>/accept", methods=["POST"])
+@login_required
+def accept_transfer(transfer_id):
+    """接受轉讓請求，修改物品擁有者"""
+    from app.models.item_transfer import ItemTransferRequest
+    from app import db as _db
+
+    user_id = session.get("UserID", "")
+    tr = ItemTransferRequest.query.get(transfer_id)
+    if not tr or tr.to_user != user_id or tr.status != "pending":
+        return jsonify({"success": False, "error": "無效的轉讓請求"}), 400
+
+    item = Item.query.filter_by(ItemID=tr.item_id).first()
+    if item:
+        item.ItemOwner = user_id
+    tr.status = "accepted"
+    _db.session.commit()
+    return jsonify({"success": True})
+
+
+@bp.route("/api/transfers/<int:transfer_id>/reject", methods=["POST"])
+@login_required
+def reject_transfer(transfer_id):
+    """拒絕轉讓請求"""
+    from app.models.item_transfer import ItemTransferRequest
+    from app import db as _db
+
+    user_id = session.get("UserID", "")
+    tr = ItemTransferRequest.query.get(transfer_id)
+    if not tr or tr.to_user != user_id or tr.status != "pending":
+        return jsonify({"success": False, "error": "無效的轉讓請求"}), 400
+
+    tr.status = "rejected"
+    _db.session.commit()
+    return jsonify({"success": True})
+
+
+@bp.route("/transfers")
+@login_required
+def transfer_list():
+    """顯示轉讓請求列表"""
+    from app.models.item_transfer import ItemTransferRequest
+    from app import get_db_type
+
+    user_id = session.get("UserID", "")
+    user = get_current_user()
+    db_type = get_db_type()
+
+    if db_type != "postgres":
+        flash(_("此功能僅支援 PostgreSQL"), "warning")
+        return redirect(url_for("items.home"))
+
+    incoming = ItemTransferRequest.query.filter_by(to_user=user_id).order_by(
+        ItemTransferRequest.created_at.desc()
+    ).all()
+    outgoing = ItemTransferRequest.query.filter_by(from_user=user_id).order_by(
+        ItemTransferRequest.created_at.desc()
+    ).all()
+
+    return render_template(
+        "transfers_items.html",
+        User=user,
+        incoming=incoming,
+        outgoing=outgoing,
+    )
+
+
+# ====================================================
+# M30: Smart Recommendations API
+# ====================================================
+
+@bp.route("/api/recommendations")
+@login_required
+def get_recommendations():
+    """智慧推薦 API"""
+    user_id = session.get("UserID", "")
+    recommendations = item_service.get_recommendations(user_id)
+    return jsonify({"success": True, "recommendations": recommendations})
