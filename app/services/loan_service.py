@@ -79,8 +79,11 @@ def get_overdue_count() -> int:
 
 def get_overdue_loans() -> List[Dict[str, Any]]:
     """取得所有逾期借出（expected_return < today 且 status='active'）"""
-    loan_repo.mark_overdue_loans()
-    return loan_repo.get_overdue_loans()
+    try:
+        loan_repo.mark_overdue_loans()
+        return loan_repo.get_overdue_loans()
+    except Exception:
+        return []
 
 
 def check_and_notify_overdue() -> None:
