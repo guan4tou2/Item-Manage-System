@@ -28,8 +28,9 @@
       </button>
     </div>
     <div class="card-body">
-      <p class="text-muted small mb-3">{{ _('選擇要顯示的小工具，然後點擊「儲存設定」。') }}</p>
-      <div class="row g-3" id="widgetCheckboxes">
+      <p class="text-muted small mb-3">{{ _('選擇要顯示的小工具，並可拖曳調整順序，然後點擊「儲存設定」。') }}</p>
+      <!-- M23: Drag-sortable widget list -->
+      <div id="widgetCheckboxes" class="row g-3">
         {%set widget_labels = {
           'alerts': _('摘要警示'),
           'expiring': _('即將到期'),
@@ -39,15 +40,21 @@
           'activity': _('最近活動')
         }%}
         {%for widget in widget_config%}
-        <div class="col-6 col-md-4 col-lg-2">
-          <div class="form-check form-switch">
-            <input class="form-check-input widget-toggle" type="checkbox"
-              id="widget_{{widget.type}}"
-              data-widget-type="{{widget.type}}"
-              {%if widget.visible%}checked{%endif%}>
-            <label class="form-check-label" for="widget_{{widget.type}}">
-              {{widget_labels.get(widget.type, widget.type)}}
-            </label>
+        <div class="col-6 col-md-4 col-lg-2 widget-drag-item"
+             draggable="true"
+             data-widget-type="{{widget.type}}"
+             style="cursor: grab;">
+          <div class="card border p-2 text-center h-100 widget-drag-card">
+            <i class="fas fa-grip-vertical text-muted mb-1"></i>
+            <div class="form-check form-switch d-flex justify-content-center align-items-center gap-2">
+              <input class="form-check-input widget-toggle" type="checkbox"
+                id="widget_{{widget.type}}"
+                data-widget-type="{{widget.type}}"
+                {%if widget.visible%}checked{%endif%}>
+              <label class="form-check-label" for="widget_{{widget.type}}">
+                {{widget_labels.get(widget.type, widget.type)}}
+              </label>
+            </div>
           </div>
         </div>
         {%endfor%}
@@ -103,18 +110,81 @@
   </div>
 </div>
 
+<style>
+.widget-drag-card.drag-over {
+  border: 2px dashed #0d6efd !important;
+  background: #e9f0ff;
+}
+.widget-drag-item.dragging {
+  opacity: 0.4;
+}
+</style>
+
 <script>
 function toggleCustomize() {
   const panel = document.getElementById('customizePanel');
   panel.classList.toggle('d-none');
 }
 
+// M23: Drag-and-drop reordering
+(function() {
+  let dragSrc = null;
+
+  function getItems() {
+    return Array.from(document.querySelectorAll('.widget-drag-item'));
+  }
+
+  function bindDragEvents() {
+    getItems().forEach(item => {
+      item.addEventListener('dragstart', function(e) {
+        dragSrc = this;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      item.addEventListener('dragend', function() {
+        this.classList.remove('dragging');
+        document.querySelectorAll('.widget-drag-card').forEach(c => c.classList.remove('drag-over'));
+      });
+      item.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        this.querySelector('.widget-drag-card').classList.add('drag-over');
+      });
+      item.addEventListener('dragleave', function() {
+        this.querySelector('.widget-drag-card').classList.remove('drag-over');
+      });
+      item.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.querySelector('.widget-drag-card').classList.remove('drag-over');
+        if (dragSrc && dragSrc !== this) {
+          const parent = this.parentNode;
+          const items = getItems();
+          const srcIdx = items.indexOf(dragSrc);
+          const dstIdx = items.indexOf(this);
+          if (srcIdx < dstIdx) {
+            parent.insertBefore(dragSrc, this.nextSibling);
+          } else {
+            parent.insertBefore(dragSrc, this);
+          }
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', bindDragEvents);
+})();
+
 function saveWidgets() {
-  const checkboxes = document.querySelectorAll('.widget-toggle');
-  const config = Array.from(checkboxes).map(cb => ({
-    type: cb.dataset.widgetType,
-    visible: cb.checked
-  }));
+  const items = Array.from(document.querySelectorAll('.widget-drag-item'));
+  const config = items.map((item, idx) => {
+    const type = item.dataset.widgetType;
+    const cb = item.querySelector('.widget-toggle');
+    return {
+      type: type,
+      visible: cb ? cb.checked : true,
+      order: idx,
+    };
+  });
 
   fetch('{{ url_for("items.save_dashboard_widgets") }}', {
     method: 'POST',

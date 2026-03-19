@@ -11,7 +11,7 @@ class FakeItemRepo:
         self.updated_items = {}
         self.deleted_items = []
 
-    def list_items(self, filter_query, projection, sort=None, skip=0, limit=None):
+    def list_items(self, filter_query, projection, sort=None, skip=0, limit=None, group_member_ids=None):
         def match(item):
             for key, condition in filter_query.items():
                 if isinstance(condition, dict) and "$regex" in condition:
@@ -41,7 +41,7 @@ class FakeItemRepo:
         for item in paginated:
             yield {k: v for k, v in item.items() if k in projection or projection.get("_id") == 0}
 
-    def count_items(self, filter_query):
+    def count_items(self, filter_query, group_member_ids=None):
         def match(item):
             for key, condition in filter_query.items():
                 if isinstance(condition, dict) and "$regex" in condition:

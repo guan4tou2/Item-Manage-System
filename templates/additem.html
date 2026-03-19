@@ -176,6 +176,20 @@
             <div class="small text-muted mt-2">
               手機可直接啟用後鏡頭拍照；桌機可使用瀏覽器相機預覽拍攝。
             </div>
+            <!-- M12: AI 圖片辨識建議按鈕 -->
+            <div class="mt-2" id="aiSuggestWrapper" style="display:none;">
+              <button type="button" class="btn btn-outline-info btn-sm" onclick="runAiAnalysis()">
+                <i class="fas fa-robot me-1"></i>AI 建議
+              </button>
+              <small class="text-muted ms-2">根據圖片檔名自動建議物品類型</small>
+            </div>
+            <div id="aiSuggestResult" class="mt-2 d-none">
+              <div class="alert alert-info py-2 mb-0">
+                <strong><i class="fas fa-robot me-1"></i>AI 建議：</strong>
+                <span id="aiSuggestText"></span>
+                <button type="button" class="btn btn-sm btn-info ms-2" onclick="applyAiSuggestions()">套用</button>
+              </div>
+            </div>
           </div>
 
           <!-- 位置資訊區塊 -->
@@ -382,11 +396,12 @@
           <div class="col-md-4">
             <div class="form-floating">
               <select id="visibility" class="form-select" name="visibility" required>
-                <option value="private" {% if form and form.visibility == 'private' %}selected{% endif %}>私人</option>
-                <option value="shared" {% if form and form.visibility == 'shared' %}selected{% endif %}>共用</option>
+                <option value="private" {% if not form or form.visibility != 'shared' %}selected{% endif %}>私人（僅自己可見）</option>
+                <option value="shared" {% if form and form.visibility == 'shared' %}selected{% endif %}>共用（群組成員可見）</option>
               </select>
               <label for="visibility"><i class="fas fa-users me-1"></i>可見性</label>
             </div>
+            <small class="text-muted">選擇「共用」後，與您同群組的成員也能看到此物品</small>
           </div>
 
           <!-- 取得日期 -->
@@ -526,6 +541,23 @@
               </div>
               <div class="collapse" id="assetInfoCollapse">
                 <div class="card-body pt-0">
+                  <!-- M13: OCR 收據掃描 -->
+                  <div class="mb-3 p-2 bg-white rounded border d-flex align-items-center gap-3 flex-wrap">
+                    <div>
+                      <label class="form-label fw-semibold mb-0">
+                        <i class="fas fa-receipt text-warning me-1"></i>掃描收據
+                      </label>
+                      <div class="d-flex align-items-center gap-2 mt-1">
+                        <input type="file" id="receiptInput" accept="image/*" class="form-control form-control-sm" style="max-width:220px;">
+                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="runOcrScan()">
+                          <i class="fas fa-search me-1"></i>掃描收據
+                        </button>
+                      </div>
+                    </div>
+                    <div id="ocrScanResult" class="small text-muted d-none">
+                      <i class="fas fa-info-circle me-1"></i><span id="ocrScanMsg"></span>
+                    </div>
+                  </div>
                   <div class="row g-3">
                     <div class="col-md-3">
                       <div class="form-floating">
@@ -1333,5 +1365,92 @@
         .catch(() => alert('載入模板失敗'));
     });
   })();
+
+  // M12: AI Image Recognition
+  let _aiSuggestions = {};
+  const fileInput2 = document.getElementById('ItemPic');
+  if (fileInput2) {
+    fileInput2.addEventListener('change', function() {
+      const wrapper = document.getElementById('aiSuggestWrapper');
+      if (wrapper) wrapper.style.display = this.files.length > 0 ? '' : 'none';
+      document.getElementById('aiSuggestResult').classList.add('d-none');
+    });
+  }
+
+  function runAiAnalysis() {
+    const input = document.getElementById('ItemPic');
+    if (!input || !input.files.length) return;
+    const formData = new FormData();
+    formData.append('photo', input.files[0]);
+    const csrf = document.querySelector('input[name=csrf_token]').value;
+    fetch('{{ url_for("items.analyze_image") }}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf },
+      body: formData,
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success && data.suggestions && Object.keys(data.suggestions).length > 0) {
+        _aiSuggestions = data.suggestions;
+        const labels = Object.entries(data.suggestions).map(([k,v]) => `${k}: ${v}`).join('、');
+        document.getElementById('aiSuggestText').textContent = labels;
+        document.getElementById('aiSuggestResult').classList.remove('d-none');
+      } else {
+        document.getElementById('aiSuggestText').textContent = '未能辨識出建議（信心度低）';
+        document.getElementById('aiSuggestResult').classList.remove('d-none');
+      }
+    })
+    .catch(() => {});
+  }
+
+  function applyAiSuggestions() {
+    if (_aiSuggestions.ItemType) {
+      const el = document.getElementById('ItemType');
+      if (el) el.value = _aiSuggestions.ItemType;
+    }
+    document.getElementById('aiSuggestResult').classList.add('d-none');
+  }
+
+  // M13: OCR Receipt Scanning
+  function runOcrScan() {
+    const input = document.getElementById('receiptInput');
+    if (!input || !input.files.length) {
+      alert('請先選擇收據圖片');
+      return;
+    }
+    const formData = new FormData();
+    formData.append('photo', input.files[0]);
+    const csrf = document.querySelector('input[name=csrf_token]').value;
+    fetch('{{ url_for("items.scan_receipt") }}', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrf },
+      body: formData,
+    })
+    .then(r => r.json())
+    .then(data => {
+      const resultDiv = document.getElementById('ocrScanResult');
+      const msgSpan = document.getElementById('ocrScanMsg');
+      resultDiv.classList.remove('d-none');
+      if (data.success && data.detected && data.data) {
+        const d = data.data;
+        if (d.price) {
+          const priceEl = document.getElementById('purchase_price');
+          if (priceEl) priceEl.value = d.price;
+        }
+        if (d.date) {
+          const dateEl = document.getElementById('ItemGetDate');
+          if (dateEl) dateEl.value = d.date;
+        }
+        msgSpan.textContent = '已自動填入收據資訊';
+      } else {
+        msgSpan.textContent = data.message || '功能開發中';
+      }
+    })
+    .catch(() => {
+      const resultDiv = document.getElementById('ocrScanResult');
+      document.getElementById('ocrScanMsg').textContent = '掃描失敗，請稍後再試';
+      resultDiv.classList.remove('d-none');
+    });
+  }
 </script>
 {%endblock%}

@@ -19,6 +19,9 @@
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createWarehouseModal">
           <i class="fas fa-plus me-1"></i>新增倉庫
         </button>
+        <a href="{{url_for('warehouses.transfer_list')}}" class="btn btn-outline-primary">
+          <i class="fas fa-exchange-alt me-1"></i>調撥記錄
+        </a>
         <a href="{{url_for('items.home')}}" class="btn btn-outline-secondary">
           <i class="fas fa-arrow-left me-1"></i>返回首頁
         </a>

@@ -1,5 +1,5 @@
 """物品資料存取模組"""
-from typing import Dict, Any, Iterable, Optional, List, Tuple
+from typing import Dict, Any, Iterable, Optional, List, Tuple, Set
 from datetime import datetime, date, timedelta
 
 from sqlalchemy import or_, and_, text
@@ -34,35 +34,50 @@ def _parse_optional_date(value: Any) -> Optional[date]:
     return None
 
 
+def _apply_common_filters(query, filter_query: Dict[str, Any], group_member_ids: Optional[Set[str]] = None):
+    """Apply shared filter conditions (PostgreSQL ORM query)."""
+    if "ItemName" in filter_query and filter_query["ItemName"]:
+        query = query.filter(Item.ItemName.ilike(f"%{filter_query['ItemName']}%"))
+    if "ItemStorePlace" in filter_query and filter_query["ItemStorePlace"]:
+        query = query.filter(Item.ItemStorePlace.ilike(f"%{filter_query['ItemStorePlace']}%"))
+    if "ItemType" in filter_query and filter_query["ItemType"]:
+        query = query.filter(Item.ItemType == filter_query["ItemType"])
+    if "ItemFloor" in filter_query and filter_query["ItemFloor"]:
+        query = query.filter(Item.ItemFloor == filter_query["ItemFloor"])
+    if "ItemRoom" in filter_query and filter_query["ItemRoom"]:
+        query = query.filter(Item.ItemRoom == filter_query["ItemRoom"])
+    if "ItemZone" in filter_query and filter_query["ItemZone"]:
+        query = query.filter(Item.ItemZone == filter_query["ItemZone"])
+    if "condition" in filter_query and filter_query["condition"]:
+        query = query.filter(Item.condition == filter_query["condition"])
+    # M21: visibility filter — if group_member_ids given, shared items from group members are visible
+    if "visibility" in filter_query and filter_query["visibility"]:
+        query = query.filter(Item.visibility == filter_query["visibility"])
+    elif group_member_ids:
+        # Show own items (private/shared) AND shared items from group members
+        query = query.filter(
+            or_(
+                Item.visibility != "shared",  # private items visible normally (owner-controlled elsewhere)
+                Item.ItemOwner.in_(group_member_ids),  # shared items from group members
+            )
+        )
+    return query
+
+
 def list_items(
     filter_query: Dict[str, Any],
     projection: Dict[str, Any],
     sort: Optional[List[Tuple[str, int]]] = None,
     skip: int = 0,
     limit: int = 0,
+    group_member_ids: Optional[Set[str]] = None,
 ) -> Iterable[Dict[str, Any]]:
     db_type = get_db_type()
     if db_type == "postgres":
         query = db.session.query(Item)
         # M6: exclude soft-deleted items
         query = query.filter(Item.is_deleted != True)
-
-        if "ItemName" in filter_query and filter_query["ItemName"]:
-            query = query.filter(Item.ItemName.ilike(f"%{filter_query['ItemName']}%"))
-        if "ItemStorePlace" in filter_query and filter_query["ItemStorePlace"]:
-            query = query.filter(Item.ItemStorePlace.ilike(f"%{filter_query['ItemStorePlace']}%"))
-        if "ItemType" in filter_query and filter_query["ItemType"]:
-            query = query.filter(Item.ItemType == filter_query["ItemType"])
-        if "ItemFloor" in filter_query and filter_query["ItemFloor"]:
-            query = query.filter(Item.ItemFloor == filter_query["ItemFloor"])
-        if "ItemRoom" in filter_query and filter_query["ItemRoom"]:
-            query = query.filter(Item.ItemRoom == filter_query["ItemRoom"])
-        if "ItemZone" in filter_query and filter_query["ItemZone"]:
-            query = query.filter(Item.ItemZone == filter_query["ItemZone"])
-        if "visibility" in filter_query and filter_query["visibility"]:
-            query = query.filter(Item.visibility == filter_query["visibility"])
-        if "condition" in filter_query and filter_query["condition"]:
-            query = query.filter(Item.condition == filter_query["condition"])
+        query = _apply_common_filters(query, filter_query, group_member_ids)
 
         ALLOWED_SORT_FIELDS = {
             "ItemName", "ItemGetDate", "ItemType", "ItemStorePlace",
@@ -102,30 +117,13 @@ def list_items(
     return cursor
 
 
-def count_items(filter_query: Dict[str, Any]) -> int:
+def count_items(filter_query: Dict[str, Any], group_member_ids: Optional[Set[str]] = None) -> int:
     db_type = get_db_type()
     if db_type == "postgres":
         query = db.session.query(Item)
         # M6: exclude soft-deleted items
         query = query.filter(Item.is_deleted != True)
-
-        if "ItemName" in filter_query and filter_query["ItemName"]:
-            query = query.filter(Item.ItemName.ilike(f"%{filter_query['ItemName']}%"))
-        if "ItemStorePlace" in filter_query and filter_query["ItemStorePlace"]:
-            query = query.filter(Item.ItemStorePlace.ilike(f"%{filter_query['ItemStorePlace']}%"))
-        if "ItemType" in filter_query and filter_query["ItemType"]:
-            query = query.filter(Item.ItemType == filter_query["ItemType"])
-        if "ItemFloor" in filter_query and filter_query["ItemFloor"]:
-            query = query.filter(Item.ItemFloor == filter_query["ItemFloor"])
-        if "ItemRoom" in filter_query and filter_query["ItemRoom"]:
-            query = query.filter(Item.ItemRoom == filter_query["ItemRoom"])
-        if "ItemZone" in filter_query and filter_query["ItemZone"]:
-            query = query.filter(Item.ItemZone == filter_query["ItemZone"])
-        if "visibility" in filter_query and filter_query["visibility"]:
-            query = query.filter(Item.visibility == filter_query["visibility"])
-        if "condition" in filter_query and filter_query["condition"]:
-            query = query.filter(Item.condition == filter_query["condition"])
-
+        query = _apply_common_filters(query, filter_query, group_member_ids)
         return query.count()
 
     mongo_filter = dict(filter_query)

@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from app.repositories import item_repo, type_repo
 from app.repositories import quantity_log_repo
+from app.services import group_service
 from app.utils import storage, image
 from app.validators import items as item_validator
 
@@ -199,6 +200,7 @@ def list_items(
     filters: Dict[str, str],
     page: int = 1,
     page_size: int = DEFAULT_PAGE_SIZE,
+    current_username: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     查詢物品列表，支援分頁
@@ -234,14 +236,20 @@ def list_items(
     elif sort_param == "name":
         sort = [("ItemName", 1)]
     
+    # M21: load group member ids for shared item visibility
+    group_member_ids = None
+    if current_username:
+        group_member_ids = group_service.get_user_group_member_ids(current_username)
+
     # 計算總數和分頁
-    total = item_repo.count_items(search_filter)
+    total = item_repo.count_items(search_filter, group_member_ids=group_member_ids)
     total_pages = max(1, (total + page_size - 1) // page_size)
     page = max(1, min(page, total_pages))
     skip = (page - 1) * page_size
-    
+
     items = list(item_repo.list_items(
-        search_filter, projection, sort=sort, skip=skip, limit=page_size
+        search_filter, projection, sort=sort, skip=skip, limit=page_size,
+        group_member_ids=group_member_ids,
     ))
     _annotate_expiry(items)
     _annotate_maintenance_fields(items)

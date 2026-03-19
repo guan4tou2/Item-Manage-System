@@ -380,11 +380,12 @@
           <div class="col-md-4">
             <div class="form-floating">
               <select id="visibility" class="form-select" name="visibility" required>
-                <option value="private" {% if item.visibility != 'shared' %}selected{% endif %}>私人</option>
-                <option value="shared" {% if item.visibility == 'shared' %}selected{% endif %}>共用</option>
+                <option value="private" {% if item.visibility != 'shared' %}selected{% endif %}>私人（僅自己可見）</option>
+                <option value="shared" {% if item.visibility == 'shared' %}selected{% endif %}>共用（群組成員可見）</option>
               </select>
-              <label for="visibility">可見性</label>
+              <label for="visibility"><i class="fas fa-users me-1"></i>可見性</label>
             </div>
+            <small class="text-muted">選擇「共用」後，與您同群組的成員也能看到此物品</small>
           </div>
 
           <!-- 取得日期 -->

@@ -190,8 +190,8 @@ def home():
         "condition": request.args.get("condition", ""),
     }
     page = request.args.get("page", 1, type=int)
-    result = item_service.list_items(filters, page=page)
     user = get_current_user()
+    result = item_service.list_items(filters, page=page, current_username=user.get("User", ""))
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
     stats = item_service.get_stats()
@@ -298,13 +298,14 @@ def manageitem():
     maintenance = request.args.get("maintenance", "")
     filters = {"q": "", "place": "", "type": "", "floor": "", "room": "", "zone": "", "sort": ""}
     page = request.args.get("page", 1, type=int)
+    _username = user.get("User", "")
     if maintenance:
-        base_result = item_service.list_items(filters, page=1, page_size=5000)
+        base_result = item_service.list_items(filters, page=1, page_size=5000, current_username=_username)
         item_service.annotate_maintenance_alerts(base_result["items"], notification_settings)
         filtered_items = item_service.filter_items_by_maintenance(base_result["items"], maintenance)
         result = item_service.paginate_items(filtered_items, page=page)
     else:
-        result = item_service.list_items(filters, page=page)
+        result = item_service.list_items(filters, page=page, current_username=_username)
     item_service.annotate_maintenance_alerts(result["items"], notification_settings)
     floors, rooms, zones = location_service.list_choices()
     return render_template(
@@ -474,13 +475,14 @@ def search():
         "sort": sort,
     }
 
+    _username = user.get("User", "")
     if maintenance:
-        base_result = item_service.list_items(filters, page=1, page_size=5000)
+        base_result = item_service.list_items(filters, page=1, page_size=5000, current_username=_username)
         item_service.annotate_maintenance_alerts(base_result["items"], notification_settings)
         filtered_items = item_service.filter_items_by_maintenance(base_result["items"], maintenance)
         result = item_service.paginate_items(filtered_items, page=page)
     else:
-        result = item_service.list_items(filters, page=page)
+        result = item_service.list_items(filters, page=page, current_username=_username)
 
     item_service.annotate_maintenance_alerts(result["items"], notification_settings)
     types = type_service.list_types()
@@ -1283,7 +1285,7 @@ def print_labels():
     # GET: 顯示選擇頁面
     filters = {"q": "", "place": "", "type": "", "floor": "", "room": "", "zone": "", "sort": ""}
     page = request.args.get("page", 1, type=int)
-    result = item_service.list_items(filters, page=page, page_size=50)
+    result = item_service.list_items(filters, page=page, page_size=50, current_username=user.get("User", ""))
     
     return render_template(
         "print_labels.html",
@@ -1706,3 +1708,45 @@ def move_history():
         date_from=date_from,
         date_to=date_to,
     )
+
+
+# M12: AI Image Recognition
+@bp.route("/api/items/analyze-image", methods=["POST"])
+@login_required
+def analyze_image():
+    """接收上傳圖片，返回 AI 建議欄位（目前使用檔名啟發式方法）"""
+    from app.services.ai_service import analyze_image as _analyze
+    from app.utils.storage import save_upload
+
+    photo = request.files.get("photo")
+    if not photo or not photo.filename:
+        return jsonify({"success": False, "message": "請上傳圖片"}), 400
+
+    filename = save_upload(photo)
+    if not filename:
+        return jsonify({"success": False, "message": "圖片儲存失敗"}), 500
+
+    image_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+    result = _analyze(image_path)
+    return jsonify({"success": True, **result})
+
+
+# M13: OCR Receipt Scanning
+@bp.route("/api/items/scan-receipt", methods=["POST"])
+@login_required
+def scan_receipt():
+    """接收收據圖片，嘗試 OCR 提取採購資訊"""
+    from app.services.ai_service import scan_receipt as _scan
+    from app.utils.storage import save_upload
+
+    photo = request.files.get("photo")
+    if not photo or not photo.filename:
+        return jsonify({"success": False, "message": "請上傳收據圖片"}), 400
+
+    filename = save_upload(photo)
+    if not filename:
+        return jsonify({"success": False, "message": "圖片儲存失敗"}), 500
+
+    image_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+    result = _scan(image_path)
+    return jsonify({"success": True, **result})

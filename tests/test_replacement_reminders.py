@@ -8,7 +8,7 @@ class FakeItemRepo:
     def __init__(self, items):
         self.items = items
 
-    def list_items(self, filter_query, projection, sort=None, skip=0, limit=None):
+    def list_items(self, filter_query, projection, sort=None, skip=0, limit=None, group_member_ids=None):
         for item in self.items:
             yield {k: v for k, v in item.items() if k in projection or projection.get("_id") == 0}
 

@@ -83,6 +83,11 @@ def remove_member(
     return False, f"找不到成員 {username}"
 
 
+def get_user_group_member_ids(username: str) -> set:
+    """回傳與 username 同群組的所有成員 username 集合（含自身）"""
+    return group_repo.get_user_group_member_ids(username)
+
+
 def get_group_detail(group_id: int) -> Optional[Dict[str, Any]]:
     """取得群組詳細資訊，包含成員列表"""
     group = group_repo.get_group(group_id)

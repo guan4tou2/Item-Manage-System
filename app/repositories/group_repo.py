@@ -150,6 +150,47 @@ def is_member(group_id, username: str) -> bool:
         return mongo.db.group_members.find_one({"group_id": group_id, "username": username}) is not None
 
 
+def get_user_group_member_ids(username: str) -> set:
+    """取得與該使用者同群組的所有成員 username 集合（含自身）"""
+    db_type = get_db_type()
+    members: set = {username}
+    if db_type == "postgres":
+        from app.models.group import Group, GroupMember
+
+        # 找出使用者所屬的所有群組 id
+        owned_ids = [
+            g.id for g in db.session.query(Group).filter(Group.owner == username).all()
+        ]
+        member_group_ids = [
+            m.group_id
+            for m in db.session.query(GroupMember).filter(GroupMember.username == username).all()
+        ]
+        all_group_ids = list(set(owned_ids + member_group_ids))
+        if all_group_ids:
+            # 取得這些群組的所有成員
+            rows = db.session.query(GroupMember.username).filter(
+                GroupMember.group_id.in_(all_group_ids)
+            ).all()
+            members.update(r.username for r in rows)
+            # 加入各群組的擁有者
+            owners = db.session.query(Group.owner).filter(Group.id.in_(all_group_ids)).all()
+            members.update(o.owner for o in owners)
+    else:
+        owned = list(mongo.db.groups.find({"owner": username}, {"_id": 1}))
+        member_docs = list(mongo.db.group_members.find({"username": username}, {"group_id": 1}))
+        all_group_ids = [d["_id"] for d in owned] + [d["group_id"] for d in member_docs]
+        if all_group_ids:
+            rows = list(mongo.db.group_members.find(
+                {"group_id": {"$in": all_group_ids}}, {"username": 1}
+            ))
+            members.update(r["username"] for r in rows)
+            owner_docs = list(mongo.db.groups.find(
+                {"_id": {"$in": all_group_ids}}, {"owner": 1}
+            ))
+            members.update(d["owner"] for d in owner_docs)
+    return members
+
+
 def delete_group(group_id) -> bool:
     """刪除群組"""
     db_type = get_db_type()

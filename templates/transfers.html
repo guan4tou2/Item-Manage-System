@@ -1,0 +1,135 @@
+{%extends "template.html"%}
+
+{%block title%}倉庫調撥記錄 - 物品管理系統{%endblock%}
+
+{%block user%}{{User.name}}{%endblock%}
+
+{%block contain%}
+<div class="row">
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-exchange-alt text-primary me-2"></i>倉庫調撥記錄
+        </h2>
+        <p class="text-muted mb-0">管理倉庫間的物品調撥申請</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{url_for('warehouses.warehouse_list')}}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回倉庫管理
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 調撥列表 -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>調撥記錄</h5>
+      </div>
+      <div class="card-body p-0">
+        {%if transfers%}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>物品</th>
+                <th>來源倉庫</th>
+                <th>目標倉庫</th>
+                <th>數量</th>
+                <th>狀態</th>
+                <th>申請人</th>
+                <th>申請時間</th>
+                <th>備註</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {%for t in transfers%}
+              <tr id="transfer-row-{{t.id}}">
+                <td>{{t.id}}</td>
+                <td>
+                  <strong>{{t.item_name}}</strong>
+                  <br><small class="text-muted">{{t.item_id}}</small>
+                </td>
+                <td>{{warehouses_map.get(t.from_warehouse_id, t.from_warehouse_id)}}</td>
+                <td>{{warehouses_map.get(t.to_warehouse_id, t.to_warehouse_id)}}</td>
+                <td>{{t.quantity}}</td>
+                <td>
+                  {%if t.status == 'pending'%}
+                  <span class="badge bg-warning text-dark">待處理</span>
+                  {%elif t.status == 'completed'%}
+                  <span class="badge bg-success">已完成</span>
+                  {%elif t.status == 'cancelled'%}
+                  <span class="badge bg-secondary">已取消</span>
+                  {%else%}
+                  <span class="badge bg-light text-dark">{{t.status}}</span>
+                  {%endif%}
+                </td>
+                <td>{{t.requested_by}}</td>
+                <td><small>{{t.created_at}}</small></td>
+                <td><small class="text-muted">{{t.notes}}</small></td>
+                <td>
+                  {%if t.status == 'pending'%}
+                  <div class="d-flex gap-1">
+                    <button class="btn btn-success btn-sm"
+                            onclick="handleTransfer({{t.id}}, 'complete')">
+                      <i class="fas fa-check"></i> 完成
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm"
+                            onclick="handleTransfer({{t.id}}, 'cancel')">
+                      <i class="fas fa-times"></i> 取消
+                    </button>
+                  </div>
+                  {%else%}
+                  <small class="text-muted">{{t.completed_at or ''}}</small>
+                  {%endif%}
+                </td>
+              </tr>
+              {%endfor%}
+            </tbody>
+          </table>
+        </div>
+        {%else%}
+        <div class="text-center py-5">
+          <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+          <h5 class="text-muted">尚無調撥記錄</h5>
+          <p class="text-muted">可在物品詳細頁面發起倉庫調撥申請</p>
+        </div>
+        {%endif%}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CSRF hidden form -->
+<form id="csrfForm" class="d-none">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+</form>
+
+<script>
+function handleTransfer(id, action) {
+  const label = action === 'complete' ? '完成' : '取消';
+  showConfirm('確定要' + label + '此調撥嗎？', function() {
+    fetch('/api/warehouses/transfer/' + id + '/' + action, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('#csrfForm [name=csrf_token]').value,
+      }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        showToast('操作失敗：' + data.message, 'danger');
+      }
+    })
+    .catch(() => showToast('操作失敗，請稍後再試', 'danger'));
+  }, { title: '確認操作', confirmText: label });
+}
+</script>
+{%endblock%}
