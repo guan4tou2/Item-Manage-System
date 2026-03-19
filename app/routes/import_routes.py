@@ -11,6 +11,7 @@ from flask import Blueprint, render_template, request, jsonify
 from app.repositories import item_repo
 from app.services import item_service, location_service
 from app.utils.auth import login_required, get_current_user
+from app.utils.image import download_and_save_image, decode_base64_image
 
 from app.utils.logging import get_logger
 
@@ -109,12 +110,13 @@ def template():
     writer.writeheader()
 
     # Add example rows
+    # PhotoPath supports: plain filename, URL (http/https), or Base64 data URI
     writer.writerow({
         'ItemID': '',
         'ItemName': 'Example Item 1',
         'ItemType': 'Electronics',
         'Location': '1F/RoomA/Shelf1',
-        'PhotoPath': '',
+        'PhotoPath': 'https://example.com/photo.jpg',
         'Quantity': 1,
         'SafetyStock': 1,
         'ReorderLevel': 1,
@@ -123,7 +125,7 @@ def template():
         'LastMaintenanceDate': '2025-12-01',
         'WarrantyExpiry': '2025-12-31',
         'UsageExpiry': '2026-06-30',
-        'Notes': 'Example notes'
+        'Notes': 'PhotoPath accepts URL / Base64 / filename'
     })
     writer.writerow({
         'ItemID': 'ITEM-123456-ABCDEF',
@@ -351,17 +353,55 @@ def _split_location(location: str | None) -> tuple[str, str, str, str]:
     return raw_location, floor, room, zone
 
 
+def _resolve_photo(photo_path: str | None) -> tuple[str, str]:
+    """Resolve PhotoPath to (ItemPic, ItemThumb).
+
+    - URL (http/https) → download and save
+    - data:image or long base64 string → decode and save
+    - plain filename or empty → leave as-is
+    """
+    if not photo_path:
+        return "", ""
+
+    photo_path = photo_path.strip()
+
+    if photo_path.startswith("http://") or photo_path.startswith("https://"):
+        result = download_and_save_image(photo_path)
+        if result:
+            return result[0], result[1] or ""
+        # Fall through: keep original URL string as-is so data isn't lost
+        return photo_path, ""
+
+    if photo_path.startswith("data:image"):
+        result = decode_base64_image(photo_path)
+        if result:
+            return result[0], result[1] or ""
+        return "", ""
+
+    # Heuristic: raw base64 — long alphanumeric string with no path separators
+    if len(photo_path) > 64 and "/" not in photo_path and "." not in photo_path:
+        result = decode_base64_image(photo_path)
+        if result:
+            return result[0], result[1] or ""
+        return "", ""
+
+    # Plain filename or anything else — keep as-is
+    return photo_path, ""
+
+
 def _normalize_import_item(item_data: Dict[str, Any], index: int) -> Dict[str, Any]:
     raw_location, floor, room, zone = _split_location(item_data.get("Location"))
     item_id = str(item_data.get("ItemID", "")).strip() or _generate_item_id()
+
+    item_pic, item_thumb = _resolve_photo(item_data.get("PhotoPath"))
 
     return {
         "ItemID": item_id,
         "ItemName": item_data["ItemName"].strip(),
         "ItemType": item_data.get("ItemType") or "",
         "ItemDesc": item_data.get("Notes") or "",
-        "ItemPic": item_data.get("PhotoPath") or "",
-        "ItemThumb": "",
+        "ItemPic": item_pic,
+        "ItemThumb": item_thumb,
         "ItemPics": [],
         "ItemStorePlace": raw_location,
         "ItemOwner": (get_current_user() or {}).get("User", ""),

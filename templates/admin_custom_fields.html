@@ -1,0 +1,334 @@
+{% extends 'template.html' %}
+{% block title %}自訂欄位管理 - 物品管理系統{% endblock %}
+{% block user %}{{ User.User }}{% endblock %}
+
+{% block contain %}
+<div class="container">
+  <div class="page-header animate-fadeInUp">
+    <h1><i class="fas fa-puzzle-piece me-2"></i>自訂欄位管理</h1>
+    <p class="lead">新增與管理物品的自訂欄位，讓記錄更彈性</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm animate-fadeInUp">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0"><i class="fas fa-list me-2"></i>欄位清單</h5>
+          <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addFieldModal">
+            <i class="fas fa-plus me-1"></i>新增欄位
+          </button>
+        </div>
+        <div class="card-body p-0">
+          {% if fields %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>欄位名稱</th>
+                  <th>類型</th>
+                  <th>必填</th>
+                  <th>排序</th>
+                  <th>選項</th>
+                  <th class="text-end">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for field in fields %}
+                <tr>
+                  <td><strong>{{ field.name }}</strong></td>
+                  <td>
+                    {% if field.field_type == 'text' %}
+                    <span class="badge bg-secondary">文字</span>
+                    {% elif field.field_type == 'number' %}
+                    <span class="badge bg-info text-dark">數字</span>
+                    {% elif field.field_type == 'date' %}
+                    <span class="badge bg-warning text-dark">日期</span>
+                    {% elif field.field_type == 'select' %}
+                    <span class="badge bg-primary">選擇</span>
+                    {% elif field.field_type == 'boolean' %}
+                    <span class="badge bg-success">是/否</span>
+                    {% else %}
+                    <span class="badge bg-light text-dark">{{ field.field_type }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if field.required %}
+                    <span class="badge bg-danger">必填</span>
+                    {% else %}
+                    <span class="badge bg-light text-muted">選填</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ field.sort_order }}</td>
+                  <td class="text-muted small">
+                    {% if field.field_type == 'select' and field.options %}
+                    {{ field.options | truncate(40) }}
+                    {% else %}
+                    -
+                    {% endif %}
+                  </td>
+                  <td class="text-end">
+                    <button type="button" class="btn btn-outline-primary btn-sm me-1"
+                      onclick="openEditModal({{ field | tojson }})">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                      onclick="deleteField({{ field.id }}, '{{ field.name | e }}')">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="fas fa-puzzle-piece fa-3x mb-3 opacity-25"></i>
+            <p>尚未建立任何自訂欄位</p>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFieldModal">
+              <i class="fas fa-plus me-1"></i>新增第一個欄位
+            </button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 新增欄位 Modal -->
+<div class="modal fade" id="addFieldModal" tabindex="-1" aria-labelledby="addFieldModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addFieldModalLabel"><i class="fas fa-plus me-2"></i>新增自訂欄位</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        <div id="addFieldAlert" class="alert d-none"></div>
+        <div class="mb-3">
+          <label for="addFieldName" class="form-label">欄位名稱 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="addFieldName" placeholder="例如：購買來源、廠牌型號" maxlength="100">
+        </div>
+        <div class="mb-3">
+          <label for="addFieldType" class="form-label">欄位類型 <span class="text-danger">*</span></label>
+          <select class="form-select" id="addFieldType" onchange="toggleOptionsField('add')">
+            <option value="text">文字</option>
+            <option value="number">數字</option>
+            <option value="date">日期</option>
+            <option value="select">選擇（下拉）</option>
+            <option value="boolean">是/否</option>
+          </select>
+        </div>
+        <div class="mb-3" id="addOptionsRow" style="display:none;">
+          <label for="addFieldOptions" class="form-label">選項（逗號分隔）<span class="text-danger">*</span></label>
+          <textarea class="form-control" id="addFieldOptions" rows="2" placeholder="例如：台灣製,日本製,美國製"></textarea>
+          <small class="text-muted">以半形逗號（,）分隔每個選項</small>
+        </div>
+        <div class="mb-3">
+          <label for="addFieldSortOrder" class="form-label">排序順序</label>
+          <input type="number" class="form-control" id="addFieldSortOrder" value="0" min="0">
+          <small class="text-muted">數字越小越靠前</small>
+        </div>
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="addFieldRequired">
+            <label class="form-check-label" for="addFieldRequired">設為必填欄位</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="submitAddField()">
+          <i class="fas fa-save me-1"></i>新增
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 編輯欄位 Modal -->
+<div class="modal fade" id="editFieldModal" tabindex="-1" aria-labelledby="editFieldModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="editFieldModalLabel"><i class="fas fa-edit me-2"></i>編輯自訂欄位</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="關閉"></button>
+      </div>
+      <div class="modal-body">
+        <div id="editFieldAlert" class="alert d-none"></div>
+        <input type="hidden" id="editFieldId">
+        <div class="mb-3">
+          <label for="editFieldName" class="form-label">欄位名稱 <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" id="editFieldName" maxlength="100">
+        </div>
+        <div class="mb-3">
+          <label for="editFieldType" class="form-label">欄位類型 <span class="text-danger">*</span></label>
+          <select class="form-select" id="editFieldType" onchange="toggleOptionsField('edit')">
+            <option value="text">文字</option>
+            <option value="number">數字</option>
+            <option value="date">日期</option>
+            <option value="select">選擇（下拉）</option>
+            <option value="boolean">是/否</option>
+          </select>
+        </div>
+        <div class="mb-3" id="editOptionsRow" style="display:none;">
+          <label for="editFieldOptions" class="form-label">選項（逗號分隔）<span class="text-danger">*</span></label>
+          <textarea class="form-control" id="editFieldOptions" rows="2"></textarea>
+          <small class="text-muted">以半形逗號（,）分隔每個選項</small>
+        </div>
+        <div class="mb-3">
+          <label for="editFieldSortOrder" class="form-label">排序順序</label>
+          <input type="number" class="form-control" id="editFieldSortOrder" value="0" min="0">
+        </div>
+        <div class="mb-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="editFieldRequired">
+            <label class="form-check-label" for="editFieldRequired">設為必填欄位</label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="submitEditField()">
+          <i class="fas fa-save me-1"></i>儲存
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+const csrfToken = document.querySelector('[name=csrf_token]') ? document.querySelector('[name=csrf_token]').value : '';
+
+function toggleOptionsField(prefix) {
+  const type = document.getElementById(prefix + 'FieldType').value;
+  const row = document.getElementById(prefix + 'OptionsRow');
+  row.style.display = (type === 'select') ? 'block' : 'none';
+}
+
+function showAlert(alertId, message, type) {
+  const el = document.getElementById(alertId);
+  el.className = `alert alert-${type}`;
+  el.textContent = message;
+  el.classList.remove('d-none');
+}
+
+function hideAlert(alertId) {
+  document.getElementById(alertId).classList.add('d-none');
+}
+
+async function submitAddField() {
+  hideAlert('addFieldAlert');
+  const name = document.getElementById('addFieldName').value.trim();
+  const field_type = document.getElementById('addFieldType').value;
+  const options = document.getElementById('addFieldOptions').value.trim();
+  const sort_order = parseInt(document.getElementById('addFieldSortOrder').value) || 0;
+  const required = document.getElementById('addFieldRequired').checked;
+
+  if (!name) {
+    showAlert('addFieldAlert', '請輸入欄位名稱', 'danger');
+    return;
+  }
+  if (field_type === 'select' && !options) {
+    showAlert('addFieldAlert', '請輸入選擇類型的選項', 'danger');
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/custom-fields', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ name, field_type, options, sort_order, required }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showToast('欄位已新增', 'success');
+      location.reload();
+    } else {
+      showAlert('addFieldAlert', data.message || '新增失敗', 'danger');
+    }
+  } catch (e) {
+    showAlert('addFieldAlert', '網路錯誤，請稍後再試', 'danger');
+  }
+}
+
+function openEditModal(field) {
+  hideAlert('editFieldAlert');
+  document.getElementById('editFieldId').value = field.id;
+  document.getElementById('editFieldName').value = field.name;
+  document.getElementById('editFieldType').value = field.field_type;
+  document.getElementById('editFieldOptions').value = field.options || '';
+  document.getElementById('editFieldSortOrder').value = field.sort_order || 0;
+  document.getElementById('editFieldRequired').checked = !!field.required;
+  toggleOptionsField('edit');
+  new bootstrap.Modal(document.getElementById('editFieldModal')).show();
+}
+
+async function submitEditField() {
+  hideAlert('editFieldAlert');
+  const id = document.getElementById('editFieldId').value;
+  const name = document.getElementById('editFieldName').value.trim();
+  const field_type = document.getElementById('editFieldType').value;
+  const options = document.getElementById('editFieldOptions').value.trim();
+  const sort_order = parseInt(document.getElementById('editFieldSortOrder').value) || 0;
+  const required = document.getElementById('editFieldRequired').checked;
+
+  if (!name) {
+    showAlert('editFieldAlert', '請輸入欄位名稱', 'danger');
+    return;
+  }
+
+  try {
+    const resp = await fetch(`/api/custom-fields/${id}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ name, field_type, options, sort_order, required }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showToast('欄位已更新', 'success');
+      location.reload();
+    } else {
+      showAlert('editFieldAlert', data.message || '更新失敗', 'danger');
+    }
+  } catch (e) {
+    showAlert('editFieldAlert', '網路錯誤，請稍後再試', 'danger');
+  }
+}
+
+async function deleteField(id, name) {
+  if (!confirm(`確定要刪除欄位「${name}」嗎？相關的所有欄位值也會一併刪除。`)) return;
+  try {
+    const resp = await fetch(`/api/custom-fields/${id}/delete`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken },
+    });
+    const data = await resp.json();
+    if (data.success) {
+      showToast('欄位已刪除', 'success');
+      location.reload();
+    } else {
+      showToast(data.message || '刪除失敗', 'danger');
+    }
+  } catch (e) {
+    showToast('網路錯誤', 'danger');
+  }
+}
+
+// init type selects on load
+toggleOptionsField('add');
+</script>
+{% endblock %}

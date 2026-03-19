@@ -278,6 +278,34 @@
             <p class="mb-0" style="white-space: pre-wrap;">{{item.ItemDesc}}</p>
           </div>
           {%endif%}
+
+          <!-- 自訂欄位 -->
+          {% if custom_field_values %}
+          <div class="info-section">
+            <h5 class="info-section-title">
+              <i class="fas fa-puzzle-piece" style="color:#6f42c1;"></i>
+              自訂欄位
+            </h5>
+            <div class="row g-3">
+              {% for cf in custom_field_values %}
+              {% if cf.value %}
+              <div class="col-sm-6">
+                <p class="text-muted small mb-1">{{ cf.field_name }}</p>
+                <p class="mb-0">
+                  <strong>
+                    {% if cf.field_type == 'boolean' %}
+                      {% if cf.value == 'true' %}是{% elif cf.value == 'false' %}否{% else %}{{ cf.value }}{% endif %}
+                    {% else %}
+                      {{ cf.value }}
+                    {% endif %}
+                  </strong>
+                </p>
+              </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
         </div>
         
         <!-- 操作按鈕 -->

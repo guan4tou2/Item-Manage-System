@@ -295,9 +295,46 @@
                 required
               >
                 <option value="" disabled selected hidden>選擇類型</option>
-                {%for type in itemtype%}
-                <option value="{{type.name}}" {% if form and form.ItemType == type.name %}selected{% endif %}>{{type.name}}</option>
-                {%endfor%}
+                {%- set parent_map = {} -%}
+                {%- for type in itemtype -%}
+                  {%- if type.parent_id is none or not type.parent_id -%}
+                    {%- if parent_map.update({type.id: []}) -%}{%- endif -%}
+                  {%- endif -%}
+                {%- endfor -%}
+                {%- for type in itemtype -%}
+                  {%- if type.parent_id -%}
+                    {%- if type.parent_id not in parent_map -%}
+                      {%- if parent_map.update({type.parent_id: []}) -%}{%- endif -%}
+                    {%- endif -%}
+                  {%- endif -%}
+                {%- endfor -%}
+                {# Render top-level types first, then group children under their parent #}
+                {%- set id_to_name = {} -%}
+                {%- for type in itemtype -%}
+                  {%- if id_to_name.update({type.id: type.name}) -%}{%- endif -%}
+                {%- endfor -%}
+                {%- set top_types = itemtype | selectattr('parent_id', 'none') | list -%}
+                {%- set child_types = itemtype | rejectattr('parent_id', 'none') | list -%}
+                {%- for type in top_types -%}
+                  {%- set children = child_types | selectattr('parent_id', 'equalto', type.id) | list -%}
+                  {%- if children -%}
+                <optgroup label="{{ type.name }}">
+                  <option value="{{ type.name }}" {% if form and form.ItemType == type.name %}selected{% endif %}>{{ type.name }}（全部）</option>
+                  {%- for child in children -%}
+                  <option value="{{ child.name }}" {% if form and form.ItemType == child.name %}selected{% endif %}>{{ child.name }}</option>
+                  {%- endfor -%}
+                </optgroup>
+                  {%- else -%}
+                <option value="{{ type.name }}" {% if form and form.ItemType == type.name %}selected{% endif %}>{{ type.name }}</option>
+                  {%- endif -%}
+                {%- endfor -%}
+                {# Orphaned children (parent deleted) shown at top level #}
+                {%- for child in child_types -%}
+                  {%- set has_parent = top_types | selectattr('id', 'equalto', child.parent_id) | list -%}
+                  {%- if not has_parent -%}
+                <option value="{{ child.name }}" {% if form and form.ItemType == child.name %}selected{% endif %}>{{ child.name }}</option>
+                  {%- endif -%}
+                {%- endfor -%}
               </select>
               <label for="ItemType">
                 <i class="fas fa-folder me-1"></i>物品類型 <span class="text-danger">*</span>
@@ -441,6 +478,86 @@
             </div>
             <small class="text-muted">可記錄購買資訊、規格、備註等</small>
           </div>
+
+          <!-- 自訂欄位區塊 -->
+          {% if custom_fields %}
+          <div class="col-12">
+            <h5 class="form-section-title mt-3">
+              <i class="fas fa-puzzle-piece text-purple" style="color:#6f42c1;"></i>
+              自訂欄位
+            </h5>
+          </div>
+          {% for field in custom_fields %}
+          <div class="col-md-6">
+            {% set field_value = custom_values.get(field.id | string, '') %}
+            <div class="form-floating">
+              {% if field.field_type == 'text' %}
+              <input type="text" class="form-control"
+                id="custom_field_{{ field.id }}"
+                name="custom_field_{{ field.id }}"
+                placeholder="{{ field.name }}"
+                value="{{ field_value }}"
+                {% if field.required %}required{% endif %}
+              />
+              <label for="custom_field_{{ field.id }}">
+                <i class="fas fa-font me-1"></i>{{ field.name }}{% if field.required %} <span class="text-danger">*</span>{% endif %}
+              </label>
+              {% elif field.field_type == 'number' %}
+              <input type="number" class="form-control"
+                id="custom_field_{{ field.id }}"
+                name="custom_field_{{ field.id }}"
+                placeholder="{{ field.name }}"
+                value="{{ field_value }}"
+                {% if field.required %}required{% endif %}
+              />
+              <label for="custom_field_{{ field.id }}">
+                <i class="fas fa-hashtag me-1"></i>{{ field.name }}{% if field.required %} <span class="text-danger">*</span>{% endif %}
+              </label>
+              {% elif field.field_type == 'date' %}
+              <input type="date" class="form-control"
+                id="custom_field_{{ field.id }}"
+                name="custom_field_{{ field.id }}"
+                value="{{ field_value }}"
+                {% if field.required %}required{% endif %}
+              />
+              <label for="custom_field_{{ field.id }}">
+                <i class="fas fa-calendar me-1"></i>{{ field.name }}{% if field.required %} <span class="text-danger">*</span>{% endif %}
+              </label>
+              {% elif field.field_type == 'select' %}
+              <select class="form-select"
+                id="custom_field_{{ field.id }}"
+                name="custom_field_{{ field.id }}"
+                {% if field.required %}required{% endif %}
+              >
+                <option value="">選擇…</option>
+                {% for opt in field.options.split(',') %}
+                {% set opt = opt.strip() %}
+                {% if opt %}
+                <option value="{{ opt }}" {% if field_value == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endif %}
+                {% endfor %}
+              </select>
+              <label for="custom_field_{{ field.id }}">
+                <i class="fas fa-list me-1"></i>{{ field.name }}{% if field.required %} <span class="text-danger">*</span>{% endif %}
+              </label>
+              {% elif field.field_type == 'boolean' %}
+              <select class="form-select"
+                id="custom_field_{{ field.id }}"
+                name="custom_field_{{ field.id }}"
+                {% if field.required %}required{% endif %}
+              >
+                <option value="">選擇…</option>
+                <option value="true" {% if field_value == 'true' %}selected{% endif %}>是</option>
+                <option value="false" {% if field_value == 'false' %}selected{% endif %}>否</option>
+              </select>
+              <label for="custom_field_{{ field.id }}">
+                <i class="fas fa-toggle-on me-1"></i>{{ field.name }}{% if field.required %} <span class="text-danger">*</span>{% endif %}
+              </label>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+          {% endif %}
 
           <!-- 提交按鈕 -->
           <div class="col-12">

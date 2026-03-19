@@ -9,6 +9,8 @@ from app.models.line_link import LineUserLink
 from app.models.telegram_link import TelegramUserLink
 from app.models.quantity_log import QuantityLog
 from app.models.item_loan import ItemLoan
+from app.models.stocktake import StocktakeSession, StocktakeItem
+from app.models.custom_field import CustomField, CustomFieldValue
 
 __all__ = [
     "User",
@@ -25,4 +27,8 @@ __all__ = [
     "TelegramUserLink",
     "QuantityLog",
     "ItemLoan",
+    "StocktakeSession",
+    "StocktakeItem",
+    "CustomField",
+    "CustomFieldValue",
 ]

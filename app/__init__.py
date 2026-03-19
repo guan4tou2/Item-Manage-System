@@ -129,6 +129,26 @@ def _ensure_user_profile_columns() -> None:
         db.session.commit()
 
 
+def _ensure_type_parent_column() -> None:
+    """補齊 item_types 表缺少的 parent_id 欄位，支援子分類階層結構。"""
+    if get_db_type() != "postgres":
+        return
+
+    try:
+        inspector = inspect(db.engine)
+    except RuntimeError:
+        return
+    if not inspector.has_table("item_types"):
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("item_types")}
+    if "parent_id" not in existing_columns:
+        db.session.execute(text(
+            'ALTER TABLE item_types ADD COLUMN parent_id INTEGER REFERENCES item_types(id) ON DELETE SET NULL;'
+        ))
+        db.session.commit()
+
+
 def _ensure_fulltext_extensions() -> None:
     """Install pg_trgm extension for fuzzy full-text search.
 
@@ -199,6 +219,7 @@ def create_app() -> Flask:
             db.create_all()
             _ensure_item_maintenance_columns()
             _ensure_user_profile_columns()
+            _ensure_type_parent_column()
             _ensure_fulltext_extensions()
     else:
         mongo.init_app(app)
@@ -272,6 +293,8 @@ def create_app() -> Flask:
     from app.telegram.routes import bp as telegram_bp
     from app.profile.routes import bp as profile_bp
     from app.loans.routes import bp as loans_bp
+    from app.stocktake.routes import bp as stocktake_bp
+    from app.custom_fields.routes import bp as custom_fields_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(items_bp)
@@ -287,7 +310,9 @@ def create_app() -> Flask:
     app.register_blueprint(telegram_bp)
     app.register_blueprint(profile_bp)
     app.register_blueprint(loans_bp)
-    
+    app.register_blueprint(stocktake_bp)
+    app.register_blueprint(custom_fields_bp)
+
     # 註冊自定義過濾器
     import re
     from markupsafe import Markup, escape

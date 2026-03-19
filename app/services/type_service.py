@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from app.repositories import type_repo
 
@@ -50,7 +50,8 @@ def list_types() -> List[Dict[str, Any]]:
 
 
 def create_type(data: Dict[str, Any]) -> None:
-    type_repo.insert_type(data["name"])
+    parent_id = data.get("parent_id")
+    type_repo.insert_type(data["name"], parent_id=parent_id if parent_id else None)
 
 
 def update_type(old_name: str, new_name: str) -> tuple[bool, str]:
@@ -82,3 +83,54 @@ def delete_type(name: str) -> tuple[bool, str]:
     if not ok:
         return False, "找不到該類型"
     return True, "類型已刪除"
+
+
+def get_type_tree() -> List[Dict[str, Any]]:
+    """Return a nested tree structure: [{id, name, parent_id, children: [...]}]."""
+    flat = type_repo.get_type_tree()
+
+    # Build id->node map
+    nodes: Dict[Any, Dict[str, Any]] = {}
+    for t in flat:
+        nodes[t["id"]] = {
+            "id": t["id"],
+            "name": t["name"],
+            "parent_id": t["parent_id"],
+            "children": [],
+        }
+
+    roots: List[Dict[str, Any]] = []
+    for node in nodes.values():
+        parent_id = node["parent_id"]
+        if parent_id and parent_id in nodes:
+            nodes[parent_id]["children"].append(node)
+        else:
+            roots.append(node)
+
+    return roots
+
+
+def set_parent(type_name: str, parent_name: Optional[str]) -> tuple[bool, str]:
+    """Set the parent category for a type."""
+    if not type_name:
+        return False, "請提供分類名稱"
+
+    t = type_repo.get_type_by_name(type_name)
+    if not t:
+        return False, "找不到該分類"
+
+    # Clear parent
+    if not parent_name or parent_name.strip() == "":
+        ok = type_repo.update_type_parent(type_name, None)
+        return (True, "已清除父分類") if ok else (False, "操作失敗")
+
+    parent_name = parent_name.strip()
+    if parent_name == type_name:
+        return False, "不能將分類設為自己的父分類"
+
+    parent = type_repo.get_type_by_name(parent_name)
+    if not parent:
+        return False, f"找不到父分類「{parent_name}」"
+
+    ok = type_repo.update_type_parent(type_name, parent_name)
+    return (True, f"已設定「{parent_name}」為父分類") if ok else (False, "操作失敗")

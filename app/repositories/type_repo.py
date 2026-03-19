@@ -1,5 +1,5 @@
 """物品類型資料存取模組"""
-from typing import List
+from typing import List, Optional
 from flask import current_app
 
 from app import mongo, db, get_db_type, cache
@@ -16,26 +16,30 @@ def list_types() -> List[dict]:
 
     if db_type == "postgres":
         types = db.session.query(ItemType).all()
-        result = [{"id": t.id, "name": t.name} for t in types]
+        result = [{"id": t.id, "name": t.name, "parent_id": t.parent_id} for t in types]
     else:
         types = mongo.db.type.find({})
-        result = [{"id": t["_id"], "name": t["name"]} for t in types]
+        result = [{"id": t["_id"], "name": t["name"], "parent_id": t.get("parent_id")} for t in types]
 
     cache.set(cache_key, result, timeout=300)  # 5 minutes cache
     return result
 
 
-def insert_type(name: str) -> None:
+def insert_type(name: str, parent_id: Optional[int] = None) -> None:
     db_type = get_db_type()
     if db_type == "postgres":
-        item_type = ItemType(name=name)
+        item_type = ItemType(name=name, parent_id=parent_id)
         db.session.add(item_type)
         db.session.commit()
     else:
-        mongo.db.type.insert_one({"name": name})
+        doc = {"name": name}
+        if parent_id is not None:
+            doc["parent_id"] = parent_id
+        mongo.db.type.insert_one(doc)
 
     # Invalidate cache
     cache.delete(f"types_list_{db_type}")
+    cache.delete(f"types_tree_{db_type}")
 
 
 def delete_type(name: str) -> bool:
@@ -48,6 +52,7 @@ def delete_type(name: str) -> bool:
 
     # Invalidate cache
     cache.delete(f"types_list_{db_type}")
+    cache.delete(f"types_tree_{db_type}")
 
     return result.deleted_count > 0 if db_type == "postgres" else result.deleted_count > 0
 
@@ -67,6 +72,7 @@ def update_type(old_name: str, new_name: str) -> bool:
             return False
 
     cache.delete(f"types_list_{db_type}")
+    cache.delete(f"types_tree_{db_type}")
     return True
 
 
@@ -129,3 +135,61 @@ def restore_types(types: List, mode: str = "merge") -> int:
             count += 1
 
     return count
+
+
+def get_type_tree() -> List[dict]:
+    """Return flat list of all types with parent_id for both DB types."""
+    db_type = get_db_type()
+    cache_key = f"types_tree_{db_type}"
+
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+
+    if db_type == "postgres":
+        types = db.session.query(ItemType).all()
+        result = [{"id": t.id, "name": t.name, "parent_id": t.parent_id} for t in types]
+    else:
+        types = list(mongo.db.type.find({}))
+        result = [
+            {"id": str(t["_id"]), "name": t["name"], "parent_id": t.get("parent_id")}
+            for t in types
+        ]
+
+    cache.set(cache_key, result, timeout=300)
+    return result
+
+
+def update_type_parent(type_name: str, parent_name: Optional[str]) -> bool:
+    """Set the parent for a type by name. Pass None/empty to clear parent."""
+    db_type = get_db_type()
+    if db_type == "postgres":
+        t = ItemType.query.filter_by(name=type_name).first()
+        if not t:
+            return False
+        if parent_name:
+            parent = ItemType.query.filter_by(name=parent_name).first()
+            if not parent:
+                return False
+            # Prevent self-reference
+            if parent.id == t.id:
+                return False
+            t.parent_id = parent.id
+        else:
+            t.parent_id = None
+        db.session.commit()
+    else:
+        doc = mongo.db.type.find_one({"name": type_name})
+        if not doc:
+            return False
+        if parent_name:
+            parent = mongo.db.type.find_one({"name": parent_name})
+            if not parent:
+                return False
+            mongo.db.type.update_one({"name": type_name}, {"$set": {"parent_id": str(parent["_id"])}})
+        else:
+            mongo.db.type.update_one({"name": type_name}, {"$unset": {"parent_id": ""}})
+
+    cache.delete(f"types_list_{db_type}")
+    cache.delete(f"types_tree_{db_type}")
+    return True

@@ -167,12 +167,31 @@
                   <td>2026-06-30</td>
                 </tr>
                 <tr>
+                  <td><code>PhotoPath</code></td>
+                  <td class="text-center">-</td>
+                  <td><span class="text-muted small">見下方說明</span></td>
+                </tr>
+                <tr>
                   <td><code>Notes</code></td>
                   <td class="text-center">-</td>
                   <td>購買於 2024 年 1 月</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="alert alert-secondary mt-3 mb-0 small">
+            <strong><i class="fas fa-image me-1"></i>PhotoPath 欄位支援三種格式：</strong>
+            <ol class="mb-2 mt-2 ps-3">
+              <li><strong>檔案名稱</strong>：已上傳至伺服器的圖片檔名，例如 <code>abc123.jpg</code></li>
+              <li><strong>圖片 URL</strong>：系統會自動下載並儲存，例如：<br>
+                <code class="text-break">https://example.com/photo.jpg</code>
+              </li>
+              <li><strong>Base64 編碼</strong>：支援含前綴或純資料，例如：<br>
+                <code class="text-break">data:image/jpeg;base64,/9j/4AAQ...</code>
+              </li>
+            </ol>
+            <div class="text-muted">URL 下載上限 16 MB，逾時 10 秒；下載或解碼失敗時該筆圖片欄位留空，其餘資料仍正常匯入。</div>
           </div>
 
           <div class="mt-3">

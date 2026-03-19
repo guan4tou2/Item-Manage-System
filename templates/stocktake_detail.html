@@ -1,0 +1,279 @@
+{%extends "template.html"%}
+
+{%block title%}{{ session.name }} - 庫存盤點{%endblock%}
+
+{%block user%}{{User.name}}{%endblock%}
+
+{%block contain%}
+{% set summary = session.summary %}
+{% set total = summary.total %}
+{% set counted = summary.counted + summary.discrepancy %}
+{% set progress_pct = ((counted / total * 100) | int) if total > 0 else 0 %}
+
+<div class="row">
+  <!-- Header -->
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+      <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <h2 class="mb-0">
+            <i class="fas fa-clipboard-check text-primary me-2"></i>{{ session.name }}
+          </h2>
+          {% if session.status == 'draft' %}
+          <span class="badge bg-secondary fs-6">草稿</span>
+          {% elif session.status == 'in_progress' %}
+          <span class="badge bg-warning text-dark fs-6">盤點中</span>
+          {% elif session.status == 'review' %}
+          <span class="badge bg-info fs-6">審核中</span>
+          {% elif session.status == 'committed' %}
+          <span class="badge bg-success fs-6">已提交</span>
+          {% endif %}
+        </div>
+        <p class="text-muted mb-0">
+          建立人：{{ session.created_by }} &nbsp;|&nbsp; 建立時間：{{ session.created_at }}
+          {% if session.committed_at %}
+          &nbsp;|&nbsp; 提交時間：{{ session.committed_at }}
+          {% endif %}
+        </p>
+        {% if session.notes %}
+        <p class="text-muted mb-0 mt-1"><small>{{ session.notes }}</small></p>
+        {% endif %}
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <!-- Action buttons based on status -->
+        {% if session.status == 'draft' %}
+        <form method="POST" action="{{ url_for('stocktake.stocktake_start', session_id=session.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-warning">
+            <i class="fas fa-play me-1"></i>開始盤點
+          </button>
+        </form>
+        {% elif session.status == 'in_progress' %}
+        <form method="POST" action="{{ url_for('stocktake.stocktake_complete', session_id=session.id) }}"
+              onsubmit="return confirm('確定完成盤點並進入審核？')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-info text-white">
+            <i class="fas fa-check me-1"></i>完成盤點
+          </button>
+        </form>
+        {% elif session.status == 'review' %}
+        <form method="POST" action="{{ url_for('stocktake.stocktake_commit', session_id=session.id) }}"
+              onsubmit="return confirm('確定提交盤點？將以實際數量更新所有庫存，此操作無法撤銷。')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-upload me-1"></i>提交盤點
+          </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('stocktake.stocktake_list') }}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回列表
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress & Summary -->
+  <div class="col-12 mb-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-semibold">盤點進度</span>
+          <span class="text-muted small">{{ counted }} / {{ total }} 已盤點</span>
+        </div>
+        <div class="progress mb-3" style="height: 12px;">
+          <div class="progress-bar bg-primary" role="progressbar"
+               style="width: {{ progress_pct }}%"
+               aria-valuenow="{{ progress_pct }}" aria-valuemin="0" aria-valuemax="100">
+            {{ progress_pct }}%
+          </div>
+        </div>
+        <div class="stats-summary-strip">
+          <div class="summary-chip">
+            <span class="summary-chip-label">待盤點</span>
+            <strong>{{ summary.pending }}</strong>
+          </div>
+          <div class="summary-chip">
+            <span class="summary-chip-label">已盤點</span>
+            <strong class="text-success">{{ summary.counted }}</strong>
+          </div>
+          <div class="summary-chip">
+            <span class="summary-chip-label">數量差異</span>
+            <strong class="{% if summary.discrepancy > 0 %}text-danger{% endif %}">{{ summary.discrepancy }}</strong>
+          </div>
+          <div class="summary-chip">
+            <span class="summary-chip-label">物品總數</span>
+            <strong>{{ total }}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>盤點明細</h5>
+        {% if session.status == 'in_progress' %}
+        <small class="text-muted">輸入實際數量後自動儲存</small>
+        {% endif %}
+      </div>
+      <div class="card-body p-0">
+        {% if session.items %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" id="stocktakeTable">
+            <thead class="table-light">
+              <tr>
+                <th>物品名稱</th>
+                <th>物品 ID</th>
+                <th>帳面數量</th>
+                <th>實際數量</th>
+                <th>狀態</th>
+                <th>盤點人</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for si in session.items %}
+              <tr id="row-{{ si.item_id }}" class="
+                {% if si.status == 'discrepancy' %}table-danger
+                {% elif si.status == 'counted' %}table-success
+                {% endif %}
+              ">
+                <td>{{ si.item_name }}</td>
+                <td><code class="text-muted">{{ si.item_id }}</code></td>
+                <td>{{ si.expected_qty }}</td>
+                <td>
+                  {% if session.status == 'in_progress' %}
+                  <input type="number" min="0"
+                         class="form-control form-control-sm count-input"
+                         style="width: 90px;"
+                         data-item-id="{{ si.item_id }}"
+                         data-session-id="{{ session.id }}"
+                         value="{{ si.actual_qty if si.actual_qty is not none else '' }}"
+                         placeholder="--">
+                  {% else %}
+                    {% if si.actual_qty is not none %}
+                    {{ si.actual_qty }}
+                    {% else %}
+                    <span class="text-muted">--</span>
+                    {% endif %}
+                  {% endif %}
+                </td>
+                <td id="status-{{ si.item_id }}">
+                  {% if si.status == 'pending' %}
+                  <span class="badge bg-secondary">待盤點</span>
+                  {% elif si.status == 'counted' %}
+                  <span class="badge bg-success">已盤點</span>
+                  {% elif si.status == 'discrepancy' %}
+                  <span class="badge bg-danger">數量差異</span>
+                  {% endif %}
+                </td>
+                <td><small class="text-muted">{{ si.counted_by }}</small></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-box-open fa-3x mb-3 opacity-25"></i>
+          <p>無盤點明細</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if session.status == 'in_progress' %}
+<script>
+(function () {
+  let debounceTimers = {};
+
+  document.querySelectorAll('.count-input').forEach(function (input) {
+    input.addEventListener('change', function () {
+      const itemId = this.dataset.itemId;
+      const sessionId = this.dataset.sessionId;
+      const value = this.value.trim();
+
+      if (value === '') return;
+
+      clearTimeout(debounceTimers[itemId]);
+      debounceTimers[itemId] = setTimeout(() => {
+        saveCount(sessionId, itemId, parseInt(value, 10), this);
+      }, 400);
+    });
+  });
+
+  function saveCount(sessionId, itemId, actualQty, inputEl) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')
+                      ? document.querySelector('meta[name="csrf-token"]').content
+                      : (document.querySelector('[name="csrf_token"]') || {value: ''}).value;
+
+    fetch(`/api/stocktake/${sessionId}/count`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken,
+      },
+      body: JSON.stringify({ item_id: itemId, actual_qty: actualQty }),
+    })
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data.success) {
+          updateRowStatus(itemId, actualQty, inputEl);
+        } else {
+          alert('儲存失敗：' + data.message);
+        }
+      })
+      .catch(function () {
+        alert('網路錯誤，請重試');
+      });
+  }
+
+  function updateRowStatus(itemId, actualQty, inputEl) {
+    const row = document.getElementById('row-' + itemId);
+    const statusCell = document.getElementById('status-' + itemId);
+    // expected_qty is in column 3 (index 2)
+    const expectedQty = parseInt(row.cells[2].textContent.trim(), 10);
+    const isDiscrepancy = actualQty !== expectedQty;
+
+    row.classList.remove('table-danger', 'table-success');
+    if (isDiscrepancy) {
+      row.classList.add('table-danger');
+      statusCell.innerHTML = '<span class="badge bg-danger">數量差異</span>';
+    } else {
+      row.classList.add('table-success');
+      statusCell.innerHTML = '<span class="badge bg-success">已盤點</span>';
+    }
+  }
+
+  // Get CSRF token from cookie fallback
+  function getCsrfFromCookie() {
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    return match ? match[1] : '';
+  }
+})();
+</script>
+
+<!-- Inject CSRF token into fetch via a hidden field in the page -->
+<script>
+  // Patch fetch to add CSRF header automatically
+  (function () {
+    const originalFetch = window.fetch;
+    window.fetch = function (url, options) {
+      options = options || {};
+      options.headers = options.headers || {};
+      // Find CSRF token from the page
+      const csrfInput = document.querySelector('input[name="csrf_token"]');
+      if (csrfInput) {
+        options.headers['X-CSRFToken'] = csrfInput.value;
+      }
+      return originalFetch(url, options);
+    };
+  })();
+</script>
+<!-- Hidden CSRF token for JS use -->
+<form style="display:none"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"></form>
+{% endif %}
+{%endblock%}

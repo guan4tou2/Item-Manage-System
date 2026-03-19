@@ -27,6 +27,7 @@ from app.services import (
     location_service,
 )
 from app.services import log_service
+from app.services import custom_field_service
 from app import limiter
 from app.repositories import user_repo
 from app.utils.auth import login_required, admin_required, get_current_user
@@ -148,11 +149,22 @@ def additem():
     user = get_current_user()
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
+    try:
+        custom_fields = custom_field_service.list_fields()
+    except Exception:
+        custom_fields = []
 
     if request.method == "POST":
         form = dict(request.form)
         ok, msg = item_service.create_item(form, request.files.get("ItemPic"))
         if ok:
+            # Save custom field values after item creation
+            item_id = form.get("ItemID", "").strip()
+            try:
+                if item_id and custom_fields:
+                    custom_field_service.save_item_custom_values(item_id, form)
+            except Exception:
+                pass
             flash(_("物品新增成功！"), "success")
             return redirect(url_for("items.home"))
         else:
@@ -165,6 +177,8 @@ def additem():
                 rooms=rooms,
                 zones=zones,
                 form=form,
+                custom_fields=custom_fields,
+                custom_values={},
             )
 
     return render_template(
@@ -174,6 +188,8 @@ def additem():
         floors=floors,
         rooms=rooms,
         zones=zones,
+        custom_fields=custom_fields,
+        custom_values={},
     )
 
 
@@ -234,23 +250,35 @@ def manageitem():
 def edititem(item_id: str):
     user = get_current_user()
     item = item_service.get_item(item_id)
-    
+
     if not item:
         flash(_("找不到該物品"), "danger")
         return redirect(url_for("items.home"))
 
     types = type_service.list_types()
     floors, rooms, zones = location_service.list_choices()
-    
+    try:
+        custom_fields = custom_field_service.list_fields()
+        existing_cf_values = custom_field_service.get_item_custom_values(item_id)
+        custom_values = {str(v["field_id"]): v["value"] for v in existing_cf_values}
+    except Exception:
+        custom_fields = []
+        custom_values = {}
+
     if request.method == "POST":
         form = dict(request.form)
         ok, msg = item_service.update_item(item_id, form, request.files.get("ItemPic"))
         if ok:
+            try:
+                if custom_fields:
+                    custom_field_service.save_item_custom_values(item_id, form)
+            except Exception:
+                pass
             flash(msg, "success")
             return redirect(url_for("items.home"))
         else:
             flash(msg, "danger")
-    
+
     return render_template(
         "edititem.html",
         User=user,
@@ -259,6 +287,8 @@ def edititem(item_id: str):
         floors=floors,
         rooms=rooms,
         zones=zones,
+        custom_fields=custom_fields,
+        custom_values=custom_values,
     )
 
 
@@ -408,12 +438,21 @@ def item_detail(item_id: str):
     """物品詳情頁面"""
     user = get_current_user()
     item = item_service.get_item(item_id)
-    
+
     if not item:
         flash(_("找不到該物品"), "danger")
         return redirect(url_for("items.home"))
 
-    return render_template("itemdetail.html", User=user, item=item)
+    try:
+        custom_field_values = custom_field_service.get_item_custom_values(item_id)
+    except Exception:
+        custom_field_values = []
+    return render_template(
+        "itemdetail.html",
+        User=user,
+        item=item,
+        custom_field_values=custom_field_values,
+    )
 
 
 @bp.route("/items/<item_id>/qrcode")

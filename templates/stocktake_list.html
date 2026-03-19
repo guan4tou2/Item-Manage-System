@@ -1,0 +1,134 @@
+{%extends "template.html"%}
+
+{%block title%}庫存盤點 - 物品管理系統{%endblock%}
+
+{%block user%}{{User.name}}{%endblock%}
+
+{%block contain%}
+<div class="row">
+  <div class="col-12 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">
+          <i class="fas fa-clipboard-check text-primary me-2"></i>庫存盤點
+        </h2>
+        <p class="text-muted mb-0">建立與管理庫存盤點作業</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+          <i class="fas fa-plus me-1"></i>建立盤點
+        </button>
+        <a href="{{url_for('items.home')}}" class="btn btn-outline-secondary">
+          <i class="fas fa-arrow-left me-1"></i>返回首頁
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 盤點作業列表 -->
+  <div class="col-12">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-list me-2"></i>盤點作業列表</h5>
+      </div>
+      <div class="card-body p-0">
+        {% if sessions %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>盤點名稱</th>
+                <th>狀態</th>
+                <th>建立人</th>
+                <th>建立時間</th>
+                <th>物品數</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sess in sessions %}
+              <tr>
+                <td>
+                  <strong>{{ sess.name }}</strong>
+                  {% if sess.notes %}
+                  <br><small class="text-muted">{{ sess.notes }}</small>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if sess.status == 'draft' %}
+                  <span class="badge bg-secondary">草稿</span>
+                  {% elif sess.status == 'in_progress' %}
+                  <span class="badge bg-warning text-dark">盤點中</span>
+                  {% elif sess.status == 'review' %}
+                  <span class="badge bg-info">審核中</span>
+                  {% elif sess.status == 'committed' %}
+                  <span class="badge bg-success">已提交</span>
+                  {% else %}
+                  <span class="badge bg-secondary">{{ sess.status }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ sess.created_by }}</td>
+                <td><small>{{ sess.created_at }}</small></td>
+                <td>{{ sess.item_count }}</td>
+                <td>
+                  <a href="{{ url_for('stocktake.stocktake_detail', session_id=sess.id) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-eye me-1"></i>查看
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-clipboard-check fa-3x mb-3 opacity-25"></i>
+          <p>尚無盤點作業</p>
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+            <i class="fas fa-plus me-1"></i>建立第一個盤點
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 建立盤點 Modal -->
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('stocktake.stocktake_create') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createModalLabel">
+            <i class="fas fa-clipboard-check me-2"></i>建立盤點作業
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="sessionName" class="form-label">盤點名稱 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="sessionName" name="name"
+                   placeholder="例：2026年第一季盤點" required>
+          </div>
+          <div class="mb-3">
+            <label for="sessionNotes" class="form-label">備註</label>
+            <textarea class="form-control" id="sessionNotes" name="notes" rows="3"
+                      placeholder="（選填）盤點說明或備注"></textarea>
+          </div>
+          <p class="text-muted small mb-0">
+            <i class="fas fa-info-circle me-1"></i>建立後將自動匯入現有庫存清單
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>建立盤點
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{%endblock%}

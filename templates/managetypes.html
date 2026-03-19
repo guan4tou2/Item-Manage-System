@@ -6,7 +6,7 @@
 <div class="container">
   <div class="page-header animate-fadeInUp">
     <h1><i class="fas fa-tags me-2"></i>分類管理</h1>
-    <p class="lead">管理物品分類，方便新增與搜尋</p>
+    <p class="lead">管理物品分類，支援階層子分類</p>
   </div>
 </div>
 {%endblock%}
@@ -26,6 +26,15 @@
             <div class="mb-3">
               <label for="typeName" class="form-label">分類名稱</label>
               <input type="text" class="form-control" id="typeName" name="name" placeholder="例如：3C配件" required>
+            </div>
+            <div class="mb-3">
+              <label for="typeParent" class="form-label">父分類（選填）</label>
+              <select class="form-select" id="typeParent" name="parent_name">
+                <option value="">無（頂層分類）</option>
+                {%for type in itemtype%}
+                <option value="{{ type.name }}">{{ type.name }}</option>
+                {%endfor%}
+              </select>
             </div>
             <button type="submit" class="btn btn-primary w-100">
               <i class="fas fa-plus me-1"></i>新增
@@ -49,15 +58,31 @@
               <thead class="table-light">
                 <tr>
                   <th>分類名稱</th>
-                  <th class="text-center" style="width: 100px;">物品數</th>
-                  <th class="text-end" style="width: 160px;">操作</th>
+                  <th>父分類</th>
+                  <th class="text-center" style="width: 80px;">物品數</th>
+                  <th class="text-end" style="width: 180px;">操作</th>
                 </tr>
               </thead>
               <tbody>
+                {%- set type_map = {} -%}
+                {%- for type in itemtype -%}
+                  {%- if type_map.update({type.id: type.name}) -%}{%- endif -%}
+                {%- endfor -%}
                 {%for type in itemtype%}
-                <tr data-type-name="{{ type.name }}">
+                <tr data-type-name="{{ type.name }}" data-type-id="{{ type.id }}" data-parent-id="{{ type.parent_id or '' }}">
                   <td>
+                    {%if type.parent_id%}
+                    <span class="ms-3 text-muted me-1" title="子分類"><i class="fas fa-level-up-alt fa-rotate-90 fa-xs"></i></span>
+                    {%endif%}
                     <span class="type-name-display">{{ type.name }}</span>
+                  </td>
+                  <td class="text-muted small">
+                    {%if type.parent_id%}
+                      {%- set parent_name = type_map.get(type.parent_id, '') -%}
+                      {%if parent_name%}
+                      <span class="badge bg-light text-dark border">{{ parent_name }}</span>
+                      {%endif%}
+                    {%endif%}
                   </td>
                   <td class="text-center">
                     <span class="badge bg-secondary type-count" data-name="{{ type.name }}">—</span>
@@ -65,8 +90,14 @@
                   <td class="text-end">
                     <div class="btn-group btn-group-sm">
                       <button type="button" class="btn btn-outline-primary edit-type-btn"
-                              data-name="{{ type.name }}" title="編輯">
+                              data-name="{{ type.name }}" title="編輯名稱">
                         <i class="fas fa-edit"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary set-parent-btn"
+                              data-name="{{ type.name }}"
+                              data-current-parent="{{ type_map.get(type.parent_id, '') if type.parent_id else '' }}"
+                              title="設定父分類">
+                        <i class="fas fa-sitemap"></i>
                       </button>
                       <button type="button" class="btn btn-outline-danger delete-type-btn"
                               data-name="{{ type.name }}" title="刪除">
@@ -119,6 +150,37 @@
   </div>
 </div>
 
+<!-- 設定父分類 Modal -->
+<div class="modal fade" id="setParentModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form action="{{ url_for('types.set_type_parent') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="type_name" id="parentTypeName">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-sitemap me-2"></i>設定父分類</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-2">為「<strong id="parentTypeNameDisplay"></strong>」選擇父分類：</p>
+          <select class="form-select" name="parent_name" id="parentSelect">
+            <option value="">無（設為頂層分類）</option>
+            {%for type in itemtype%}
+            <option value="{{ type.name }}">{{ type.name }}</option>
+            {%endfor%}
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">取消</button>
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-save me-1"></i>套用
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- 刪除確認 Modal -->
 <div class="modal fade" id="deleteTypeModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -158,6 +220,28 @@
       document.getElementById('editOldName').value = name;
       document.getElementById('editNewName').value = name;
       new bootstrap.Modal(document.getElementById('editTypeModal')).show();
+    });
+  });
+
+  // 設定父分類按鈕
+  document.querySelectorAll('.set-parent-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var name = this.dataset.name;
+      var currentParent = this.dataset.currentParent || '';
+      document.getElementById('parentTypeName').value = name;
+      document.getElementById('parentTypeNameDisplay').textContent = name;
+      // Remove the type itself from the parent options to prevent self-reference
+      var select = document.getElementById('parentSelect');
+      Array.from(select.options).forEach(function(opt) {
+        opt.disabled = (opt.value === name);
+        if (opt.value === currentParent) {
+          opt.selected = true;
+        }
+      });
+      if (!currentParent) {
+        select.value = '';
+      }
+      new bootstrap.Modal(document.getElementById('setParentModal')).show();
     });
   });
 

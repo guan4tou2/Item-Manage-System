@@ -12,11 +12,12 @@ class FakeTypeRepo:
         for t in self.types:
             yield t
 
-    def insert_type(self, type_data):
+    def insert_type(self, type_data, parent_id=None):
         if isinstance(type_data, dict):
+            type_data["parent_id"] = parent_id
             self.types.append(type_data)
         else:
-            self.types.append({"name": type_data})
+            self.types.append({"name": type_data, "parent_id": parent_id})
 
 
 class TypeServiceTestCase(unittest.TestCase):

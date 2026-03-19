@@ -1,6 +1,10 @@
+import base64
+import io
 import os
-from typing import Optional
+import uuid
+from typing import Optional, Tuple
 
+import requests
 from PIL import Image
 from flask import current_app
 
@@ -86,4 +90,107 @@ def create_thumbnail(filename: str, size: int = 300) -> Optional[str]:
             img.save(thumb_path, "JPEG", quality=80, optimize=True)
         return thumb_name
     except Exception:
+        return None
+
+
+def download_and_save_image(url: str) -> Optional[Tuple[str, str]]:
+    """Download image from URL, save to uploads folder, return (filename, thumb_filename).
+
+    Validates content type is image. Max 16 MB. Timeout 10 s.
+    Returns None on any failure.
+    """
+    try:
+        response = requests.get(url, timeout=10, stream=True)
+        response.raise_for_status()
+
+        content_type = response.headers.get("Content-Type", "")
+        if not content_type.startswith("image/"):
+            current_app.logger.warning(
+                f"download_and_save_image: non-image content type '{content_type}' for {url}"
+            )
+            return None
+
+        # Read up to 16 MB
+        max_bytes = 16 * 1024 * 1024
+        data = b""
+        for chunk in response.iter_content(chunk_size=8192):
+            data += chunk
+            if len(data) > max_bytes:
+                current_app.logger.warning(
+                    f"download_and_save_image: image exceeds 16 MB limit for {url}"
+                )
+                return None
+
+        # Derive extension from content type (fallback to jpg)
+        ext_map = {
+            "image/jpeg": "jpg",
+            "image/png": "png",
+            "image/gif": "gif",
+            "image/webp": "webp",
+        }
+        ext = ext_map.get(content_type.split(";")[0].strip(), "jpg")
+
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        save_path = os.path.join(upload_folder, filename)
+
+        with open(save_path, "wb") as f:
+            f.write(data)
+
+        # Compress and thumbnail
+        final_filename = compress_image(filename) or filename
+        thumb_filename = create_thumbnail(final_filename)
+
+        return (final_filename, thumb_filename)
+    except Exception as e:
+        current_app.logger.error(f"download_and_save_image failed for {url}: {e}")
+        return None
+
+
+def decode_base64_image(data: str) -> Optional[Tuple[str, str]]:
+    """Decode base64 image data (with or without data URI prefix), save to uploads.
+
+    Supports:
+      - data:image/jpeg;base64,<payload>
+      - raw base64 string
+
+    Returns (filename, thumb_filename) or None on failure.
+    """
+    try:
+        ext = "jpg"
+        payload = data.strip()
+
+        if payload.startswith("data:"):
+            # data URI format: data:<mime>;base64,<payload>
+            header, _, b64_payload = payload.partition(",")
+            mime = header.split(";")[0].replace("data:", "").strip()
+            ext_map = {
+                "image/jpeg": "jpg",
+                "image/png": "png",
+                "image/gif": "gif",
+                "image/webp": "webp",
+            }
+            ext = ext_map.get(mime, "jpg")
+            payload = b64_payload
+
+        image_bytes = base64.b64decode(payload)
+
+        # Verify it's a valid image
+        img_check = Image.open(io.BytesIO(image_bytes))
+        img_check.verify()
+
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        save_path = os.path.join(upload_folder, filename)
+
+        with open(save_path, "wb") as f:
+            f.write(image_bytes)
+
+        # Compress and thumbnail
+        final_filename = compress_image(filename) or filename
+        thumb_filename = create_thumbnail(final_filename)
+
+        return (final_filename, thumb_filename)
+    except Exception as e:
+        current_app.logger.error(f"decode_base64_image failed: {e}")
         return None
