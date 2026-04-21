@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation"
 
 import { DevThemeToggle } from "./dev-theme-toggle"
+import { FeedbackSection } from "./sections/feedback"
 import { FormsSection } from "./sections/forms"
+import { OverlaysSection } from "./sections/overlays"
 
 export const dynamic = "force-dynamic"
 
@@ -24,6 +26,8 @@ export default function ComponentsShowcasePage() {
         <DevThemeToggle />
       </header>
       <FormsSection />
+      <OverlaysSection />
+      <FeedbackSection />
     </main>
   )
 }
