@@ -38,6 +38,19 @@ const config: Config = {
         },
         card: { DEFAULT: 'hsl(var(--card))', foreground: 'hsl(var(--card-foreground))' },
       },
+      fontFamily: {
+        sans: [
+          'var(--font-sans)',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          'PingFang TC',
+          'Microsoft JhengHei',
+          'Noto Sans TC',
+          'sans-serif',
+        ],
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
