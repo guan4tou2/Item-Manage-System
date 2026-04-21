@@ -1,105 +1,82 @@
+name: ims-v2
+
 services:
-  app:
-    build: .
+  nginx:
+    image: nginx:1.27-alpine
     ports:
-      - "8080:8080"
-    environment:
-      - DB_TYPE=${DB_TYPE:-postgres}
-      - MONGO_URI=mongodb://mongo:27017/myDB
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-itemman}:${POSTGRES_PASSWORD:-itemman_pass}@postgres:5432/${POSTGRES_DB:-itemman}
-      - FLASK_ENV=${FLASK_ENV:-production}
-      - SECRET_KEY=${SECRET_KEY}
-      - REDIS_URL=redis://redis:6379/0
-      - MAIL_SERVER=${MAIL_SERVER}
-      - MAIL_PORT=${MAIL_PORT:-587}
-      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      - "80:80"
     volumes:
-      - static_uploads:/workspace/static/uploads
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+      - api
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE: /api
+    expose:
+      - "3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  api:
+    build:
+      context: apps/api
+      dockerfile: Dockerfile
+    env_file: .env
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-    profiles:
-      - postgres
+        condition: service_started
+    restart: unless-stopped
 
   worker:
-    build: .
-    environment:
-      - DB_TYPE=${DB_TYPE:-postgres}
-      - MONGO_URI=mongodb://mongo:27017/myDB
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-itemman}:${POSTGRES_PASSWORD:-itemman_pass}@postgres:5432/${POSTGRES_DB:-itemman}
-      - REDIS_URL=redis://redis:6379/0
-      - MAIL_SERVER=${MAIL_SERVER}
-      - MAIL_PORT=${MAIL_PORT:-587}
-      - MAIL_USE_TLS=${MAIL_USE_TLS:-true}
-      - MAIL_USERNAME=${MAIL_USERNAME}
-      - MAIL_PASSWORD=${MAIL_PASSWORD}
-      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
-    command: ["python", "run_worker.py"]
+    build:
+      context: apps/api
+      dockerfile: Dockerfile
+    env_file: .env
+    command: ["python", "-m", "app.workers.main"]
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
-    profiles:
-      - postgres
+        condition: service_started
+    restart: unless-stopped
+    profiles: ["worker"]
 
   postgres:
     image: postgres:16-alpine
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
     environment:
-      - POSTGRES_USER=${POSTGRES_USER:-itemman}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-itemman_pass}
-      - POSTGRES_DB=${POSTGRES_DB:-itemman}
+      POSTGRES_DB: ${POSTGRES_DB:-ims}
+      POSTGRES_USER: ${POSTGRES_USER:-ims}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ims_change_me}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-itemman}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ims}"]
+      interval: 5s
       timeout: 5s
       retries: 5
-    profiles:
-      - postgres
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
     volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    profiles:
-      - postgres
-
-  mongo:
-    image: mongo:7
+      - redisdata:/data
     restart: unless-stopped
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-    healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    profiles:
-      - mongo
 
 volumes:
-  postgres_data:
-  redis_data:
-  mongo_data:
-  static_uploads:
+  pgdata:
+  redisdata:
