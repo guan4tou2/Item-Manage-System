@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 
 import { DevThemeToggle } from "./dev-theme-toggle"
+import { FormsSection } from "./sections/forms"
 
 export const dynamic = "force-dynamic"
 
@@ -22,9 +23,7 @@ export default function ComponentsShowcasePage() {
         </div>
         <DevThemeToggle />
       </header>
-      <p className="text-sm text-muted-foreground">
-        後續 Task 會依元件分類填入 Section。
-      </p>
+      <FormsSection />
     </main>
   )
 }
