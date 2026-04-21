@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ThemeProvider } from 'next-themes'
 import { useState, type ReactNode } from 'react'
 
+import { ThemeSync } from '@/lib/theme/theme-sync'
+
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
     () =>
@@ -25,6 +27,7 @@ export function Providers({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
+        <ThemeSync />
         {children}
       </ThemeProvider>
     </QueryClientProvider>
