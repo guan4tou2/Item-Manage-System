@@ -22,4 +22,6 @@ async def set_raw_preferences(
     user = (await session.execute(stmt)).scalar_one()
     user.preferences = value
     await session.flush()
+    await session.commit()
+    await session.refresh(user)
     return user.preferences
