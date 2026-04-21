@@ -1,8 +1,10 @@
+import { LoginForm } from '@/features/auth/login-form'
+
 export default function LoginPage() {
   return (
-    <main className="container flex min-h-screen flex-col items-center justify-center gap-4 py-24">
-      <h1 className="text-3xl font-semibold">登入</h1>
-      <p className="text-muted-foreground">登入頁將於後續任務實作。</p>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4 py-12">
+      <h1 className="text-2xl font-bold">登入</h1>
+      <LoginForm />
     </main>
   )
 }
