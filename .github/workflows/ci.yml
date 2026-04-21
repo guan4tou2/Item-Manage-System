@@ -45,6 +45,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install API + export OpenAPI
+        working-directory: apps/api
+        run: |
+          pip install uv
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install -e ".[test]"
+          python scripts/export_openapi.py > ../../packages/api-types/openapi.json
       - uses: pnpm/action-setup@v4
         with:
           version: 9.12.0
@@ -53,10 +64,8 @@ jobs:
           node-version: "22"
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
-      - name: Generate OpenAPI schema (stubbed)
-        run: |
-          mkdir -p packages/api-types/src
-          echo "export type paths = Record<string, never>" > packages/api-types/src/index.ts
+      - name: Generate TypeScript types
+        run: pnpm --filter @ims/api-types gen:types
       - run: pnpm --filter @ims/web typecheck
       - run: pnpm --filter @ims/web lint
       - run: pnpm --filter @ims/web test
@@ -69,9 +78,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build API image
         run: docker build -t ims-api:ci -f apps/api/Dockerfile apps/api
-      - name: Stub api-types for web build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install API + export OpenAPI
+        working-directory: apps/api
         run: |
-          mkdir -p packages/api-types/src
-          echo "export type paths = Record<string, never>" > packages/api-types/src/index.ts
+          pip install uv
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install -e ".[test]"
+          python scripts/export_openapi.py > ../../packages/api-types/openapi.json
+      - name: Generate TypeScript types
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.12.0 --activate
+          pnpm install --frozen-lockfile --filter @ims/api-types...
+          pnpm --filter @ims/api-types gen:types
       - name: Build web image
         run: docker build -t ims-web:ci -f apps/web/Dockerfile .
