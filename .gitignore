@@ -50,3 +50,22 @@ node_modules/
 
 # Planning files
 .sisyphus/
+
+# v2 monorepo
+node_modules/
+.next/
+.turbo/
+dist/
+.pnpm-store/
+packages/api-types/src/
+
+# Python v2
+apps/api/.venv/
+apps/api/__pycache__/
+apps/api/**/__pycache__/
+apps/api/.pytest_cache/
+
+# Env
+.env
+.env.local
+.env.*.local
