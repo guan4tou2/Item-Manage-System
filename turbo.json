@@ -11,9 +11,7 @@
     },
     "lint": {},
     "test": {},
-    "typecheck": {
-      "dependsOn": ["^build"]
-    },
+    "typecheck": {},
     "gen:types": {
       "outputs": ["src/**"]
     }
