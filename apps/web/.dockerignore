@@ -1,0 +1,6 @@
+node_modules
+.next
+.turbo
+tests
+playwright-report
+test-results
