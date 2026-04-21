@@ -1,11 +1,10 @@
 "use client"
 
-import { useTheme } from "next-themes"
-
 import { Button } from "@/components/ui/button"
+import { useThemePreference } from "@/lib/theme/use-theme"
 
 export function DevThemeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useThemePreference()
   const next = theme === "dark" ? "light" : "dark"
   return (
     <Button

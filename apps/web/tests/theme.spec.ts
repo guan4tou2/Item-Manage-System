@@ -53,4 +53,50 @@ test.describe("Theme persistence", () => {
     )
     await expect(page.locator("html")).toHaveClass(/dark/)
   })
+
+  test("authenticated user: toggling theme syncs to preferences API", async ({
+    page,
+    request,
+  }) => {
+    const suffix = Date.now().toString()
+    const username = `sync_${suffix}`
+    const email = `sync_${suffix}@example.com`
+    const password = "secret1234"
+
+    const reg = await request.post("/api/auth/register", {
+      data: { email, username, password },
+    })
+    expect(reg.status()).toBe(201)
+
+    const login = await request.post("/api/auth/login", {
+      data: { username, password },
+    })
+    const { access_token } = await login.json()
+
+    // UI login so the browser has a token in store
+    await page.goto("/login")
+    await page.getByLabel("使用者名稱").fill(username)
+    await page.getByLabel("密碼").fill(password)
+    await page.getByRole("button", { name: /登入/ }).click()
+    await page.waitForURL("/")
+
+    await page.goto("/__dev/components")
+    const before = await page.locator("html").getAttribute("class")
+    const expectingDark = !(before ?? "").includes("dark")
+
+    // Wait for the preferences PUT after clicking the toggle
+    const putResponse = page.waitForResponse(
+      (r) =>
+        r.url().endsWith("/api/users/me/preferences") && r.request().method() === "PUT",
+    )
+    await page.getByRole("button", { name: /切換/ }).click()
+    await putResponse
+
+    // Verify server-side state via fresh GET
+    const fetch = await request.get("/api/users/me/preferences", {
+      headers: { Authorization: `Bearer ${access_token}` },
+    })
+    const body = await fetch.json()
+    expect(body.theme).toBe(expectingDark ? "dark" : "light")
+  })
 })
