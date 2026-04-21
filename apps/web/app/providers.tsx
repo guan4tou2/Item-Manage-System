@@ -5,6 +5,7 @@ import { ThemeProvider } from 'next-themes'
 import { useState, type ReactNode } from 'react'
 
 import { ThemeSync } from '@/lib/theme/theme-sync'
+import { Toaster } from '@/components/ui/sonner'
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -29,6 +30,7 @@ export function Providers({ children }: { children: ReactNode }) {
       >
         <ThemeSync />
         {children}
+        <Toaster richColors closeButton />
       </ThemeProvider>
     </QueryClientProvider>
   )
