@@ -94,7 +94,8 @@
     "toast": {
       "created": "已建立",
       "updated": "已更新",
-      "deleted": "已刪除"
+      "deleted": "已刪除",
+      "saveFailed": "儲存失敗"
     }
   },
   "taxonomy": {

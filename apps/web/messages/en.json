@@ -94,7 +94,8 @@
     "toast": {
       "created": "Created",
       "updated": "Updated",
-      "deleted": "Deleted"
+      "deleted": "Deleted",
+      "saveFailed": "Could not save changes"
     }
   },
   "taxonomy": {

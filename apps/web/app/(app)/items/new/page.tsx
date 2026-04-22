@@ -37,17 +37,21 @@ export default function NewItemPage() {
   const tags = useTags()
 
   async function handleSubmit(values: ItemFormValues) {
-    const created = await create.mutateAsync({
-      name: values.name,
-      description: values.description || undefined,
-      category_id: values.category_id ?? undefined,
-      location_id: values.location_id ?? undefined,
-      quantity: values.quantity,
-      notes: values.notes || undefined,
-      tag_names: values.tag_names,
-    })
-    toast.success(t("items.toast.created"))
-    router.push(`/items/${created.id}`)
+    try {
+      const created = await create.mutateAsync({
+        name: values.name,
+        description: values.description || undefined,
+        category_id: values.category_id ?? undefined,
+        location_id: values.location_id ?? undefined,
+        quantity: values.quantity,
+        notes: values.notes || undefined,
+        tag_names: values.tag_names,
+      })
+      toast.success(t("items.toast.created"))
+      router.push(`/items/${created.id}`)
+    } catch {
+      toast.error(t("items.toast.saveFailed"))
+    }
   }
 
   return (

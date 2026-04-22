@@ -30,6 +30,13 @@ export default function EditItemPage() {
   const locs = useLocations()
   const tags = useTags()
 
+  if (item.isError) {
+    return (
+      <section className="space-y-4 p-6">
+        <p className="text-muted-foreground">{t("items.detail.notFound")}</p>
+      </section>
+    )
+  }
   if (item.isLoading || !item.data) {
     return (
       <section className="space-y-4 p-6">
@@ -49,17 +56,21 @@ export default function EditItemPage() {
   }
 
   async function handleSubmit(values: ItemFormValues) {
-    await update.mutateAsync({
-      name: values.name,
-      description: values.description || null,
-      category_id: values.category_id,
-      location_id: values.location_id,
-      quantity: values.quantity,
-      notes: values.notes || null,
-      tag_names: values.tag_names,
-    })
-    toast.success(t("items.toast.updated"))
-    router.push(`/items/${id}`)
+    try {
+      await update.mutateAsync({
+        name: values.name,
+        description: values.description || null,
+        category_id: values.category_id,
+        location_id: values.location_id,
+        quantity: values.quantity,
+        notes: values.notes || null,
+        tag_names: values.tag_names,
+      })
+      toast.success(t("items.toast.updated"))
+      router.push(`/items/${id}`)
+    } catch {
+      toast.error(t("items.toast.saveFailed"))
+    }
   }
 
   return (
