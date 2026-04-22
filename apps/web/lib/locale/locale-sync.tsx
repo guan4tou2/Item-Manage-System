@@ -8,8 +8,7 @@ import { useAccessToken } from "@/lib/auth/use-auth"
 import { isLocale } from "@/lib/i18n/config"
 import { usePreferences } from "@/lib/preferences/use-preferences"
 
-const COOKIE_NAME = "ims_locale"
-const MAX_AGE = 60 * 60 * 24 * 365
+import { writeLocaleCookie } from "./cookie"
 
 export function LocaleSync() {
   const token = useAccessToken()
@@ -24,9 +23,9 @@ export function LocaleSync() {
       return
     }
     if (!isSuccess || syncedFor.current === token) return
-    const serverLang = (data as { language?: string } | undefined)?.language
+    const serverLang = data?.language
     if (serverLang && isLocale(serverLang) && serverLang !== currentLocale) {
-      document.cookie = `${COOKIE_NAME}=${serverLang}; Path=/; SameSite=Lax; Max-Age=${MAX_AGE}`
+      writeLocaleCookie(serverLang)
       router.refresh()
     }
     syncedFor.current = token

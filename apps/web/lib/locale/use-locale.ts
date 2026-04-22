@@ -7,15 +7,9 @@ import { useLocale as useNextIntlLocale } from "next-intl"
 import { useAccessToken } from "@/lib/auth/use-auth"
 import { useUpdatePreferences } from "@/lib/preferences/use-preferences"
 
+import { writeLocaleCookie } from "./cookie"
+
 import type { Locale } from "@/lib/i18n/config"
-
-const COOKIE_NAME = "ims_locale"
-const MAX_AGE = 60 * 60 * 24 * 365 // 1 year
-
-function writeLocaleCookie(locale: Locale): void {
-  if (typeof document === "undefined") return
-  document.cookie = `${COOKIE_NAME}=${locale}; Path=/; SameSite=Lax; Max-Age=${MAX_AGE}`
-}
 
 export function useLocale(): {
   locale: Locale
