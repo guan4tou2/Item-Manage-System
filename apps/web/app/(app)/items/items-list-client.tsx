@@ -91,6 +91,7 @@ export function ItemsListClient() {
               <div className="flex gap-2">
                 <Button
                   variant="outline" size="sm"
+                  aria-label={t("items.list.previousPage")}
                   disabled={data.page <= 1}
                   onClick={() => writeFilters({ ...filters, page: Math.max(1, (filters.page ?? 1) - 1) })}
                 >
@@ -98,6 +99,7 @@ export function ItemsListClient() {
                 </Button>
                 <Button
                   variant="outline" size="sm"
+                  aria-label={t("items.list.nextPage")}
                   disabled={data.page * data.per_page >= data.total}
                   onClick={() => writeFilters({ ...filters, page: (filters.page ?? 1) + 1 })}
                 >

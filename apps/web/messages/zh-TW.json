@@ -58,7 +58,9 @@
       "columnLocation": "位置",
       "columnQuantity": "數量",
       "columnTags": "標籤",
-      "page": "第 {page} 頁 / 共 {total} 頁"
+      "page": "第 {page} 頁 / 共 {total} 頁",
+      "previousPage": "上一頁",
+      "nextPage": "下一頁"
     },
     "form": {
       "name": "名稱",

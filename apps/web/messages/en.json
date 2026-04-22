@@ -58,7 +58,9 @@
       "columnLocation": "Location",
       "columnQuantity": "Qty",
       "columnTags": "Tags",
-      "page": "Page {page} of {total}"
+      "page": "Page {page} of {total}",
+      "previousPage": "Previous page",
+      "nextPage": "Next page"
     },
     "form": {
       "name": "Name",
