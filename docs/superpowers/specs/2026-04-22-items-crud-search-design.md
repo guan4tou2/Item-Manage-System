@@ -295,7 +295,7 @@ GET    /api/tags                 query: q? (前綴比對) → [TagRead]
 
 ### 6.8 i18n
 
-- 所有 UI 字串進 `messages/zh-TW.json`、`en.json`、`ja.json`
+- 所有 UI 字串進 `messages/zh-TW.json`、`en.json`
 - 命名空間: `items.*` (含 `items.list.*`、`items.form.*`、`items.detail.*`)、`taxonomy.*`
 
 ## 7. 測試策略
@@ -359,7 +359,7 @@ GET    /api/tags                 query: q? (前綴比對) → [TagRead]
 - 效能: 列表頁 SSR + React Query prefetch,初次載入 < 1s (本機 dev)
 - 可近用性 (A11y): 所有表單欄位有 label;Sheet / Dialog 支援 Escape + focus trap (Radix 預設)
 - Responsive: 手機 / 平板 / 桌面各自最佳化 (表格 → 卡片)
-- 國際化: zh-TW / en / ja 三語完整
+- 國際化: zh-TW / en 雙語完整 (匹配 #2 現狀,未來加 ja)
 
 ## 10. 未解決問題 (開工前請作者自決)
 
@@ -369,7 +369,7 @@ GET    /api/tags                 query: q? (前綴比對) → [TagRead]
 
 - [ ] API 所有端點依規格回傳 + 授權
 - [ ] Web 五個頁面完成並通過 E2E
-- [ ] 中 / 英 / 日三語字串齊全
+- [ ] 中 / 英雙語字串齊全
 - [ ] `pytest` 全綠 (API),`pnpm test` 全綠 (web 單元),`pnpm e2e` 全綠
 - [ ] `docs/v2-roadmap.md` 標記 #3 完成
 

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Boolean, DateTime, JSON, String, text
@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import CHAR, TypeDecorator
 
-from app.db.base import Base
+from app.db.base import Base, _utcnow
 
 
 class GUID(TypeDecorator):
@@ -31,10 +31,6 @@ class GUID(TypeDecorator):
         if value is None or isinstance(value, uuid.UUID):
             return value
         return uuid.UUID(value)
-
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class User(Base):

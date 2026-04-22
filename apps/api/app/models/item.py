@@ -1,19 +1,15 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base
+from app.db.base import Base, _utcnow
 from app.models.user import GUID
-
-
-def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
 
 
 class Item(Base):
