@@ -1,5 +1,6 @@
 "use client"
 
+import type { Route } from "next"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -30,7 +31,8 @@ export function ItemsListClient() {
   const writeFilters = useCallback(
     (next: ItemFilters) => {
       const qs = filtersToSearchParams(next).toString()
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+      const href = (qs ? `${pathname}?${qs}` : pathname) as Route
+      router.replace(href, { scroll: false })
     },
     [router, pathname],
   )
