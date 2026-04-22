@@ -3,20 +3,7 @@ import userEvent from "@testing-library/user-event"
 import { NextIntlClientProvider } from "next-intl"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-// next-intl requires nested message objects; convert flat zh-TW keys to nested structure
-import flatMessages from "@/messages/zh-TW.json"
-
-type NestedMessages = Record<string, Record<string, string>>
-const messages: NestedMessages = Object.entries(flatMessages).reduce(
-  (acc, [key, value]) => {
-    const [ns, ...rest] = key.split(".")
-    if (!ns) return acc
-    if (!acc[ns]) acc[ns] = {}
-    acc[ns][rest.join(".")] = value
-    return acc
-  },
-  {} as NestedMessages,
-)
+import messages from "@/messages/zh-TW.json"
 
 const pushMock = vi.fn()
 const logoutMutateMock = vi.fn()

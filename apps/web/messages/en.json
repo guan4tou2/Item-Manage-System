@@ -1,29 +1,45 @@
 {
-  "nav.dashboard": "Dashboard",
-  "nav.items": "Items",
-  "nav.lists": "Lists",
-  "nav.settings": "Settings",
-  "menu.profile": "Profile",
-  "menu.language": "Language",
-  "menu.theme": "Theme",
-  "menu.logout": "Log out",
-  "theme.system": "System",
-  "theme.light": "Light",
-  "theme.dark": "Dark",
-  "locale.zh-TW": "繁體中文",
-  "locale.en": "English",
-  "placeholder.comingSoon": "This page will be implemented in subproject #{n}",
-  "login.title": "Sign in",
-  "login.username": "Username",
-  "login.password": "Password",
-  "login.submit": "Sign in",
-  "login.submitting": "Signing in…",
-  "login.error": "Invalid credentials",
-  "landing.tagline": "Home item management",
-  "landing.ctaLogin": "Sign in",
-  "landing.ctaDocs": "API docs",
   "appName": "Item Management System v2",
-  "a11y.openMenu": "Open menu",
-  "a11y.closeMenu": "Close menu",
-  "a11y.userMenu": "User menu"
+  "nav": {
+    "dashboard": "Dashboard",
+    "items": "Items",
+    "lists": "Lists",
+    "settings": "Settings"
+  },
+  "menu": {
+    "profile": "Profile",
+    "language": "Language",
+    "theme": "Theme",
+    "logout": "Log out"
+  },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "locale": {
+    "zh-TW": "繁體中文",
+    "en": "English"
+  },
+  "placeholder": {
+    "comingSoon": "This page will be implemented in subproject #{n}"
+  },
+  "login": {
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "error": "Invalid credentials"
+  },
+  "landing": {
+    "tagline": "Home item management",
+    "ctaLogin": "Sign in",
+    "ctaDocs": "API docs"
+  },
+  "a11y": {
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "userMenu": "User menu"
+  }
 }
