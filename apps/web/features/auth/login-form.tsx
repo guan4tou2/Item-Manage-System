@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
-import { ApiError } from "@/lib/api/client"
 import { useLogin } from "@/lib/auth/use-auth"
 
 export function LoginForm() {
@@ -22,12 +21,9 @@ export function LoginForm() {
     try {
       await login.mutateAsync({ username, password })
       router.push("/dashboard")
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(t("login.error"))
-      } else {
-        setError(t("login.error"))
-      }
+    } catch {
+      // Coarse-grained for now — refine once we have distinct error copy
+      setError(t("login.error"))
     }
   }
 
