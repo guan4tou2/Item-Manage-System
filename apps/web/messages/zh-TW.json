@@ -4,7 +4,8 @@
     "dashboard": "儀表板",
     "items": "物品",
     "lists": "清單",
-    "settings": "設定"
+    "settings": "設定",
+    "taxonomy": "分類與位置"
   },
   "menu": {
     "profile": "個人設定",
@@ -41,5 +42,79 @@
     "openMenu": "開啟選單",
     "closeMenu": "關閉選單",
     "userMenu": "使用者選單"
+  },
+  "items": {
+    "list": {
+      "searchPlaceholder": "搜尋物品名稱或描述…",
+      "new": "新增物品",
+      "empty": "還沒有任何物品",
+      "emptyCta": "建立第一件物品",
+      "noResults": "沒有符合條件的物品",
+      "showFilters": "篩選",
+      "hideFilters": "收合篩選",
+      "clearFilters": "清除篩選",
+      "columnName": "名稱",
+      "columnCategory": "分類",
+      "columnLocation": "位置",
+      "columnQuantity": "數量",
+      "columnTags": "標籤",
+      "page": "第 {page} 頁 / 共 {total} 頁"
+    },
+    "form": {
+      "name": "名稱",
+      "description": "描述",
+      "category": "分類",
+      "location": "位置",
+      "quantity": "數量",
+      "notes": "備註",
+      "tags": "標籤",
+      "tagsPlaceholder": "輸入後按 Enter 新增",
+      "save": "儲存",
+      "saving": "儲存中…",
+      "cancel": "取消",
+      "noneOption": "(未分類)",
+      "validation": {
+        "nameRequired": "請輸入名稱",
+        "quantityMin": "數量不可小於 0"
+      }
+    },
+    "detail": {
+      "edit": "編輯",
+      "delete": "刪除",
+      "confirmDelete": "確定要刪除此物品?",
+      "confirmDeleteBody": "物品將被標記為已刪除,之後無法從列表看到。",
+      "deleted": "已刪除",
+      "notFound": "找不到此物品"
+    },
+    "toast": {
+      "created": "已建立",
+      "updated": "已更新",
+      "deleted": "已刪除"
+    }
+  },
+  "taxonomy": {
+    "title": "分類與位置",
+    "tabs": {
+      "categories": "分類",
+      "locations": "位置"
+    },
+    "categories": {
+      "add": "新增分類",
+      "name": "名稱",
+      "parent": "父分類",
+      "noParent": "(頂層)",
+      "empty": "尚未建立分類",
+      "delete": "刪除",
+      "confirmDelete": "確定刪除此分類?子分類會變為頂層。"
+    },
+    "locations": {
+      "add": "新增位置",
+      "floor": "樓層",
+      "room": "房間",
+      "zone": "區域",
+      "empty": "尚未建立位置",
+      "delete": "刪除",
+      "confirmDelete": "確定刪除此位置?"
+    }
   }
 }
