@@ -1,4 +1,5 @@
 import type { paths } from '@ims/api-types'
+import { useAuthStore } from '@/lib/auth/auth-store'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? '/api'
 
@@ -23,6 +24,10 @@ export async function apiFetch(path: string, init: RequestInitWithToken = {}): P
   })
   if (!response.ok) {
     const body = await response.json().catch(() => null)
+    if (response.status === 401) {
+      // Token is actually invalid → clear store (cookie-sync subscriber will clear the cookie)
+      useAuthStore.getState().clear()
+    }
     throw new ApiError(response.status, body)
   }
   return response
