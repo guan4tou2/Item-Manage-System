@@ -71,6 +71,14 @@ class TestItemList:
         assert body["per_page"] == 2
         assert len(body["items"]) == 2
 
+    async def test_per_page_upper_bound_422(self, client, auth_headers):
+        resp = await client.get("/api/items?per_page=101", headers=auth_headers)
+        assert resp.status_code == 422
+
+    async def test_list_unauthenticated_401(self, client):
+        resp = await client.get("/api/items")
+        assert resp.status_code == 401
+
 
 class TestItemGet:
     async def test_not_found_404(self, client, auth_headers):
@@ -125,6 +133,28 @@ class TestItemUpdate:
         )
         assert sorted(t["name"] for t in resp.json()["tags"]) == ["b", "c"]
 
+    async def test_other_user_cannot_patch_returns_404(self, client):
+        await client.post("/api/auth/register", json={
+            "email": "a@t.io", "username": "usr_a", "password": "secret1234"})
+        tok_a = (await client.post("/api/auth/login", json={
+            "username": "usr_a", "password": "secret1234"})).json()["access_token"]
+        created = await client.post(
+            "/api/items",
+            headers={"Authorization": f"Bearer {tok_a}"},
+            json={"name": "only a"},
+        )
+        item_id = created.json()["id"]
+        await client.post("/api/auth/register", json={
+            "email": "b@t.io", "username": "usr_b", "password": "secret1234"})
+        tok_b = (await client.post("/api/auth/login", json={
+            "username": "usr_b", "password": "secret1234"})).json()["access_token"]
+        resp = await client.patch(
+            f"/api/items/{item_id}",
+            headers={"Authorization": f"Bearer {tok_b}"},
+            json={"name": "hacked"},
+        )
+        assert resp.status_code == 404
+
 
 class TestItemDelete:
     async def test_soft_delete(self, client, auth_headers):
@@ -137,3 +167,24 @@ class TestItemDelete:
         assert get_resp.status_code == 404
         list_resp = await client.get("/api/items", headers=auth_headers)
         assert list_resp.json()["total"] == 0
+
+    async def test_other_user_cannot_delete_returns_404(self, client):
+        await client.post("/api/auth/register", json={
+            "email": "a@t.io", "username": "usr_a", "password": "secret1234"})
+        tok_a = (await client.post("/api/auth/login", json={
+            "username": "usr_a", "password": "secret1234"})).json()["access_token"]
+        created = await client.post(
+            "/api/items",
+            headers={"Authorization": f"Bearer {tok_a}"},
+            json={"name": "only a"},
+        )
+        item_id = created.json()["id"]
+        await client.post("/api/auth/register", json={
+            "email": "b@t.io", "username": "usr_b", "password": "secret1234"})
+        tok_b = (await client.post("/api/auth/login", json={
+            "username": "usr_b", "password": "secret1234"})).json()["access_token"]
+        resp = await client.delete(
+            f"/api/items/{item_id}",
+            headers={"Authorization": f"Bearer {tok_b}"},
+        )
+        assert resp.status_code == 404
