@@ -4,6 +4,7 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.models.category import Category
 from app.models.item import Item
@@ -35,3 +36,24 @@ async def overview(session: AsyncSession, owner_id: UUID) -> dict[str, int]:
         "total_locations": int(total_locations),
         "total_tags": int(total_tags),
     }
+
+
+async def by_category(session: AsyncSession, owner_id: UUID) -> list[dict]:
+    cat = aliased(Category)
+    stmt = (
+        select(
+            Item.category_id,
+            cat.name,
+            func.count(Item.id).label("count"),
+        )
+        .select_from(Item)
+        .outerjoin(cat, cat.id == Item.category_id)
+        .where(Item.owner_id == owner_id, Item.is_deleted.is_(False))
+        .group_by(Item.category_id, cat.name)
+        .order_by(func.count(Item.id).desc())
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {"category_id": r.category_id, "name": r.name, "count": int(r.count)}
+        for r in rows
+    ]

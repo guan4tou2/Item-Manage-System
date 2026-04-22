@@ -64,3 +64,38 @@ async def test_overview_counts_taxonomy(db_session, two_users):
     assert result["total_categories"] == 1
     assert result["total_locations"] == 1
     assert result["total_tags"] == 1
+
+
+async def test_by_category_groups_and_includes_null_bucket(db_session, two_users):
+    alice, _ = two_users
+    cat_a = Category(owner_id=alice.id, name="A")
+    cat_b = Category(owner_id=alice.id, name="B")
+    db_session.add_all([cat_a, cat_b])
+    await db_session.commit()
+    db_session.add_all([
+        Item(owner_id=alice.id, name="i1", category_id=cat_a.id, quantity=1),
+        Item(owner_id=alice.id, name="i2", category_id=cat_a.id, quantity=1),
+        Item(owner_id=alice.id, name="i3", category_id=cat_b.id, quantity=1),
+        Item(owner_id=alice.id, name="i4", quantity=1),
+        Item(owner_id=alice.id, name="i5", quantity=1, is_deleted=True),
+    ])
+    await db_session.commit()
+
+    rows = await stats_repository.by_category(db_session, alice.id)
+    assert rows[0] == {"category_id": cat_a.id, "name": "A", "count": 2}
+    rest = sorted(rows[1:], key=lambda r: (r["name"] is None, r["name"] or ""))
+    assert rest == [
+        {"category_id": cat_b.id, "name": "B", "count": 1},
+        {"category_id": None, "name": None, "count": 1},
+    ]
+
+
+async def test_by_category_owner_isolation(db_session, two_users):
+    alice, bob = two_users
+    cat = Category(owner_id=bob.id, name="bob-cat")
+    db_session.add(cat)
+    await db_session.commit()
+    db_session.add(Item(owner_id=bob.id, name="x", category_id=cat.id, quantity=1))
+    await db_session.commit()
+    rows = await stats_repository.by_category(db_session, alice.id)
+    assert rows == []
