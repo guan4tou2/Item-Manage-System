@@ -4,12 +4,12 @@ from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, selectinload
 
 from app.models.category import Category
 from app.models.item import Item
 from app.models.location import Location
-from app.models.tag import Tag
+from app.models.tag import Tag, item_tags
 
 
 async def overview(session: AsyncSession, owner_id: UUID) -> dict[str, int]:
@@ -89,3 +89,40 @@ async def by_location(session: AsyncSession, owner_id: UUID) -> list[dict]:
             "count": int(r.count),
         })
     return out
+
+
+async def by_tag(session: AsyncSession, owner_id: UUID, *, limit: int) -> list[dict]:
+    stmt = (
+        select(Tag.id, Tag.name, func.count(item_tags.c.item_id).label("count"))
+        .select_from(Tag)
+        .join(item_tags, item_tags.c.tag_id == Tag.id)
+        .join(Item, Item.id == item_tags.c.item_id)
+        .where(
+            Tag.owner_id == owner_id,
+            Item.owner_id == owner_id,
+            Item.is_deleted.is_(False),
+        )
+        .group_by(Tag.id, Tag.name)
+        .order_by(func.count(item_tags.c.item_id).desc())
+        .limit(limit)
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {"tag_id": r.id, "name": r.name, "count": int(r.count)}
+        for r in rows
+    ]
+
+
+async def recent_items(session: AsyncSession, owner_id: UUID, *, limit: int) -> list[Item]:
+    stmt = (
+        select(Item)
+        .where(Item.owner_id == owner_id, Item.is_deleted.is_(False))
+        .order_by(Item.created_at.desc())
+        .limit(limit)
+        .options(
+            selectinload(Item.tags),
+            selectinload(Item.category),
+            selectinload(Item.location),
+        )
+    )
+    return list((await session.execute(stmt)).scalars().all())

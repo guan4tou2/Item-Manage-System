@@ -124,3 +124,63 @@ async def test_by_location_composes_label_and_includes_null(db_session, two_user
         "location_id": loc_partial.id, "label": "2F / 陽台", "count": 1,
     }
     assert by_id[None] == {"location_id": None, "label": None, "count": 1}
+
+
+async def test_by_tag_counts_usage_desc_and_respects_limit(db_session, two_users):
+    alice, _ = two_users
+    t_red = Tag(owner_id=alice.id, name="red")
+    t_blue = Tag(owner_id=alice.id, name="blue")
+    t_unused = Tag(owner_id=alice.id, name="unused")
+    db_session.add_all([t_red, t_blue, t_unused])
+    await db_session.commit()
+    i1 = Item(owner_id=alice.id, name="i1", quantity=1)
+    i2 = Item(owner_id=alice.id, name="i2", quantity=1)
+    i3 = Item(owner_id=alice.id, name="i3", quantity=1)
+    i1.tags = [t_red, t_blue]
+    i2.tags = [t_red]
+    i3.tags = [t_red]
+    db_session.add_all([i1, i2, i3])
+    await db_session.commit()
+
+    rows = await stats_repository.by_tag(db_session, alice.id, limit=10)
+    names = [(r["name"], r["count"]) for r in rows]
+    assert names == [("red", 3), ("blue", 1)]
+
+    limited = await stats_repository.by_tag(db_session, alice.id, limit=1)
+    assert len(limited) == 1
+    assert limited[0]["name"] == "red"
+
+
+async def test_by_tag_excludes_soft_deleted_items(db_session, two_users):
+    alice, _ = two_users
+    t = Tag(owner_id=alice.id, name="x")
+    db_session.add(t)
+    await db_session.commit()
+    i = Item(owner_id=alice.id, name="gone", quantity=1, is_deleted=True)
+    i.tags = [t]
+    db_session.add(i)
+    await db_session.commit()
+    rows = await stats_repository.by_tag(db_session, alice.id, limit=10)
+    assert rows == []
+
+
+async def test_recent_items_desc_by_created_at(db_session, two_users):
+    from datetime import datetime, timedelta, timezone
+    alice, _ = two_users
+    now = datetime.now(timezone.utc)
+    older = Item(owner_id=alice.id, name="old", quantity=1, created_at=now - timedelta(hours=2))
+    newer = Item(owner_id=alice.id, name="new", quantity=1, created_at=now - timedelta(hours=1))
+    db_session.add_all([older, newer])
+    await db_session.commit()
+
+    rows = await stats_repository.recent_items(db_session, alice.id, limit=5)
+    assert [r.name for r in rows] == ["new", "old"]
+
+
+async def test_recent_items_limit(db_session, two_users):
+    alice, _ = two_users
+    for i in range(3):
+        db_session.add(Item(owner_id=alice.id, name=f"i{i}", quantity=1))
+    await db_session.commit()
+    rows = await stats_repository.recent_items(db_session, alice.id, limit=2)
+    assert len(rows) == 2
