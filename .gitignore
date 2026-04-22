@@ -46,6 +46,9 @@ tmp/
 # Planning files
 .sisyphus/
 
+# Claude Code worktrees and local state
+.claude/
+
 # v2 monorepo
 node_modules/
 .next/
