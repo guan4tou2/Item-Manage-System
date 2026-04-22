@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation"
 import { useEffect, type ReactNode } from "react"
 
-import { useAccessToken } from "@/lib/auth/use-auth"
+import { AppShell } from "@/components/shell/app-shell"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAccessToken } from "@/lib/auth/use-auth"
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const token = useAccessToken()
@@ -25,6 +26,5 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     )
   }
 
-  // Note: AppShell will replace this wrapper in Task 16
-  return <div className="min-h-screen">{children}</div>
+  return <AppShell>{children}</AppShell>
 }
