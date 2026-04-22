@@ -1,17 +1,19 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 
-import { Button } from '@/components/ui/button'
-import { ApiError } from '@/lib/api/client'
-import { useLogin } from '@/lib/auth/use-auth'
+import { Button } from "@/components/ui/button"
+import { ApiError } from "@/lib/api/client"
+import { useLogin } from "@/lib/auth/use-auth"
 
 export function LoginForm() {
+  const t = useTranslations()
   const router = useRouter()
   const login = useLogin()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -19,21 +21,22 @@ export function LoginForm() {
     setError(null)
     try {
       await login.mutateAsync({ username, password })
-      router.push('/')
+      router.push("/dashboard")
     } catch (err) {
       if (err instanceof ApiError) {
-        setError('帳號或密碼錯誤')
+        setError(t("login.error"))
       } else {
-        setError('登入失敗，請稍後再試')
+        setError(t("login.error"))
       }
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="mx-auto flex w-full max-w-sm flex-col gap-4">
+      <h1 className="text-2xl font-bold">{t("login.title")}</h1>
       <div className="flex flex-col gap-1">
         <label htmlFor="username" className="text-sm font-medium">
-          使用者名稱
+          {t("login.username")}
         </label>
         <input
           id="username"
@@ -47,7 +50,7 @@ export function LoginForm() {
       </div>
       <div className="flex flex-col gap-1">
         <label htmlFor="password" className="text-sm font-medium">
-          密碼
+          {t("login.password")}
         </label>
         <input
           id="password"
@@ -66,7 +69,7 @@ export function LoginForm() {
         </p>
       )}
       <Button type="submit" disabled={login.isPending}>
-        {login.isPending ? '登入中…' : '登入'}
+        {login.isPending ? t("login.submitting") : t("login.submit")}
       </Button>
     </form>
   )
