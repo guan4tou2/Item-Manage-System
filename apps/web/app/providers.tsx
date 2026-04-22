@@ -6,6 +6,7 @@ import { useState, type ReactNode } from "react"
 
 import { useTokenCookieSync } from "@/lib/auth/cookie-sync"
 import { Toaster } from "@/components/ui/sonner"
+import { LocaleSync } from "@/lib/locale/locale-sync"
 import { ThemeSync } from "@/lib/theme/theme-sync"
 
 function GlobalSyncers() {
@@ -36,6 +37,7 @@ export function Providers({ children }: { children: ReactNode }) {
       >
         <GlobalSyncers />
         <ThemeSync />
+        <LocaleSync />
         {children}
         <Toaster richColors closeButton />
       </ThemeProvider>
