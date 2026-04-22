@@ -1,24 +1,33 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect, type ReactNode } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 
 import { AppShell } from "@/components/shell/app-shell"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuthStore } from "@/lib/auth/auth-store"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const token = useAccessToken()
   const router = useRouter()
+  const [hydrated, setHydrated] = useState(() => useAuthStore.persist.hasHydrated())
 
   useEffect(() => {
-    // Second-layer guard: if token clears during SPA navigation, redirect
-    if (token === null) {
+    if (hydrated) return
+    return useAuthStore.persist.onFinishHydration(() => setHydrated(true))
+  }, [hydrated])
+
+  useEffect(() => {
+    // Second-layer guard: once persist finishes, if we still have no token,
+    // redirect. Only runs post-hydration so cold loads with a valid cookie
+    // aren't bounced to /login.
+    if (hydrated && token === null) {
       router.replace("/login")
     }
-  }, [token, router])
+  }, [hydrated, token, router])
 
-  if (!token) {
+  if (!hydrated || !token) {
     return (
       <main className="flex min-h-screen items-center justify-center p-6">
         <Skeleton className="h-32 w-full max-w-md" />

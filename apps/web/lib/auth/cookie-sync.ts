@@ -15,16 +15,32 @@ export function writeTokenCookie(hasToken: boolean): void {
 }
 
 /**
- * 於 mount 當下同步一次目前 token 狀態到 cookie，並訂閱後續變化。
- * 回傳值為 unsubscribe function（由 useEffect cleanup 呼叫）。
+ * 同步目前 token 狀態到 cookie，並訂閱後續變化。
+ *
+ * 必須等 Zustand persist 完成 localStorage 重建後才寫 cookie，
+ * 否則 cold load 會誤把還沒 rehydrate 的 null token 當成登出狀態，
+ * 把 cookie 清掉並害 middleware 把使用者踢回 /login。
  */
 export function useTokenCookieSync(): void {
   useEffect(() => {
-    writeTokenCookie(Boolean(useAuthStore.getState().accessToken))
-    return useAuthStore.subscribe((state, prev) => {
+    function syncNow(): void {
+      writeTokenCookie(Boolean(useAuthStore.getState().accessToken))
+    }
+
+    // 若已經 rehydrate（熱路徑／後續 mount），立即寫一次
+    if (useAuthStore.persist.hasHydrated()) {
+      syncNow()
+    }
+
+    const unsubHydration = useAuthStore.persist.onFinishHydration(syncNow)
+    const unsubStore = useAuthStore.subscribe((state, prev) => {
       if (state.accessToken !== prev.accessToken) {
         writeTokenCookie(Boolean(state.accessToken))
       }
     })
+    return () => {
+      unsubHydration()
+      unsubStore()
+    }
   }, [])
 }

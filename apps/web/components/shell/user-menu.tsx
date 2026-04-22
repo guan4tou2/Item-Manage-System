@@ -40,8 +40,14 @@ export function UserMenu() {
   const { locale, setLocale, isSyncing } = useLocale()
 
   async function handleLogout() {
-    await logout.mutateAsync()
-    router.push("/login")
+    try {
+      await logout.mutateAsync()
+    } finally {
+      // Forced local logout: always redirect even if API call fails.
+      // Server-side revocation best-effort; cookie/store clear is handled
+      // by useLogout's onSuccess and apiFetch's 401 handler.
+      router.push("/login")
+    }
   }
 
   return (

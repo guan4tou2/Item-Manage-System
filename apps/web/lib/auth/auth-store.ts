@@ -1,7 +1,9 @@
-import { create } from 'zustand'
-import type { paths } from '@ims/api-types'
+import { create } from "zustand"
+import { createJSONStorage, persist } from "zustand/middleware"
 
-type UserPublic = paths['/api/auth/me']['get']['responses']['200']['content']['application/json']
+import type { paths } from "@ims/api-types"
+
+type UserPublic = paths["/api/auth/me"]["get"]["responses"]["200"]["content"]["application/json"]
 
 interface AuthState {
   accessToken: string | null
@@ -11,10 +13,19 @@ interface AuthState {
   clear: () => void
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
-  user: null,
-  setAuth: (accessToken, user) => set({ accessToken, user }),
-  setAccessToken: (accessToken) => set({ accessToken }),
-  clear: () => set({ accessToken: null, user: null }),
-}))
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      accessToken: null,
+      user: null,
+      setAuth: (accessToken, user) => set({ accessToken, user }),
+      setAccessToken: (accessToken) => set({ accessToken }),
+      clear: () => set({ accessToken: null, user: null }),
+    }),
+    {
+      name: "ims-auth",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ accessToken: state.accessToken, user: state.user }),
+    },
+  ),
+)
