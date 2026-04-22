@@ -11,7 +11,7 @@ export function normalizeLocale(value: string | undefined | null): Locale {
   if (!value) return defaultLocale
   if (isLocale(value)) return value
   // Accept-Language may look like "en-US,en;q=0.9"
-  const primary = value.split(",")[0]?.trim().toLowerCase() ?? ""
+  const primary = value.split(",")[0]?.split(";")[0]?.trim().toLowerCase() ?? ""
   if (primary.startsWith("zh")) return "zh-TW"
   if (primary.startsWith("en")) return "en"
   return defaultLocale
