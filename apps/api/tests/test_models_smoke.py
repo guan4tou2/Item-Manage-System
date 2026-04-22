@@ -43,3 +43,14 @@ async def test_category_tag_location_roundtrip(db_session, make_user):
     assert item.category.name == "tools"
     assert item.location.floor == "1F"
     assert [t.name for t in item.tags] == ["sharp"]
+
+
+async def test_item_quantity_check_constraint(db_session, make_user):
+    import sqlalchemy.exc
+
+    user = await make_user("smoke3")
+    item = Item(owner_id=user.id, name="broken", quantity=-1)
+    db_session.add(item)
+    with pytest.raises(sqlalchemy.exc.IntegrityError):
+        await db_session.commit()
+    await db_session.rollback()
