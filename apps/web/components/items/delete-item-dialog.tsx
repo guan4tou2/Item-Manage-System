@@ -19,7 +19,7 @@ export function DeleteItemDialog({ onConfirm, pending }: Props) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive">{t("items.detail.delete")}</Button>
+        <Button variant="destructive" disabled={pending}>{t("items.detail.delete")}</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
