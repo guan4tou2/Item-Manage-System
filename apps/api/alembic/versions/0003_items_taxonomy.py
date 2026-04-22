@@ -25,9 +25,24 @@ def upgrade() -> None:
         sa.Column("owner_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
         sa.Column("name", sa.String(length=100), nullable=False),
         sa.Column("parent_id", sa.Integer(), sa.ForeignKey("categories.id", ondelete="SET NULL"), nullable=True),
-        sa.UniqueConstraint("owner_id", "parent_id", "name", name="uq_categories_owner_parent_name"),
     )
     op.create_index("ix_categories_owner_id", "categories", ["owner_id"])
+    op.create_index(
+        "uq_categories_owner_root_name",
+        "categories",
+        ["owner_id", "name"],
+        unique=True,
+        postgresql_where=sa.text("parent_id IS NULL"),
+        sqlite_where=sa.text("parent_id IS NULL"),
+    )
+    op.create_index(
+        "uq_categories_owner_parent_name",
+        "categories",
+        ["owner_id", "parent_id", "name"],
+        unique=True,
+        postgresql_where=sa.text("parent_id IS NOT NULL"),
+        sqlite_where=sa.text("parent_id IS NOT NULL"),
+    )
 
     op.create_table(
         "locations",
@@ -80,5 +95,7 @@ def downgrade() -> None:
     op.drop_table("tags")
     op.drop_index("ix_locations_owner_id", table_name="locations")
     op.drop_table("locations")
+    op.drop_index("uq_categories_owner_parent_name", table_name="categories")
+    op.drop_index("uq_categories_owner_root_name", table_name="categories")
     op.drop_index("ix_categories_owner_id", table_name="categories")
     op.drop_table("categories")
