@@ -55,7 +55,6 @@ node_modules/
 .turbo/
 dist/
 .pnpm-store/
-packages/api-types/src/
 
 # Python v2
 apps/api/.venv/
