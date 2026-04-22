@@ -5,7 +5,45 @@
     "items": "物品",
     "lists": "清單",
     "settings": "設定",
+    "statistics": "統計",
     "taxonomy": "分類與位置"
+  },
+  "dashboard": {
+    "title": "儀表板",
+    "overview": {
+      "items": "物品",
+      "quantity": "總數量",
+      "categories": "分類",
+      "locations": "位置"
+    },
+    "recent": {
+      "title": "最近物品",
+      "viewAll": "查看全部",
+      "empty": "尚無物品"
+    },
+    "quickLinks": {
+      "items": "管理物品",
+      "stats": "查看統計",
+      "taxonomy": "設定分類與位置"
+    }
+  },
+  "stats": {
+    "title": "統計",
+    "byCategory": {
+      "title": "依分類",
+      "uncategorized": "未分類"
+    },
+    "byLocation": {
+      "title": "依位置",
+      "unplaced": "未定位"
+    },
+    "byTag": {
+      "title": "熱門標籤"
+    },
+    "empty": {
+      "title": "尚無資料",
+      "cta": "先新增一些物品"
+    }
   },
   "menu": {
     "profile": "個人設定",

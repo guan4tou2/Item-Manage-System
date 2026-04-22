@@ -5,7 +5,45 @@
     "items": "Items",
     "lists": "Lists",
     "settings": "Settings",
+    "statistics": "Statistics",
     "taxonomy": "Taxonomy"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": {
+      "items": "Items",
+      "quantity": "Total quantity",
+      "categories": "Categories",
+      "locations": "Locations"
+    },
+    "recent": {
+      "title": "Recent items",
+      "viewAll": "View all",
+      "empty": "No items yet"
+    },
+    "quickLinks": {
+      "items": "Manage items",
+      "stats": "View statistics",
+      "taxonomy": "Configure categories & locations"
+    }
+  },
+  "stats": {
+    "title": "Statistics",
+    "byCategory": {
+      "title": "By category",
+      "uncategorized": "Uncategorized"
+    },
+    "byLocation": {
+      "title": "By location",
+      "unplaced": "Unplaced"
+    },
+    "byTag": {
+      "title": "Top tags"
+    },
+    "empty": {
+      "title": "No data yet",
+      "cta": "Create some items first"
+    }
   },
   "menu": {
     "profile": "Profile",
