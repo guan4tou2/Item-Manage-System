@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useLocale as useNextIntlLocale } from "next-intl"
 
@@ -26,13 +27,16 @@ export function useLocale(): {
   const update = useUpdatePreferences()
   const router = useRouter()
 
-  const setLocale = (next: Locale) => {
-    writeLocaleCookie(next)
-    if (token) {
-      update.mutate({ language: next })
-    }
-    router.refresh()
-  }
+  const setLocale = useCallback(
+    (next: Locale) => {
+      writeLocaleCookie(next)
+      if (token) {
+        update.mutate({ language: next })
+      }
+      router.refresh()
+    },
+    [token, update, router],
+  )
 
   return { locale, setLocale, isSyncing: update.isPending }
 }
