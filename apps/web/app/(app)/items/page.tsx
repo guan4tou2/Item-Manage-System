@@ -1,11 +1,9 @@
 import { useTranslations } from "next-intl"
 
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbList,
-  BreadcrumbPage,
+  Breadcrumb, BreadcrumbItem, BreadcrumbList, BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
+import { ItemsListClient } from "./items-list-client"
 
 export default function ItemsPage() {
   const t = useTranslations()
@@ -19,9 +17,7 @@ export default function ItemsPage() {
         </BreadcrumbList>
       </Breadcrumb>
       <h1 className="text-2xl font-semibold">{t("nav.items")}</h1>
-      <p className="text-muted-foreground">
-        {t("placeholder.comingSoon", { n: 3 })}
-      </p>
+      <ItemsListClient />
     </section>
   )
 }
