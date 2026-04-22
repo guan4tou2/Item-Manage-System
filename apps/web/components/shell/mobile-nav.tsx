@@ -1,9 +1,10 @@
 "use client"
 
+import type { Route } from "next"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { Menu } from "lucide-react"
-import { useState } from "react"
+import { useCallback, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,10 +22,13 @@ export function MobileNav() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
 
-  function onSelect(href: string) {
-    setOpen(false)
-    router.push(href as never)
-  }
+  const onSelect = useCallback(
+    (href: Route) => {
+      setOpen(false)
+      router.push(href)
+    },
+    [router],
+  )
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
