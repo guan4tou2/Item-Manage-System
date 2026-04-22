@@ -1,7 +1,7 @@
 "use client"
 
 import { X } from "lucide-react"
-import { useState, type KeyboardEvent } from "react"
+import { useId, useState, type KeyboardEvent } from "react"
 import { useTranslations } from "next-intl"
 
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +16,7 @@ interface Props {
 export function TagMultiSelect({ value, onChange, suggestions = [] }: Props) {
   const t = useTranslations()
   const [draft, setDraft] = useState("")
+  const listId = useId()
 
   const commit = () => {
     const cleaned = draft.trim().toLowerCase()
@@ -56,12 +57,13 @@ export function TagMultiSelect({ value, onChange, suggestions = [] }: Props) {
           onKeyDown={onKeyDown}
           onBlur={commit}
           placeholder={t("items.form.tagsPlaceholder")}
+          aria-label={t("items.form.tags")}
           className="h-7 flex-1 border-0 p-0 focus-visible:ring-0"
-          list="tag-suggestions"
+          list={listId}
         />
       </div>
       {suggestions.length > 0 && (
-        <datalist id="tag-suggestions">
+        <datalist id={listId}>
           {suggestions.filter((s) => !value.includes(s)).map((s) => (
             <option key={s} value={s} />
           ))}

@@ -75,6 +75,9 @@
       "noneOption": "(未分類)",
       "validation": {
         "nameRequired": "請輸入名稱",
+        "nameMax": "名稱不得超過 200 字元",
+        "quantityRequired": "請輸入數量",
+        "quantityInteger": "數量必須為整數",
         "quantityMin": "數量不可小於 0"
       }
     },

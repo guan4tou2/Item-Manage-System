@@ -15,11 +15,17 @@ import type { CategoryTreeNode } from "@/lib/api/categories"
 import type { LocationRead } from "@/lib/api/locations"
 
 export const itemFormSchema = z.object({
-  name: z.string().min(1).max(200),
+  name: z.string().min(1, "nameRequired").max(200, "nameMax"),
   description: z.string().optional(),
   category_id: z.number().nullable(),
   location_id: z.number().nullable(),
-  quantity: z.number().int().min(0),
+  quantity: z.preprocess(
+    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    z.coerce
+      .number({ required_error: "quantityRequired", invalid_type_error: "quantityRequired" })
+      .int("quantityInteger")
+      .min(0, "quantityMin"),
+  ),
   notes: z.string().optional(),
   tag_names: z.array(z.string()),
 })
@@ -66,7 +72,7 @@ export function ItemForm({
         <Input id="name" {...form.register("name")} />
         {form.formState.errors.name && (
           <p role="alert" className="mt-1 text-sm text-destructive">
-            {t("items.form.validation.nameRequired")}
+            {t(`items.form.validation.${form.formState.errors.name.message}`)}
           </p>
         )}
       </div>
@@ -118,11 +124,11 @@ export function ItemForm({
           id="quantity"
           type="number"
           min={0}
-          {...form.register("quantity", { valueAsNumber: true })}
+          {...form.register("quantity")}
         />
         {form.formState.errors.quantity && (
           <p role="alert" className="mt-1 text-sm text-destructive">
-            {t("items.form.validation.quantityMin")}
+            {t(`items.form.validation.${form.formState.errors.quantity.message}`)}
           </p>
         )}
       </div>
