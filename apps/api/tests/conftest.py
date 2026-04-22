@@ -9,7 +9,7 @@ os.environ["JWT_SECRET"] = "test-secret-do-not-use-in-prod"
 from app.db.base import Base  # noqa: E402
 from app.db.session import get_db  # noqa: E402
 from app.main import create_app  # noqa: E402
-from app.models import user as _user_model  # noqa: F401, E402
+import app.models  # noqa: F401, E402 — registers all ORM models with Base.metadata
 
 
 @pytest.fixture

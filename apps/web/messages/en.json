@@ -4,7 +4,8 @@
     "dashboard": "Dashboard",
     "items": "Items",
     "lists": "Lists",
-    "settings": "Settings"
+    "settings": "Settings",
+    "taxonomy": "Taxonomy"
   },
   "menu": {
     "profile": "Profile",
@@ -41,5 +42,85 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "userMenu": "User menu"
+  },
+  "items": {
+    "list": {
+      "searchPlaceholder": "Search items by name or description…",
+      "new": "New item",
+      "empty": "No items yet",
+      "emptyCta": "Create your first item",
+      "noResults": "No items match your filters",
+      "showFilters": "Filters",
+      "hideFilters": "Hide filters",
+      "clearFilters": "Clear filters",
+      "columnName": "Name",
+      "columnCategory": "Category",
+      "columnLocation": "Location",
+      "columnQuantity": "Qty",
+      "columnTags": "Tags",
+      "page": "Page {page} of {total}",
+      "previousPage": "Previous page",
+      "nextPage": "Next page"
+    },
+    "form": {
+      "name": "Name",
+      "description": "Description",
+      "category": "Category",
+      "location": "Location",
+      "quantity": "Quantity",
+      "notes": "Notes",
+      "tags": "Tags",
+      "tagsPlaceholder": "Type and press Enter",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "noneOption": "(None)",
+      "validation": {
+        "nameRequired": "Name is required",
+        "nameMax": "Name must be 200 characters or fewer",
+        "quantityRequired": "Quantity is required",
+        "quantityInteger": "Quantity must be a whole number",
+        "quantityMin": "Quantity cannot be negative"
+      }
+    },
+    "detail": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete this item?",
+      "confirmDeleteBody": "The item will be marked deleted and removed from lists.",
+      "deleted": "Deleted",
+      "notFound": "Item not found"
+    },
+    "toast": {
+      "created": "Created",
+      "updated": "Updated",
+      "deleted": "Deleted",
+      "saveFailed": "Could not save changes"
+    }
+  },
+  "taxonomy": {
+    "title": "Categories & Locations",
+    "tabs": {
+      "categories": "Categories",
+      "locations": "Locations"
+    },
+    "categories": {
+      "add": "Add category",
+      "name": "Name",
+      "parent": "Parent",
+      "noParent": "(Top level)",
+      "empty": "No categories yet",
+      "delete": "Delete",
+      "confirmDelete": "Delete this category? Children become top-level."
+    },
+    "locations": {
+      "add": "Add location",
+      "floor": "Floor",
+      "room": "Room",
+      "zone": "Zone",
+      "empty": "No locations yet",
+      "delete": "Delete",
+      "confirmDelete": "Delete this location?"
+    }
   }
 }
