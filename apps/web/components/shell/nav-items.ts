@@ -1,0 +1,15 @@
+import type { Route } from "next"
+
+export interface NavItem {
+  key: "dashboard" | "items" | "lists" | "settings"
+  href: Route
+  /** i18n key for label */
+  labelKey: string
+}
+
+export const NAV_ITEMS: readonly NavItem[] = [
+  { key: "dashboard", href: "/dashboard", labelKey: "nav.dashboard" },
+  { key: "items", href: "/items", labelKey: "nav.items" },
+  { key: "lists", href: "/lists", labelKey: "nav.lists" },
+  { key: "settings", href: "/settings", labelKey: "nav.settings" },
+]
