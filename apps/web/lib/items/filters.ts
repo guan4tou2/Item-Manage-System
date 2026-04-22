@@ -5,9 +5,15 @@ export function filtersFromSearchParams(params: URLSearchParams): ItemFilters {
   const q = params.get("q")
   if (q) f.q = q
   const cat = params.get("category")
-  if (cat) f.categoryId = Number(cat)
+  if (cat) {
+    const n = Number(cat)
+    if (!Number.isNaN(n)) f.categoryId = n
+  }
   const loc = params.get("location")
-  if (loc) f.locationId = Number(loc)
+  if (loc) {
+    const n = Number(loc)
+    if (!Number.isNaN(n)) f.locationId = n
+  }
   const tags = params.get("tags")
   if (tags) {
     f.tagIds = tags.split(",").filter(Boolean).map(Number).filter((n) => !Number.isNaN(n))

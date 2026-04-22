@@ -22,6 +22,11 @@ describe("filtersFromSearchParams", () => {
     const p = new URLSearchParams("page=0")
     expect(filtersFromSearchParams(p).page).toBe(1)
   })
+
+  it("ignores non-numeric category and location", () => {
+    const p = new URLSearchParams("category=abc&location=xyz")
+    expect(filtersFromSearchParams(p)).toEqual({})
+  })
 })
 
 describe("filtersToSearchParams", () => {

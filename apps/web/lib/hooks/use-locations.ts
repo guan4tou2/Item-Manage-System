@@ -30,7 +30,10 @@ export function useUpdateLocation() {
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: LocationUpdate }) =>
       api.updateLocation(id, body, token),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["locations"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["locations"] })
+      qc.invalidateQueries({ queryKey: ["items"] })
+    },
   })
 }
 

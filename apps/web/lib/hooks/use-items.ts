@@ -54,6 +54,9 @@ export function useDeleteItem() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => api.deleteItem(id, token),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["items"] }),
+    onSuccess: (_data, id) => {
+      qc.removeQueries({ queryKey: ["items", id] })
+      qc.invalidateQueries({ queryKey: ["items"] })
+    },
   })
 }

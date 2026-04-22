@@ -30,7 +30,10 @@ export function useUpdateCategory() {
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: CategoryUpdate }) =>
       api.updateCategory(id, body, token),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["categories"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["categories"] })
+      qc.invalidateQueries({ queryKey: ["items"] })
+    },
   })
 }
 
