@@ -981,6 +981,200 @@
           }
         }
       }
+    },
+    "/api/stats/overview": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Overview",
+        "operationId": "overview_api_stats_overview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewStats"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/stats/by-category": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "By Category",
+        "operationId": "by_category_api_stats_by_category_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CategoryBucket"
+                  },
+                  "type": "array",
+                  "title": "Response By Category Api Stats By Category Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/stats/by-location": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "By Location",
+        "operationId": "by_location_api_stats_by_location_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LocationBucket"
+                  },
+                  "type": "array",
+                  "title": "Response By Location Api Stats By Location Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/stats/by-tag": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "By Tag",
+        "operationId": "by_tag_api_stats_by_tag_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TagBucket"
+                  },
+                  "title": "Response By Tag Api Stats By Tag Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/recent": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Recent",
+        "operationId": "recent_api_stats_recent_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ItemRead"
+                  },
+                  "title": "Response Recent Api Stats Recent Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1002,6 +1196,43 @@
           "access_token"
         ],
         "title": "AccessTokenResponse"
+      },
+      "CategoryBucket": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category_id",
+          "name",
+          "count"
+        ],
+        "title": "CategoryBucket"
       },
       "CategoryCreate": {
         "properties": {
@@ -1424,6 +1655,43 @@
         "type": "object",
         "title": "ItemUpdate"
       },
+      "LocationBucket": {
+        "properties": {
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_id",
+          "label",
+          "count"
+        ],
+        "title": "LocationBucket"
+      },
       "LocationCreate": {
         "properties": {
           "floor": {
@@ -1567,6 +1835,39 @@
         ],
         "title": "LoginRequest"
       },
+      "OverviewStats": {
+        "properties": {
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items"
+          },
+          "total_quantity": {
+            "type": "integer",
+            "title": "Total Quantity"
+          },
+          "total_categories": {
+            "type": "integer",
+            "title": "Total Categories"
+          },
+          "total_locations": {
+            "type": "integer",
+            "title": "Total Locations"
+          },
+          "total_tags": {
+            "type": "integer",
+            "title": "Total Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_items",
+          "total_quantity",
+          "total_categories",
+          "total_locations",
+          "total_tags"
+        ],
+        "title": "OverviewStats"
+      },
       "PreferencesRead": {
         "properties": {
           "theme": {
@@ -1658,6 +1959,29 @@
           "password"
         ],
         "title": "RegisterRequest"
+      },
+      "TagBucket": {
+        "properties": {
+          "tag_id": {
+            "type": "integer",
+            "title": "Tag Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tag_id",
+          "name",
+          "count"
+        ],
+        "title": "TagBucket"
       },
       "TagRead": {
         "properties": {
