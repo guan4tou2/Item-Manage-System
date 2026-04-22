@@ -247,6 +247,91 @@ export interface paths {
         patch: operations["update_item_api_items__item_id__patch"];
         trace?: never;
     };
+    "/api/stats/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overview */
+        get: operations["overview_api_stats_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/by-category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** By Category */
+        get: operations["by_category_api_stats_by_category_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/by-location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** By Location */
+        get: operations["by_location_api_stats_by_location_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/by-tag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** By Tag */
+        get: operations["by_tag_api_stats_by_tag_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/recent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent */
+        get: operations["recent_api_stats_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -260,6 +345,15 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** CategoryBucket */
+        CategoryBucket: {
+            /** Category Id */
+            category_id: number | null;
+            /** Name */
+            name: string | null;
+            /** Count */
+            count: number;
         };
         /** CategoryCreate */
         CategoryCreate: {
@@ -381,6 +475,15 @@ export interface components {
             /** Tag Names */
             tag_names?: string[] | null;
         };
+        /** LocationBucket */
+        LocationBucket: {
+            /** Location Id */
+            location_id: number | null;
+            /** Label */
+            label: string | null;
+            /** Count */
+            count: number;
+        };
         /** LocationCreate */
         LocationCreate: {
             /** Floor */
@@ -416,6 +519,19 @@ export interface components {
             username: string;
             /** Password */
             password: string;
+        };
+        /** OverviewStats */
+        OverviewStats: {
+            /** Total Items */
+            total_items: number;
+            /** Total Quantity */
+            total_quantity: number;
+            /** Total Categories */
+            total_categories: number;
+            /** Total Locations */
+            total_locations: number;
+            /** Total Tags */
+            total_tags: number;
         };
         /** PreferencesRead */
         PreferencesRead: {
@@ -454,6 +570,15 @@ export interface components {
             username: string;
             /** Password */
             password: string;
+        };
+        /** TagBucket */
+        TagBucket: {
+            /** Tag Id */
+            tag_id: number;
+            /** Name */
+            name: string;
+            /** Count */
+            count: number;
         };
         /** TagRead */
         TagRead: {
@@ -1141,6 +1266,128 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_stats_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverviewStats"];
+                };
+            };
+        };
+    };
+    by_category_api_stats_by_category_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryBucket"][];
+                };
+            };
+        };
+    };
+    by_location_api_stats_by_location_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationBucket"][];
+                };
+            };
+        };
+    };
+    by_tag_api_stats_by_tag_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagBucket"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recent_api_stats_recent_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemRead"][];
                 };
             };
             /** @description Validation Error */
