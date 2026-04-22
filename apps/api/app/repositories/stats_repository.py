@@ -57,3 +57,35 @@ async def by_category(session: AsyncSession, owner_id: UUID) -> list[dict]:
         {"category_id": r.category_id, "name": r.name, "count": int(r.count)}
         for r in rows
     ]
+
+
+async def by_location(session: AsyncSession, owner_id: UUID) -> list[dict]:
+    loc = aliased(Location)
+    stmt = (
+        select(
+            Item.location_id,
+            loc.floor,
+            loc.room,
+            loc.zone,
+            func.count(Item.id).label("count"),
+        )
+        .select_from(Item)
+        .outerjoin(loc, loc.id == Item.location_id)
+        .where(Item.owner_id == owner_id, Item.is_deleted.is_(False))
+        .group_by(Item.location_id, loc.floor, loc.room, loc.zone)
+        .order_by(func.count(Item.id).desc())
+    )
+    rows = (await session.execute(stmt)).all()
+    out = []
+    for r in rows:
+        if r.location_id is None:
+            label = None
+        else:
+            parts = [p for p in (r.floor, r.room, r.zone) if p]
+            label = " / ".join(parts) if parts else None
+        out.append({
+            "location_id": r.location_id,
+            "label": label,
+            "count": int(r.count),
+        })
+    return out

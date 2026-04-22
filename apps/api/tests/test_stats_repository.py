@@ -99,3 +99,28 @@ async def test_by_category_owner_isolation(db_session, two_users):
     await db_session.commit()
     rows = await stats_repository.by_category(db_session, alice.id)
     assert rows == []
+
+
+async def test_by_location_composes_label_and_includes_null(db_session, two_users):
+    alice, _ = two_users
+    loc_full = Location(owner_id=alice.id, floor="1F", room="客廳", zone="電視櫃")
+    loc_partial = Location(owner_id=alice.id, floor="2F", room=None, zone="陽台")
+    db_session.add_all([loc_full, loc_partial])
+    await db_session.commit()
+    db_session.add_all([
+        Item(owner_id=alice.id, name="i1", location_id=loc_full.id, quantity=1),
+        Item(owner_id=alice.id, name="i2", location_id=loc_full.id, quantity=1),
+        Item(owner_id=alice.id, name="i3", location_id=loc_partial.id, quantity=1),
+        Item(owner_id=alice.id, name="i4", quantity=1),
+    ])
+    await db_session.commit()
+
+    rows = await stats_repository.by_location(db_session, alice.id)
+    by_id = {r["location_id"]: r for r in rows}
+    assert by_id[loc_full.id] == {
+        "location_id": loc_full.id, "label": "1F / 客廳 / 電視櫃", "count": 2,
+    }
+    assert by_id[loc_partial.id] == {
+        "location_id": loc_partial.id, "label": "2F / 陽台", "count": 1,
+    }
+    assert by_id[None] == {"location_id": None, "label": None, "count": 1}
