@@ -1,5 +1,7 @@
 # 🏠 物品管理系統
 
+> **⚠️ v2 重構進行中**：專案正在以 Next.js + FastAPI 全面重寫，參見 [v2 路線圖](docs/v2-roadmap.md)。v1（Flask + Jinja2）仍可運行於 `app/`、`templates/` 目錄，v2 新程式碼位於 `apps/` 目錄。
+
 一個功能完整的物品管理系統，支持保存期限追蹤、Email 通知、Docker 部署，兼容 PostgreSQL 和 MongoDB。
 
 <div align="center">

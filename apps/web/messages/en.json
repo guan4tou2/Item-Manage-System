@@ -1,0 +1,45 @@
+{
+  "appName": "Item Management System v2",
+  "nav": {
+    "dashboard": "Dashboard",
+    "items": "Items",
+    "lists": "Lists",
+    "settings": "Settings"
+  },
+  "menu": {
+    "profile": "Profile",
+    "language": "Language",
+    "theme": "Theme",
+    "logout": "Log out"
+  },
+  "theme": {
+    "system": "System",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "locale": {
+    "zh-TW": "繁體中文",
+    "en": "English"
+  },
+  "placeholder": {
+    "comingSoon": "This page will be implemented in subproject #{n}"
+  },
+  "login": {
+    "title": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "error": "Invalid credentials"
+  },
+  "landing": {
+    "tagline": "Home item management",
+    "ctaLogin": "Sign in",
+    "ctaDocs": "API docs"
+  },
+  "a11y": {
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "userMenu": "User menu"
+  }
+}

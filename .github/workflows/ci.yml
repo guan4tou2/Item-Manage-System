@@ -1,193 +1,99 @@
 name: CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
-
-env:
-  PYTHON_VERSION: "3.13"
-  POSTGRES_VERSION: "16"
+  push:
+    branches: [main]
 
 jobs:
-  lint:
-    name: Code Quality & Linting
+  api:
     runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: 'pip'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install flake8 black isort mypy
-          pip install -r requirements.txt
-      
-      - name: Run Black (code formatting check)
-        run: black --check --diff app/ tests/
-        continue-on-error: true
-      
-      - name: Run isort (import sorting check)
-        run: isort --check-only --diff app/ tests/
-        continue-on-error: true
-      
-      - name: Run Flake8 (linting)
-        run: |
-          # Stop the build if there are Python syntax errors or undefined names
-          flake8 app/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
-          # Exit-zero treats all errors as warnings
-          flake8 app/ tests/ --count --exit-zero --max-complexity=15 --max-line-length=100 --statistics
-      
-      - name: Run mypy (type checking)
-        run: mypy app/ --ignore-missing-imports --no-strict-optional
-        continue-on-error: true
-
-  test:
-    name: Test Suite
-    runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
-        db-type: [postgres, mongo]
-    
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16-alpine
         env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test_db
+          POSTGRES_DB: ims_test
+          POSTGRES_USER: ims
+          POSTGRES_PASSWORD: ims
+        ports: ["5432:5432"]
         options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
+          --health-cmd "pg_isready -U ims"
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      
-      mongodb:
-        image: mongo:7
-        ports:
-          - 27017:27017
-      
-      redis:
-        image: redis:7
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
-    
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: apps/api
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-cov pytest-mock pytest-flask pytest-env
-      
-      - name: Run tests with coverage
+          python-version: "3.13"
+      - run: pip install uv
+      - run: uv venv .venv
+      - run: |
+          . .venv/bin/activate
+          uv pip install -e ".[test]"
+      - run: |
+          . .venv/bin/activate
+          pytest -q
         env:
-          DB_TYPE: ${{ matrix.db-type }}
-          DATABASE_URL: postgresql://test:test@localhost:5432/test_db
-          MONGO_URI: mongodb://localhost:27017/test_db
-          REDIS_URL: redis://localhost:6379/1
-          SECRET_KEY: test-secret-key
-          FLASK_ENV: testing
-          TEST_MODE: true
+          DATABASE_URL: postgresql+asyncpg://ims:ims@localhost:5432/ims_test
+          JWT_SECRET: ci-secret
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install API + export OpenAPI
+        working-directory: apps/api
         run: |
-          pytest -v --cov=app --cov-report=xml --cov-report=term-missing --cov-report=html
-      
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+          pip install uv
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install -e ".[test]"
+          python scripts/export_openapi.py > ../../packages/api-types/openapi.json
+      - uses: pnpm/action-setup@v4
         with:
-          file: ./coverage.xml
-          flags: unittests
-          name: codecov-${{ matrix.python-version }}-${{ matrix.db-type }}
-          fail_ci_if_error: false
-      
-      - name: Archive coverage report
-        uses: actions/upload-artifact@v4
+          version: 9.12.0
+      - uses: actions/setup-node@v4
         with:
-          name: coverage-report-${{ matrix.python-version }}-${{ matrix.db-type }}
-          path: htmlcov/
-          retention-days: 7
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - name: Generate TypeScript types
+        run: pnpm --filter @ims/api-types gen:types
+      - run: pnpm --filter @ims/web typecheck
+      - run: pnpm --filter @ims/web lint
+      - run: pnpm --filter @ims/web test
+      - run: pnpm --filter @ims/web build
 
   docker:
-    name: Docker Build & Test
     runs-on: ubuntu-latest
-    needs: [lint, test]
-    
+    needs: [api, web]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Build Docker image
-        run: |
-          docker build -t item-manage-system:test .
-      
-      - name: Test Docker image
-        run: |
-          docker run --rm --entrypoint python item-manage-system:test -c "import app; print('Import successful')"
-      
-      - name: Run Docker Compose test
-        run: |
-          docker compose -f docker-compose.test.yml build
-          docker compose -f docker-compose.test.yml run --rm test
-          docker compose -f docker-compose.test.yml down -v
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -t ims-api:ci -f apps/api/Dockerfile apps/api
+      - uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION }}
-      
-      - name: Install dependencies
+          python-version: "3.13"
+      - name: Install API + export OpenAPI
+        working-directory: apps/api
         run: |
-          python -m pip install --upgrade pip
-          pip install safety bandit
-          pip install -r requirements.txt
-      
-      - name: Run Safety (dependency vulnerability check)
-        run: safety check --json
-        continue-on-error: true
-      
-      - name: Run Bandit (security linter)
-        run: bandit -r app/ -f json -o bandit-report.json
-        continue-on-error: true
-      
-      - name: Upload Bandit report
-        uses: actions/upload-artifact@v4
-        with:
-          name: bandit-security-report
-          path: bandit-report.json
-          retention-days: 30
+          pip install uv
+          uv venv .venv
+          . .venv/bin/activate
+          uv pip install -e ".[test]"
+          python scripts/export_openapi.py > ../../packages/api-types/openapi.json
+      - name: Generate TypeScript types
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.12.0 --activate
+          pnpm install --frozen-lockfile --filter @ims/api-types...
+          pnpm --filter @ims/api-types gen:types
+      - name: Build web image
+        run: docker build -t ims-web:ci -f apps/web/Dockerfile .
