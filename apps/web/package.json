@@ -13,6 +13,9 @@
     "gen:types": "echo 'api-types generated in packages/api-types'"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^3.10.0",
     "@ims/api-types": "workspace:*",
     "@radix-ui/react-accordion": "^1.2.12",
