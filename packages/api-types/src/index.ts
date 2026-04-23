@@ -1321,6 +1321,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/warehouses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Warehouses */
+        get: operations["list_warehouses_api_warehouses_get"];
+        put?: never;
+        /** Create Warehouse */
+        post: operations["create_warehouse_api_warehouses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/warehouses/{warehouse_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Warehouse */
+        get: operations["get_warehouse_api_warehouses__warehouse_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Warehouse */
+        delete: operations["delete_warehouse_api_warehouses__warehouse_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Warehouse */
+        patch: operations["update_warehouse_api_warehouses__warehouse_id__patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1648,6 +1685,8 @@ export interface components {
             category_id?: number | null;
             /** Location Id */
             location_id?: number | null;
+            /** Warehouse Id */
+            warehouse_id?: number | null;
             /**
              * Quantity
              * @default 1
@@ -1708,6 +1747,8 @@ export interface components {
             is_favorite: boolean;
             /** Image Id */
             image_id: string | null;
+            /** Warehouse Id */
+            warehouse_id: number | null;
             /**
              * Owner Id
              * Format: uuid
@@ -1782,6 +1823,8 @@ export interface components {
             category_id?: number | null;
             /** Location Id */
             location_id?: number | null;
+            /** Warehouse Id */
+            warehouse_id?: number | null;
             /** Quantity */
             quantity?: number | null;
             /** Min Quantity */
@@ -2474,6 +2517,39 @@ export interface components {
         VapidPublicKey: {
             /** Public Key */
             public_key: string;
+        };
+        /** WarehouseCreate */
+        WarehouseCreate: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+        };
+        /** WarehouseRead */
+        WarehouseRead: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+        };
+        /** WarehouseUpdate */
+        WarehouseUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
         };
         /** WebPushSubscriptionCreate */
         WebPushSubscriptionCreate: {
@@ -3177,6 +3253,7 @@ export interface operations {
                 q?: string | null;
                 category_id?: number | null;
                 location_id?: number | null;
+                warehouse_id?: number | null;
                 tag_ids?: number[] | null;
                 favorite?: boolean | null;
                 page?: number;
@@ -5517,6 +5594,154 @@ export interface operations {
                 };
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_warehouses_api_warehouses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseRead"][];
+                };
+            };
+        };
+    };
+    create_warehouse_api_warehouses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WarehouseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_warehouse_api_warehouses__warehouse_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                warehouse_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_warehouse_api_warehouses__warehouse_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                warehouse_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_warehouse_api_warehouses__warehouse_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                warehouse_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WarehouseUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseRead"];
                 };
             };
             /** @description Validation Error */

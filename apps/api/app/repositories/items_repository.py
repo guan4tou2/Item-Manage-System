@@ -62,6 +62,7 @@ async def list_paginated(
     q: str | None,
     category_id: int | None,
     location_id: int | None,
+    warehouse_id: int | None = None,
     tag_ids: list[int] | None,
     favorite: bool | None = None,
     page: int,
@@ -76,6 +77,8 @@ async def list_paginated(
         base = base.where(Item.category_id == category_id)
     if location_id is not None:
         base = base.where(Item.location_id == location_id)
+    if warehouse_id is not None:
+        base = base.where(Item.warehouse_id == warehouse_id)
     if tag_ids:
         base = base.where(
             Item.id.in_(
