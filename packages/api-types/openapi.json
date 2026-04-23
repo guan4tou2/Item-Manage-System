@@ -4903,6 +4903,30 @@
           }
         }
       }
+    },
+    "/api/backup/export": {
+      "get": {
+        "tags": [
+          "backup"
+        ],
+        "summary": "Export Data",
+        "operationId": "export_data_api_backup_export_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
