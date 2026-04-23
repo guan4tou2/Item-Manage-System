@@ -15,6 +15,7 @@ from app.models.tag import Tag, item_tags
 from app.models.transfer import ItemTransfer
 from app.models.user import User
 from app.models.warehouse import Warehouse
+from app.models.webhook import Webhook, WebhookDelivery
 
 __all__ = [
     "User",
@@ -45,4 +46,6 @@ __all__ = [
     "TelegramUserLink",
     "WebPushSubscription",
     "Warehouse",
+    "Webhook",
+    "WebhookDelivery",
 ]
