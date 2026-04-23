@@ -13,7 +13,7 @@ from app.repositories import (
     tags_repository,
 )
 from app.schemas.item import ItemCreate, ItemListResponse, ItemRead, ItemUpdate
-from app.services import item_history_service, notifications_service
+from app.services import item_history_service, notifications_service, webhooks_service
 from app.services.visibility_service import visible_item_owner_ids
 
 
@@ -135,7 +135,12 @@ async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -
             body=f"目前數量：{created.quantity}，提醒閾值：{created.min_quantity}",
             link=f"/items/{created.id}",
         )
-    return _to_read(created)
+    result = _to_read(created)
+    await webhooks_service.dispatch(
+        session, owner_id, "item.created",
+        {"id": str(created.id), "name": created.name},
+    )
+    return result
 
 
 async def update_item(
@@ -197,7 +202,12 @@ async def update_item(
             body=f"目前數量：{saved.quantity}，提醒閾值：{saved.min_quantity}",
             link=f"/items/{saved.id}",
         )
-    return _to_read(saved)
+    result = _to_read(saved)
+    await webhooks_service.dispatch(
+        session, owner_id, "item.updated",
+        {"id": str(saved.id), "name": saved.name},
+    )
+    return result
 
 
 async def delete_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> None:
@@ -205,3 +215,7 @@ async def delete_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> N
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
     await items_repository.soft_delete(session, item)
+    await webhooks_service.dispatch(
+        session, owner_id, "item.deleted",
+        {"id": str(item.id), "name": item.name},
+    )

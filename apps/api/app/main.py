@@ -25,6 +25,7 @@ from app.routes import (
     transfers,
     users,
     warehouses,
+    webhooks,
 )
 
 
@@ -66,6 +67,7 @@ def create_app() -> FastAPI:
     app.include_router(external_channels.router)
     app.include_router(warehouses.router)
     app.include_router(backup.router)
+    app.include_router(webhooks.router)
     return app
 
 
