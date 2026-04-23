@@ -36,11 +36,6 @@ class TestAuth:
 
 
 class TestList:
-    async def test_empty(self, client, auth):
-        r = await client.get("/api/notifications", headers=auth)
-        assert r.status_code == 200
-        assert r.json() == {"items": [], "total": 0, "unread_count": 0}
-
     async def test_after_welcome_on_register(self, client, auth):
         r = await client.get("/api/notifications", headers=auth)
         body = r.json()
