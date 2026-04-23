@@ -27,6 +27,7 @@ export function LocationsPanel() {
         floor: floor.trim(),
         room: room.trim() || null,
         zone: zone.trim() || null,
+        sort_order: 0,
       })
       setFloor(""); setRoom(""); setZone("")
     } catch {

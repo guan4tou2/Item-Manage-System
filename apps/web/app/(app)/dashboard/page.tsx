@@ -2,6 +2,9 @@
 
 import { useTranslations } from "next-intl"
 
+import { ActiveLoansCard } from "@/components/dashboard/active-loans-card"
+import { ActivityFeed } from "@/components/dashboard/activity-feed"
+import { LowStockCard } from "@/components/dashboard/low-stock-card"
 import { QuickLinks } from "@/components/dashboard/quick-links"
 import { RecentItemsCard } from "@/components/dashboard/recent-items-card"
 import { StatCard } from "@/components/dashboard/stat-card"
@@ -11,12 +14,21 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
-import { useOverview, useRecent } from "@/lib/hooks/use-stats"
+import {
+  useActiveLoans,
+  useActivity,
+  useLowStock,
+  useOverview,
+  useRecent,
+} from "@/lib/hooks/use-stats"
 
 export default function DashboardPage() {
   const t = useTranslations()
   const overview = useOverview()
   const recent = useRecent(5)
+  const lowStock = useLowStock(5)
+  const activeLoans = useActiveLoans(5)
+  const activity = useActivity(10)
 
   return (
     <section className="space-y-6 p-6">
@@ -32,7 +44,7 @@ export default function DashboardPage() {
         <h1 className="text-2xl font-semibold">{t("dashboard.title")}</h1>
       </div>
 
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
           label={t("dashboard.overview.items")}
           value={overview.data?.total_items}
@@ -55,7 +67,37 @@ export default function DashboardPage() {
         />
       </div>
 
-      <RecentItemsCard items={recent.data ?? []} />
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <StatCard
+          label="倉庫"
+          value={overview.data?.total_warehouses}
+          loading={overview.isLoading}
+        />
+        <StatCard
+          label="低庫存"
+          value={overview.data?.low_stock_items}
+          loading={overview.isLoading}
+          tone="warn"
+        />
+        <StatCard
+          label="活躍借出"
+          value={overview.data?.active_loans}
+          loading={overview.isLoading}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <LowStockCard items={lowStock.data ?? []} loading={lowStock.isLoading} />
+        <ActiveLoansCard
+          loans={activeLoans.data ?? []}
+          loading={activeLoans.isLoading}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <RecentItemsCard items={recent.data ?? []} />
+        <ActivityFeed entries={activity.data ?? []} loading={activity.isLoading} />
+      </div>
 
       <QuickLinks />
     </section>

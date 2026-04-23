@@ -25,6 +25,7 @@ class TestOverview:
         assert r.json() == {
             "total_items": 0, "total_quantity": 0,
             "total_categories": 0, "total_locations": 0, "total_tags": 0,
+            "total_warehouses": 0, "low_stock_items": 0, "active_loans": 0,
         }
 
     async def test_counts(self, client, auth):

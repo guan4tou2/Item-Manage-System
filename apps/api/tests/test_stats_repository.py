@@ -26,6 +26,9 @@ async def test_overview_empty_owner_returns_zeros(db_session, two_users):
         "total_categories": 0,
         "total_locations": 0,
         "total_tags": 0,
+        "total_warehouses": 0,
+        "low_stock_items": 0,
+        "active_loans": 0,
     }
 
 
