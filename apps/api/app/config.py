@@ -21,6 +21,20 @@ class Settings(BaseSettings):
     media_dir: str = Field(default="/app/media")
     max_image_bytes: int = Field(default=10 * 1024 * 1024)  # 10 MB
     gemini_api_key: str = Field(default="")
+    # Email (SMTP)
+    smtp_host: str = Field(default="")
+    smtp_port: int = Field(default=587)
+    smtp_user: str = Field(default="")
+    smtp_password: str = Field(default="")
+    smtp_from: str = Field(default="")
+    # LINE Messaging API
+    line_channel_access_token: str = Field(default="")
+    # Telegram Bot
+    telegram_bot_token: str = Field(default="")
+    # Web Push (VAPID)
+    vapid_public_key: str = Field(default="")
+    vapid_private_key: str = Field(default="")
+    vapid_email: str = Field(default="admin@example.com")
 
     @model_validator(mode="after")
     def _ensure_production_secret(self) -> "Settings":

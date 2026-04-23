@@ -8,6 +8,7 @@ from app.routes import (
     auth,
     categories,
     customization,
+    external_channels,
     groups,
     health,
     images,
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
     app.include_router(customization.router)
     app.include_router(item_history.router)
     app.include_router(stocktake.router)
+    app.include_router(external_channels.router)
     return app
 
 

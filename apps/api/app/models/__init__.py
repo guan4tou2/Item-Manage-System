@@ -1,5 +1,6 @@
 from app.models.category import Category
 from app.models.customization import CustomField, ItemCustomValue, ItemTemplate, ItemType
+from app.models.external_channels import LineUserLink, TelegramUserLink, WebPushSubscription
 from app.models.favorite_audit_token import ApiToken, AuditLog
 from app.models.group import Group, GroupMember
 from app.models.image import Image
@@ -39,4 +40,7 @@ __all__ = [
     "ItemVersion",
     "Stocktake",
     "StocktakeItem",
+    "LineUserLink",
+    "TelegramUserLink",
+    "WebPushSubscription",
 ]
