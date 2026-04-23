@@ -1,0 +1,151 @@
+<!-- Lazy Image - 懶加載圖片 -->
+{% macro lazy_image(
+  src,
+  alt='',
+  class='',
+  style='',
+  placeholder_class='lazy-placeholder',
+  threshold=0.1
+) %}
+<img
+  src="{{ url_for('static', filename='img/placeholder.svg') }}"
+  data-src="{{ src }}"
+  alt="{{ alt }}"
+  class="lazy-img {{ class }}"
+  {% if style %}style="{{ style }}"{% endif %}
+  loading="lazy"
+/>
+
+<style>
+.lazy-img {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.lazy-img.loaded {
+  opacity: 1;
+}
+
+.lazy-placeholder {
+  background: var(--gray-100, #f1f5f9);
+  min-height: 100px;
+}
+
+[data-theme="dark"] .lazy-img {
+  background: var(--gray-700, #334155);
+}
+</style>
+
+<script>
+(function() {
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          const src = img.dataset.src;
+          if (src) {
+            img.src = src;
+            img.onload = () => img.classList.add('loaded');
+            img.onerror = () => {
+              img.src = '{{ url_for("static", filename="img/error.svg") }}';
+              img.classList.add('loaded', 'error');
+            };
+          }
+          observer.unobserve(img);
+        }
+      });
+    }, { threshold: {{ threshold }} });
+    
+    document.querySelectorAll('.lazy-img').forEach(img => observer.observe(img));
+  } else {
+    // Fallback for older browsers
+    document.querySelectorAll('.lazy-img').forEach(img => {
+      const src = img.dataset.src;
+      if (src) {
+        img.src = src;
+        img.classList.add('loaded');
+      }
+    });
+  }
+})();
+</script>
+{% endmacro %}
+
+<!-- Blur-up Image with blur placeholder -->
+{% macro blur_image(
+  src,
+  thumb_src='',
+  alt='',
+  class=''
+) %}
+<div class="blur-img-container {{ class }}" style="position: relative; overflow: hidden;">
+  <img 
+    src="{{ thumb_src or url_for('static', filename='img/thumb-placeholder.svg') }}"
+    alt="{{ alt }}"
+    class="blur-img-thumb"
+  />
+  <img 
+    src="{{ src }}"
+    alt="{{ alt }}"
+    class="blur-img-full"
+    loading="lazy"
+  />
+</div>
+
+<style>
+.blur-img-container {
+  background: var(--gray-100, #f1f5f9);
+}
+
+.blur-img-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(10px);
+  transform: scale(1.1);
+  transition: opacity 0.5s ease;
+}
+
+.blur-img-full {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.blur-img-container.loaded .blur-img-thumb {
+  opacity: 0;
+}
+
+.blur-img-container.loaded .blur-img-full {
+  opacity: 1;
+}
+
+[data-theme="dark"] .blur-img-container {
+  background: var(--gray-800, #1e293b);
+}
+</style>
+
+<script>
+(function() {
+  if ('IntersectionObserver' in window) {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const container = entry.target;
+          container.classList.add('loaded');
+          observer.unobserve(container);
+        }
+      });
+    }, { rootMargin: '50px' });
+    
+    document.querySelectorAll('.blur-img-container').forEach(el => observer.observe(el));
+  }
+})();
+</script>
+{% endmacro %}

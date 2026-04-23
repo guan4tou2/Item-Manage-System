@@ -1,0 +1,175 @@
+<!-- Empty State - 沒有物品時顯示 -->
+{% macro empty_state(
+  title=_("還沒有任何物品"),
+  description=_("開始記錄您的第一個物品吧！"),
+  primary_url=url_for('items.additem'),
+  secondary_url=url_for('items.search')
+) %}
+<div class="empty-state text-center py-5 animate-fadeInUp">
+  <div class="empty-state-icon mb-4">
+    <div class="empty-state-illustration">
+      <div class="box-icon">
+        <i class="fas fa-box-open"></i>
+      </div>
+      <div class="box-shadow"></div>
+      <div class="sparkle sparkle-1">
+        <i class="fas fa-sparkle"></i>
+      </div>
+      <div class="sparkle sparkle-2">
+        <i class="fas fa-sparkle"></i>
+      </div>
+      <div class="sparkle sparkle-3">
+        <i class="fas fa-sparkle"></i>
+      </div>
+    </div>
+  </div>
+  
+  <h3 class="empty-state-title mb-2">{{ title }}</h3>
+  <p class="empty-state-description text-muted mb-4">{{ description }}</p>
+  
+  <div class="empty-state-actions d-flex gap-2 justify-content-center flex-wrap">
+    <a href="{{ primary_url }}" class="btn btn-primary btn-lg">
+      <i class="fas fa-plus me-2"></i>{{ _('新增物品') }}
+    </a>
+    <a href="{{ secondary_url }}" class="btn btn-outline-secondary btn-lg">
+      <i class="fas fa-search me-2"></i>{{ _('探索功能') }}
+    </a>
+  </div>
+  
+  <div class="empty-state-tips mt-5">
+    <h6 class="text-muted mb-3">
+      <i class="fas fa-lightbulb me-2 text-warning"></i>{{ _('使用提示') }}
+    </h6>
+    <div class="row g-3 justify-content-center">
+      <div class="col-6 col-md-3">
+        <div class="tip-card p-3 rounded bg-light">
+          <i class="fas fa-camera fa-2x text-primary mb-2"></i>
+          <p class="mb-0 small">{{ _('拍照記錄') }}</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="tip-card p-3 rounded bg-light">
+          <i class="fas fa-map-marker-alt fa-2x text-success mb-2"></i>
+          <p class="mb-0 small">{{ _('記錄位置') }}</p>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="tip-card p-3 rounded bg-light">
+          <i class="fas fa-bell fa-2x text-warning mb-2"></i>
+          <p class="mb-0 small">{{ _('到期提醒') }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.empty-state-icon {
+  position: relative;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state-illustration {
+  position: relative;
+}
+
+.box-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--primary, #2f658f) 0%, var(--primary-light, #4c7ca3) 100%);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  color: white;
+  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(47, 101, 143, 0.3);
+}
+
+.box-shadow {
+  width: 60px;
+  height: 10px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  margin: 0 auto;
+  margin-top: -5px;
+}
+
+.sparkle {
+  position: absolute;
+  color: #ffc107;
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+.sparkle-1 {
+  top: 0;
+  right: -10px;
+  animation-delay: 0s;
+}
+
+.sparkle-2 {
+  bottom: 20px;
+  left: -20px;
+  animation-delay: 0.5s;
+}
+
+.sparkle-3 {
+  top: 30px;
+  left: -30px;
+  animation-delay: 1s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.empty-state-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary, #1e293b);
+}
+
+.empty-state-description {
+  font-size: 1rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.tip-card {
+  transition: transform 0.2s ease;
+}
+
+.tip-card:hover {
+  transform: translateY(-3px);
+}
+
+[data-theme="dark"] .tip-card {
+  background-color: var(--bg-elevated, #334155) !important;
+}
+
+@media (max-width: 768px) {
+  .empty-state-actions {
+    flex-direction: column !important;
+  }
+  
+  .empty-state-actions .btn {
+    width: 100%;
+    max-width: 250px;
+  }
+}
+</style>
+{% endmacro %}

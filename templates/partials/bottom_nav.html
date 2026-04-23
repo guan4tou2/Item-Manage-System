@@ -1,0 +1,192 @@
+<!-- Mobile Bottom Navigation - 行動裝置底部導航 -->
+{% macro bottom_nav(
+  active='home',
+  user=User
+) %}
+<nav class="mobile-bottom-nav" role="navigation" aria-label="{{ _('行動導航') }}">
+  <div class="bottom-nav-container">
+    <a href="{{ url_for('items.home') }}" 
+       class="bottom-nav-item {% if active == 'home' %}active{% endif %}"
+       aria-current="{% if active == 'home' %}page{% endif %}">
+      <div class="bottom-nav-icon">
+        <i class="fas fa-home"></i>
+      </div>
+      <span class="bottom-nav-label">{{ _('首頁') }}</span>
+    </a>
+    
+    <a href="{{ url_for('items.search') }}" 
+       class="bottom-nav-item {% if active == 'search' %}active{% endif %}"
+       aria-current="{% if active == 'search' %}page{% endif %}">
+      <div class="bottom-nav-icon">
+        <i class="fas fa-search"></i>
+      </div>
+      <span class="bottom-nav-label">{{ _('搜尋') }}</span>
+    </a>
+    
+    <a href="{{ url_for('items.additem') }}" 
+       class="bottom-nav-item bottom-nav-add"
+       aria-label="{{ _('新增物品') }}">
+      <div class="bottom-nav-add-icon">
+        <i class="fas fa-plus"></i>
+      </div>
+    </a>
+    
+    <a href="{{ url_for('items.scan') }}" 
+       class="bottom-nav-item {% if active == 'scan' %}active{% endif %}"
+       aria-current="{% if active == 'scan' %}page{% endif %}">
+      <div class="bottom-nav-icon">
+        <i class="fas fa-qrcode"></i>
+      </div>
+      <span class="bottom-nav-label">{{ _('掃描') }}</span>
+    </a>
+    
+    <a href="{{ url_for('profile.profile') }}" 
+       class="bottom-nav-item {% if active == 'profile' %}active{% endif %}"
+       aria-current="{% if active == 'profile' %}page{% endif %}">
+      <div class="bottom-nav-icon">
+        <i class="fas fa-user"></i>
+      </div>
+      <span class="bottom-nav-label">{{ _('我的') }}</span>
+    </a>
+  </div>
+</nav>
+
+<style>
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1050;
+  background: var(--bg-card, #ffffff);
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
+.bottom-nav-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 64px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-muted, #94a3b8);
+  transition: color 0.2s ease;
+  padding: 8px 0;
+  position: relative;
+}
+
+.bottom-nav-item:active {
+  transform: scale(0.95);
+}
+
+.bottom-nav-item.active {
+  color: var(--primary, #2f658f);
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+  background: var(--primary, #2f658f);
+  color: white;
+}
+
+.bottom-nav-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--gray-100, #f1f5f9);
+  transition: all 0.2s ease;
+  font-size: 1.1rem;
+}
+
+.bottom-nav-label {
+  font-size: 0.7rem;
+  margin-top: 2px;
+}
+
+.bottom-nav-add {
+  position: relative;
+  top: -12px;
+}
+
+.bottom-nav-add .bottom-nav-add-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary, #2f658f) 0%, var(--primary-light, #4c7ca3) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 15px rgba(47, 101, 143, 0.4);
+  transition: all 0.2s ease;
+}
+
+.bottom-nav-add:active .bottom-nav-add-icon {
+  transform: scale(0.9);
+  box-shadow: 0 2px 8px rgba(47, 101, 143, 0.3);
+}
+
+.bottom-nav-add:active {
+  transform: translateY(2px);
+}
+
+/* Hide FAB when bottom nav is visible */
+.mobile-bottom-nav + .fab,
+body:has(.mobile-bottom-nav) .fab {
+  display: none !important;
+}
+
+/* Add padding to main content when bottom nav is visible */
+body:has(.mobile-bottom-nav) .container-fluid {
+  padding-bottom: 80px;
+}
+
+[data-theme="dark"] .mobile-bottom-nav {
+  background: var(--bg-card, #1e293b);
+  border-color: var(--border-color, #475569);
+}
+
+[data-theme="dark"] .bottom-nav-icon {
+  background: var(--gray-700, #334155);
+  color: var(--text-muted, #94a3b8);
+}
+
+[data-theme="dark"] .bottom-nav-item.active .bottom-nav-icon {
+  background: var(--primary, #60a5fa);
+  color: white;
+}
+
+/* Show only on mobile */
+@media (max-width: 767.98px) {
+  .mobile-bottom-nav {
+    display: block;
+  }
+  
+  /* Adjust navbar for mobile */
+  .navbar {
+    padding-bottom: 0.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-bottom-nav {
+    display: none !important;
+  }
+}
+</style>
+{% endmacro %}

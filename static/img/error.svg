@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <rect width="200" height="200" fill="#fef2f2"/>
+  <circle cx="100" cy="80" r="30" fill="#fee2e2"/>
+  <path d="M85 65 L115 95 M115 65 L85 95" stroke="#dc2626" stroke-width="4" stroke-linecap="round"/>
+  <text x="100" y="150" text-anchor="middle" fill="#dc2626" font-family="system-ui" font-size="12">載入失敗</text>
+</svg>

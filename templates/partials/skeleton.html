@@ -1,0 +1,283 @@
+<!-- Skeleton Loading - 載入時顯示 -->
+{% macro skeleton_card(count=6) %}
+<div class="row g-4">
+  {% for i in range(count) %}
+  <div class="col-6 col-md-4 col-lg-3">
+    <div class="card skeleton-card h-100">
+      <div class="skeleton-image"></div>
+      <div class="card-body">
+        <div class="skeleton-text skeleton-title"></div>
+        <div class="skeleton-text skeleton-text-short"></div>
+        <div class="skeleton-tags">
+          <div class="skeleton-tag"></div>
+          <div class="skeleton-tag skeleton-tag-sm"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+.skeleton-card {
+  border: none;
+  overflow: hidden;
+  background: var(--bg-card, #ffffff);
+}
+
+.skeleton-image {
+  height: 160px;
+  background: linear-gradient(90deg, 
+    var(--gray-200, #e2e8f0) 25%, 
+    var(--gray-100, #f1f5f9) 50%, 
+    var(--gray-200, #e2e8f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-text {
+  height: 16px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, 
+    var(--gray-200, #e2e8f0) 25%, 
+    var(--gray-100, #f1f5f9) 50%, 
+    var(--gray-200, #e2e8f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-title {
+  width: 80%;
+}
+
+.skeleton-text-short {
+  width: 60%;
+}
+
+.skeleton-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.skeleton-tag {
+  width: 60px;
+  height: 24px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, 
+    var(--gray-300, #cbd5e1) 25%, 
+    var(--gray-200, #e2e8f0) 50%, 
+    var(--gray-300, #cbd5e1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-tag-sm {
+  width: 40px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+[data-theme="dark"] .skeleton-image,
+[data-theme="dark"] .skeleton-text,
+[data-theme="dark"] .skeleton-tag {
+  background: linear-gradient(90deg, 
+    var(--gray-700, #334155) 25%, 
+    var(--gray-600, #475569) 50%, 
+    var(--gray-700, #334155) 75%
+  );
+  background-size: 200% 100%;
+}
+</style>
+{% endmacro %}
+
+{% macro skeleton_list(count=5) %}
+<div class="skeleton-list">
+  {% for i in range(count) %}
+  <div class="skeleton-list-item">
+    <div class="skeleton-avatar"></div>
+    <div class="skeleton-content">
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line skeleton-line-sm"></div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+.skeleton-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, 
+    var(--gray-300, #cbd5e1) 25%, 
+    var(--gray-200, #e2e8f0) 50%, 
+    var(--gray-300, #cbd5e1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  flex-shrink: 0;
+}
+
+.skeleton-content {
+  flex: 1;
+}
+
+.skeleton-line {
+  height: 14px;
+  width: 70%;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, 
+    var(--gray-200, #e2e8f0) 25%, 
+    var(--gray-100, #f1f5f9) 50%, 
+    var(--gray-200, #e2e8f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line-sm {
+  width: 40%;
+  margin-bottom: 0;
+}
+
+[data-theme="dark"] .skeleton-avatar,
+[data-theme="dark"] .skeleton-line {
+  background: linear-gradient(90deg, 
+    var(--gray-700, #334155) 25%, 
+    var(--gray-600, #475569) 50%, 
+    var(--gray-700, #334155) 75%
+  );
+  background-size: 200% 100%;
+}
+</style>
+{% endmacro %}
+
+{% macro skeleton_stats() %}
+<div class="row g-4">
+  <div class="col-6 col-md-3">
+    <div class="skeleton-stat-card">
+      <div class="skeleton-stat-icon"></div>
+      <div class="skeleton-stat-content">
+        <div class="skeleton-stat-value"></div>
+        <div class="skeleton-stat-label"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="skeleton-stat-card">
+      <div class="skeleton-stat-icon"></div>
+      <div class="skeleton-stat-content">
+        <div class="skeleton-stat-value"></div>
+        <div class="skeleton-stat-label"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="skeleton-stat-card">
+      <div class="skeleton-stat-icon"></div>
+      <div class="skeleton-stat-content">
+        <div class="skeleton-stat-value"></div>
+        <div class="skeleton-stat-label"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="skeleton-stat-card">
+      <div class="skeleton-stat-icon"></div>
+      <div class="skeleton-stat-content">
+        <div class="skeleton-stat-value"></div>
+        <div class="skeleton-stat-label"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.skeleton-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-card, #ffffff);
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.skeleton-stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, 
+    var(--gray-300, #cbd5e1) 25%, 
+    var(--gray-200, #e2e8f0) 50%, 
+    var(--gray-300, #cbd5e1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-stat-content {
+  flex: 1;
+}
+
+.skeleton-stat-value {
+  height: 24px;
+  width: 60%;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, 
+    var(--gray-300, #cbd5e1) 25%, 
+    var(--gray-200, #e2e8f0) 50%, 
+    var(--gray-300, #cbd5e1) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-stat-label {
+  height: 12px;
+  width: 80%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, 
+    var(--gray-200, #e2e8f0) 25%, 
+    var(--gray-100, #f1f5f9) 50%, 
+    var(--gray-200, #e2e8f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+[data-theme="dark"] .skeleton-stat-card {
+  background: var(--bg-card, #1e293b);
+  border-color: var(--border-color, #475569);
+}
+
+[data-theme="dark"] .skeleton-stat-icon,
+[data-theme="dark"] .skeleton-stat-value,
+[data-theme="dark"] .skeleton-stat-label {
+  background: linear-gradient(90deg, 
+    var(--gray-700, #334155) 25%, 
+    var(--gray-600, #475569) 50%, 
+    var(--gray-700, #334155) 75%
+  );
+  background-size: 200% 100%;
+}
+</style>
+{% endmacro %}
