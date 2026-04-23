@@ -7,9 +7,11 @@ from app.routes import (
     ai,
     auth,
     categories,
+    customization,
     groups,
     health,
     images,
+    item_history,
     items,
     lists,
     loans,
@@ -54,6 +56,8 @@ def create_app() -> FastAPI:
     app.include_router(admin.router)
     app.include_router(images.router)
     app.include_router(ai.router)
+    app.include_router(customization.router)
+    app.include_router(item_history.router)
     return app
 
 
