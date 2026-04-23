@@ -922,6 +922,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/suggest-from-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suggest From Image */
+        post: operations["suggest_from_image_api_ai_suggest_from_image_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -935,6 +952,27 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** AiSuggestRequest */
+        AiSuggestRequest: {
+            /**
+             * Image Id
+             * Format: uuid
+             */
+            image_id: string;
+            /** Hint */
+            hint?: string | null;
+        };
+        /** AiSuggestResponse */
+        AiSuggestResponse: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Category Suggestion */
+            category_suggestion?: string | null;
+            /** Tag Suggestions */
+            tag_suggestions?: string[];
         };
         /** ApiTokenCreate */
         ApiTokenCreate: {
@@ -3941,6 +3979,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suggest_from_image_api_ai_suggest_from_image_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiSuggestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiSuggestResponse"];
+                };
             };
             /** @description Validation Error */
             422: {

@@ -2,7 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslations } from "next-intl"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { ImageUpload } from "./image-upload"
@@ -12,8 +14,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { suggestFromImage } from "@/lib/api/ai"
 import type { CategoryTreeNode } from "@/lib/api/categories"
 import type { LocationRead } from "@/lib/api/locations"
+import { useAccessToken } from "@/lib/auth/use-auth"
 
 export const itemFormSchema = z.object({
   name: z.string().min(1, "nameRequired").max(200, "nameMax"),
@@ -57,11 +61,36 @@ export function ItemForm({
   categories, locations, tagSuggestions,
 }: Props) {
   const t = useTranslations()
+  const token = useAccessToken()
+  const [aiBusy, setAiBusy] = useState(false)
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemFormSchema),
     defaultValues,
   })
   const flatCats = flattenCategories(categories)
+
+  const runAiSuggest = async () => {
+    const imageId = form.getValues("image_id")
+    if (!imageId) {
+      toast.error("請先上傳圖片")
+      return
+    }
+    setAiBusy(true)
+    try {
+      const result = await suggestFromImage(imageId, token)
+      form.setValue("name", result.name)
+      if (result.description) form.setValue("description", result.description)
+      const existing = form.getValues("tag_names") ?? []
+      const merged = Array.from(new Set([...existing, ...result.tag_suggestions]))
+      form.setValue("tag_names", merged)
+      toast.success("AI 已填入建議欄位")
+    } catch (e: unknown) {
+      const err = e as { body?: { detail?: string } }
+      toast.error(err.body?.detail ?? "AI 辨識失敗")
+    } finally {
+      setAiBusy(false)
+    }
+  }
 
   return (
     <form
@@ -155,6 +184,17 @@ export function ItemForm({
           imageId={form.watch("image_id") ?? null}
           onChange={(id) => form.setValue("image_id", id)}
         />
+        <div className="mt-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={aiBusy || !form.watch("image_id")}
+            onClick={runAiSuggest}
+          >
+            {aiBusy ? "AI 辨識中…" : "✨ 使用 AI 辨識填入"}
+          </Button>
+        </div>
       </div>
 
       <div className="flex gap-2">
