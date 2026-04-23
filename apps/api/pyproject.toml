@@ -19,7 +19,8 @@ dependencies = [
     "redis==5.1.0",
     "structlog==24.4.0",
     "apscheduler==3.10.4",
-    "fastapi-mail==1.4.1"
+    "fastapi-mail==1.4.1",
+    "google-genai>=1.0"
 ]
 
 [project.optional-dependencies]

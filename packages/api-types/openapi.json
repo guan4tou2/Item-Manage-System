@@ -3425,6 +3425,52 @@
           }
         }
       }
+    },
+    "/api/ai/suggest-from-image": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Suggest From Image",
+        "operationId": "suggest_from_image_api_ai_suggest_from_image_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AiSuggestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiSuggestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -3446,6 +3492,74 @@
           "access_token"
         ],
         "title": "AccessTokenResponse"
+      },
+      "AiSuggestRequest": {
+        "properties": {
+          "image_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Image Id"
+          },
+          "hint": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hint"
+          }
+        },
+        "type": "object",
+        "required": [
+          "image_id"
+        ],
+        "title": "AiSuggestRequest"
+      },
+      "AiSuggestResponse": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "category_suggestion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Suggestion"
+          },
+          "tag_suggestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tag Suggestions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "AiSuggestResponse"
       },
       "ApiTokenCreate": {
         "properties": {
