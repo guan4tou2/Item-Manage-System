@@ -6,12 +6,16 @@ import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog"
+import { LoanCard } from "@/components/collaboration/loan-card"
+import { NewTransferDialog } from "@/components/collaboration/new-transfer-dialog"
+import { ReadonlyBadge } from "@/components/collaboration/readonly-badge"
 import { Badge } from "@/components/ui/badge"
 import {
   Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuthStore } from "@/lib/auth/auth-store"
 import { useDeleteItem, useItem } from "@/lib/hooks/use-items"
 
 export default function ItemDetailPage() {
@@ -21,6 +25,7 @@ export default function ItemDetailPage() {
   const id = params?.id ?? ""
   const item = useItem(id)
   const del = useDeleteItem()
+  const currentUserId = useAuthStore((s) => s.user?.id ?? "")
 
   async function handleDelete() {
     try {
@@ -48,6 +53,7 @@ export default function ItemDetailPage() {
   }
 
   const i = item.data
+  const isOwner = i.owner_id === currentUserId
   return (
     <section className="space-y-4 p-6">
       <Breadcrumb>
@@ -61,10 +67,17 @@ export default function ItemDetailPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">{i.name}</h1>
         <div className="flex gap-2">
-          <Button asChild variant="outline">
-            <Link href={`/items/${i.id}/edit`}>{t("items.detail.edit")}</Link>
-          </Button>
-          <DeleteItemDialog onConfirm={handleDelete} pending={del.isPending} />
+          {isOwner ? (
+            <>
+              <Button asChild variant="outline">
+                <Link href={`/items/${i.id}/edit`}>{t("items.detail.edit")}</Link>
+              </Button>
+              <NewTransferDialog itemId={i.id} />
+              <DeleteItemDialog onConfirm={handleDelete} pending={del.isPending} />
+            </>
+          ) : (
+            <ReadonlyBadge ownerUsername={i.owner_username} />
+          )}
         </div>
       </div>
 
@@ -96,6 +109,12 @@ export default function ItemDetailPage() {
           <dd className="whitespace-pre-wrap">{i.notes || "—"}</dd>
         </div>
       </dl>
+
+      {isOwner ? (
+        <div className="max-w-2xl">
+          <LoanCard itemId={i.id} />
+        </div>
+      ) : null}
     </section>
   )
 }

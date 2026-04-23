@@ -14,6 +14,25 @@ from app.repositories import (
 )
 from app.schemas.item import ItemCreate, ItemListResponse, ItemRead, ItemUpdate
 from app.services import notifications_service
+from app.services.visibility_service import visible_item_owner_ids
+
+
+def _to_read(item: Item) -> ItemRead:
+    return ItemRead.model_validate({
+        "id": item.id,
+        "name": item.name,
+        "description": item.description,
+        "quantity": item.quantity,
+        "min_quantity": item.min_quantity,
+        "notes": item.notes,
+        "owner_id": item.owner_id,
+        "owner_username": item.owner.username,
+        "created_at": item.created_at,
+        "updated_at": item.updated_at,
+        "category": item.category,
+        "location": item.location,
+        "tags": item.tags,
+    })
 
 
 async def _validate_refs(
@@ -41,9 +60,10 @@ async def list_items(
     page: int,
     per_page: int,
 ) -> ItemListResponse:
+    visible = await visible_item_owner_ids(session, owner_id)
     rows, total = await items_repository.list_paginated(
         session,
-        owner_id,
+        visible,
         q=q,
         category_id=category_id,
         location_id=location_id,
@@ -52,7 +72,7 @@ async def list_items(
         per_page=per_page,
     )
     return ItemListResponse(
-        items=[ItemRead.model_validate(r) for r in rows],
+        items=[_to_read(r) for r in rows],
         total=total,
         page=page,
         per_page=per_page,
@@ -60,10 +80,11 @@ async def list_items(
 
 
 async def get_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> ItemRead:
-    item = await items_repository.get_owned(session, owner_id, item_id)
+    visible = await visible_item_owner_ids(session, owner_id)
+    item = await items_repository.get_visible(session, visible, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
-    return ItemRead.model_validate(item)
+    return _to_read(item)
 
 
 async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -> ItemRead:
@@ -94,7 +115,7 @@ async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -
             body=f"目前數量：{created.quantity}，提醒閾值：{created.min_quantity}",
             link=f"/items/{created.id}",
         )
-    return ItemRead.model_validate(created)
+    return _to_read(created)
 
 
 async def update_item(
@@ -134,7 +155,7 @@ async def update_item(
             body=f"目前數量：{saved.quantity}，提醒閾值：{saved.min_quantity}",
             link=f"/items/{saved.id}",
         )
-    return ItemRead.model_validate(saved)
+    return _to_read(saved)
 
 
 async def delete_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> None:

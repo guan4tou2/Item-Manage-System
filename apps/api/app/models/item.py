@@ -38,3 +38,4 @@ class Item(Base):
     category: Mapped[Optional["Category"]] = relationship("Category", back_populates="items")  # noqa: F821
     location: Mapped[Optional["Location"]] = relationship("Location", back_populates="items")  # noqa: F821
     tags: Mapped[list["Tag"]] = relationship("Tag", secondary="item_tags", back_populates="items")  # noqa: F821
+    owner: Mapped["User"] = relationship("User", foreign_keys=[owner_id])  # noqa: F821
