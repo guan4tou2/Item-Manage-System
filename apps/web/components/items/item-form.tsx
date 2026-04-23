@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
+import { ImageUpload } from "./image-upload"
 import { TagMultiSelect } from "./tag-multi-select"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,6 +28,7 @@ export const itemFormSchema = z.object({
       .min(0, "quantityMin"),
   ),
   notes: z.string().optional(),
+  image_id: z.string().nullable().optional(),
   tag_names: z.array(z.string()),
 })
 export type ItemFormValues = z.infer<typeof itemFormSchema>
@@ -145,6 +147,14 @@ export function ItemForm({
       <div>
         <Label htmlFor="notes">{t("items.form.notes")}</Label>
         <Textarea id="notes" rows={2} {...form.register("notes")} />
+      </div>
+
+      <div>
+        <Label>圖片</Label>
+        <ImageUpload
+          imageId={form.watch("image_id") ?? null}
+          onChange={(id) => form.setValue("image_id", id)}
+        />
       </div>
 
       <div className="flex gap-2">

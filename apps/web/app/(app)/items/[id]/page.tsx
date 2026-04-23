@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { imageUrl } from "@/lib/api/images"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { useDeleteItem, useItem } from "@/lib/hooks/use-items"
 
@@ -84,6 +85,15 @@ export default function ItemDetailPage() {
           )}
         </div>
       </div>
+
+      {i.image_id ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl(i.image_id)}
+          alt={i.name}
+          className="max-h-64 max-w-full rounded border object-contain"
+        />
+      ) : null}
 
       <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 max-w-2xl">
         <div>

@@ -26,6 +26,7 @@ def _to_read(item: Item) -> ItemRead:
         "min_quantity": item.min_quantity,
         "notes": item.notes,
         "is_favorite": item.is_favorite,
+        "image_id": item.image_id,
         "owner_id": item.owner_id,
         "owner_username": item.owner.username,
         "created_at": item.created_at,
@@ -113,6 +114,7 @@ async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -
         quantity=body.quantity,
         min_quantity=body.min_quantity,
         notes=body.notes,
+        image_id=body.image_id,
         tags=tags,
     )
     created = await items_repository.create(session, item)

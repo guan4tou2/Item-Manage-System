@@ -19,6 +19,7 @@ class ItemCreate(BaseModel):
     quantity: int = Field(default=1, ge=0)
     min_quantity: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
+    image_id: Optional[UUID] = None
     tag_names: list[str] = Field(default_factory=list)
 
 
@@ -30,6 +31,7 @@ class ItemUpdate(BaseModel):
     quantity: Optional[int] = Field(default=None, ge=0)
     min_quantity: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
+    image_id: Optional[UUID] = None
     tag_names: Optional[list[str]] = None
 
     model_config = ConfigDict(extra="forbid")
@@ -43,6 +45,7 @@ class ItemRead(BaseModel):
     min_quantity: Optional[int]
     notes: Optional[str]
     is_favorite: bool
+    image_id: Optional[UUID]
     owner_id: UUID
     owner_username: str
     created_at: datetime

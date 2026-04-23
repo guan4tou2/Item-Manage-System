@@ -1,6 +1,7 @@
 from app.models.category import Category
 from app.models.favorite_audit_token import ApiToken, AuditLog
 from app.models.group import Group, GroupMember
+from app.models.image import Image
 from app.models.item import Item
 from app.models.list import List, ListEntry
 from app.models.loan import ItemLoan
@@ -26,4 +27,5 @@ __all__ = [
     "ItemTransfer",
     "ApiToken",
     "AuditLog",
+    "Image",
 ]

@@ -3294,6 +3294,137 @@
           }
         }
       }
+    },
+    "/api/images": {
+      "post": {
+        "tags": [
+          "images"
+        ],
+        "summary": "Upload Image",
+        "operationId": "upload_image_api_images_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_image_api_images_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImageRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/images/{image_id}": {
+      "get": {
+        "tags": [
+          "images"
+        ],
+        "summary": "Fetch Image",
+        "operationId": "fetch_image_api_images__image_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "image_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Image Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "images"
+        ],
+        "summary": "Delete Image",
+        "operationId": "delete_image_api_images__image_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "image_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Image Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3478,6 +3609,20 @@
           "created_at"
         ],
         "title": "AuditLogRead"
+      },
+      "Body_upload_image_api_images_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_image_api_images_post"
       },
       "CategoryBucket": {
         "properties": {
@@ -3841,6 +3986,47 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "ImageRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "owner_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Owner Id"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "title": "Size Bytes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "owner_id",
+          "filename",
+          "mime_type",
+          "size_bytes",
+          "created_at"
+        ],
+        "title": "ImageRead"
+      },
       "ItemCreate": {
         "properties": {
           "name": {
@@ -3910,6 +4096,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
           },
           "tag_names": {
             "items": {
@@ -4008,6 +4206,18 @@
             "type": "boolean",
             "title": "Is Favorite"
           },
+          "image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
+          },
           "owner_id": {
             "type": "string",
             "format": "uuid",
@@ -4064,6 +4274,7 @@
           "min_quantity",
           "notes",
           "is_favorite",
+          "image_id",
           "owner_id",
           "owner_username",
           "created_at",
@@ -4156,6 +4367,18 @@
               }
             ],
             "title": "Notes"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
           },
           "tag_names": {
             "anyOf": [

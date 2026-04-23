@@ -887,6 +887,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Image */
+        post: operations["upload_image_api_images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/images/{image_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch Image */
+        get: operations["fetch_image_api_images__image_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Image */
+        delete: operations["delete_image_api_images__image_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -964,6 +999,14 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** Body_upload_image_api_images_post */
+        Body_upload_image_api_images_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
         };
         /** CategoryBucket */
         CategoryBucket: {
@@ -1110,6 +1153,30 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** ImageRead */
+        ImageRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Owner Id
+             * Format: uuid
+             */
+            owner_id: string;
+            /** Filename */
+            filename: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** ItemCreate */
         ItemCreate: {
             /** Name */
@@ -1129,6 +1196,8 @@ export interface components {
             min_quantity?: number | null;
             /** Notes */
             notes?: string | null;
+            /** Image Id */
+            image_id?: string | null;
             /** Tag Names */
             tag_names?: string[];
         };
@@ -1162,6 +1231,8 @@ export interface components {
             notes: string | null;
             /** Is Favorite */
             is_favorite: boolean;
+            /** Image Id */
+            image_id: string | null;
             /**
              * Owner Id
              * Format: uuid
@@ -1200,6 +1271,8 @@ export interface components {
             min_quantity?: number | null;
             /** Notes */
             notes?: string | null;
+            /** Image Id */
+            image_id?: string | null;
             /** Tag Names */
             tag_names?: string[] | null;
         };
@@ -3775,6 +3848,99 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AuditLogRead"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_image_api_images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_image_api_images_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fetch_image_api_images__image_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                image_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_image_api_images__image_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                image_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

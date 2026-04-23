@@ -52,6 +52,7 @@ export default function EditItemPage() {
     location_id: item.data.location?.id ?? null,
     quantity: item.data.quantity,
     notes: item.data.notes ?? "",
+    image_id: item.data.image_id ?? null,
     tag_names: item.data.tags.map((tag) => tag.name),
   }
 
@@ -64,6 +65,7 @@ export default function EditItemPage() {
         location_id: values.location_id,
         quantity: values.quantity,
         notes: values.notes || null,
+        image_id: values.image_id ?? null,
         tag_names: values.tag_names,
       })
       toast.success(t("items.toast.updated"))
