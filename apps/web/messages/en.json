@@ -1,10 +1,12 @@
 {
   "appName": "Item Management System v2",
   "nav": {
+    "categories": "Categories",
     "collab": "Collaboration",
     "dashboard": "Dashboard",
     "items": "Items",
     "lists": "Lists",
+    "locations": "Locations",
     "notifications": "Notifications",
     "settings": "Settings",
     "statistics": "Statistics",
