@@ -113,3 +113,13 @@ async def logout(response: Response) -> Response:
 @router.get("/me", response_model=UserPublic)
 async def me(current_user: User = Depends(get_current_user)) -> UserPublic:
     return UserPublic.model_validate(current_user)
+
+
+@router.post("/bootstrap-admin", response_model=UserPublic)
+async def bootstrap_admin(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> UserPublic:
+    from app.services import profile_service
+    promoted = await profile_service.bootstrap_admin_if_none(session, current_user)
+    return UserPublic.model_validate(promoted)

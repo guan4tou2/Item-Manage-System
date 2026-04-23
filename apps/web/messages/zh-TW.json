@@ -299,5 +299,64 @@
     "readonly": {
       "sharedBy": "由 {username} 分享（唯讀）"
     }
+  },
+  "settings": {
+    "title": "設定",
+    "tabs": {
+      "profile": "個人資料",
+      "password": "密碼",
+      "preferences": "偏好",
+      "admin": "管理員"
+    },
+    "profile": {
+      "email": "電子郵件",
+      "username": "使用者名稱",
+      "save": "儲存",
+      "saved": "已儲存",
+      "conflict": "此電子郵件或使用者名稱已被使用"
+    },
+    "password": {
+      "current": "目前密碼",
+      "new": "新密碼",
+      "confirm": "再次輸入新密碼",
+      "mismatch": "兩次輸入的新密碼不一致",
+      "save": "變更密碼",
+      "saved": "密碼已更新",
+      "wrongCurrent": "目前密碼不正確"
+    },
+    "preferences": {
+      "theme": "主題",
+      "language": "語言",
+      "saved": "偏好已儲存"
+    },
+    "admin": {
+      "emptyTable": "尚無使用者",
+      "actions": {
+        "activate": "啟用",
+        "deactivate": "停用",
+        "sendTest": "寄送測試通知"
+      },
+      "status": {
+        "active": "啟用中",
+        "inactive": "已停用",
+        "admin": "管理員"
+      },
+      "errors": {
+        "cannotDeactivateSelf": "無法停用自己",
+        "cannotRemoveLastAdmin": "無法停用最後一位管理員"
+      },
+      "testSent": "測試通知已送出",
+      "cols": {
+        "username": "使用者",
+        "email": "電子郵件",
+        "flags": "狀態",
+        "actions": "操作"
+      }
+    },
+    "bootstrap": {
+      "prompt": "系統尚無管理員。",
+      "confirm": "成為首位管理員",
+      "success": "您已成為管理員"
+    }
   }
 }

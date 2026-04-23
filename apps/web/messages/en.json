@@ -299,5 +299,64 @@
     "readonly": {
       "sharedBy": "Shared by {username} (read-only)"
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "profile": "Profile",
+      "password": "Password",
+      "preferences": "Preferences",
+      "admin": "Admin"
+    },
+    "profile": {
+      "email": "Email",
+      "username": "Username",
+      "save": "Save",
+      "saved": "Saved",
+      "conflict": "Email or username already in use"
+    },
+    "password": {
+      "current": "Current password",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "mismatch": "Passwords do not match",
+      "save": "Change password",
+      "saved": "Password updated",
+      "wrongCurrent": "Current password is incorrect"
+    },
+    "preferences": {
+      "theme": "Theme",
+      "language": "Language",
+      "saved": "Preferences saved"
+    },
+    "admin": {
+      "emptyTable": "No users yet",
+      "actions": {
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "sendTest": "Send test notification"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive",
+        "admin": "Admin"
+      },
+      "errors": {
+        "cannotDeactivateSelf": "Cannot deactivate yourself",
+        "cannotRemoveLastAdmin": "Cannot deactivate the last admin"
+      },
+      "testSent": "Test notification sent",
+      "cols": {
+        "username": "User",
+        "email": "Email",
+        "flags": "Status",
+        "actions": "Actions"
+      }
+    },
+    "bootstrap": {
+      "prompt": "No admin exists yet.",
+      "confirm": "Become the first admin",
+      "success": "You are now an admin"
+    }
   }
 }
