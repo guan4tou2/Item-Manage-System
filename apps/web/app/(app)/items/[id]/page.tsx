@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog"
+import { FavoriteButton } from "@/components/items/favorite-button"
 import { LoanCard } from "@/components/collaboration/loan-card"
 import { NewTransferDialog } from "@/components/collaboration/new-transfer-dialog"
 import { ReadonlyBadge } from "@/components/collaboration/readonly-badge"
@@ -65,7 +66,10 @@ export default function ItemDetailPage() {
       </Breadcrumb>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">{i.name}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">{i.name}</h1>
+          {isOwner ? <FavoriteButton itemId={i.id} isFavorite={i.is_favorite} /> : null}
+        </div>
         <div className="flex gap-2">
           {isOwner ? (
             <>
