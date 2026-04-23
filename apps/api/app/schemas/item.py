@@ -16,6 +16,7 @@ class ItemCreate(BaseModel):
     description: Optional[str] = None
     category_id: Optional[int] = None
     location_id: Optional[int] = None
+    warehouse_id: Optional[int] = None
     quantity: int = Field(default=1, ge=0)
     min_quantity: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
@@ -28,6 +29,7 @@ class ItemUpdate(BaseModel):
     description: Optional[str] = None
     category_id: Optional[int] = None
     location_id: Optional[int] = None
+    warehouse_id: Optional[int] = None
     quantity: Optional[int] = Field(default=None, ge=0)
     min_quantity: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
@@ -46,6 +48,7 @@ class ItemRead(BaseModel):
     notes: Optional[str]
     is_favorite: bool
     image_id: Optional[UUID]
+    warehouse_id: Optional[int]
     owner_id: UUID
     owner_username: str
     created_at: datetime

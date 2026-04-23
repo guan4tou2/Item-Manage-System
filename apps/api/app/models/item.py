@@ -28,6 +28,7 @@ class Item(Base):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     category_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     location_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("locations.id", ondelete="SET NULL"), nullable=True)
+    warehouse_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"), default=1)
     min_quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

@@ -23,6 +23,7 @@ from app.routes import (
     tags,
     transfers,
     users,
+    warehouses,
 )
 
 
@@ -62,6 +63,7 @@ def create_app() -> FastAPI:
     app.include_router(item_history.router)
     app.include_router(stocktake.router)
     app.include_router(external_channels.router)
+    app.include_router(warehouses.router)
     return app
 
 
