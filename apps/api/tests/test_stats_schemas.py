@@ -20,6 +20,9 @@ def test_overview_stats_serializes_all_fields():
         "total_categories": 2,
         "total_locations": 1,
         "total_tags": 3,
+        "total_warehouses": 0,
+        "low_stock_items": 0,
+        "active_loans": 0,
     }
 
 

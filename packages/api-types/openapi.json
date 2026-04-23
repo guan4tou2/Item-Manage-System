@@ -1510,6 +1510,36 @@
         }
       }
     },
+    "/api/stats/by-warehouse": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "By Warehouse",
+        "operationId": "by_warehouse_api_stats_by_warehouse_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WarehouseBucket"
+                  },
+                  "type": "array",
+                  "title": "Response By Warehouse Api Stats By Warehouse Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/stats/recent": {
       "get": {
         "tags": [
@@ -1547,6 +1577,222 @@
                     "$ref": "#/components/schemas/ItemRead"
                   },
                   "title": "Response Recent Api Stats Recent Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/low-stock": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Low Stock",
+        "operationId": "low_stock_api_stats_low_stock_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LowStockItem"
+                  },
+                  "title": "Response Low Stock Api Stats Low Stock Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/active-loans": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Active Loans",
+        "operationId": "active_loans_api_stats_active_loans_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActiveLoan"
+                  },
+                  "title": "Response Active Loans Api Stats Active Loans Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/trend": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Trend",
+        "operationId": "trend_api_stats_trend_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TrendPoint"
+                  },
+                  "title": "Response Trend Api Stats Trend Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats/activity": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Activity",
+        "operationId": "activity_api_stats_activity_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEntry"
+                  },
+                  "title": "Response Activity Api Stats Activity Get"
                 }
               }
             }
@@ -5234,6 +5480,114 @@
         ],
         "title": "AccessTokenResponse"
       },
+      "ActiveLoan": {
+        "properties": {
+          "loan_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Loan Id"
+          },
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "item_name": {
+            "type": "string",
+            "title": "Item Name"
+          },
+          "borrower_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Borrower Label"
+          },
+          "lent_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Lent At"
+          },
+          "expected_return": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Return"
+          },
+          "is_overdue": {
+            "type": "boolean",
+            "title": "Is Overdue"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loan_id",
+          "item_id",
+          "item_name",
+          "borrower_label",
+          "lent_at",
+          "expected_return",
+          "is_overdue"
+        ],
+        "title": "ActiveLoan"
+      },
+      "ActivityEntry": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "item_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Id"
+          },
+          "item_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Name"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "at",
+          "summary"
+        ],
+        "title": "ActivityEntry"
+      },
       "AiSuggestRequest": {
         "properties": {
           "image_id": {
@@ -7483,15 +7837,8 @@
             "title": "Zone"
           },
           "sort_order": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 0.0
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "integer",
+            "minimum": 0.0,
             "title": "Sort Order",
             "default": 0
           },
@@ -7675,6 +8022,40 @@
         ],
         "title": "LoginRequest"
       },
+      "LowStockItem": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "min_quantity": {
+            "type": "integer",
+            "title": "Min Quantity"
+          },
+          "deficit": {
+            "type": "integer",
+            "title": "Deficit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "name",
+          "quantity",
+          "min_quantity",
+          "deficit"
+        ],
+        "title": "LowStockItem"
+      },
       "MarkAllReadResponse": {
         "properties": {
           "marked": {
@@ -7808,6 +8189,21 @@
           "total_tags": {
             "type": "integer",
             "title": "Total Tags"
+          },
+          "total_warehouses": {
+            "type": "integer",
+            "title": "Total Warehouses",
+            "default": 0
+          },
+          "low_stock_items": {
+            "type": "integer",
+            "title": "Low Stock Items",
+            "default": 0
+          },
+          "active_loans": {
+            "type": "integer",
+            "title": "Active Loans",
+            "default": 0
           }
         },
         "type": "object",
@@ -8426,6 +8822,25 @@
         ],
         "title": "TransferRead"
       },
+      "TrendPoint": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "count"
+        ],
+        "title": "TrendPoint"
+      },
       "UnreadCountResponse": {
         "properties": {
           "count": {
@@ -8571,6 +8986,43 @@
           "public_key"
         ],
         "title": "VapidPublicKey"
+      },
+      "WarehouseBucket": {
+        "properties": {
+          "warehouse_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warehouse Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "warehouse_id",
+          "name",
+          "count"
+        ],
+        "title": "WarehouseBucket"
       },
       "WarehouseCreate": {
         "properties": {

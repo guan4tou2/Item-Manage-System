@@ -8,9 +8,14 @@ interface Props {
   value?: number
   icon?: ReactNode
   loading?: boolean
+  tone?: "warn"
 }
 
-export function StatCard({ label, value, icon, loading }: Props) {
+export function StatCard({ label, value, icon, loading, tone }: Props) {
+  const valueClass =
+    tone === "warn" && typeof value === "number" && value > 0
+      ? "text-3xl font-semibold tabular-nums text-destructive"
+      : "text-3xl font-semibold tabular-nums"
   return (
     <Card role="group" aria-label={label}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -21,7 +26,7 @@ export function StatCard({ label, value, icon, loading }: Props) {
         {loading ? (
           <Skeleton className="h-8 w-16" />
         ) : (
-          <div className="text-3xl font-semibold tabular-nums">{value ?? 0}</div>
+          <div className={valueClass}>{value ?? 0}</div>
         )}
       </CardContent>
     </Card>

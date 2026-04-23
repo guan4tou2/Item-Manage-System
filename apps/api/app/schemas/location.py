@@ -10,7 +10,7 @@ class LocationCreate(BaseModel):
     floor: str = Field(min_length=1, max_length=50)
     room: Optional[str] = Field(default=None, max_length=50)
     zone: Optional[str] = Field(default=None, max_length=50)
-    sort_order: Optional[int] = Field(default=0, ge=0)
+    sort_order: int = Field(default=0, ge=0)
     floor_plan_image_id: Optional[UUID] = None
 
 
