@@ -1,10 +1,12 @@
 {
   "appName": "物品管理系統 v2",
   "nav": {
+    "categories": "分類",
     "collab": "協作",
     "dashboard": "儀表板",
     "items": "物品",
     "lists": "清單",
+    "locations": "位置",
     "notifications": "通知",
     "settings": "設定",
     "statistics": "統計",
