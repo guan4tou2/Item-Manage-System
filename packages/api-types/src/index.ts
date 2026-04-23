@@ -1113,6 +1113,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stocktakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Stocktakes */
+        get: operations["list_stocktakes_api_stocktakes_get"];
+        put?: never;
+        /** Create Stocktake */
+        post: operations["create_stocktake_api_stocktakes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stocktakes/{stocktake_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Stocktake */
+        get: operations["get_stocktake_api_stocktakes__stocktake_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stocktakes/{stocktake_id}/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Scan Item */
+        post: operations["scan_item_api_stocktakes__stocktake_id__scan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stocktakes/{stocktake_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Stocktake */
+        post: operations["complete_stocktake_api_stocktakes__stocktake_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stocktakes/{stocktake_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Stocktake */
+        post: operations["cancel_stocktake_api_stocktakes__stocktake_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1998,6 +2084,110 @@ export interface components {
         ReorderRequest: {
             /** Entry Ids */
             entry_ids: string[];
+        };
+        /** StocktakeCreate */
+        StocktakeCreate: {
+            /** Name */
+            name: string;
+        };
+        /** StocktakeDetail */
+        StocktakeDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "completed" | "cancelled";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+            /**
+             * Discrepancy Count
+             * @default 0
+             */
+            discrepancy_count: number;
+            /** Items */
+            items: components["schemas"]["StocktakeItemRead"][];
+        };
+        /** StocktakeItemRead */
+        StocktakeItemRead: {
+            /** Id */
+            id: number;
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Expected Quantity */
+            expected_quantity: number;
+            /** Actual Quantity */
+            actual_quantity: number;
+            /** Note */
+            note: string | null;
+            /**
+             * Scanned At
+             * Format: date-time
+             */
+            scanned_at: string;
+        };
+        /** StocktakeItemScan */
+        StocktakeItemScan: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Actual Quantity */
+            actual_quantity: number;
+            /** Note */
+            note?: string | null;
+        };
+        /** StocktakeRead */
+        StocktakeRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "completed" | "cancelled";
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+            /**
+             * Discrepancy Count
+             * @default 0
+             */
+            discrepancy_count: number;
         };
         /** TagBucket */
         TagBucket: {
@@ -4717,6 +4907,187 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemVersionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_stocktakes_api_stocktakes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StocktakeRead"][];
+                };
+            };
+        };
+    };
+    create_stocktake_api_stocktakes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StocktakeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StocktakeRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_stocktake_api_stocktakes__stocktake_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StocktakeDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scan_item_api_stocktakes__stocktake_id__scan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StocktakeItemScan"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StocktakeItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_stocktake_api_stocktakes__stocktake_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StocktakeDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_stocktake_api_stocktakes__stocktake_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stocktake_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StocktakeRead"];
                 };
             };
             /** @description Validation Error */
