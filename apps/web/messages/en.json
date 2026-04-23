@@ -1,6 +1,7 @@
 {
   "appName": "Item Management System v2",
   "nav": {
+    "collab": "Collaboration",
     "dashboard": "Dashboard",
     "items": "Items",
     "lists": "Lists",
@@ -224,6 +225,79 @@
       "fieldPrice": "Price",
       "fieldLink": "Link",
       "fieldNote": "Note"
+    }
+  },
+  "collab": {
+    "title": "Collaboration",
+    "tabs": {
+      "groups": "Groups",
+      "transfers": "Transfers"
+    },
+    "groups": {
+      "new": "New group",
+      "empty": "No groups yet",
+      "memberCount": "{count} members",
+      "youAreOwner": "Owner",
+      "detail": {
+        "addMember": "Add member",
+        "addMemberUsernamePlaceholder": "Username",
+        "removeMember": "Remove",
+        "confirmRemove": "Remove this member?",
+        "delete": "Delete group",
+        "confirmDelete": "Delete this group? Members will lose visibility of each other's items.",
+        "leave": "Leave group"
+      }
+    },
+    "transfers": {
+      "actions": {
+        "accept": "Accept",
+        "reject": "Reject",
+        "cancel": "Cancel"
+      },
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Rejected",
+        "cancelled": "Cancelled"
+      },
+      "empty": "No transfer requests"
+    },
+    "loan": {
+      "card": {
+        "title": "Loan history",
+        "history": "History",
+        "expectedReturn": "Expected return: {date}",
+        "borrowerUser": "{username} (internal user)"
+      },
+      "actions": {
+        "new": "New loan",
+        "return": "Mark returned",
+        "delete": "Delete record"
+      },
+      "new": {
+        "title": "New loan",
+        "modeUser": "Internal user",
+        "modeLabel": "Custom name",
+        "borrowerUser": "Username",
+        "borrowerLabel": "Borrower (custom)",
+        "expectedReturn": "Expected return",
+        "notes": "Notes",
+        "create": "Create"
+      }
+    },
+    "transfer": {
+      "actions": {
+        "new": "Transfer ownership"
+      },
+      "new": {
+        "title": "Transfer ownership",
+        "toUsername": "Recipient username",
+        "message": "Message (optional)",
+        "create": "Send request"
+      }
+    },
+    "readonly": {
+      "sharedBy": "Shared by {username} (read-only)"
     }
   }
 }

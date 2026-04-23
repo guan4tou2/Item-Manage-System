@@ -1,6 +1,7 @@
 {
   "appName": "物品管理系統 v2",
   "nav": {
+    "collab": "協作",
     "dashboard": "儀表板",
     "items": "物品",
     "lists": "清單",
@@ -224,6 +225,79 @@
       "fieldPrice": "價格",
       "fieldLink": "連結",
       "fieldNote": "備註"
+    }
+  },
+  "collab": {
+    "title": "協作",
+    "tabs": {
+      "groups": "群組",
+      "transfers": "轉移"
+    },
+    "groups": {
+      "new": "新增群組",
+      "empty": "尚無群組",
+      "memberCount": "{count} 人",
+      "youAreOwner": "擁有者",
+      "detail": {
+        "addMember": "加入成員",
+        "addMemberUsernamePlaceholder": "對方使用者名稱",
+        "removeMember": "移除",
+        "confirmRemove": "確定移除此成員？",
+        "delete": "刪除群組",
+        "confirmDelete": "確定刪除此群組？所有成員將失去彼此物品的可見性。",
+        "leave": "離開群組"
+      }
+    },
+    "transfers": {
+      "actions": {
+        "accept": "接受",
+        "reject": "拒絕",
+        "cancel": "取消"
+      },
+      "status": {
+        "pending": "等待中",
+        "accepted": "已接受",
+        "rejected": "已拒絕",
+        "cancelled": "已取消"
+      },
+      "empty": "尚無轉移請求"
+    },
+    "loan": {
+      "card": {
+        "title": "借出紀錄",
+        "history": "歷史紀錄",
+        "expectedReturn": "預計歸還：{date}",
+        "borrowerUser": "{username}（站內使用者）"
+      },
+      "actions": {
+        "new": "新增借用",
+        "return": "歸還",
+        "delete": "刪除紀錄"
+      },
+      "new": {
+        "title": "新增借用",
+        "modeUser": "站內使用者",
+        "modeLabel": "自訂名稱",
+        "borrowerUser": "使用者名稱",
+        "borrowerLabel": "借用者（自訂）",
+        "expectedReturn": "預計歸還日",
+        "notes": "備註",
+        "create": "建立"
+      }
+    },
+    "transfer": {
+      "actions": {
+        "new": "轉移所有權"
+      },
+      "new": {
+        "title": "轉移所有權",
+        "toUsername": "接收者使用者名稱",
+        "message": "附註訊息（選填）",
+        "create": "送出請求"
+      }
+    },
+    "readonly": {
+      "sharedBy": "由 {username} 分享（唯讀）"
     }
   }
 }
