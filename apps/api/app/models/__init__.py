@@ -1,4 +1,5 @@
 from app.models.category import Category
+from app.models.group import Group, GroupMember
 from app.models.item import Item
 from app.models.list import List, ListEntry
 from app.models.location import Location
@@ -16,4 +17,6 @@ __all__ = [
     "Notification",
     "List",
     "ListEntry",
+    "Group",
+    "GroupMember",
 ]
