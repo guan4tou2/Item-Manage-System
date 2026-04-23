@@ -4,6 +4,7 @@
     "dashboard": "儀表板",
     "items": "物品",
     "lists": "清單",
+    "notifications": "通知",
     "settings": "設定",
     "statistics": "統計",
     "taxonomy": "分類與位置"
@@ -159,6 +160,26 @@
       "empty": "尚未建立位置",
       "delete": "刪除",
       "confirmDelete": "確定刪除此位置?"
+    }
+  },
+  "notifications": {
+    "title": "通知",
+    "filters": {
+      "all": "全部",
+      "unread": "未讀"
+    },
+    "actions": {
+      "markRead": "標為已讀",
+      "markAllRead": "全部標為已讀",
+      "delete": "刪除"
+    },
+    "empty": {
+      "title": "尚無通知",
+      "cta": "前往儀表板"
+    },
+    "loadMore": "載入更多",
+    "bell": {
+      "label": "通知"
     }
   }
 }
