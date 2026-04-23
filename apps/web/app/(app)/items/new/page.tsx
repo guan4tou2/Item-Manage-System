@@ -25,6 +25,7 @@ const empty: ItemFormValues = {
   location_id: null,
   quantity: 1,
   notes: "",
+  image_id: null,
   tag_names: [],
 }
 
@@ -45,6 +46,7 @@ export default function NewItemPage() {
         location_id: values.location_id ?? undefined,
         quantity: values.quantity,
         notes: values.notes || undefined,
+        image_id: values.image_id ?? undefined,
         tag_names: values.tag_names,
       })
       toast.success(t("items.toast.created"))

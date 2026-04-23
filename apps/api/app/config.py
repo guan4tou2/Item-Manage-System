@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     access_token_ttl_seconds: int = 60 * 15
     refresh_token_ttl_seconds: int = 60 * 60 * 24 * 7
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    media_dir: str = Field(default="/app/media")
+    max_image_bytes: int = Field(default=10 * 1024 * 1024)  # 10 MB
+    gemini_api_key: str = Field(default="")
 
     @model_validator(mode="after")
     def _ensure_production_secret(self) -> "Settings":

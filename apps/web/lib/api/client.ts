@@ -13,7 +13,10 @@ type RequestInitWithToken = RequestInit & { accessToken?: string | null }
 
 export async function apiFetch(path: string, init: RequestInitWithToken = {}): Promise<Response> {
   const headers = new Headers(init.headers)
-  headers.set('content-type', 'application/json')
+  // Only set JSON content-type when body is not FormData (browser sets boundary for FormData)
+  if (!(init.body instanceof FormData) && !headers.has('content-type')) {
+    headers.set('content-type', 'application/json')
+  }
   if (init.accessToken) {
     headers.set('authorization', `Bearer ${init.accessToken}`)
   }

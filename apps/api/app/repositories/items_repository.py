@@ -63,6 +63,7 @@ async def list_paginated(
     category_id: int | None,
     location_id: int | None,
     tag_ids: list[int] | None,
+    favorite: bool | None = None,
     page: int,
     per_page: int,
 ) -> tuple[list[Item], int]:
@@ -81,6 +82,8 @@ async def list_paginated(
                 select(item_tags.c.item_id).where(item_tags.c.tag_id.in_(tag_ids))
             )
         )
+    if favorite is not None:
+        base = base.where(Item.is_favorite.is_(favorite))
 
     total_stmt = select(func.count()).select_from(base.subquery())
     total = (await session.execute(total_stmt)).scalar_one()

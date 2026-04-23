@@ -8,6 +8,7 @@ from app.routes import (
     categories,
     groups,
     health,
+    images,
     items,
     lists,
     loans,
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(loans.router)
     app.include_router(transfers.router)
     app.include_router(admin.router)
+    app.include_router(images.router)
     return app
 
 
