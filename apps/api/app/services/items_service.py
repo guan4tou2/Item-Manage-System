@@ -13,6 +13,7 @@ from app.repositories import (
     tags_repository,
 )
 from app.schemas.item import ItemCreate, ItemListResponse, ItemRead, ItemUpdate
+from app.services import notifications_service
 
 
 async def _validate_refs(
@@ -75,10 +76,24 @@ async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -
         category_id=body.category_id,
         location_id=body.location_id,
         quantity=body.quantity,
+        min_quantity=body.min_quantity,
         notes=body.notes,
         tags=tags,
     )
     created = await items_repository.create(session, item)
+    if (
+        created.min_quantity is not None
+        and created.min_quantity > 0
+        and created.quantity <= created.min_quantity
+    ):
+        await notifications_service.emit(
+            session,
+            user_id=owner_id,
+            type="low_stock",
+            title=f"「{created.name}」庫存不足",
+            body=f"目前數量：{created.quantity}，提醒閾值：{created.min_quantity}",
+            link=f"/items/{created.id}",
+        )
     return ItemRead.model_validate(created)
 
 
@@ -88,7 +103,9 @@ async def update_item(
     item = await items_repository.get_owned(session, owner_id, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
+    old_quantity = item.quantity
     fields = body.model_dump(exclude_unset=True)
+    quantity_changing = "quantity" in fields
     if "category_id" in fields or "location_id" in fields:
         await _validate_refs(
             session,
@@ -102,6 +119,21 @@ async def update_item(
     for k, v in fields.items():
         setattr(item, k, v)
     saved = await items_repository.save(session, item)
+    if (
+        quantity_changing
+        and saved.min_quantity is not None
+        and saved.min_quantity > 0
+        and old_quantity > saved.min_quantity
+        and saved.quantity <= saved.min_quantity
+    ):
+        await notifications_service.emit(
+            session,
+            user_id=owner_id,
+            type="low_stock",
+            title=f"「{saved.name}」庫存不足",
+            body=f"目前數量：{saved.quantity}，提醒閾值：{saved.min_quantity}",
+            link=f"/items/{saved.id}",
+        )
     return ItemRead.model_validate(saved)
 
 

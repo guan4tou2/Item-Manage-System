@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 
 import { MobileNav } from "./mobile-nav"
 import { NAV_ITEMS } from "./nav-items"
+import { NotificationBell } from "./notification-bell"
 import { UserMenu } from "./user-menu"
 
 export function AppHeader() {
@@ -43,6 +44,7 @@ export function AppHeader() {
         })}
       </nav>
       <div className="ml-auto flex items-center gap-2">
+        <NotificationBell />
         <UserMenu />
       </div>
     </header>

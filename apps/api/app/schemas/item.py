@@ -17,6 +17,7 @@ class ItemCreate(BaseModel):
     category_id: Optional[int] = None
     location_id: Optional[int] = None
     quantity: int = Field(default=1, ge=0)
+    min_quantity: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
     tag_names: list[str] = Field(default_factory=list)
 
@@ -27,6 +28,7 @@ class ItemUpdate(BaseModel):
     category_id: Optional[int] = None
     location_id: Optional[int] = None
     quantity: Optional[int] = Field(default=None, ge=0)
+    min_quantity: Optional[int] = Field(default=None, ge=0)
     notes: Optional[str] = None
     tag_names: Optional[list[str]] = None
 
@@ -38,6 +40,7 @@ class ItemRead(BaseModel):
     name: str
     description: Optional[str]
     quantity: int
+    min_quantity: Optional[int]
     notes: Optional[str]
     created_at: datetime
     updated_at: datetime

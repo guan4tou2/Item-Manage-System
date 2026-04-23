@@ -16,6 +16,10 @@ class Item(Base):
     __tablename__ = "items"
     __table_args__ = (
         CheckConstraint("quantity >= 0", name="ck_items_quantity_nonneg"),
+        CheckConstraint(
+            "min_quantity IS NULL OR min_quantity >= 0",
+            name="ck_items_min_quantity_nonneg",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
@@ -25,6 +29,7 @@ class Item(Base):
     category_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     location_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("locations.id", ondelete="SET NULL"), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"), default=1)
+    min_quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)

@@ -13,6 +13,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.schemas.user import UserPublic
+from app.services import notifications_service
 from app.services.auth_service import (
     AuthService,
     EmailAlreadyExists,
@@ -49,6 +50,14 @@ async def register(
         raise HTTPException(status_code=409, detail="email already registered")
     except UsernameAlreadyExists:
         raise HTTPException(status_code=409, detail="username already taken")
+    await notifications_service.emit(
+        session,
+        user_id=user.id,
+        type="system.welcome",
+        title="歡迎使用 IMS",
+        body="從儀表板開始管理你的物品吧。",
+        link="/dashboard",
+    )
     access = service.issue_access_token(user)
     refresh = service.issue_refresh_token(user)
     _set_refresh_cookie(response, refresh)

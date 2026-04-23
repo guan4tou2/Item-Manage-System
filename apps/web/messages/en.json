@@ -4,6 +4,7 @@
     "dashboard": "Dashboard",
     "items": "Items",
     "lists": "Lists",
+    "notifications": "Notifications",
     "settings": "Settings",
     "statistics": "Statistics",
     "taxonomy": "Taxonomy"
@@ -159,6 +160,26 @@
       "empty": "No locations yet",
       "delete": "Delete",
       "confirmDelete": "Delete this location?"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "filters": {
+      "all": "All",
+      "unread": "Unread"
+    },
+    "actions": {
+      "markRead": "Mark read",
+      "markAllRead": "Mark all read",
+      "delete": "Delete"
+    },
+    "empty": {
+      "title": "No notifications yet",
+      "cta": "Go to dashboard"
+    },
+    "loadMore": "Load more",
+    "bell": {
+      "label": "Notifications"
     }
   }
 }
