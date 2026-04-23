@@ -358,5 +358,13 @@
       "confirm": "Become the first admin",
       "success": "You are now an admin"
     }
+  },
+  "pwa": {
+    "install": "Install to home screen",
+    "offline": {
+      "title": "You are offline",
+      "body": "Cannot reach the server. Please check your connection.",
+      "home": "Back to home"
+    }
   }
 }

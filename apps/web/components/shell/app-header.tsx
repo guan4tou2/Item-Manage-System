@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl"
 
 import { cn } from "@/lib/utils"
 
+import { InstallPwaButton } from "@/components/pwa/install-pwa-button"
+
 import { MobileNav } from "./mobile-nav"
 import { NAV_ITEMS } from "./nav-items"
 import { NotificationBell } from "./notification-bell"
@@ -44,6 +46,7 @@ export function AppHeader() {
         })}
       </nav>
       <div className="ml-auto flex items-center gap-2">
+        <InstallPwaButton />
         <NotificationBell />
         <UserMenu />
       </div>
