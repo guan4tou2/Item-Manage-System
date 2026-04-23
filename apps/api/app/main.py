@@ -18,6 +18,7 @@ from app.routes import (
     locations,
     notifications,
     stats,
+    stocktake,
     tags,
     transfers,
     users,
@@ -58,6 +59,7 @@ def create_app() -> FastAPI:
     app.include_router(ai.router)
     app.include_router(customization.router)
     app.include_router(item_history.router)
+    app.include_router(stocktake.router)
     return app
 
 
