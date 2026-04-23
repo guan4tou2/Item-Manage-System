@@ -1,14 +1,15 @@
 from __future__ import annotations
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_admin
 from app.db.session import get_db
 from app.models.user import User
+from app.schemas.audit import AuditLogRead
 from app.schemas.user import UserAdminUpdate, UserPublic
-from app.services import admin_service
+from app.services import admin_service, audit_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -41,3 +42,18 @@ async def send_test_notification(
 ) -> dict:
     await admin_service.send_test_notification(session, admin, user_id)
     return {"notified": True}
+
+
+@router.get("/audit-logs", response_model=list[AuditLogRead])
+async def list_audit_logs(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    action: str | None = None,
+    resource_type: str | None = None,
+    admin: User = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_db),
+) -> list[AuditLogRead]:
+    rows = await audit_service.list_logs(
+        session, limit=limit, offset=offset, action=action, resource_type=resource_type,
+    )
+    return [AuditLogRead.model_validate(r) for r in rows]

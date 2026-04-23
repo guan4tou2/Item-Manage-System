@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
-from app.services import notifications_service
+from app.services import audit_service, notifications_service
 
 
 async def list_users(session: AsyncSession) -> list[User]:
@@ -44,6 +44,14 @@ async def set_active(
     target.is_active = is_active
     await session.commit()
     await session.refresh(target)
+    await audit_service.log(
+        session,
+        user_id=admin_user.id,
+        action="admin.user.set_active",
+        resource_type="user",
+        resource_id=str(target_user_id),
+        meta={"is_active": is_active},
+    )
     return target
 
 

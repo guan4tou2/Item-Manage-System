@@ -31,6 +31,7 @@ class Item(Base):
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"), default=1)
     min_quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"), index=True)
     is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False)

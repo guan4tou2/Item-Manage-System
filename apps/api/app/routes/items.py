@@ -20,6 +20,7 @@ async def list_items(
     category_id: int | None = None,
     location_id: int | None = None,
     tag_ids: list[int] | None = Query(default=None),
+    favorite: bool | None = None,
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=20, ge=1, le=100),
     user: User = Depends(get_current_user),
@@ -32,9 +33,19 @@ async def list_items(
         category_id=category_id,
         location_id=location_id,
         tag_ids=tag_ids,
+        favorite=favorite,
         page=page,
         per_page=per_page,
     )
+
+
+@router.post("/{item_id}/favorite", response_model=ItemRead)
+async def toggle_favorite(
+    item_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> ItemRead:
+    return await items_service.toggle_favorite(session, user.id, item_id)
 
 
 @router.post("", response_model=ItemRead, status_code=status.HTTP_201_CREATED)

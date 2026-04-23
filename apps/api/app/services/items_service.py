@@ -25,6 +25,7 @@ def _to_read(item: Item) -> ItemRead:
         "quantity": item.quantity,
         "min_quantity": item.min_quantity,
         "notes": item.notes,
+        "is_favorite": item.is_favorite,
         "owner_id": item.owner_id,
         "owner_username": item.owner.username,
         "created_at": item.created_at,
@@ -33,6 +34,17 @@ def _to_read(item: Item) -> ItemRead:
         "location": item.location,
         "tags": item.tags,
     })
+
+
+async def toggle_favorite(
+    session: AsyncSession, owner_id: UUID, item_id: UUID
+) -> ItemRead:
+    item = await items_repository.get_owned(session, owner_id, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="item not found")
+    item.is_favorite = not item.is_favorite
+    saved = await items_repository.save(session, item)
+    return _to_read(saved)
 
 
 async def _validate_refs(
@@ -57,6 +69,7 @@ async def list_items(
     category_id: int | None,
     location_id: int | None,
     tag_ids: list[int] | None,
+    favorite: bool | None = None,
     page: int,
     per_page: int,
 ) -> ItemListResponse:
@@ -68,6 +81,7 @@ async def list_items(
         category_id=category_id,
         location_id=location_id,
         tag_ids=tag_ids,
+        favorite=favorite,
         page=page,
         per_page=per_page,
     )
