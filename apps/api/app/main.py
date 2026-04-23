@@ -2,7 +2,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routes import auth, categories, health, items, lists, locations, notifications, stats, tags, users
+from app.routes import (
+    auth,
+    categories,
+    groups,
+    health,
+    items,
+    lists,
+    loans,
+    locations,
+    notifications,
+    stats,
+    tags,
+    transfers,
+    users,
+)
 
 
 def create_app() -> FastAPI:
@@ -31,6 +45,9 @@ def create_app() -> FastAPI:
     app.include_router(stats.router)
     app.include_router(notifications.router)
     app.include_router(lists.router)
+    app.include_router(groups.router)
+    app.include_router(loans.router)
+    app.include_router(transfers.router)
     return app
 
 
