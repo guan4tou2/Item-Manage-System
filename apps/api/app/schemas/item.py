@@ -42,6 +42,8 @@ class ItemRead(BaseModel):
     quantity: int
     min_quantity: Optional[int]
     notes: Optional[str]
+    owner_id: UUID
+    owner_username: str
     created_at: datetime
     updated_at: datetime
     category: Optional[CategoryRead]
