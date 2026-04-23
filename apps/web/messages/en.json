@@ -181,5 +181,49 @@
     "bell": {
       "label": "Notifications"
     }
+  },
+  "lists": {
+    "title": "Lists",
+    "actions": {
+      "newList": "New list",
+      "delete": "Delete list",
+      "confirmDelete": "Delete this list?",
+      "confirmDeleteBody": "The list and its entries will be permanently removed."
+    },
+    "filter": {
+      "all": "All"
+    },
+    "kind": {
+      "travel": "Travel",
+      "shopping": "Shopping",
+      "collection": "Collection",
+      "generic": "Generic"
+    },
+    "new": {
+      "titlePlaceholder": "List name…",
+      "descriptionPlaceholder": "Description (optional)",
+      "kindLabel": "Kind",
+      "create": "Create",
+      "cancel": "Cancel"
+    },
+    "detail": {
+      "entryCount": "{count} items · {done} done",
+      "budget": "Budget ${amount}",
+      "spent": "Spent ${amount}",
+      "overBudget": "Over budget by ${amount}",
+      "dateRange": "{start} – {end}"
+    },
+    "empty": {
+      "title": "No lists yet",
+      "cta": "Create your first list"
+    },
+    "entry": {
+      "empty": "No entries yet",
+      "placeholder": "Type an entry name, press Enter to add",
+      "fieldQty": "Qty",
+      "fieldPrice": "Price",
+      "fieldLink": "Link",
+      "fieldNote": "Note"
+    }
   }
 }

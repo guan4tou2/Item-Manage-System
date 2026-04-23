@@ -181,5 +181,49 @@
     "bell": {
       "label": "通知"
     }
+  },
+  "lists": {
+    "title": "清單",
+    "actions": {
+      "newList": "新增清單",
+      "delete": "刪除清單",
+      "confirmDelete": "確定刪除此清單？",
+      "confirmDeleteBody": "清單與所有項目將被永久刪除。"
+    },
+    "filter": {
+      "all": "全部"
+    },
+    "kind": {
+      "travel": "旅行",
+      "shopping": "購物",
+      "collection": "收藏",
+      "generic": "通用"
+    },
+    "new": {
+      "titlePlaceholder": "清單名稱…",
+      "descriptionPlaceholder": "描述（選填）",
+      "kindLabel": "類型",
+      "create": "建立",
+      "cancel": "取消"
+    },
+    "detail": {
+      "entryCount": "{count} 項 · {done} 已完成",
+      "budget": "預算 ${amount}",
+      "spent": "已花 ${amount}",
+      "overBudget": "超出預算 ${amount}",
+      "dateRange": "{start} – {end}"
+    },
+    "empty": {
+      "title": "尚無清單",
+      "cta": "建立第一份清單"
+    },
+    "entry": {
+      "empty": "尚無項目",
+      "placeholder": "輸入項目名稱，按 Enter 新增",
+      "fieldQty": "數量",
+      "fieldPrice": "價格",
+      "fieldLink": "連結",
+      "fieldNote": "備註"
+    }
   }
 }
