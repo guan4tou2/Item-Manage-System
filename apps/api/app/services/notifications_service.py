@@ -27,9 +27,10 @@ async def emit(
     link: str | None = None,
 ) -> Notification | None:
     """Create a notification. Swallows errors and returns None to avoid
-    breaking the triggering transaction."""
+    breaking the triggering transaction. Also best-effort delivers via
+    external channels (email/LINE/Telegram/WebPush) if configured."""
     try:
-        return await repo.create(
+        notif = await repo.create(
             session,
             user_id=user_id,
             type=type,
@@ -44,6 +45,21 @@ async def emit(
             extra={"type": type, "user_id": str(user_id)},
         )
         return None
+
+    # Fan out to external channels (fail-soft)
+    try:
+        from app.services.external_notifications import deliver_all
+        await deliver_all(
+            session,
+            user_id=user_id,
+            title=title,
+            body=body or "",
+            link=link,
+        )
+    except Exception:
+        logger.warning("external delivery failed", exc_info=True)
+
+    return notif
 
 
 async def list_notifications(

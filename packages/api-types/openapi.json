@@ -4351,6 +4351,328 @@
           }
         }
       }
+    },
+    "/api/channels/status": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Status ",
+        "operationId": "status__api_channels_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelStatus"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/channels/line": {
+      "put": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Set Line Link",
+        "operationId": "set_line_link_api_channels_line_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineLinkSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Unlink Line",
+        "operationId": "unlink_line_api_channels_line_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/channels/telegram": {
+      "put": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Set Tg Link",
+        "operationId": "set_tg_link_api_channels_telegram_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TelegramLinkSet"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Unlink Tg",
+        "operationId": "unlink_tg_api_channels_telegram_delete",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/channels/vapid-public-key": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Vapid Public Key",
+        "operationId": "vapid_public_key_api_channels_vapid_public_key_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VapidPublicKey"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/web-push/subscriptions": {
+      "get": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "List Web Push",
+        "operationId": "list_web_push_api_channels_web_push_subscriptions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WebPushSubscriptionRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Web Push Api Channels Web Push Subscriptions Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Add Web Push",
+        "operationId": "add_web_push_api_channels_web_push_subscriptions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebPushSubscriptionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebPushSubscriptionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/channels/web-push/subscriptions/{sub_id}": {
+      "delete": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Remove Web Push",
+        "operationId": "remove_web_push_api_channels_web_push_subscriptions__sub_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "sub_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sub Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/channels/test/{channel}": {
+      "post": {
+        "tags": [
+          "channels"
+        ],
+        "summary": "Test Send",
+        "operationId": "test_send_api_channels_test__channel__post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "channel",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Channel"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "title": "Response Test Send Api Channels Test  Channel  Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4779,6 +5101,49 @@
         "additionalProperties": false,
         "type": "object",
         "title": "CategoryUpdate"
+      },
+      "ChannelStatus": {
+        "properties": {
+          "email_configured": {
+            "type": "boolean",
+            "title": "Email Configured"
+          },
+          "line_configured": {
+            "type": "boolean",
+            "title": "Line Configured"
+          },
+          "telegram_configured": {
+            "type": "boolean",
+            "title": "Telegram Configured"
+          },
+          "web_push_configured": {
+            "type": "boolean",
+            "title": "Web Push Configured"
+          },
+          "user_line_linked": {
+            "type": "boolean",
+            "title": "User Line Linked"
+          },
+          "user_telegram_linked": {
+            "type": "boolean",
+            "title": "User Telegram Linked"
+          },
+          "user_web_push_count": {
+            "type": "integer",
+            "title": "User Web Push Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email_configured",
+          "line_configured",
+          "telegram_configured",
+          "web_push_configured",
+          "user_line_linked",
+          "user_telegram_linked",
+          "user_web_push_count"
+        ],
+        "title": "ChannelStatus"
       },
       "CustomFieldCreate": {
         "properties": {
@@ -5649,6 +6014,21 @@
           "created_at"
         ],
         "title": "ItemVersionRead"
+      },
+      "LineLinkSet": {
+        "properties": {
+          "line_user_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Line User Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line_user_id"
+        ],
+        "title": "LineLinkSet"
       },
       "ListCreate": {
         "properties": {
@@ -7233,6 +7613,21 @@
         ],
         "title": "TagRead"
       },
+      "TelegramLinkSet": {
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Chat Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chat_id"
+        ],
+        "title": "TelegramLinkSet"
+      },
       "TokenResponse": {
         "properties": {
           "access_token": {
@@ -7508,6 +7903,72 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VapidPublicKey": {
+        "properties": {
+          "public_key": {
+            "type": "string",
+            "title": "Public Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "public_key"
+        ],
+        "title": "VapidPublicKey"
+      },
+      "WebPushSubscriptionCreate": {
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Endpoint"
+          },
+          "p256dh": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "P256Dh"
+          },
+          "auth": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Auth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "endpoint",
+          "p256dh",
+          "auth"
+        ],
+        "title": "WebPushSubscriptionCreate"
+      },
+      "WebPushSubscriptionRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "endpoint",
+          "created_at"
+        ],
+        "title": "WebPushSubscriptionRead"
       }
     },
     "securitySchemes": {

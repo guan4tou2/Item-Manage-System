@@ -20,7 +20,8 @@ dependencies = [
     "structlog==24.4.0",
     "apscheduler==3.10.4",
     "fastapi-mail==1.4.1",
-    "google-genai>=1.0"
+    "google-genai>=1.0",
+    "pywebpush==2.0.0"
 ]
 
 [project.optional-dependencies]
