@@ -13,7 +13,7 @@ from app.repositories import (
     tags_repository,
 )
 from app.schemas.item import ItemCreate, ItemListResponse, ItemRead, ItemUpdate
-from app.services import notifications_service
+from app.services import item_history_service, notifications_service
 from app.services.visibility_service import visible_item_owner_ids
 
 
@@ -141,6 +141,20 @@ async def update_item(
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
     old_quantity = item.quantity
+    # Snapshot pre-update state for version history
+    pre_snapshot = {
+        "name": item.name,
+        "description": item.description,
+        "quantity": item.quantity,
+        "min_quantity": item.min_quantity,
+        "notes": item.notes,
+        "category_id": item.category_id,
+        "location_id": item.location_id,
+        "image_id": str(item.image_id) if item.image_id else None,
+    }
+    await item_history_service.snapshot_version(
+        session, item_id=item.id, user_id=owner_id, snapshot=pre_snapshot,
+    )
     fields = body.model_dump(exclude_unset=True)
     quantity_changing = "quantity" in fields
     if "category_id" in fields or "location_id" in fields:
@@ -156,6 +170,14 @@ async def update_item(
     for k, v in fields.items():
         setattr(item, k, v)
     saved = await items_repository.save(session, item)
+    if quantity_changing and saved.quantity != old_quantity:
+        await item_history_service.log_quantity_change(
+            session,
+            item_id=saved.id,
+            user_id=owner_id,
+            old_quantity=old_quantity,
+            new_quantity=saved.quantity,
+        )
     if (
         quantity_changing
         and saved.min_quantity is not None
