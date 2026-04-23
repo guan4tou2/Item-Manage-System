@@ -262,6 +262,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/locations/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reorder Locations */
+        post: operations["reorder_locations_api_locations_reorder_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/locations/{location_id}": {
         parameters: {
             query?: never;
@@ -2183,6 +2200,13 @@ export interface components {
             room?: string | null;
             /** Zone */
             zone?: string | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number | null;
+            /** Floor Plan Image Id */
+            floor_plan_image_id?: string | null;
         };
         /** LocationRead */
         LocationRead: {
@@ -2194,6 +2218,18 @@ export interface components {
             room: string | null;
             /** Zone */
             zone: string | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /** Floor Plan Image Id */
+            floor_plan_image_id?: string | null;
+        };
+        /** LocationReorder */
+        LocationReorder: {
+            /** Location Ids */
+            location_ids: number[];
         };
         /** LocationUpdate */
         LocationUpdate: {
@@ -2203,6 +2239,10 @@ export interface components {
             room?: string | null;
             /** Zone */
             zone?: string | null;
+            /** Sort Order */
+            sort_order?: number | null;
+            /** Floor Plan Image Id */
+            floor_plan_image_id?: string | null;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -3284,6 +3324,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reorder_locations_api_locations_reorder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LocationReorder"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationRead"][];
                 };
             };
             /** @description Validation Error */

@@ -12,7 +12,7 @@ async def list_for_owner(session: AsyncSession, owner_id: UUID) -> list[Location
     stmt = (
         select(Location)
         .where(Location.owner_id == owner_id)
-        .order_by(Location.floor, Location.room, Location.zone)
+        .order_by(Location.sort_order, Location.floor, Location.room, Location.zone)
     )
     return list((await session.execute(stmt)).scalars().all())
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -21,5 +21,9 @@ class Location(Base):
     floor: Mapped[str] = mapped_column(String(50), nullable=False)
     room: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     zone: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+    floor_plan_image_id: Mapped[Optional[UUID]] = mapped_column(
+        GUID(), ForeignKey("images.id", ondelete="SET NULL"), nullable=True
+    )
 
     items: Mapped[list["Item"]] = relationship("Item", back_populates="location")

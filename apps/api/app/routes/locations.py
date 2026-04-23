@@ -6,7 +6,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.location import LocationCreate, LocationRead, LocationUpdate
+from app.schemas.location import (
+    LocationCreate,
+    LocationRead,
+    LocationReorder,
+    LocationUpdate,
+)
 from app.services import locations_service
 
 router = APIRouter(prefix="/api/locations", tags=["locations"])
@@ -29,6 +34,16 @@ async def create_location(
 ) -> LocationRead:
     loc = await locations_service.create(session, user.id, body)
     return LocationRead.model_validate(loc)
+
+
+@router.post("/reorder", response_model=list[LocationRead])
+async def reorder_locations(
+    body: LocationReorder,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> list[LocationRead]:
+    locs = await locations_service.reorder(session, user.id, body.location_ids)
+    return [LocationRead.model_validate(loc) for loc in locs]
 
 
 @router.patch("/{location_id}", response_model=LocationRead)

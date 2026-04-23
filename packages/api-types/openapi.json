@@ -772,6 +772,56 @@
         ]
       }
     },
+    "/api/locations/reorder": {
+      "post": {
+        "tags": [
+          "locations"
+        ],
+        "summary": "Reorder Locations",
+        "operationId": "reorder_locations_api_locations_reorder_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocationReorder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LocationRead"
+                  },
+                  "type": "array",
+                  "title": "Response Reorder Locations Api Locations Reorder Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/locations/{location_id}": {
       "patch": {
         "tags": [
@@ -7431,6 +7481,31 @@
               }
             ],
             "title": "Zone"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order",
+            "default": 0
+          },
+          "floor_plan_image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor Plan Image Id"
           }
         },
         "type": "object",
@@ -7470,6 +7545,23 @@
               }
             ],
             "title": "Zone"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          },
+          "floor_plan_image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor Plan Image Id"
           }
         },
         "type": "object",
@@ -7480,6 +7572,22 @@
           "zone"
         ],
         "title": "LocationRead"
+      },
+      "LocationReorder": {
+        "properties": {
+          "location_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Location Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_ids"
+        ],
+        "title": "LocationReorder"
       },
       "LocationUpdate": {
         "properties": {
@@ -7519,6 +7627,30 @@
               }
             ],
             "title": "Zone"
+          },
+          "sort_order": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort Order"
+          },
+          "floor_plan_image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor Plan Image Id"
           }
         },
         "additionalProperties": false,
