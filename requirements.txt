@@ -31,3 +31,17 @@ python-dotenv>=1.0.0
 Flask-Babel>=4.0.0
 # Structured logging
 structlog>=23.0.0
+
+# Export utilities
+openpyxl>=3.1.0
+reportlab>=4.0.0
+
+# API documentation (Swagger UI)
+flask-swagger-ui>=4.11.1
+
+# Notification services (LINE Messaging API v3 SDK)
+line-bot-sdk>=3.5.0
+
+# Web Push (VAPID keys)
+py-vapid>=1.9.0
+pywebpush>=2.0.0

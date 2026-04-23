@@ -85,7 +85,7 @@ def _telegram_send(chat_id: str, text: str) -> bool:
 
 
 def _send_chat_notifications(username: str, channels: set[str], text: str) -> Dict[str, bool]:
-    status = {"line": False, "telegram": False}
+    status = {"line": False, "telegram": False, "webpush": False}
     if get_db_type() != "postgres":
         return status
     if "line" in channels:
@@ -94,6 +94,19 @@ def _send_chat_notifications(username: str, channels: set[str], text: str) -> Di
     if "telegram" in channels:
         links = TelegramUserLink.query.filter_by(user_id=username).all()
         status["telegram"] = any(_telegram_send(link.chat_id, text) for link in links)
+    if "webpush" in channels:
+        try:
+            from app.utils import push_service
+
+            result = push_service.send_push(
+                username,
+                title="物品提醒",
+                body=text,
+                url="/notifications/",
+            )
+            status["webpush"] = result.get("sent", 0) > 0
+        except Exception:
+            status["webpush"] = False
     return status
 
 

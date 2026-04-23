@@ -439,7 +439,10 @@ class NotificationsTestCase(unittest.TestCase):
             text='hello',
         )
 
-        self.assertEqual(status, {'line': False, 'telegram': False})
+        # 在 mongo 模式下所有通道都不應寄送
+        self.assertFalse(status.get('line'))
+        self.assertFalse(status.get('telegram'))
+        self.assertFalse(status.get('webpush', False))
         mock_line_link.query.filter_by.assert_not_called()
         mock_tg_link.query.filter_by.assert_not_called()
 

@@ -516,6 +516,9 @@ def create_app() -> Flask:
         TELEGRAM_BOT_TOKEN=os.environ.get("TELEGRAM_BOT_TOKEN", ""),
         TELEGRAM_BOT_USERNAME=os.environ.get("TELEGRAM_BOT_USERNAME", ""),
         TELEGRAM_WEBHOOK_SECRET=os.environ.get("TELEGRAM_WEBHOOK_SECRET", ""),
+        VAPID_PUBLIC_KEY=os.environ.get("VAPID_PUBLIC_KEY", ""),
+        VAPID_PRIVATE_KEY=os.environ.get("VAPID_PRIVATE_KEY", ""),
+        VAPID_SUBJECT=os.environ.get("VAPID_SUBJECT", "mailto:admin@example.com"),
     )
 
     ensure_upload_folder(app)
@@ -693,5 +696,63 @@ def create_app() -> Flask:
         if isinstance(value, str):
             return value
         return value.strftime(format)
+
+    # 將 RBAC 權限檢查與目前使用者注入 Jinja 全域命名空間
+    # 註：本專案目前以 session 為主要認證機制，因此採用 session-aware 包裝。
+    from app.models.permission import (
+        Permission as _Permission,
+        ROLE_PERMISSIONS as _ROLE_PERMS,
+        Role as _Role,
+    )
+
+    def _session_user_role():
+        from flask import session as _sess
+        if "UserID" not in _sess:
+            return _Role.VIEWER
+        try:
+            from app.utils.auth import get_current_user as _gcu
+            user = _gcu()
+        except Exception:
+            return _Role.VIEWER
+        if user.get("admin"):
+            return _Role.ADMIN
+        role_name = (user.get("role") or "viewer").lower()
+        return {"admin": _Role.ADMIN, "editor": _Role.EDITOR, "viewer": _Role.VIEWER}.get(
+            role_name, _Role.VIEWER
+        )
+
+    def _has_perm(perm) -> bool:
+        return perm in _ROLE_PERMS.get(_session_user_role(), [])
+
+    @app.context_processor
+    def _inject_permissions():
+        return {
+            "can_create_items": lambda: _has_perm(_Permission.ITEM_CREATE),
+            "can_edit_items": lambda: _has_perm(_Permission.ITEM_EDIT),
+            "can_delete_items": lambda: _has_perm(_Permission.ITEM_DELETE),
+            "can_manage_users": lambda: _has_perm(_Permission.USER_EDIT),
+            "can_manage_system": lambda: _has_perm(_Permission.SETTINGS),
+            "has_permission": lambda perm: _has_perm(perm),
+            "Permission": _Permission,
+        }
+
+    # 註冊 OpenAPI / Swagger UI（已自帶 try/except 安全降級）
+    try:
+        from app.api.openapi import init_openapi
+        init_openapi(app)
+    except Exception as exc:  # pragma: no cover
+        app.logger.warning("OpenAPI 初始化失敗：%s", exc)
+
+    # 安全初始化通知服務（環境未設定時自動 no-op）
+    try:
+        from app.notifications.line_bot import init_line_bot
+        init_line_bot(app)
+    except Exception as exc:  # pragma: no cover
+        app.logger.info("LINE Bot 未啟用：%s", exc)
+    try:
+        from app.notifications.telegram_bot import init_telegram_bot
+        init_telegram_bot(app)
+    except Exception as exc:  # pragma: no cover
+        app.logger.info("Telegram Bot 未啟用：%s", exc)
 
     return app

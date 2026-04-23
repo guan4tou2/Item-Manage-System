@@ -1,4 +1,5 @@
 {%extends 'template.html' %}
+{% from "partials/charts.html" import chart_js, doughnut_chart, bar_chart %}
 {%block title%}統計報表 - 物品管理系統{%endblock%}
 {%block user%}{{User.User}}{%endblock%}
 
@@ -282,11 +283,49 @@
       </div>
     </div>
   </div>
+
+  {# 互動式圖表（Chart.js）— 由 partials/charts.html 提供 #}
+  {% if type_stats or floor_stats %}
+  <div class="row g-4 mt-2 animate-fadeInUp stagger-6">
+    {% if type_stats %}
+    <div class="col-lg-6">
+      <div class="chart-container">
+        <h5 class="chart-title">
+          <i class="fas fa-chart-pie text-primary"></i>
+          {{ _('類型分佈（互動）') }}
+        </h5>
+        {{ doughnut_chart(
+            'typeChart',
+            (type_stats|map(attribute='name')|list),
+            (type_stats|map(attribute='count')|list)
+        ) }}
+      </div>
+    </div>
+    {% endif %}
+    {% if floor_stats %}
+    <div class="col-lg-6">
+      <div class="chart-container">
+        <h5 class="chart-title">
+          <i class="fas fa-chart-bar text-success"></i>
+          {{ _('樓層分佈（互動）') }}
+        </h5>
+        {{ bar_chart(
+            'floorChart',
+            (floor_stats|map(attribute='name')|list),
+            (floor_stats|map(attribute='count')|list),
+            horizontal=true
+        ) }}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
 
 {%endblock%}
 
 {%block js%}
+{{ chart_js() }}
 <script>
 // 簡易圓餅圖繪製
 document.addEventListener('DOMContentLoaded', function() {

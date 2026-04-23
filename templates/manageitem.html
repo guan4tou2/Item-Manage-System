@@ -2,6 +2,7 @@
 {%block title%}管理物品 - 物品管理系統{%endblock%}
 {%block user%}{{User.User}}{%endblock%}
 
+{% from "partials/lazy_image.html" import lazy_image %}
 {%block contain%}
 <div class="container-fluid">
   <!-- 頁面標題 -->
@@ -18,15 +19,23 @@
         <a href="{{ url_for('items.export_items', export_format='csv') }}" class="btn btn-outline-success">
           <i class="fas fa-file-csv me-1"></i>匯出 CSV
         </a>
+        <a href="{{ url_for('items.export_items', export_format='excel') }}" class="btn btn-outline-success">
+          <i class="fas fa-file-excel me-1"></i>匯出 Excel
+        </a>
+        <a href="{{ url_for('items.export_items', export_format='pdf') }}" class="btn btn-outline-danger">
+          <i class="fas fa-file-pdf me-1"></i>匯出 PDF
+        </a>
         <a href="{{ url_for('items.export_restock') }}" class="btn btn-outline-danger">
           <i class="fas fa-clipboard-list me-1"></i>補貨清單
         </a>
         <a href="{{ url_for('items.export_zip') }}" class="btn btn-outline-dark">
           <i class="fas fa-file-archive me-1"></i>匯出含照片 (ZIP)
         </a>
+        {% if has_permission and has_permission(Permission.IMPORT) %}
         <a href="{{ url_for('import.index') }}" class="btn btn-warning">
           <i class="fas fa-upload me-1"></i>匯入
         </a>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -157,9 +166,11 @@
     <button type="button" class="btn btn-outline-warning" onclick="batchMaintenance()" title="批量更新保養日">
       <i class="fas fa-screwdriver-wrench me-1"></i><span class="d-none d-sm-inline">保養日</span>
     </button>
+    {% if can_delete_items and can_delete_items() %}
     <button type="button" class="btn btn-outline-danger" onclick="batchDelete()" title="批量刪除">
       <i class="fas fa-trash me-1"></i><span class="d-none d-sm-inline">刪除</span>
     </button>
+    {% endif %}
   </div>
   <button type="button" class="btn btn-sm btn-outline-light" onclick="exitSelectMode()">
     <i class="fas fa-times"></i>
@@ -203,13 +214,12 @@
         <!-- 物品圖片 (左側) -->
         <div class="col-4">
           {%if item.ItemPic%}
-          <img
-            src="{{ url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic) }}"
-            class="img-fluid rounded-start h-100"
-            alt="{{ item.ItemName }}"
-            style="object-fit: cover; min-height: 200px;"
-            loading="lazy"
-          />
+          {{ lazy_image(
+              url_for('items.uploaded_file', filename=item.ItemThumb or item.ItemPic),
+              alt=item.ItemName,
+              class='img-fluid rounded-start h-100',
+              style='object-fit: cover; min-height: 200px;'
+          ) }}
           {%else%}
           <div class="bg-light d-flex align-items-center justify-content-center h-100 rounded-start" style="min-height: 200px;">
             <i class="fas fa-image fa-3x text-muted"></i>
@@ -367,14 +377,13 @@
 </div>
 
 {%if not items%}
-<div class="empty-state animate-fadeInUp">
-  <i class="fas fa-box-open"></i>
-  <h3>還沒有任何物品</h3>
-  <p>點擊下方按鈕開始記錄您的第一個物品吧！</p>
-  <a href="{{ url_for('items.additem') }}" class="btn btn-primary btn-lg">
-    <i class="fas fa-plus me-2"></i>新增物品
-  </a>
-</div>
+  {% from "partials/empty_state.html" import empty_state %}
+  {{ empty_state(
+       title=_('還沒有任何物品'),
+       description=_('點擊下方按鈕開始記錄您的第一個物品吧！'),
+       primary_url=url_for('items.additem'),
+       secondary_url=url_for('items.search')
+  ) }}
 {%endif%}
 {%endblock%}
 

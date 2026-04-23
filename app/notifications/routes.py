@@ -128,3 +128,53 @@ def get_summary():
     
     summary = notification_service.get_notification_summary(session["UserID"])
     return jsonify(summary)
+
+
+# --- Web Push (PWA) ---------------------------------------------------------
+
+from app.utils import push_service  # noqa: E402  – 需要在路由前可用
+
+
+@bp.route("/api/vapid-public-key", methods=["GET"])
+def vapid_public_key():
+    """提供前端 Web Push 訂閱所需的 VAPID 公鑰。"""
+    return jsonify({"publicKey": current_app.config.get("VAPID_PUBLIC_KEY", "")})
+
+
+@bp.route("/subscribe", methods=["POST"])
+def subscribe():
+    """前端 Service Worker 推送訂閱端點。"""
+    if "UserID" not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    payload = request.get_json(silent=True) or {}
+    if not payload.get("endpoint"):
+        return jsonify({"error": "Invalid subscription"}), 400
+    push_service.add_subscription(session["UserID"], payload)
+    return jsonify({"success": True})
+
+
+@bp.route("/unsubscribe", methods=["POST"])
+def unsubscribe():
+    """取消推送訂閱。"""
+    if "UserID" not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    payload = request.get_json(silent=True) or {}
+    endpoint = payload.get("endpoint")
+    if not endpoint:
+        return jsonify({"error": "Invalid endpoint"}), 400
+    push_service.remove_subscription(session["UserID"], endpoint)
+    return jsonify({"success": True})
+
+
+@bp.route("/api/push-test", methods=["POST"])
+def push_test():
+    """寄一則測試推送給目前使用者（需有訂閱與 VAPID 設定）。"""
+    if "UserID" not in session:
+        return jsonify({"error": "Not authenticated"}), 401
+    result = push_service.send_push(
+        session["UserID"],
+        title="物品管理系統",
+        body="這是一則測試推送通知 ✓",
+        url="/notifications/",
+    )
+    return jsonify(result)

@@ -248,3 +248,23 @@ def my_link_status():
             "chat_id": link.chat_id if link else None,
         }
     )
+
+
+@bp.route("/api/test-message", methods=["POST"])
+@login_required
+def send_test_message():
+    """寄送一則測試訊息到目前使用者已綁定的 Telegram chat。"""
+    user_id = session.get("UserID")
+    link = TelegramUserLink.query.filter_by(user_id=user_id).first()
+    if not link:
+        return jsonify({"success": False, "message": "尚未綁定 Telegram"}), 400
+
+    from app.notifications.telegram_bot import telegram_notifier
+
+    if not telegram_notifier.is_configured():
+        return jsonify({"success": False, "message": "Telegram Bot 尚未設定"}), 503
+
+    text = request.json.get("text") if request.is_json else None
+    text = text or "✅ 測試訊息：來自物品管理系統的 Telegram 通知。"
+    resp = telegram_notifier.send_message(link.chat_id, text)
+    return jsonify({"success": bool(resp), "response": resp})

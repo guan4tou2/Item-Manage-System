@@ -19,6 +19,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="物品管理">
+    {# Web Push 所需資訊（給 web-push.js 使用） #}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="vapid-public-key" content="{{ config.get('VAPID_PUBLIC_KEY', '') }}">
     <title>{%block title%}{%endblock%}</title>
 
     <!-- Bootstrap CSS -->
@@ -438,6 +441,15 @@
         </div>
       </div>
     </main>
+
+    {# 行動端底部導航：偵測手機平台時顯示 #}
+    {% set _ua_platform = (request.user_agent.platform or '')|lower %}
+    {% if _ua_platform in ['iphone', 'android', 'ipad'] %}
+      {% from "partials/bottom_nav.html" import bottom_nav %}
+      {% set _active = (request.endpoint.split('.')[-1]) if request.endpoint else 'home' %}
+      {{ bottom_nav(active=_active, user=current_user) }}
+    {% endif %}
+
 
     <!-- 幫助 Modal -->
     <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
@@ -1456,5 +1468,8 @@
     </script>
 
     {%block js%}{%endblock%}
+
+    {# Web Push / Service Worker （純靜態 JS，會自動註冊 sw.js） #}
+    <script src="{{url_for('static', filename='js/web-push.js')}}" defer></script>
   </body>
 </html>

@@ -30,7 +30,8 @@ from app.services import log_service
 from app.services import custom_field_service
 from app import limiter
 from app.repositories import user_repo
-from app.utils.auth import login_required, admin_required, get_current_user
+from app.utils.auth import login_required, admin_required, get_current_user, require_permission
+from app.models.permission import Permission
 from app.models.item import Item
 from app.models.item_type import ItemType
 from app.models.location import Location
@@ -371,7 +372,7 @@ def edititem(item_id: str):
 
 
 @bp.route("/deleteitem/<item_id>", methods=["POST"])
-@admin_required
+@require_permission(Permission.ITEM_DELETE)
 def deleteitem(item_id: str):
     ok, msg = item_service.delete_item(item_id)
     flash(msg, "success" if ok else "danger")
@@ -419,7 +420,7 @@ def batch_move():
 
 
 @bp.route("/batch/delete", methods=["POST"])
-@admin_required
+@require_permission(Permission.ITEM_DELETE)
 def batch_delete():
     """批量刪除物品"""
     user = get_current_user()
@@ -659,6 +660,32 @@ def export_items(export_format: str):
             output.getvalue(),
             mimetype="text/csv",
             headers={"Content-Disposition": f"attachment;filename=items_export_{timestamp}.csv"},
+        )
+
+    if export_format in ("excel", "xlsx"):
+        if not items:
+            flash(_("沒有可匯出的資料"), "warning")
+            return redirect(url_for("items.manageitem"))
+        from app.utils.export_utils import export_to_excel
+
+        data = export_to_excel(items)
+        return Response(
+            data,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment;filename=items_export_{timestamp}.xlsx"},
+        )
+
+    if export_format == "pdf":
+        if not items:
+            flash(_("沒有可匯出的資料"), "warning")
+            return redirect(url_for("items.manageitem"))
+        from app.utils.export_utils import export_to_pdf
+
+        data = export_to_pdf(items, title=_("物品清單"))
+        return Response(
+            data,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": f"attachment;filename=items_export_{timestamp}.pdf"},
         )
 
     flash(_("不支援的匯出格式"), "danger")

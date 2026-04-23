@@ -55,6 +55,59 @@ def admin_required(f: Callable) -> Callable:
     return decorated_function
 
 
+def require_permission(permission) -> Callable:
+    """以 session 為基礎的 RBAC 權限裝飾器。
+
+    與 ``app.models.permission`` 的 enum 整合：admin → 全部權限；
+    其他使用者依 ``ROLE_PERMISSIONS`` 對映決定是否放行。
+    """
+
+    def decorator(f: Callable) -> Callable:
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if "UserID" not in session:
+                if request.is_json or "application/json" in request.headers.get("Accept", ""):
+                    return jsonify({"error": "unauthorized"}), 401
+                flash("請先登入", "warning")
+                return redirect(url_for("auth.signin"))
+
+            user = get_current_user()
+            # 管理員直接放行
+            if user.get("admin"):
+                return f(*args, **kwargs)
+
+            # 一般使用者：以 ROLE_PERMISSIONS 對映決定
+            try:
+                from app.models.permission import (
+                    Permission,
+                    ROLE_PERMISSIONS,
+                    Role,
+                )
+            except Exception:
+                # 權限模組不可用時沿用既有 admin_required 行為（拒絕）
+                if request.is_json or "application/json" in request.headers.get("Accept", ""):
+                    return jsonify({"error": "forbidden"}), 403
+                flash("需要管理員權限", "danger")
+                return redirect(url_for("items.home"))
+
+            role_name = (user.get("role") or "viewer").lower()
+            role = {"admin": Role.ADMIN, "editor": Role.EDITOR, "viewer": Role.VIEWER}.get(
+                role_name, Role.VIEWER
+            )
+            allowed = ROLE_PERMISSIONS.get(role, [])
+            if permission in allowed:
+                return f(*args, **kwargs)
+
+            if request.is_json or "application/json" in request.headers.get("Accept", ""):
+                return jsonify({"error": "forbidden", "permission": str(permission)}), 403
+            flash("您沒有權限執行此操作", "danger")
+            return redirect(url_for("items.home"))
+
+        return decorated_function
+
+    return decorator
+
+
 def api_token_or_login_required(f: Callable) -> Callable:
     """支援 Bearer token 或 session 登入的裝飾器。
 
