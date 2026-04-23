@@ -19,8 +19,20 @@ async def get_current_user(
 ) -> User:
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing bearer token")
+
+    token = credentials.credentials
+
+    # Personal Access Token path
+    if token.startswith("ims_pat_"):
+        from app.services.api_tokens_service import resolve_user_by_token
+        user = await resolve_user_by_token(session, token)
+        if user is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid token")
+        return user
+
+    # JWT path
     try:
-        payload = decode_token(credentials.credentials, expected_type="access")
+        payload = decode_token(token, expected_type="access")
     except TokenError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
     service = AuthService(session)

@@ -1,4 +1,5 @@
 from app.models.category import Category
+from app.models.favorite_audit_token import ApiToken, AuditLog
 from app.models.group import Group, GroupMember
 from app.models.item import Item
 from app.models.list import List, ListEntry
@@ -23,4 +24,6 @@ __all__ = [
     "GroupMember",
     "ItemLoan",
     "ItemTransfer",
+    "ApiToken",
+    "AuditLog",
 ]
