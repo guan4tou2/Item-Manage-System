@@ -6,6 +6,7 @@ from app.routes import (
     admin,
     ai,
     auth,
+    backup,
     categories,
     customization,
     external_channels,
@@ -64,6 +65,7 @@ def create_app() -> FastAPI:
     app.include_router(stocktake.router)
     app.include_router(external_channels.router)
     app.include_router(warehouses.router)
+    app.include_router(backup.router)
     return app
 
 
