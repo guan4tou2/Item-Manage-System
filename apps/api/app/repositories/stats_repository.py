@@ -123,6 +123,7 @@ async def recent_items(session: AsyncSession, owner_id: UUID, *, limit: int) -> 
             selectinload(Item.tags),
             selectinload(Item.category),
             selectinload(Item.location),
+            selectinload(Item.owner),
         )
     )
     return list((await session.execute(stmt)).scalars().all())

@@ -35,5 +35,6 @@ async def get_by_tag(session: AsyncSession, owner_id: UUID, *, limit: int) -> li
 
 
 async def get_recent(session: AsyncSession, owner_id: UUID, *, limit: int) -> list[ItemRead]:
+    from app.services.items_service import _to_read
     items = await stats_repository.recent_items(session, owner_id, limit=limit)
-    return [ItemRead.model_validate(i) for i in items]
+    return [_to_read(i) for i in items]
