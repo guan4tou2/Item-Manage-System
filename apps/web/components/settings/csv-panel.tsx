@@ -103,7 +103,7 @@ export function CsvPanel() {
             </div>
             {summary.errors.length > 0 ? (
               <ul className="mt-2 space-y-0.5">
-                {summary.errors.slice(0, 10).map((e) => (
+                {summary.errors.slice(0, 10).map((e: { row: number; reason: string }) => (
                   <li key={`${e.row}-${e.reason}`} className="font-mono text-xs">
                     第 {e.row} 列：{e.reason}
                   </li>
