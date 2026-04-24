@@ -17,8 +17,20 @@ export const metadata: Metadata = {
   title: "物品管理系統 v2",
   description: "IMS v2 — 家庭物品管理",
   manifest: "/manifest.webmanifest",
+  applicationName: "IMS",
+  appleWebApp: {
+    capable: true,
+    title: "IMS",
+    statusBarStyle: "default",
+  },
   icons: {
-    apple: "/icons/icon-192.png",
+    apple: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+  },
+  formatDetection: {
+    telephone: false,
   },
 }
 
