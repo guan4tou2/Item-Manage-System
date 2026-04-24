@@ -5458,6 +5458,104 @@
           }
         }
       }
+    },
+    "/api/items/{item_id}/qr.png": {
+      "get": {
+        "tags": [
+          "labels"
+        ],
+        "summary": "Item Qr Png",
+        "operationId": "item_qr_png_api_items__item_id__qr_png_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {}
+            }
+          },
+          "404": {
+            "description": "Item not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/items/{item_id}/label": {
+      "get": {
+        "tags": [
+          "labels"
+        ],
+        "summary": "Item Label",
+        "operationId": "item_label_api_items__item_id__label_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemLabel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6486,6 +6584,35 @@
           "value"
         ],
         "title": "ItemCustomValueSet"
+      },
+      "ItemLabel": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "deep_link": {
+            "type": "string",
+            "title": "Deep Link"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "name",
+          "quantity",
+          "deep_link"
+        ],
+        "title": "ItemLabel"
       },
       "ItemListResponse": {
         "properties": {

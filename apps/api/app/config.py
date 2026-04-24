@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
     media_dir: str = Field(default="/app/media")
     max_image_bytes: int = Field(default=10 * 1024 * 1024)  # 10 MB
+    # Public web base URL (used for encoding QR codes and deep links)
+    public_web_url: str = Field(default="http://localhost:3000")
     gemini_api_key: str = Field(default="")
     # Email (SMTP)
     smtp_host: str = Field(default="")
