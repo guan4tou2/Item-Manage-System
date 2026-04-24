@@ -6,6 +6,7 @@ export interface NavItem {
     | "items"
     | "categories"
     | "locations"
+    | "scan"
     | "statistics"
     | "notifications"
     | "lists"
@@ -19,6 +20,7 @@ export interface NavItem {
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: "dashboard", href: "/dashboard", labelKey: "nav.dashboard" },
   { key: "items", href: "/items", labelKey: "nav.items" },
+  { key: "scan", href: "/scan" as Route, labelKey: "nav.scan" },
   { key: "categories", href: "/categories" as Route, labelKey: "nav.categories" },
   { key: "locations", href: "/locations" as Route, labelKey: "nav.locations" },
   { key: "statistics", href: "/statistics", labelKey: "nav.statistics" },

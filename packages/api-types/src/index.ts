@@ -314,6 +314,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/items/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Items Csv */
+        get: operations["export_items_csv_api_items_export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items/bulk-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk Import Items */
+        post: operations["bulk_import_items_api_items_bulk_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/items": {
         parameters: {
             query?: never;
@@ -436,6 +470,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stats/by-warehouse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** By Warehouse */
+        get: operations["by_warehouse_api_stats_by_warehouse_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stats/recent": {
         parameters: {
             query?: never;
@@ -445,6 +496,74 @@ export interface paths {
         };
         /** Recent */
         get: operations["recent_api_stats_recent_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/low-stock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Low Stock */
+        get: operations["low_stock_api_stats_low_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/active-loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active Loans */
+        get: operations["active_loans_api_stats_active_loans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Trend */
+        get: operations["trend_api_stats_trend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Activity */
+        get: operations["activity_api_stats_activity_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1445,6 +1564,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/items/{item_id}/qr.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Item Qr Png */
+        get: operations["item_qr_png_api_items__item_id__qr_png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items/{item_id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Item Label */
+        get: operations["item_label_api_items__item_id__label_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1458,6 +1611,48 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /** ActiveLoan */
+        ActiveLoan: {
+            /**
+             * Loan Id
+             * Format: uuid
+             */
+            loan_id: string;
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Item Name */
+            item_name: string;
+            /** Borrower Label */
+            borrower_label: string | null;
+            /**
+             * Lent At
+             * Format: date-time
+             */
+            lent_at: string;
+            /** Expected Return */
+            expected_return: string | null;
+            /** Is Overdue */
+            is_overdue: boolean;
+        };
+        /** ActivityEntry */
+        ActivityEntry: {
+            /** Kind */
+            kind: string;
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Item Id */
+            item_id?: string | null;
+            /** Item Name */
+            item_name?: string | null;
+            /** Summary */
+            summary: string;
         };
         /** AiSuggestRequest */
         AiSuggestRequest: {
@@ -1544,6 +1739,14 @@ export interface components {
              */
             created_at: string;
         };
+        /** Body_bulk_import_items_api_items_bulk_import_post */
+        Body_bulk_import_items_api_items_bulk_import_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
+        };
         /** Body_upload_image_api_images_post */
         Body_upload_image_api_images_post: {
             /**
@@ -1551,6 +1754,22 @@ export interface components {
              * Format: binary
              */
             file: string;
+        };
+        /** BulkImportRowError */
+        BulkImportRowError: {
+            /** Row */
+            row: number;
+            /** Reason */
+            reason: string;
+        };
+        /** BulkImportSummary */
+        BulkImportSummary: {
+            /** Created Count */
+            created_count: number;
+            /** Total Rows */
+            total_rows: number;
+            /** Errors */
+            errors: components["schemas"]["BulkImportRowError"][];
         };
         /** CategoryBucket */
         CategoryBucket: {
@@ -1801,6 +2020,20 @@ export interface components {
             custom_field_id: number;
             /** Value */
             value: unknown | null;
+        };
+        /** ItemLabel */
+        ItemLabel: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Deep Link */
+            deep_link: string;
         };
         /** ItemListResponse */
         ItemListResponse: {
@@ -2204,7 +2437,7 @@ export interface components {
              * Sort Order
              * @default 0
              */
-            sort_order: number | null;
+            sort_order: number;
             /** Floor Plan Image Id */
             floor_plan_image_id?: string | null;
         };
@@ -2250,6 +2483,22 @@ export interface components {
             username: string;
             /** Password */
             password: string;
+        };
+        /** LowStockItem */
+        LowStockItem: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Min Quantity */
+            min_quantity: number;
+            /** Deficit */
+            deficit: number;
         };
         /** MarkAllReadResponse */
         MarkAllReadResponse: {
@@ -2305,6 +2554,21 @@ export interface components {
             total_locations: number;
             /** Total Tags */
             total_tags: number;
+            /**
+             * Total Warehouses
+             * @default 0
+             */
+            total_warehouses: number;
+            /**
+             * Low Stock Items
+             * @default 0
+             */
+            low_stock_items: number;
+            /**
+             * Active Loans
+             * @default 0
+             */
+            active_loans: number;
         };
         /** PasswordChange */
         PasswordChange: {
@@ -2573,6 +2837,16 @@ export interface components {
             /** Resolved At */
             resolved_at: string | null;
         };
+        /** TrendPoint */
+        TrendPoint: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Count */
+            count: number;
+        };
         /** UnreadCountResponse */
         UnreadCountResponse: {
             /** Count */
@@ -2627,6 +2901,15 @@ export interface components {
         VapidPublicKey: {
             /** Public Key */
             public_key: string;
+        };
+        /** WarehouseBucket */
+        WarehouseBucket: {
+            /** Warehouse Id */
+            warehouse_id: number | null;
+            /** Name */
+            name: string | null;
+            /** Count */
+            count: number;
         };
         /** WarehouseCreate */
         WarehouseCreate: {
@@ -3465,6 +3748,59 @@ export interface operations {
             };
         };
     };
+    export_items_csv_api_items_export_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    bulk_import_items_api_items_bulk_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_bulk_import_items_api_items_bulk_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkImportSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_items_api_items_get: {
         parameters: {
             query?: {
@@ -3753,6 +4089,26 @@ export interface operations {
             };
         };
     };
+    by_warehouse_api_stats_by_warehouse_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarehouseBucket"][];
+                };
+            };
+        };
+    };
     recent_api_stats_recent_get: {
         parameters: {
             query?: {
@@ -3771,6 +4127,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    low_stock_api_stats_low_stock_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LowStockItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    active_loans_api_stats_active_loans_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActiveLoan"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trend_api_stats_trend_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendPoint"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activity_api_stats_activity_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityEntry"][];
                 };
             };
             /** @description Validation Error */
@@ -6130,6 +6610,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookDeliveryRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    item_qr_png_api_items__item_id__qr_png_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Item not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    item_label_api_items__item_id__label_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemLabel"];
                 };
             };
             /** @description Validation Error */
