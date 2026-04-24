@@ -1,5 +1,5 @@
 /* IMS service worker — cache-first static, network-first navigation, offline fallback. */
-const CACHE = "ims-v2"
+const CACHE = "ims-v3"
 const STATIC_PREFIX = "/_next/static/"
 const OFFLINE_URL = "/offline"
 // Routes that are useless offline — skip caching and don't fall back to /offline.
@@ -7,7 +7,15 @@ const SKIP_CACHE_PATHS = ["/scan"]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE_URL])))
-  self.skipWaiting()
+  // Intentionally do NOT skipWaiting here — wait for the page to send a
+  // SKIP_WAITING message once the user accepts the "new version" prompt.
+})
+
+// Let the controlling page trigger activation when the user is ready.
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting()
+  }
 })
 
 self.addEventListener("activate", (event) => {
