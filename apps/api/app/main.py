@@ -15,6 +15,7 @@ from app.routes import (
     images,
     item_history,
     items,
+    items_bulk,
     labels,
     lists,
     loans,
@@ -52,6 +53,7 @@ def create_app() -> FastAPI:
     app.include_router(categories.router)
     app.include_router(locations.router)
     app.include_router(tags.router)
+    app.include_router(items_bulk.router)
     app.include_router(items.router)
     app.include_router(stats.router)
     app.include_router(notifications.router)
