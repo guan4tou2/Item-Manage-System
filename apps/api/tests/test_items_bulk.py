@@ -197,3 +197,162 @@ async def test_export_url_does_not_hit_item_detail(client, auth):
     # parse "export.csv" as a UUID and 422 — this test locks the behavior.
     r = await client.get("/api/items/export.csv", headers=auth)
     assert r.status_code == 200
+
+
+# ---- Phase 19: tag round-trip ------------------------------------------
+
+
+def _tag_names_of(item: dict) -> set[str]:
+    return {t["name"] for t in item.get("tags", [])}
+
+
+def _tag_ids_of(item: dict) -> list[int]:
+    return [t["id"] for t in item.get("tags", [])]
+
+
+async def test_export_includes_pipe_delimited_tags(client, auth):
+    item = (
+        await client.post(
+            "/api/items", headers=auth, json={"name": "blade", "tag_names": ["sharp", "kitchen"]}
+        )
+    ).json()
+    assert len(item.get("tags", [])) == 2
+
+    r = await client.get("/api/items/export.csv", headers=auth)
+    lines = r.text.strip().splitlines()
+    header = lines[0].split(",")
+    idx = header.index("tag_names")
+    blade_row = next(line for line in lines[1:] if line.split(",")[1] == "blade")
+    parts = blade_row.split(",")
+    # sorted alphabetically by the export code
+    assert parts[idx] == "kitchen|sharp"
+
+
+async def test_export_empty_tags_emits_blank_cell(client, auth):
+    await client.post("/api/items", headers=auth, json={"name": "plain"})
+    r = await client.get("/api/items/export.csv", headers=auth)
+    lines = r.text.strip().splitlines()
+    header = lines[0].split(",")
+    idx = header.index("tag_names")
+    data_row = lines[1].split(",")
+    assert data_row[idx] == ""
+
+
+async def test_import_creates_tags_from_pipe_delimited_cell(client, auth):
+    csv_bytes = _csv([
+        "name,tag_names",
+        "wok,kitchen|heavy",
+        "pan,kitchen|light",
+    ])
+    files = {"file": ("items.csv", csv_bytes, "text/csv")}
+    r = await client.post("/api/items/bulk-import", headers=auth, files=files)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["created_count"] == 2
+    assert body["errors"] == []
+
+    listed = (await client.get("/api/items", headers=auth)).json()
+    by_name = {i["name"]: i for i in listed["items"]}
+    assert _tag_names_of(by_name["wok"]) == {"kitchen", "heavy"}
+    assert _tag_names_of(by_name["pan"]) == {"kitchen", "light"}
+
+
+async def test_import_reuses_existing_tag(client, auth):
+    seed = (
+        await client.post(
+            "/api/items", headers=auth, json={"name": "seed", "tag_names": ["kitchen"]}
+        )
+    ).json()
+    seed_ids = _tag_ids_of(seed)
+    assert len(seed_ids) == 1
+    kitchen_id = seed_ids[0]
+
+    csv_bytes = _csv(["name,tag_names", "wok,kitchen"])
+    files = {"file": ("items.csv", csv_bytes, "text/csv")}
+    r = await client.post("/api/items/bulk-import", headers=auth, files=files)
+    assert r.status_code == 200, r.text
+
+    listed = (await client.get("/api/items", headers=auth)).json()
+    wok = next(i for i in listed["items"] if i["name"] == "wok")
+    assert _tag_ids_of(wok) == [kitchen_id]
+
+
+async def test_import_dedupes_within_one_cell(client, auth):
+    csv_bytes = _csv(["name,tag_names", "wok,kitchen|kitchen| |kitchen "])
+    files = {"file": ("items.csv", csv_bytes, "text/csv")}
+    r = await client.post("/api/items/bulk-import", headers=auth, files=files)
+    assert r.status_code == 200, r.text
+
+    listed = (await client.get("/api/items", headers=auth)).json()
+    wok = next(i for i in listed["items"] if i["name"] == "wok")
+    assert _tag_names_of(wok) == {"kitchen"}
+
+
+async def test_import_empty_tag_cell_attaches_no_tags(client, auth):
+    csv_bytes = _csv(["name,tag_names", "wok,"])
+    files = {"file": ("items.csv", csv_bytes, "text/csv")}
+    r = await client.post("/api/items/bulk-import", headers=auth, files=files)
+    assert r.status_code == 200, r.text
+    listed = (await client.get("/api/items", headers=auth)).json()
+    wok = next(i for i in listed["items"] if i["name"] == "wok")
+    assert _tag_names_of(wok) == set()
+
+
+async def test_import_does_not_leak_tags_across_owners(client, auth):
+    csv_bytes = _csv(["name,tag_names", "wok,kitchen"])
+    files = {"file": ("items.csv", csv_bytes, "text/csv")}
+    r = await client.post("/api/items/bulk-import", headers=auth, files=files)
+    assert r.status_code == 200
+
+    await client.post(
+        "/api/auth/register",
+        json={"email": "other@t.io", "username": "other_bulk", "password": "secret1234"},
+    )
+    r2 = await client.post(
+        "/api/auth/login", json={"username": "other_bulk", "password": "secret1234"}
+    )
+    other = {"Authorization": f"Bearer {r2.json()['access_token']}"}
+
+    files = {"file": ("items.csv", csv_bytes, "text/csv")}
+    r3 = await client.post("/api/items/bulk-import", headers=other, files=files)
+    assert r3.status_code == 200
+
+    b_listed = (await client.get("/api/items", headers=other)).json()
+    b_wok = next(i for i in b_listed["items"] if i["name"] == "wok")
+    b_ids = _tag_ids_of(b_wok)
+    assert len(b_ids) == 1
+
+    a_listed = (await client.get("/api/items", headers=auth)).json()
+    a_wok = next(i for i in a_listed["items"] if i["name"] == "wok")
+    a_ids = _tag_ids_of(a_wok)
+    assert a_ids[0] != b_ids[0]
+
+
+async def test_import_roundtrip_preserves_tags(client, auth):
+    await client.post(
+        "/api/items", headers=auth, json={"name": "blade", "tag_names": ["sharp"]}
+    )
+    await client.post(
+        "/api/items", headers=auth, json={"name": "wok", "tag_names": ["kitchen", "heavy"]}
+    )
+
+    exported = (await client.get("/api/items/export.csv", headers=auth)).text
+
+    await client.post(
+        "/api/auth/register",
+        json={"email": "rt@t.io", "username": "rt_user", "password": "secret1234"},
+    )
+    r = await client.post(
+        "/api/auth/login", json={"username": "rt_user", "password": "secret1234"}
+    )
+    rt = {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+    files = {"file": ("items.csv", exported.encode("utf-8"), "text/csv")}
+    resp = await client.post("/api/items/bulk-import", headers=rt, files=files)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["created_count"] == 2
+
+    listed = (await client.get("/api/items", headers=rt)).json()
+    by_name = {i["name"]: i for i in listed["items"]}
+    assert _tag_names_of(by_name["blade"]) == {"sharp"}
+    assert _tag_names_of(by_name["wok"]) == {"kitchen", "heavy"}

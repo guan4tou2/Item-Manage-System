@@ -12,7 +12,12 @@ from sqlalchemy.orm import selectinload
 from app.models.category import Category
 from app.models.item import Item
 from app.models.location import Location
+from app.models.tag import Tag
 from app.models.warehouse import Warehouse
+
+
+# Separator used in the pipe-delimited tag_names column ("kitchen|sharp|red").
+TAG_SEPARATOR = "|"
 
 
 EXPORT_COLUMNS = [
@@ -26,6 +31,7 @@ EXPORT_COLUMNS = [
     "location_room",
     "location_zone",
     "warehouse_name",
+    "tag_names",
     "notes",
     "is_favorite",
     "created_at",
@@ -43,6 +49,7 @@ IMPORT_OPTIONAL = {
     "location_room",
     "location_zone",
     "warehouse_name",
+    "tag_names",
 }
 
 
@@ -67,7 +74,11 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
         select(Item)
         .where(Item.owner_id == owner_id, Item.is_deleted.is_(False))
         .order_by(Item.created_at.asc())
-        .options(selectinload(Item.category), selectinload(Item.location))
+        .options(
+            selectinload(Item.category),
+            selectinload(Item.location),
+            selectinload(Item.tags),
+        )
     )
     rows = list((await session.execute(stmt)).scalars().all())
 
@@ -84,6 +95,7 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
     writer.writeheader()
     for item in rows:
         loc = item.location
+        tag_names = TAG_SEPARATOR.join(sorted(t.name for t in item.tags)) if item.tags else ""
         writer.writerow({
             "id": str(item.id),
             "name": item.name,
@@ -95,6 +107,7 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
             "location_room": loc.room if loc and loc.room else "",
             "location_zone": loc.zone if loc and loc.zone else "",
             "warehouse_name": wh_names.get(item.warehouse_id) if item.warehouse_id else "",
+            "tag_names": tag_names,
             "notes": item.notes or "",
             "is_favorite": "true" if item.is_favorite else "false",
             "created_at": item.created_at.isoformat(),
@@ -156,6 +169,45 @@ async def _ensure_warehouse(
     return wh.id
 
 
+async def _ensure_tag(
+    session: AsyncSession,
+    owner_id: UUID,
+    name: str,
+    cache: dict[str, Tag],
+) -> Tag:
+    if name in cache:
+        return cache[name]
+    stmt = select(Tag).where(Tag.owner_id == owner_id, Tag.name == name)
+    existing = (await session.execute(stmt)).scalar_one_or_none()
+    if existing is not None:
+        cache[name] = existing
+        return existing
+    tag = Tag(owner_id=owner_id, name=name)
+    session.add(tag)
+    await session.flush()
+    cache[name] = tag
+    return tag
+
+
+def _parse_tag_names(raw: str | None) -> list[str]:
+    """Split a pipe-delimited cell into a list of unique trimmed tag names.
+
+    Empty cell → empty list. Duplicate entries are deduplicated while
+    preserving first-seen order. Whitespace around each name is stripped.
+    """
+    if not raw:
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for piece in raw.split(TAG_SEPARATOR):
+        name = piece.strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        out.append(name)
+    return out
+
+
 async def _ensure_location(
     session: AsyncSession,
     owner_id: UUID,
@@ -215,6 +267,7 @@ async def import_csv(
     cat_cache: dict[str, int] = {}
     wh_cache: dict[str, int] = {}
     loc_cache: dict[tuple[str, str | None, str | None], int] = {}
+    tag_cache: dict[str, Tag] = {}
     total = 0
 
     for idx, row in enumerate(reader, start=2):  # start=2 because row 1 is header
@@ -270,6 +323,14 @@ async def import_csv(
             warehouse_id=warehouse_id,
             notes=(row.get("notes") or "").strip() or None,
         )
+
+        tag_names = _parse_tag_names(row.get("tag_names"))
+        if tag_names:
+            tags = [
+                await _ensure_tag(session, owner_id, tn, tag_cache) for tn in tag_names
+            ]
+            item.tags = tags
+
         session.add(item)
         to_create.append(item)
 

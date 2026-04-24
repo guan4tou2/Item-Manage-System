@@ -6,6 +6,30 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.19] — Phase 19：CSV tags round-trip
+
+- `tag_names` 欄位加入 export/import 支援，完成 CSV round-trip
+- Export 時以字母排序後的 pipe-delimited 字串輸出
+- Import 時查不到 tag 就 auto-create（per-owner 隔離）
+- 單格內 dedupe：`kitchen|kitchen| |kitchen ` → `kitchen`
+- 新增 8 個 API 測試涵蓋 export / import / dedupe / per-owner 隔離 / 完整 round-trip；API 測試總數 398 → 406
+
+## [2.0.0-alpha.18] — Phase 18：Service Worker 更新提示
+
+- SW `install` 不再自動 `skipWaiting`；改由 page 發送 `SKIP_WAITING` 訊息觸發
+- 新增 `sw-update-detector.ts` 純 helper：偵測 waiting SW（兩種觸發路徑）與 controllerchange
+- `ServiceWorkerProvider` 顯示 sonner 持續 toast（`duration: Infinity`）+「重新載入」action
+- SW cache 版本升級 `ims-v2 → ims-v3`
+- 新增 12 個 web 測試（7 detector 行為 + 5 sw.js 靜態 invariant）；web 測試總數 75 → 87
+
+## [2.0.0-alpha.17] — Phase 17：文件同步
+
+- 新增 `CHANGELOG.md`（本文件）
+- README / README_EN 改以「v2 shipped, v1 legacy」為首，功能列表分 10 大區塊
+- FEATURES.md 從行銷口吻改為逐功能開發者參考（列出實際路由、表、欄位、Phase 來源）
+- docs/v2-roadmap.md 補上 Phase 1–16 表格與「後續候選」清單
+- docs/API.md、docs/ARCHITECTURE.md 頂端加 legacy banner，指向 v2 OpenAPI 與 README 對應章節
+
 ## [2.0.0-alpha.16] — Phase 16：PWA Polish
 
 - Manifest 新增 `id` / `scope` / `lang` / `categories` / shortcuts（長按 home-screen icon 直跳 `掃碼`、`新增物品`、`儀表板`）
