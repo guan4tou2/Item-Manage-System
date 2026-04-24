@@ -6,6 +6,15 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.20] — Phase 20：Tag 管理 UI
+
+- 新 API：`GET /api/tags/with-counts`、`PATCH /api/tags/{id}`（rename）、`POST /api/tags/{id}/merge`、`DELETE /api/tags/{id}?force=`、`POST /api/tags/prune-orphans`
+- Merge 語義嚴謹：同時 tag 兩者的物品 item_tags 去重 + 其他 reassign + 刪除 source
+- Delete 預設拒絕有物品使用的 tag（409），需 `?force=true`
+- rename 自動 normalize（lowercase + trim），衝突 409
+- 新 UI：`/settings/taxonomy` 新增「標籤」頁籤，inline rename / merge dropdown / delete / 「清理孤兒 tag」按鈕
+- 新增 19 個 API 測試（with-counts、rename 衝突/跨用戶、merge overlap/reassign/self-reject、delete force/orphan、prune 冪等）；API 測試總數 406 → 425
+
 ## [2.0.0-alpha.19] — Phase 19：CSV tags round-trip
 
 - `tag_names` 欄位加入 export/import 支援，完成 CSV round-trip

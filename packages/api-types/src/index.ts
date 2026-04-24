@@ -314,6 +314,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/tags/with-counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tags With Counts Route */
+        get: operations["list_tags_with_counts_route_api_tags_with_counts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Tag Route */
+        delete: operations["delete_tag_route_api_tags__tag_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Tag Route */
+        patch: operations["rename_tag_route_api_tags__tag_id__patch"];
+        trace?: never;
+    };
+    "/api/tags/{tag_id}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Merge Tag Route */
+        post: operations["merge_tag_route_api_tags__tag_id__merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tags/prune-orphans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prune Orphans Route */
+        post: operations["prune_orphans_route_api_tags_prune_orphans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/items/export.csv": {
         parameters: {
             query?: never;
@@ -2603,6 +2672,11 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** PruneOrphansResult */
+        PruneOrphansResult: {
+            /** Deleted Count */
+            deleted_count: number;
+        };
         /** QuantityLogRead */
         QuantityLogRead: {
             /**
@@ -2759,10 +2833,36 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** TagMerge */
+        TagMerge: {
+            /** Target Id */
+            target_id: number;
+        };
+        /** TagMergeResult */
+        TagMergeResult: {
+            /** Target Id */
+            target_id: number;
+            /** Reassigned Item Count */
+            reassigned_item_count: number;
+        };
         /** TagRead */
         TagRead: {
             /** Id */
             id: number;
+            /** Name */
+            name: string;
+        };
+        /** TagReadWithCount */
+        TagReadWithCount: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Item Count */
+            item_count: number;
+        };
+        /** TagRename */
+        TagRename: {
             /** Name */
             name: string;
         };
@@ -3744,6 +3844,147 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tags_with_counts_route_api_tags_with_counts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagReadWithCount"][];
+                };
+            };
+        };
+    };
+    delete_tag_route_api_tags__tag_id__delete: {
+        parameters: {
+            query?: {
+                force?: boolean;
+            };
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_tag_route_api_tags__tag_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagRename"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_tag_route_api_tags__tag_id__merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagMerge"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagMergeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    prune_orphans_route_api_tags_prune_orphans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PruneOrphansResult"];
                 };
             };
         };

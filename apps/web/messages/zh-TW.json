@@ -145,7 +145,8 @@
     "title": "分類與位置",
     "tabs": {
       "categories": "分類",
-      "locations": "位置"
+      "locations": "位置",
+      "tags": "標籤"
     },
     "categories": {
       "add": "新增分類",
