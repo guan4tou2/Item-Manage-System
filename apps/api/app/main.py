@@ -15,6 +15,7 @@ from app.routes import (
     images,
     item_history,
     items,
+    labels,
     lists,
     loans,
     locations,
@@ -68,6 +69,7 @@ def create_app() -> FastAPI:
     app.include_router(warehouses.router)
     app.include_router(backup.router)
     app.include_router(webhooks.router)
+    app.include_router(labels.router)
     return app
 
 
