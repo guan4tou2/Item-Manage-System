@@ -145,7 +145,8 @@
     "title": "Categories & Locations",
     "tabs": {
       "categories": "Categories",
-      "locations": "Locations"
+      "locations": "Locations",
+      "tags": "Tags"
     },
     "categories": {
       "add": "Add category",
