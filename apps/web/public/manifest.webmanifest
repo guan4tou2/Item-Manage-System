@@ -1,13 +1,43 @@
 {
+  "id": "/dashboard",
   "name": "物品管理系統 v2",
   "short_name": "IMS",
-  "description": "Home item management",
+  "description": "家庭物品管理：掃碼、借出、低庫存提醒、AI 辨識",
   "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
+  "lang": "zh-Hant",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities"],
   "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "掃碼",
+      "short_name": "掃碼",
+      "description": "開啟相機掃描 QR 標籤",
+      "url": "/scan",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "新增物品",
+      "short_name": "新增",
+      "description": "快速新增一個物品",
+      "url": "/items/new",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "儀表板",
+      "short_name": "儀表板",
+      "description": "查看低庫存、借出與最近活動",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }

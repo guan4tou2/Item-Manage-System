@@ -1,7 +1,9 @@
 /* IMS service worker — cache-first static, network-first navigation, offline fallback. */
-const CACHE = "ims-v1"
+const CACHE = "ims-v2"
 const STATIC_PREFIX = "/_next/static/"
 const OFFLINE_URL = "/offline"
+// Routes that are useless offline — skip caching and don't fall back to /offline.
+const SKIP_CACHE_PATHS = ["/scan"]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE_URL])))
@@ -40,6 +42,11 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (req.mode === "navigate") {
+    const skipCache = SKIP_CACHE_PATHS.some((p) => url.pathname.startsWith(p))
+    if (skipCache) {
+      // Let the browser handle these normally — no offline fallback.
+      return
+    }
     event.respondWith(
       fetch(req)
         .then((res) => {
