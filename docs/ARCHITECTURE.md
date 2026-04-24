@@ -1,6 +1,14 @@
 # 🏗️ Architecture Documentation
 
-System architecture and design patterns for the Item Management System.
+> **⚠️ Legacy — v1 Flask 文件**：本文件是 v1（Flask + Jinja2 + 可選 MongoDB）的架構描述。v2 架構完全不同：Next.js 15 App Router + FastAPI 0.115 async + PostgreSQL 16（測試 SQLite）+ Alembic 遷移，資料層用自訂 `GUID` / `JSONType` decorator 抽象跨後端差異。
+>
+> v2 架構速覽請看 [README.md#技術架構](../README.md#-技術架構) 與 [docs/v2-roadmap.md](v2-roadmap.md)。程式碼層次一覽：`apps/web`（前端）+ `apps/api`（後端）+ `packages/api-types`（共享型別）。
+>
+> 以下 v1 內容僅供對照舊實作。
+
+---
+
+System architecture and design patterns for the Item Management System (v1 legacy).
 
 ## 📋 Table of Contents
 

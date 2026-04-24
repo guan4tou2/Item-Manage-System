@@ -1,6 +1,16 @@
 # 📚 API Documentation
 
-Complete API reference for the Item Management System.
+> **⚠️ Legacy — v1 Flask 文件**：本文件是 v1（Flask + Jinja2）API 的歷史快照。v2（FastAPI + Next.js）API 由 FastAPI 自動產生 OpenAPI，請以下列來源為準：
+>
+> - 執行時：http://localhost:8000/docs （Swagger UI）
+> - Repo：[`packages/api-types/openapi.json`](../packages/api-types/openapi.json)
+> - TypeScript 型別：[`packages/api-types/src/index.ts`](../packages/api-types/src/index.ts)（每次 schema 變動由 `generate.mjs` 重新產生）
+>
+> 主要路由家族索引請看 [README.md#api](../README.md#-api)。以下 v1 內容僅供對照舊行為。
+
+---
+
+Complete API reference for the Item Management System (v1 legacy).
 
 ## 📋 Table of Contents
 
