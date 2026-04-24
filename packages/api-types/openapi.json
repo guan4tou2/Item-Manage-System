@@ -5747,6 +5747,91 @@
         }
       }
     },
+    "/api/webhooks/{webhook_id}/deliveries/{delivery_id}/retry": {
+      "post": {
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Retry Delivery",
+        "operationId": "retry_delivery_api_webhooks__webhook_id__deliveries__delivery_id__retry_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "webhook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Webhook Id"
+            }
+          },
+          {
+            "name": "delivery_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Delivery Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/process-retries": {
+      "post": {
+        "tags": [
+          "webhooks"
+        ],
+        "summary": "Process Retries",
+        "description": "Process every webhook delivery whose next_retry_at has arrived.\n\nThis is intended to be called by an external scheduler (cron, systemd\ntimer, GitHub Actions schedule, etc). It runs regardless of who the\ncaller is \u2014 a logged-in user is enough \u2014 because processing is scoped\nto rows that have been explicitly scheduled by `dispatch()`. No payload\nis exposed; only aggregate counts are returned.",
+        "operationId": "process_retries_api_webhooks_process_retries_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProcessRetriesResult"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/items/{item_id}/qr.png": {
       "get": {
         "tags": [
@@ -8773,6 +8858,29 @@
         "type": "object",
         "title": "PreferencesUpdate"
       },
+      "ProcessRetriesResult": {
+        "properties": {
+          "processed": {
+            "type": "integer",
+            "title": "Processed"
+          },
+          "succeeded": {
+            "type": "integer",
+            "title": "Succeeded"
+          },
+          "remaining": {
+            "type": "integer",
+            "title": "Remaining"
+          }
+        },
+        "type": "object",
+        "required": [
+          "processed",
+          "succeeded",
+          "remaining"
+        ],
+        "title": "ProcessRetriesResult"
+      },
       "PruneOrphansResult": {
         "properties": {
           "deleted_count": {
@@ -9814,6 +9922,22 @@
             ],
             "title": "Response Excerpt"
           },
+          "attempt": {
+            "type": "integer",
+            "title": "Attempt"
+          },
+          "next_retry_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Retry At"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -9828,6 +9952,8 @@
           "payload",
           "status_code",
           "response_excerpt",
+          "attempt",
+          "next_retry_at",
           "created_at"
         ],
         "title": "WebhookDeliveryRead"

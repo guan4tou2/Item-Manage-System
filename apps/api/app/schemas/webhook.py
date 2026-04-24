@@ -43,6 +43,14 @@ class WebhookDeliveryRead(BaseModel):
     payload: dict[str, Any]
     status_code: Optional[int]
     response_excerpt: Optional[str]
+    attempt: int
+    next_retry_at: Optional[datetime]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProcessRetriesResult(BaseModel):
+    processed: int  # deliveries we tried to re-send in this call
+    succeeded: int  # of those, how many got a 2xx response
+    remaining: int  # how many still have next_retry_at set after this run
