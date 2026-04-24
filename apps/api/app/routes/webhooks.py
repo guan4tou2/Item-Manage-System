@@ -8,6 +8,7 @@ from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.webhook import (
+    ProcessRetriesResult,
     WebhookCreate,
     WebhookDeliveryRead,
     WebhookRead,
@@ -64,3 +65,34 @@ async def list_deliveries(
 ):
     rows = await svc.list_deliveries(session, user.id, webhook_id, limit)
     return [WebhookDeliveryRead.model_validate(r) for r in rows]
+
+
+@router.post(
+    "/{webhook_id}/deliveries/{delivery_id}/retry",
+    response_model=WebhookDeliveryRead,
+)
+async def retry_delivery(
+    webhook_id: UUID,
+    delivery_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    row = await svc.retry_delivery_now(session, user.id, webhook_id, delivery_id)
+    return WebhookDeliveryRead.model_validate(row)
+
+
+@router.post("/process-retries", response_model=ProcessRetriesResult)
+async def process_retries(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    """Process every webhook delivery whose next_retry_at has arrived.
+
+    This is intended to be called by an external scheduler (cron, systemd
+    timer, GitHub Actions schedule, etc). It runs regardless of who the
+    caller is — a logged-in user is enough — because processing is scoped
+    to rows that have been explicitly scheduled by `dispatch()`. No payload
+    is exposed; only aggregate counts are returned.
+    """
+    result = await svc.process_due_retries(session)
+    return ProcessRetriesResult(**result)

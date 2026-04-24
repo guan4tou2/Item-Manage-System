@@ -42,6 +42,16 @@ class WebhookDelivery(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False)
     status_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     response_excerpt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # 1-indexed attempt counter (1 = initial dispatch; 2+ = retries).
+    attempt: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=1, server_default=text("1")
+    )
+    # Time at which the retry worker should pick this delivery up for another
+    # attempt. NULL means "no further retry scheduled" (either succeeded or
+    # exhausted the retry budget, or got superseded by a later attempt row).
+    next_retry_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, nullable=False, index=True
     )
