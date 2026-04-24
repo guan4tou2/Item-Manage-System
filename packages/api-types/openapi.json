@@ -975,6 +975,76 @@
         }
       }
     },
+    "/api/items/export.csv": {
+      "get": {
+        "tags": [
+          "items-bulk"
+        ],
+        "summary": "Export Items Csv",
+        "operationId": "export_items_csv_api_items_export_csv_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/items/bulk-import": {
+      "post": {
+        "tags": [
+          "items-bulk"
+        ],
+        "summary": "Bulk Import Items",
+        "operationId": "bulk_import_items_api_items_bulk_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_bulk_import_items_api_items_bulk_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkImportSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/items": {
       "get": {
         "tags": [
@@ -5917,6 +5987,20 @@
         ],
         "title": "AuditLogRead"
       },
+      "Body_bulk_import_items_api_items_bulk_import_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_bulk_import_items_api_items_bulk_import_post"
+      },
       "Body_upload_image_api_images_post": {
         "properties": {
           "file": {
@@ -5930,6 +6014,50 @@
           "file"
         ],
         "title": "Body_upload_image_api_images_post"
+      },
+      "BulkImportRowError": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row",
+          "reason"
+        ],
+        "title": "BulkImportRowError"
+      },
+      "BulkImportSummary": {
+        "properties": {
+          "created_count": {
+            "type": "integer",
+            "title": "Created Count"
+          },
+          "total_rows": {
+            "type": "integer",
+            "title": "Total Rows"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/BulkImportRowError"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_count",
+          "total_rows",
+          "errors"
+        ],
+        "title": "BulkImportSummary"
       },
       "CategoryBucket": {
         "properties": {

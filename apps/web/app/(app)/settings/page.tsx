@@ -6,6 +6,7 @@ import { AdminUsersPanel } from "@/components/settings/admin-users-panel"
 import { ApiTokensPanel } from "@/components/settings/api-tokens-panel"
 import { AuditLogPanel } from "@/components/settings/audit-log-panel"
 import { BootstrapAdminButton } from "@/components/settings/bootstrap-admin-button"
+import { CsvPanel } from "@/components/settings/csv-panel"
 import { PasswordForm } from "@/components/settings/password-form"
 import { PreferencesForm } from "@/components/settings/preferences-form"
 import { ProfileForm } from "@/components/settings/profile-form"
@@ -42,6 +43,7 @@ export default function SettingsPage() {
           <TabsTrigger value="password">{t("settings.tabs.password")}</TabsTrigger>
           <TabsTrigger value="preferences">{t("settings.tabs.preferences")}</TabsTrigger>
           <TabsTrigger value="tokens">API Tokens</TabsTrigger>
+          <TabsTrigger value="data">資料匯出入</TabsTrigger>
           {isAdmin ? <TabsTrigger value="admin">{t("settings.tabs.admin")}</TabsTrigger> : null}
           {isAdmin ? <TabsTrigger value="audit">稽核日誌</TabsTrigger> : null}
         </TabsList>
@@ -49,6 +51,7 @@ export default function SettingsPage() {
         <TabsContent value="password"><PasswordForm /></TabsContent>
         <TabsContent value="preferences"><PreferencesForm /></TabsContent>
         <TabsContent value="tokens"><ApiTokensPanel /></TabsContent>
+        <TabsContent value="data"><CsvPanel /></TabsContent>
         {isAdmin ? (
           <TabsContent value="admin"><AdminUsersPanel /></TabsContent>
         ) : null}
