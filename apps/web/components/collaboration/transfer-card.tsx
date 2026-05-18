@@ -22,7 +22,7 @@ export function TransferCard({ row, currentUserId }: { row: Transfer; currentUse
         <Badge variant={isPending ? "default" : "secondary"}>{t(`collab.transfers.status.${row.status}`)}</Badge>
       </CardHeader>
       <CardContent className="text-sm text-muted-foreground">
-        <p>{isIncoming ? `${peer} → 你` : `你 → ${peer}`}</p>
+        <p>{isIncoming ? t("collab.transfer.directionIncoming", { peer }) : t("collab.transfer.directionOutgoing", { peer })}</p>
         {row.message ? <p className="mt-1">{row.message}</p> : null}
       </CardContent>
       {isPending ? (

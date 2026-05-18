@@ -368,6 +368,8 @@
       "actions": {
         "new": "轉移所有權"
       },
+      "directionIncoming": "{peer} → 你",
+      "directionOutgoing": "你 → {peer}",
       "new": {
         "title": "轉移所有權",
         "toUsername": "接收者使用者名稱",

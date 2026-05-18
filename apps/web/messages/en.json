@@ -368,6 +368,8 @@
       "actions": {
         "new": "Transfer ownership"
       },
+      "directionIncoming": "{peer} → You",
+      "directionOutgoing": "You → {peer}",
       "new": {
         "title": "Transfer ownership",
         "toUsername": "Recipient username",
