@@ -76,7 +76,7 @@ export default function ListDetailPage() {
 
   if (query.isLoading) {
     return (
-      <section className="space-y-4 p-6">
+      <section className="space-y-6 p-6">
         <Skeleton className="h-8 w-60" />
         <Skeleton className="h-32 w-full" />
       </section>

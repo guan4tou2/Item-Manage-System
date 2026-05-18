@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 export default function TaxonomyPage() {
   const t = useTranslations()
   return (
-    <section className="space-y-4 p-6">
+    <section className="space-y-6 p-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem><BreadcrumbLink href="/settings">{t("nav.settings")}</BreadcrumbLink></BreadcrumbItem>

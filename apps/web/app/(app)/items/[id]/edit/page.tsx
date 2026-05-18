@@ -32,14 +32,14 @@ export default function EditItemPage() {
 
   if (item.isError) {
     return (
-      <section className="space-y-4 p-6">
+      <section className="space-y-6 p-6">
         <p className="text-muted-foreground">{t("items.detail.notFound")}</p>
       </section>
     )
   }
   if (item.isLoading || !item.data) {
     return (
-      <section className="space-y-4 p-6">
+      <section className="space-y-6 p-6">
         <Skeleton className="h-64 w-full max-w-xl" />
       </section>
     )
@@ -76,7 +76,7 @@ export default function EditItemPage() {
   }
 
   return (
-    <section className="space-y-4 p-6">
+    <section className="space-y-6 p-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

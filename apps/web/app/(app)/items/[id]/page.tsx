@@ -41,14 +41,14 @@ export default function ItemDetailPage() {
 
   if (item.isLoading) {
     return (
-      <section className="space-y-4 p-6">
+      <section className="space-y-6 p-6">
         <Skeleton className="h-64 w-full max-w-2xl" />
       </section>
     )
   }
   if (item.isError || !item.data) {
     return (
-      <section className="space-y-4 p-6">
+      <section className="space-y-6 p-6">
         <p className="text-muted-foreground">{t("items.detail.notFound")}</p>
       </section>
     )
@@ -57,7 +57,7 @@ export default function ItemDetailPage() {
   const i = item.data
   const isOwner = i.owner_id === currentUserId
   return (
-    <section className="space-y-4 p-6">
+    <section className="space-y-6 p-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem><BreadcrumbLink href="/items">{t("nav.items")}</BreadcrumbLink></BreadcrumbItem>

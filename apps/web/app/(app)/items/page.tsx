@@ -10,7 +10,7 @@ import { ItemsListClient } from "./items-list-client"
 export default function ItemsPage() {
   const t = useTranslations()
   return (
-    <section className="space-y-4 p-6">
+    <section className="space-y-6 p-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>

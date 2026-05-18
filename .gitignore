@@ -67,3 +67,4 @@ apps/api/.pytest_cache/
 .env
 .env.local
 .env.*.local
+.gstack/
