@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 import type { ActiveLoan } from "@/lib/api/stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,16 +17,17 @@ function formatDate(iso: string | null): string {
 }
 
 export function ActiveLoansCard({ loans, loading }: Props) {
+  const t = useTranslations()
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">活躍借出</CardTitle>
+        <CardTitle className="text-base">{t("dashboard.activeLoans.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-sm text-muted-foreground">載入中…</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.activeLoans.loading")}</p>
         ) : loans.length === 0 ? (
-          <p className="text-sm text-muted-foreground">目前沒有未歸還的借出</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.activeLoans.empty")}</p>
         ) : (
           <ul className="divide-y">
             {loans.map((loan) => (
@@ -41,12 +43,12 @@ export function ActiveLoansCard({ loans, loading }: Props) {
                     {loan.item_name}
                   </Link>
                   <div className="truncate text-xs text-muted-foreground">
-                    借給 {loan.borrower_label ?? "—"} · 預計 {formatDate(loan.expected_return)}
+                    {t("dashboard.activeLoans.loanInfo", { borrower: loan.borrower_label ?? "—", date: formatDate(loan.expected_return) })}
                   </div>
                 </div>
                 {loan.is_overdue ? (
                   <span className="flex-shrink-0 rounded bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
-                    已逾期
+                    {t("dashboard.activeLoans.overdue")}
                   </span>
                 ) : null}
               </li>

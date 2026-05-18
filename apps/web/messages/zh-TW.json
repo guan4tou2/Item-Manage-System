@@ -24,6 +24,13 @@
       "lowStock": "低庫存",
       "activeLoans": "活躍借出"
     },
+    "activeLoans": {
+      "title": "活躍借出",
+      "loading": "載入中…",
+      "empty": "目前沒有未歸還的借出",
+      "loanInfo": "借給 {borrower} · 預計 {date}",
+      "overdue": "已逾期"
+    },
     "recent": {
       "title": "最近物品",
       "viewAll": "查看全部",

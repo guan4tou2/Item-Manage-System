@@ -24,6 +24,13 @@
       "lowStock": "Low stock",
       "activeLoans": "Active loans"
     },
+    "activeLoans": {
+      "title": "Active loans",
+      "loading": "Loading…",
+      "empty": "No outstanding loans",
+      "loanInfo": "Lent to {borrower} · due {date}",
+      "overdue": "Overdue"
+    },
     "recent": {
       "title": "Recent items",
       "viewAll": "View all",
