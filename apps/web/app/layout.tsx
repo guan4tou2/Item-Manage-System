@@ -1,7 +1,7 @@
-import type { Metadata, Viewport } from "next"
+import type { Viewport } from "next"
 import { Inter } from "next/font/google"
 import { NextIntlClientProvider } from "next-intl"
-import { getLocale, getMessages } from "next-intl/server"
+import { getLocale, getMessages, getTranslations } from "next-intl/server"
 
 import "./globals.css"
 import { ServiceWorkerProvider } from "@/components/pwa/service-worker-provider"
@@ -13,25 +13,28 @@ const inter = Inter({
   display: "swap",
 })
 
-export const metadata: Metadata = {
-  title: "物品管理系統",
-  description: "家庭物品管理",
-  manifest: "/manifest.webmanifest",
-  applicationName: "IMS",
-  appleWebApp: {
-    capable: true,
-    title: "IMS",
-    statusBarStyle: "default",
-  },
-  icons: {
-    apple: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-  },
-  formatDetection: {
-    telephone: false,
-  },
+export async function generateMetadata() {
+  const t = await getTranslations()
+  return {
+    title: t("appName"),
+    description: t("landing.tagline"),
+    manifest: "/manifest.webmanifest",
+    applicationName: "IMS",
+    appleWebApp: {
+      capable: true,
+      title: "IMS",
+      statusBarStyle: "default" as const,
+    },
+    icons: {
+      apple: [
+        { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+    },
+    formatDetection: {
+      telephone: false,
+    },
+  }
 }
 
 export const viewport: Viewport = {
