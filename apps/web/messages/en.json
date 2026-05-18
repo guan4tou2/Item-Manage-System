@@ -69,6 +69,13 @@
     "byTag": {
       "title": "Top tags"
     },
+    "byWarehouse": {
+      "title": "Warehouse distribution",
+      "unassigned": "Unassigned"
+    },
+    "trend": {
+      "title": "New items trend (last 30 days)"
+    },
     "empty": {
       "title": "No data yet",
       "cta": "Create some items first"

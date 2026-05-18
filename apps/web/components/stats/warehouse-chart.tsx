@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,8 +18,9 @@ interface Props {
 }
 
 export function WarehouseChart({ buckets, loading }: Props) {
+  const t = useTranslations()
   const data = buckets.map((b) => ({
-    name: b.name ?? "未指定倉庫",
+    name: b.name ?? t("stats.byWarehouse.unassigned"),
     value: b.count,
   }))
   const empty = !loading && data.length === 0
@@ -26,7 +28,7 @@ export function WarehouseChart({ buckets, loading }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>倉庫分布</CardTitle>
+        <CardTitle>{t("stats.byWarehouse.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         {empty ? (

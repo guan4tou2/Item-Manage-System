@@ -69,6 +69,13 @@
     "byTag": {
       "title": "熱門標籤"
     },
+    "byWarehouse": {
+      "title": "倉庫分布",
+      "unassigned": "未指定倉庫"
+    },
+    "trend": {
+      "title": "新增趨勢 (近 30 天)"
+    },
     "empty": {
       "title": "尚無資料",
       "cta": "先新增一些物品"

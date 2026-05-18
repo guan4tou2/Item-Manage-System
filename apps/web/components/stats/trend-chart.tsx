@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslations } from "next-intl"
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function TrendChart({ points, loading }: Props) {
+  const t = useTranslations()
   const data = points.map((p) => ({
     day: p.day.slice(5), // MM-DD
     count: p.count,
@@ -21,7 +23,7 @@ export function TrendChart({ points, loading }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>新增趨勢 (近 30 天)</CardTitle>
+        <CardTitle>{t("stats.trend.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         {empty ? (
