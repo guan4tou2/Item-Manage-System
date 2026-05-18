@@ -2,6 +2,7 @@
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
+import { getApiErrorDetail } from "@/lib/api/client"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -26,8 +27,7 @@ export function AdminUsersPanel() {
     try {
       await setActive.mutateAsync({ userId, isActive: !isActive })
     } catch (e: unknown) {
-      const err = e as { body?: { detail?: string } }
-      const detail = err.body?.detail ?? ""
+      const detail = getApiErrorDetail(e) ?? ""
       if (detail.includes("self")) toast.error(t("settings.admin.errors.cannotDeactivateSelf"))
       else if (detail.includes("last admin")) toast.error(t("settings.admin.errors.cannotRemoveLastAdmin"))
       else toast.error(detail || "error")

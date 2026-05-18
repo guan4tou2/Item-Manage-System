@@ -36,4 +36,14 @@ export async function apiFetch(path: string, init: RequestInitWithToken = {}): P
   return response
 }
 
+export function isApiError(err: unknown): err is ApiError {
+  return err instanceof ApiError
+}
+
+export function getApiErrorDetail(err: unknown): string | undefined {
+  if (!isApiError(err)) return undefined
+  const body = err.body as Record<string, unknown> | null
+  return typeof body?.detail === "string" ? body.detail : undefined
+}
+
 export type Paths = paths

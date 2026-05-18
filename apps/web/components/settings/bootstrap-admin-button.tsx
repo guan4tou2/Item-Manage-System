@@ -2,6 +2,7 @@
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
+import { getApiErrorDetail } from "@/lib/api/client"
 import { Button } from "@/components/ui/button"
 import { useBootstrapAdmin, useMe } from "@/lib/hooks/use-profile"
 
@@ -14,8 +15,7 @@ export function BootstrapAdminButton() {
       await bootstrap.mutateAsync()
       toast.success(t("settings.bootstrap.success"))
     } catch (e: unknown) {
-      const err = e as { body?: { detail?: string } }
-      toast.error(err.body?.detail ?? "error")
+      toast.error(getApiErrorDetail(e) ?? "error")
     }
   }
   if (me.data?.is_admin) return null

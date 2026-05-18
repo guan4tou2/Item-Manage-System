@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { suggestFromImage } from "@/lib/api/ai"
+import { getApiErrorDetail } from "@/lib/api/client"
 import type { CategoryTreeNode } from "@/lib/api/categories"
 import type { LocationRead } from "@/lib/api/locations"
 import { useAccessToken } from "@/lib/auth/use-auth"
@@ -86,8 +87,7 @@ export function ItemForm({
       form.setValue("tag_names", merged)
       toast.success(t("items.form.aiSuggested"))
     } catch (e: unknown) {
-      const err = e as { body?: { detail?: string } }
-      toast.error(err.body?.detail ?? t("items.form.aiFailed"))
+      toast.error(getApiErrorDetail(e) ?? t("items.form.aiFailed"))
     } finally {
       setAiBusy(false)
     }

@@ -20,15 +20,12 @@ export function NewLoanDialog({ itemId }: { itemId: string }) {
   const create = useCreateLoan(itemId)
 
   const submit = async () => {
-    const body: LoanCreateBody = {} as LoanCreateBody
-    if (mode === "user" && user.trim()) {
-      (body as { borrower_username?: string }).borrower_username = user.trim()
+    const body: LoanCreateBody = {
+      borrower_username: mode === "user" && user.trim() ? user.trim() : null,
+      borrower_label: mode === "label" && label.trim() ? label.trim() : null,
+      expected_return: date || null,
+      notes: notes || null,
     }
-    if (mode === "label" && label.trim()) {
-      (body as { borrower_label?: string }).borrower_label = label.trim()
-    }
-    if (date) (body as { expected_return?: string }).expected_return = date
-    if (notes) (body as { notes?: string }).notes = notes
     await create.mutateAsync(body)
     setOpen(false); setUser(""); setLabel(""); setDate(""); setNotes("")
   }
