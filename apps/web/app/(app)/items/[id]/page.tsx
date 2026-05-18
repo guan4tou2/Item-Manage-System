@@ -78,7 +78,7 @@ export default function ItemDetailPage() {
                 <Link href={`/items/${i.id}/edit`}>{t("items.detail.edit")}</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link href={`/items/${i.id}/label` as never}>列印標籤</Link>
+                <Link href={`/items/${i.id}/label` as never}>{t("items.detail.printLabel")}</Link>
               </Button>
               <NewTransferDialog itemId={i.id} />
               <DeleteItemDialog onConfirm={handleDelete} pending={del.isPending} />

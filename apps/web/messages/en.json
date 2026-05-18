@@ -136,7 +136,10 @@
       "confirmDelete": "Delete this item?",
       "confirmDeleteBody": "The item will be marked deleted and removed from lists.",
       "deleted": "Deleted",
-      "notFound": "Item not found"
+      "notFound": "Item not found",
+      "printLabel": "Print label",
+      "backToItem": "Back to item",
+      "print": "Print"
     },
     "toast": {
       "created": "Created",

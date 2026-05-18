@@ -136,7 +136,10 @@
       "confirmDelete": "確定要刪除此物品?",
       "confirmDeleteBody": "物品將被標記為已刪除,之後無法從列表看到。",
       "deleted": "已刪除",
-      "notFound": "找不到此物品"
+      "notFound": "找不到此物品",
+      "printLabel": "列印標籤",
+      "backToItem": "返回物品",
+      "print": "列印"
     },
     "toast": {
       "created": "已建立",
