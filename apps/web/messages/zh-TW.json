@@ -403,6 +403,17 @@
         "actions": "操作"
       }
     },
+    "tokens": {
+      "created": "Token 建立成功，請立即複製（只會顯示這一次）：",
+      "copied": "我已複製",
+      "namePlaceholder": "Token 名稱（例如：CI、手機 App）",
+      "create": "建立 Token",
+      "empty": "尚無 Token",
+      "createdAt": "建立於 {date}",
+      "lastUsed": "上次使用 {date}",
+      "neverUsed": "從未使用",
+      "delete": "刪除"
+    },
     "audit": {
       "loading": "讀取中…",
       "empty": "尚無稽核紀錄",

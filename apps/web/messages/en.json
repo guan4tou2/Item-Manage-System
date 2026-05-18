@@ -403,6 +403,17 @@
         "actions": "Actions"
       }
     },
+    "tokens": {
+      "created": "Token created. Copy it now — it won't be shown again:",
+      "copied": "I've copied it",
+      "namePlaceholder": "Token name (e.g. CI, Mobile App)",
+      "create": "Create token",
+      "empty": "No tokens yet",
+      "createdAt": "Created {date}",
+      "lastUsed": "Last used {date}",
+      "neverUsed": "Never used",
+      "delete": "Delete"
+    },
     "audit": {
       "loading": "Loading…",
       "empty": "No audit logs yet",
