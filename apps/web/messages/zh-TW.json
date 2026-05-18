@@ -485,6 +485,11 @@
   },
   "pwa": {
     "install": "安裝至主畫面",
+    "update": {
+      "ready": "新版已準備好",
+      "description": "重新載入以套用更新",
+      "reload": "重新載入"
+    },
     "offline": {
       "title": "離線中",
       "body": "目前無法連線到伺服器。請檢查網路後再試。",

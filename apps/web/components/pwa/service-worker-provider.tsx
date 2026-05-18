@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect } from "react"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { applyUpdate, wireUpdateDetector } from "./sw-update-detector"
 
 export function ServiceWorkerProvider() {
+  const t = useTranslations()
   useEffect(() => {
     if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return
     if (process.env.NODE_ENV !== "production") return
@@ -18,11 +20,11 @@ export function ServiceWorkerProvider() {
       .then((registration) => {
         cleanup = wireUpdateDetector(registration, navigator.serviceWorker, {
           onUpdateReady: (waiting) => {
-            toast("新版已準備好", {
-              description: "重新載入以套用更新",
+            toast(t("pwa.update.ready"), {
+              description: t("pwa.update.description"),
               duration: Infinity,
               action: {
-                label: "重新載入",
+                label: t("pwa.update.reload"),
                 onClick: () => applyUpdate(waiting),
               },
             })

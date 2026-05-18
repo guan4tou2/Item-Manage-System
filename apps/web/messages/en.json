@@ -485,6 +485,11 @@
   },
   "pwa": {
     "install": "Install to home screen",
+    "update": {
+      "ready": "New version ready",
+      "description": "Reload to apply update",
+      "reload": "Reload"
+    },
     "offline": {
       "title": "You are offline",
       "body": "Cannot reach the server. Please check your connection.",
