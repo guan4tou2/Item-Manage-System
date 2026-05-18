@@ -403,6 +403,12 @@
         "actions": "Actions"
       }
     },
+    "audit": {
+      "loading": "Loading…",
+      "empty": "No audit logs yet",
+      "colTime": "Time",
+      "colUser": "User"
+    },
     "csv": {
       "title": "Bulk Import / Export",
       "exportDescription": "Exported CSV contains all non-deleted items; columns: ",

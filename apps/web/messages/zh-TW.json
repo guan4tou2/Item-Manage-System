@@ -403,6 +403,12 @@
         "actions": "操作"
       }
     },
+    "audit": {
+      "loading": "讀取中…",
+      "empty": "尚無稽核紀錄",
+      "colTime": "時間",
+      "colUser": "使用者"
+    },
     "csv": {
       "title": "批次匯入 / 匯出",
       "exportDescription": "匯出 CSV 包含所有未刪除的物品；欄位：",

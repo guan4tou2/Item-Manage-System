@@ -1,5 +1,6 @@
 "use client"
 import { useQuery } from "@tanstack/react-query"
+import { useTranslations } from "next-intl"
 
 import {
   Table,
@@ -27,6 +28,7 @@ async function listAuditLogs(token: string | null): Promise<AuditLogRow[]> {
 }
 
 export function AuditLogPanel() {
+  const t = useTranslations()
   const token = useAccessToken()
   const query = useQuery({
     queryKey: ["admin", "audit-logs"],
@@ -36,16 +38,16 @@ export function AuditLogPanel() {
   })
 
   const rows = query.data ?? []
-  if (query.isLoading) return <p className="text-sm text-muted-foreground">讀取中…</p>
-  if (rows.length === 0) return <p className="text-sm text-muted-foreground">尚無稽核紀錄</p>
+  if (query.isLoading) return <p className="text-sm text-muted-foreground">{t("settings.audit.loading")}</p>
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground">{t("settings.audit.empty")}</p>
 
   return (
     <div className="rounded border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>時間</TableHead>
-            <TableHead>使用者</TableHead>
+            <TableHead>{t("settings.audit.colTime")}</TableHead>
+            <TableHead>{t("settings.audit.colUser")}</TableHead>
             <TableHead>Action</TableHead>
             <TableHead>Resource</TableHead>
             <TableHead>Meta</TableHead>
