@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 import type { LowStockItem } from "@/lib/api/stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,16 +12,17 @@ interface Props {
 }
 
 export function LowStockCard({ items, loading }: Props) {
+  const t = useTranslations()
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">低庫存警示</CardTitle>
+        <CardTitle className="text-base">{t("dashboard.lowStock.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-sm text-muted-foreground">載入中…</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.lowStock.loading")}</p>
         ) : items.length === 0 ? (
-          <p className="text-sm text-muted-foreground">目前沒有物品低於最低庫存</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.lowStock.empty")}</p>
         ) : (
           <ul className="divide-y">
             {items.map((row) => (

@@ -24,6 +24,11 @@
       "lowStock": "低庫存",
       "activeLoans": "活躍借出"
     },
+    "lowStock": {
+      "title": "低庫存警示",
+      "loading": "載入中…",
+      "empty": "目前沒有物品低於最低庫存"
+    },
     "activeLoans": {
       "title": "活躍借出",
       "loading": "載入中…",

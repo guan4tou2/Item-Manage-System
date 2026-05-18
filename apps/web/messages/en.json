@@ -24,6 +24,11 @@
       "lowStock": "Low stock",
       "activeLoans": "Active loans"
     },
+    "lowStock": {
+      "title": "Low stock alert",
+      "loading": "Loading…",
+      "empty": "No items below minimum stock"
+    },
     "activeLoans": {
       "title": "Active loans",
       "loading": "Loading…",
