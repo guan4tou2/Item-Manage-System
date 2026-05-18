@@ -1,6 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Sparkles } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
@@ -72,7 +73,7 @@ export function ItemForm({
   const runAiSuggest = async () => {
     const imageId = form.getValues("image_id")
     if (!imageId) {
-      toast.error("請先上傳圖片")
+      toast.error(t("items.form.uploadImageFirst"))
       return
     }
     setAiBusy(true)
@@ -83,10 +84,10 @@ export function ItemForm({
       const existing = form.getValues("tag_names") ?? []
       const merged = Array.from(new Set([...existing, ...result.tag_suggestions]))
       form.setValue("tag_names", merged)
-      toast.success("AI 已填入建議欄位")
+      toast.success(t("items.form.aiSuggested"))
     } catch (e: unknown) {
       const err = e as { body?: { detail?: string } }
-      toast.error(err.body?.detail ?? "AI 辨識失敗")
+      toast.error(err.body?.detail ?? t("items.form.aiFailed"))
     } finally {
       setAiBusy(false)
     }
@@ -179,7 +180,7 @@ export function ItemForm({
       </div>
 
       <div>
-        <Label>圖片</Label>
+        <Label>{t("items.form.image")}</Label>
         <ImageUpload
           imageId={form.watch("image_id") ?? null}
           onChange={(id) => form.setValue("image_id", id)}
@@ -192,7 +193,7 @@ export function ItemForm({
             disabled={aiBusy || !form.watch("image_id")}
             onClick={runAiSuggest}
           >
-            {aiBusy ? "AI 辨識中…" : "✨ 使用 AI 辨識填入"}
+            {aiBusy ? t("items.form.aiRecognizing") : <><Sparkles className="mr-1 h-4 w-4" />{t("items.form.aiRecognize")}</>}
           </Button>
         </div>
       </div>
