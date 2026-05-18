@@ -161,6 +161,36 @@
       "locations": "位置",
       "tags": "標籤"
     },
+    "tags": {
+      "count": "目前共 {count} 個 tag",
+      "orphanCount": "，其中 {count} 個沒有物品使用",
+      "pruneOrphans": "清理孤兒 tag",
+      "empty": "尚未有任何 tag。從物品頁或 CSV 匯入時建立第一個。",
+      "itemCount": "{count} 個物品",
+      "selectTarget": "選擇目標 tag",
+      "ariaNewName": "tag 新名稱",
+      "ariaConfirm": "確認",
+      "ariaCancel": "取消",
+      "ariaConfirmMerge": "確認合併",
+      "ariaRename": "重新命名",
+      "ariaMerge": "合併到其他 tag",
+      "ariaDelete": "刪除",
+      "confirmMerge": "將「{source}」合併到「{target}」？此動作無法復原。",
+      "confirmForceDelete": "「{name}」仍附加在 {count} 個物品上，確定要強制刪除？",
+      "confirmPrune": "確定要刪除 {count} 個沒有物品的 tag？",
+      "toast": {
+        "renamed": "已重新命名為 {name}",
+        "renameConflict": "名稱已被其他 tag 使用",
+        "renameFailed": "重新命名失敗",
+        "merged": "合併完成：{count} 個物品已改指向「{target}」",
+        "mergeFailed": "合併失敗",
+        "deleted": "已刪除「{name}」",
+        "deleteFailed": "刪除失敗",
+        "noOrphans": "沒有孤兒 tag 可清理",
+        "pruned": "已清理 {count} 個孤兒 tag",
+        "pruneFailed": "清理失敗"
+      }
+    },
     "categories": {
       "add": "新增分類",
       "name": "名稱",

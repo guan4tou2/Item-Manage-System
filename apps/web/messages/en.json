@@ -161,6 +161,36 @@
       "locations": "Locations",
       "tags": "Tags"
     },
+    "tags": {
+      "count": "{count} tags total",
+      "orphanCount": ", {count} unused",
+      "pruneOrphans": "Prune orphan tags",
+      "empty": "No tags yet. Create one from the items page or CSV import.",
+      "itemCount": "{count} items",
+      "selectTarget": "Select target tag",
+      "ariaNewName": "New tag name",
+      "ariaConfirm": "Confirm",
+      "ariaCancel": "Cancel",
+      "ariaConfirmMerge": "Confirm merge",
+      "ariaRename": "Rename",
+      "ariaMerge": "Merge into another tag",
+      "ariaDelete": "Delete",
+      "confirmMerge": "Merge \"{source}\" into \"{target}\"? This cannot be undone.",
+      "confirmForceDelete": "\"{name}\" is still attached to {count} items. Force delete?",
+      "confirmPrune": "Delete {count} tags with no items?",
+      "toast": {
+        "renamed": "Renamed to {name}",
+        "renameConflict": "Name already used by another tag",
+        "renameFailed": "Rename failed",
+        "merged": "Merged: {count} items reassigned to \"{target}\"",
+        "mergeFailed": "Merge failed",
+        "deleted": "Deleted \"{name}\"",
+        "deleteFailed": "Delete failed",
+        "noOrphans": "No orphan tags to prune",
+        "pruned": "Pruned {count} orphan tags",
+        "pruneFailed": "Prune failed"
+      }
+    },
     "categories": {
       "add": "Add category",
       "name": "Name",

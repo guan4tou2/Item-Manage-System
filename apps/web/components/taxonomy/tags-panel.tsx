@@ -1,6 +1,7 @@
 "use client"
 
 import { Check, Merge, Pencil, Trash2, X } from "lucide-react"
+import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -22,6 +23,7 @@ type EditState =
   | { kind: "merge"; id: number; targetId: string }
 
 export function TagsPanel() {
+  const t = useTranslations()
   const tags = useTagsWithCounts()
   const rename = useRenameTag()
   const merge = useMergeTag()
@@ -37,11 +39,11 @@ export function TagsPanel() {
     if (!trimmed) return
     try {
       await rename.mutateAsync({ tagId: tag.id, name: trimmed })
-      toast.success(`已重新命名為 ${trimmed.toLowerCase()}`)
+      toast.success(t("taxonomy.tags.toast.renamed", { name: trimmed.toLowerCase() }))
       setEdit({ kind: "none" })
     } catch (err) {
       const msg = err instanceof Error ? err.message : "rename failed"
-      toast.error(msg.includes("409") ? "名稱已被其他 tag 使用" : "重新命名失敗")
+      toast.error(msg.includes("409") ? t("taxonomy.tags.toast.renameConflict") : t("taxonomy.tags.toast.renameFailed"))
     }
   }
 
@@ -49,48 +51,48 @@ export function TagsPanel() {
     if (!targetId || targetId === source.id) return
     const target = rows.find((t) => t.id === targetId)
     if (!target) return
-    if (!confirm(`將 "${source.name}" 合併到 "${target.name}"？此動作無法復原。`)) return
+    if (!confirm(t("taxonomy.tags.confirmMerge", { source: source.name, target: target.name }))) return
     try {
       const result = await merge.mutateAsync({ sourceId: source.id, targetId })
       toast.success(
-        `合併完成：${result.reassigned_item_count} 個物品已改指向 "${target.name}"`,
+        t("taxonomy.tags.toast.merged", { count: result.reassigned_item_count, target: target.name }),
       )
       setEdit({ kind: "none" })
     } catch {
-      toast.error("合併失敗")
+      toast.error(t("taxonomy.tags.toast.mergeFailed"))
     }
   }
 
   async function handleDelete(tag: TagReadWithCount) {
     if (tag.item_count > 0) {
-      if (!confirm(`"${tag.name}" 仍附加在 ${tag.item_count} 個物品上，確定要強制刪除？`)) return
+      if (!confirm(t("taxonomy.tags.confirmForceDelete", { name: tag.name, count: tag.item_count }))) return
       try {
         await del.mutateAsync({ tagId: tag.id, force: true })
-        toast.success(`已刪除 "${tag.name}"`)
+        toast.success(t("taxonomy.tags.toast.deleted", { name: tag.name }))
       } catch {
-        toast.error("刪除失敗")
+        toast.error(t("taxonomy.tags.toast.deleteFailed"))
       }
       return
     }
     try {
       await del.mutateAsync({ tagId: tag.id, force: false })
-      toast.success(`已刪除 "${tag.name}"`)
+      toast.success(t("taxonomy.tags.toast.deleted", { name: tag.name }))
     } catch {
-      toast.error("刪除失敗")
+      toast.error(t("taxonomy.tags.toast.deleteFailed"))
     }
   }
 
   async function handlePrune() {
     if (orphanCount === 0) {
-      toast("沒有孤兒 tag 可清理")
+      toast(t("taxonomy.tags.toast.noOrphans"))
       return
     }
-    if (!confirm(`確定要刪除 ${orphanCount} 個沒有物品的 tag？`)) return
+    if (!confirm(t("taxonomy.tags.confirmPrune", { count: orphanCount }))) return
     try {
       const result = await prune.mutateAsync()
-      toast.success(`已清理 ${result.deleted_count} 個孤兒 tag`)
+      toast.success(t("taxonomy.tags.toast.pruned", { count: result.deleted_count }))
     } catch {
-      toast.error("清理失敗")
+      toast.error(t("taxonomy.tags.toast.pruneFailed"))
     }
   }
 
@@ -98,8 +100,8 @@ export function TagsPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          目前共 {rows.length} 個 tag
-          {orphanCount > 0 ? `，其中 ${orphanCount} 個沒有物品使用` : ""}。
+          {t("taxonomy.tags.count", { count: rows.length })}
+          {orphanCount > 0 ? t("taxonomy.tags.orphanCount", { count: orphanCount }) : ""}
         </p>
         <Button
           variant="outline"
@@ -107,12 +109,12 @@ export function TagsPanel() {
           onClick={handlePrune}
           disabled={prune.isPending || orphanCount === 0}
         >
-          清理孤兒 tag
+          {t("taxonomy.tags.pruneOrphans")}
         </Button>
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-muted-foreground">尚未有任何 tag。從物品頁或 CSV 匯入時建立第一個。</p>
+        <p className="text-muted-foreground">{t("taxonomy.tags.empty")}</p>
       ) : (
         <ul className="space-y-1">
           {rows.map((tag) => {
@@ -133,14 +135,14 @@ export function TagsPanel() {
                         if (e.key === "Enter") handleRenameSubmit(tag, edit.draft)
                         if (e.key === "Escape") setEdit({ kind: "none" })
                       }}
-                      aria-label="tag 新名稱"
+                      aria-label={t("taxonomy.tags.ariaNewName")}
                       className="max-w-xs"
                     />
                   ) : (
                     <span className="truncate font-medium">{tag.name}</span>
                   )}
                   <span className="flex-shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                    {tag.item_count} 個物品
+                    {t("taxonomy.tags.itemCount", { count: tag.item_count })}
                   </span>
                 </div>
 
@@ -150,7 +152,7 @@ export function TagsPanel() {
                       size="sm"
                       onClick={() => handleRenameSubmit(tag, edit.draft)}
                       disabled={rename.isPending}
-                      aria-label="確認"
+                      aria-label={t("taxonomy.tags.ariaConfirm")}
                     >
                       <Check className="h-4 w-4" />
                     </Button>
@@ -158,7 +160,7 @@ export function TagsPanel() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setEdit({ kind: "none" })}
-                      aria-label="取消"
+                      aria-label={t("taxonomy.tags.ariaCancel")}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -170,7 +172,7 @@ export function TagsPanel() {
                       onValueChange={(v) => setEdit({ kind: "merge", id: tag.id, targetId: v })}
                     >
                       <SelectTrigger className="w-40">
-                        <SelectValue placeholder="選擇目標 tag" />
+                        <SelectValue placeholder={t("taxonomy.tags.selectTarget")} />
                       </SelectTrigger>
                       <SelectContent>
                         {rows
@@ -186,7 +188,7 @@ export function TagsPanel() {
                       size="sm"
                       onClick={() => handleMergeSubmit(tag, Number(edit.targetId))}
                       disabled={!edit.targetId || merge.isPending}
-                      aria-label="確認合併"
+                      aria-label={t("taxonomy.tags.ariaConfirmMerge")}
                     >
                       <Check className="h-4 w-4" />
                     </Button>
@@ -194,7 +196,7 @@ export function TagsPanel() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setEdit({ kind: "none" })}
-                      aria-label="取消"
+                      aria-label={t("taxonomy.tags.ariaCancel")}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -205,7 +207,7 @@ export function TagsPanel() {
                       variant="ghost"
                       size="sm"
                       onClick={() => setEdit({ kind: "rename", id: tag.id, draft: tag.name })}
-                      aria-label="重新命名"
+                      aria-label={t("taxonomy.tags.ariaRename")}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -214,7 +216,7 @@ export function TagsPanel() {
                       size="sm"
                       onClick={() => setEdit({ kind: "merge", id: tag.id, targetId: "" })}
                       disabled={rows.length < 2}
-                      aria-label="合併到其他 tag"
+                      aria-label={t("taxonomy.tags.ariaMerge")}
                     >
                       <Merge className="h-4 w-4" />
                     </Button>
@@ -223,7 +225,7 @@ export function TagsPanel() {
                       size="sm"
                       onClick={() => handleDelete(tag)}
                       disabled={del.isPending}
-                      aria-label="刪除"
+                      aria-label={t("taxonomy.tags.ariaDelete")}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
