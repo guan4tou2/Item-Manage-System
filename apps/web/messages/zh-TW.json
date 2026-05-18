@@ -314,7 +314,10 @@
       "profile": "個人資料",
       "password": "密碼",
       "preferences": "偏好",
-      "admin": "管理員"
+      "tokens": "API Tokens",
+      "data": "資料匯出入",
+      "admin": "管理員",
+      "audit": "稽核日誌"
     },
     "profile": {
       "email": "電子郵件",

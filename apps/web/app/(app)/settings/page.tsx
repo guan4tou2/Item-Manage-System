@@ -42,10 +42,10 @@ export default function SettingsPage() {
           <TabsTrigger value="profile">{t("settings.tabs.profile")}</TabsTrigger>
           <TabsTrigger value="password">{t("settings.tabs.password")}</TabsTrigger>
           <TabsTrigger value="preferences">{t("settings.tabs.preferences")}</TabsTrigger>
-          <TabsTrigger value="tokens">API Tokens</TabsTrigger>
-          <TabsTrigger value="data">資料匯出入</TabsTrigger>
+          <TabsTrigger value="tokens">{t("settings.tabs.tokens")}</TabsTrigger>
+          <TabsTrigger value="data">{t("settings.tabs.data")}</TabsTrigger>
           {isAdmin ? <TabsTrigger value="admin">{t("settings.tabs.admin")}</TabsTrigger> : null}
-          {isAdmin ? <TabsTrigger value="audit">稽核日誌</TabsTrigger> : null}
+          {isAdmin ? <TabsTrigger value="audit">{t("settings.tabs.audit")}</TabsTrigger> : null}
         </TabsList>
         <TabsContent value="profile"><ProfileForm /></TabsContent>
         <TabsContent value="password"><PasswordForm /></TabsContent>

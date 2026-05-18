@@ -314,7 +314,10 @@
       "profile": "Profile",
       "password": "Password",
       "preferences": "Preferences",
-      "admin": "Admin"
+      "tokens": "API Tokens",
+      "data": "Import / Export",
+      "admin": "Admin",
+      "audit": "Audit Log"
     },
     "profile": {
       "email": "Email",
