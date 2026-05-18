@@ -1,5 +1,6 @@
 "use client"
 import { useRef, useState } from "react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { imageUrl, uploadImage } from "@/lib/api/images"
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function ImageUpload({ imageId, onChange }: Props) {
+  const t = useTranslations()
   const token = useAccessToken()
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
@@ -37,7 +39,7 @@ export function ImageUpload({ imageId, onChange }: Props) {
         />
       ) : (
         <div className="flex h-40 w-40 items-center justify-center rounded border border-dashed text-xs text-muted-foreground">
-          無圖片
+          {t("items.form.noImage")}
         </div>
       )}
       <div className="flex gap-2">
@@ -48,11 +50,11 @@ export function ImageUpload({ imageId, onChange }: Props) {
           disabled={busy}
           onClick={() => inputRef.current?.click()}
         >
-          {busy ? "上傳中…" : "上傳圖片"}
+          {busy ? t("items.form.uploading") : t("items.form.uploadImage")}
         </Button>
         {imageId ? (
           <Button type="button" size="sm" variant="ghost" onClick={() => onChange(null)}>
-            移除
+            {t("items.form.removeImage")}
           </Button>
         ) : null}
       </div>
