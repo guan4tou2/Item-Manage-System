@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 type QrScannerModule = typeof import("qr-scanner").default
 
@@ -40,6 +43,7 @@ export function extractItemIdFromPayload(payload: string): string | null {
 type Status = "idle" | "starting" | "scanning" | "denied" | "unsupported" | "error"
 
 export function QrScannerView() {
+  const t = useTranslations()
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const scannerRef = useRef<InstanceType<QrScannerModule> | null>(null)
@@ -129,50 +133,48 @@ export function QrScannerView() {
         />
         {status !== "scanning" ? (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 p-4 text-center text-sm text-white">
-            {status === "starting" && "啟動相機中…"}
-            {status === "idle" && "準備啟動相機"}
-            {status === "denied" &&
-              "相機權限被拒絕。請在瀏覽器設定中允許此網站使用相機，然後重新載入此頁面。"}
-            {status === "unsupported" &&
-              "找不到可用的相機。請改用手動輸入。"}
-            {status === "error" && "相機初始化失敗。請檢查瀏覽器相容性。"}
+            {status === "starting" && t("scan.camera.starting")}
+            {status === "idle" && t("scan.camera.idle")}
+            {status === "denied" && t("scan.camera.denied")}
+            {status === "unsupported" && t("scan.camera.unsupported")}
+            {status === "error" && t("scan.camera.error")}
           </div>
         ) : null}
       </div>
 
       {lastResult ? (
         <div className="rounded border bg-muted/30 p-3 text-xs">
-          <div className="text-muted-foreground">最近解碼結果：</div>
+          <div className="text-muted-foreground">{t("scan.result.label")}</div>
           <code className="block break-all font-mono">{lastResult.payload}</code>
           {extractItemIdFromPayload(lastResult.payload) ? (
-            <div className="mt-1 text-green-700">✓ 偵測到物品 ID，已跳轉</div>
+            <div className="mt-1 text-green-700">{t("scan.result.found")}</div>
           ) : (
             <div className="mt-1 text-muted-foreground">
-              無法從內容判斷物品 ID，請檢查 QR 是否由本系統產生。
+              {t("scan.result.notFound")}
             </div>
           )}
         </div>
       ) : null}
 
       <form onSubmit={handleManualSubmit} className="space-y-2">
-        <label className="block text-sm font-medium">
-          手動輸入（物品 ID、網址或關鍵字）
-        </label>
+        <Label className="block">
+          {t("scan.manual.label")}
+        </Label>
         <div className="flex gap-2">
-          <input
+          <Input
             type="text"
             value={manualValue}
             onChange={(e) => setManualValue(e.target.value)}
-            placeholder="例：a1b2c3d4-… 或 https://… 或 『螺絲起子』"
-            className="flex-1 rounded border bg-background px-3 py-2 text-sm"
+            placeholder={t("scan.manual.placeholder")}
+            className="flex-1"
           />
-          <Button type="submit">前往</Button>
+          <Button type="submit">{t("scan.manual.go")}</Button>
         </div>
       </form>
 
       {status !== "scanning" ? (
         <Button variant="outline" onClick={() => void start()} disabled={status === "starting"}>
-          {status === "starting" ? "啟動中…" : "重新啟動相機"}
+          {status === "starting" ? t("scan.camera.starting") : t("scan.camera.restart")}
         </Button>
       ) : null}
     </div>

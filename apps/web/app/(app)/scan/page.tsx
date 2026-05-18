@@ -34,7 +34,7 @@ export default function ScanPage() {
 
       <h1 className="text-2xl font-semibold">{t("nav.scan")}</h1>
       <p className="text-sm text-muted-foreground">
-        將物品標籤對準相機。掃到由本系統產生的 QR 會自動跳轉到該物品頁面。
+        {t("scan.instruction")}
       </p>
 
       <QrScannerView />
