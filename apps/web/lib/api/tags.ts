@@ -12,7 +12,9 @@ export async function listTags(
   q: string | undefined,
   accessToken: string | null,
 ): Promise<TagRead[]> {
-  const qs = q ? `?q=${encodeURIComponent(q)}` : ""
+  const params = new URLSearchParams()
+  if (q) params.set("q", q)
+  const qs = params.size ? `?${params}` : ""
   const res = await apiFetch(`/tags${qs}`, { accessToken })
   return (await res.json()) as TagRead[]
 }
@@ -57,7 +59,9 @@ export async function deleteTag(
   force: boolean,
   accessToken: string | null,
 ): Promise<void> {
-  const qs = force ? "?force=true" : ""
+  const params = new URLSearchParams()
+  if (force) params.set("force", "true")
+  const qs = params.size ? `?${params}` : ""
   await apiFetch(`/tags/${tagId}${qs}`, { accessToken, method: "DELETE" })
 }
 
