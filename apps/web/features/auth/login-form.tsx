@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useLogin } from "@/lib/auth/use-auth"
 
 export function LoginForm() {
@@ -30,31 +32,25 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="mx-auto flex w-full max-w-sm flex-col gap-4">
       <h1 className="text-2xl font-bold">{t("login.title")}</h1>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="username" className="text-sm font-medium">
-          {t("login.username")}
-        </label>
-        <input
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="username">{t("login.username")}</Label>
+        <Input
           id="username"
           name="username"
           autoComplete="username"
           required
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          {t("login.password")}
-        </label>
-        <input
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="password">{t("login.password")}</Label>
+        <Input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
           required
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
