@@ -24,6 +24,15 @@
       "lowStock": "Low stock",
       "activeLoans": "Active loans"
     },
+    "activity": {
+      "title": "Recent activity",
+      "loading": "Loading…",
+      "empty": "No recent activity",
+      "kindQuantity": "Quantity",
+      "kindLoanOut": "Loan out",
+      "kindLoanReturn": "Return",
+      "kindSnapshot": "Snapshot"
+    },
     "lowStock": {
       "title": "Low stock alert",
       "loading": "Loading…",

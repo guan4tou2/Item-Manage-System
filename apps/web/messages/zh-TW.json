@@ -24,6 +24,15 @@
       "lowStock": "低庫存",
       "activeLoans": "活躍借出"
     },
+    "activity": {
+      "title": "最近活動",
+      "loading": "載入中…",
+      "empty": "沒有最近活動",
+      "kindQuantity": "數量",
+      "kindLoanOut": "借出",
+      "kindLoanReturn": "歸還",
+      "kindSnapshot": "快照"
+    },
     "lowStock": {
       "title": "低庫存警示",
       "loading": "載入中…",

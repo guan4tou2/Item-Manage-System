@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useTranslations } from "next-intl"
 
 import type { ActivityEntry } from "@/lib/api/stats"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,13 +11,6 @@ interface Props {
   loading?: boolean
 }
 
-const KIND_LABEL: Record<string, string> = {
-  quantity: "數量",
-  loan_out: "借出",
-  loan_return: "歸還",
-  item_version: "快照",
-}
-
 function formatWhen(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
@@ -24,16 +18,23 @@ function formatWhen(iso: string): string {
 }
 
 export function ActivityFeed({ entries, loading }: Props) {
+  const t = useTranslations()
+  const KIND_LABEL: Record<string, string> = {
+    quantity: t("dashboard.activity.kindQuantity"),
+    loan_out: t("dashboard.activity.kindLoanOut"),
+    loan_return: t("dashboard.activity.kindLoanReturn"),
+    item_version: t("dashboard.activity.kindSnapshot"),
+  }
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">最近活動</CardTitle>
+        <CardTitle className="text-base">{t("dashboard.activity.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-sm text-muted-foreground">載入中…</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.activity.loading")}</p>
         ) : entries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">沒有最近活動</p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.activity.empty")}</p>
         ) : (
           <ul className="divide-y">
             {entries.map((entry, idx) => (
