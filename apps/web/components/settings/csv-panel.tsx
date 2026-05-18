@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
+import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import type { BulkImportSummary } from "@/lib/api/items-bulk"
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export function CsvPanel() {
+  const t = useTranslations()
   const token = useAccessToken()
   const qc = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -22,9 +24,9 @@ export function CsvPanel() {
     setExporting(true)
     try {
       await downloadItemsCsv(token)
-      toast.success("匯出完成")
+      toast.success(t("settings.csv.toast.exportDone"))
     } catch {
-      toast.error("匯出失敗")
+      toast.error(t("settings.csv.toast.exportFailed"))
     } finally {
       setExporting(false)
     }
@@ -37,14 +39,14 @@ export function CsvPanel() {
       const result = await importItemsCsv(file, token)
       setSummary(result)
       if (result.created_count > 0) {
-        toast.success(`已匯入 ${result.created_count} 筆`)
+        toast.success(t("settings.csv.toast.imported", { count: result.created_count }))
         qc.invalidateQueries({ queryKey: ["items"] })
         qc.invalidateQueries({ queryKey: ["stats"] })
       } else if (result.errors.length > 0) {
-        toast.error("匯入失敗，請檢查錯誤列表")
+        toast.error(t("settings.csv.toast.importFailedWithErrors"))
       }
     } catch {
-      toast.error("匯入失敗")
+      toast.error(t("settings.csv.toast.importFailed"))
     } finally {
       setImporting(false)
       if (fileRef.current) fileRef.current.value = ""
@@ -54,30 +56,28 @@ export function CsvPanel() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>批次匯入 / 匯出</CardTitle>
+        <CardTitle>{t("settings.csv.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
-            匯出 CSV 包含所有未刪除的物品；欄位：
+            {t("settings.csv.exportDescription")}
             <code className="mx-1 rounded bg-muted px-1">id, name, description, quantity, min_quantity, category_name, location_floor/room/zone, warehouse_name, notes, is_favorite, created_at, updated_at</code>
           </p>
           <p>
-            匯入支援 <code>name</code>（必填）、<code>quantity</code>、<code>min_quantity</code>、
-            <code>description</code>、<code>notes</code>、<code>category_name</code>、
-            <code>location_floor/room/zone</code>、<code>warehouse_name</code>。分類 / 位置 / 倉庫若不存在會自動建立。
+            {t("settings.csv.importDescription")}
           </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={handleExport} disabled={exporting}>
-            {exporting ? "匯出中…" : "下載 CSV"}
+            {exporting ? t("settings.csv.exporting") : t("settings.csv.downloadCsv")}
           </Button>
           <Button
             onClick={() => fileRef.current?.click()}
             disabled={importing}
           >
-            {importing ? "匯入中…" : "選擇 CSV 匯入"}
+            {importing ? t("settings.csv.importing") : t("settings.csv.selectCsvImport")}
           </Button>
           <input
             ref={fileRef}
@@ -94,9 +94,9 @@ export function CsvPanel() {
         {summary ? (
           <div className="rounded border bg-muted/30 p-3 text-sm">
             <div>
-              總列數：<strong>{summary.total_rows}</strong>
-              成功建立：<strong>{summary.created_count}</strong>
-              失敗：
+              {t("settings.csv.summary.totalRows")}<strong>{summary.total_rows}</strong>
+              {" "}{t("settings.csv.summary.created")}<strong>{summary.created_count}</strong>
+              {" "}{t("settings.csv.summary.failed")}
               <strong className={summary.errors.length > 0 ? "text-destructive" : ""}>
                 {summary.errors.length}
               </strong>
@@ -105,12 +105,12 @@ export function CsvPanel() {
               <ul className="mt-2 space-y-0.5">
                 {summary.errors.slice(0, 10).map((e: { row: number; reason: string }) => (
                   <li key={`${e.row}-${e.reason}`} className="font-mono text-xs">
-                    第 {e.row} 列：{e.reason}
+                    {t("settings.csv.summary.errorRow", { row: e.row, reason: e.reason })}
                   </li>
                 ))}
                 {summary.errors.length > 10 ? (
                   <li className="text-xs text-muted-foreground">
-                    …還有 {summary.errors.length - 10} 筆錯誤
+                    {t("settings.csv.summary.moreErrors", { count: summary.errors.length - 10 })}
                   </li>
                 ) : null}
               </ul>

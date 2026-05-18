@@ -373,6 +373,29 @@
         "actions": "操作"
       }
     },
+    "csv": {
+      "title": "批次匯入 / 匯出",
+      "exportDescription": "匯出 CSV 包含所有未刪除的物品；欄位：",
+      "importDescription": "匯入支援 name（必填）、quantity、min_quantity、description、notes、category_name、location_floor/room/zone、warehouse_name。分類 / 位置 / 倉庫若不存在會自動建立。",
+      "exporting": "匯出中…",
+      "downloadCsv": "下載 CSV",
+      "importing": "匯入中…",
+      "selectCsvImport": "選擇 CSV 匯入",
+      "toast": {
+        "exportDone": "匯出完成",
+        "exportFailed": "匯出失敗",
+        "imported": "已匯入 {count} 筆",
+        "importFailedWithErrors": "匯入失敗，請檢查錯誤列表",
+        "importFailed": "匯入失敗"
+      },
+      "summary": {
+        "totalRows": "總列數：",
+        "created": "成功建立：",
+        "failed": "失敗：",
+        "errorRow": "第 {row} 列：{reason}",
+        "moreErrors": "…還有 {count} 筆錯誤"
+      }
+    },
     "bootstrap": {
       "prompt": "系統尚無管理員。",
       "confirm": "成為首位管理員",

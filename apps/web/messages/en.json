@@ -373,6 +373,29 @@
         "actions": "Actions"
       }
     },
+    "csv": {
+      "title": "Bulk Import / Export",
+      "exportDescription": "Exported CSV contains all non-deleted items; columns: ",
+      "importDescription": "Import supports name (required), quantity, min_quantity, description, notes, category_name, location_floor/room/zone, warehouse_name. Categories / locations / warehouses are auto-created if missing.",
+      "exporting": "Exporting…",
+      "downloadCsv": "Download CSV",
+      "importing": "Importing…",
+      "selectCsvImport": "Select CSV to import",
+      "toast": {
+        "exportDone": "Export complete",
+        "exportFailed": "Export failed",
+        "imported": "Imported {count} items",
+        "importFailedWithErrors": "Import failed, please check the error list",
+        "importFailed": "Import failed"
+      },
+      "summary": {
+        "totalRows": "Total rows: ",
+        "created": "Created: ",
+        "failed": "Failed: ",
+        "errorRow": "Row {row}: {reason}",
+        "moreErrors": "…and {count} more errors"
+      }
+    },
     "bootstrap": {
       "prompt": "No admin exists yet.",
       "confirm": "Become the first admin",
