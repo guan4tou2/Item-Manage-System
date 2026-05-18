@@ -74,7 +74,8 @@
     "password": "Password",
     "submit": "Sign in",
     "submitting": "Signing in…",
-    "error": "Invalid credentials"
+    "error": "Invalid credentials",
+    "backToHome": "Back to home"
   },
   "landing": {
     "tagline": "Home item management",

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 
@@ -63,6 +64,11 @@ export function LoginForm() {
       <Button type="submit" disabled={login.isPending}>
         {login.isPending ? t("login.submitting") : t("login.submit")}
       </Button>
+      <p className="text-center text-sm text-muted-foreground">
+        <Link href="/" className="hover:text-foreground underline underline-offset-4">
+          {t("login.backToHome")}
+        </Link>
+      </p>
     </form>
   )
 }

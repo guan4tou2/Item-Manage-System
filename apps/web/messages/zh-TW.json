@@ -74,7 +74,8 @@
     "password": "密碼",
     "submit": "登入",
     "submitting": "登入中…",
-    "error": "帳號或密碼錯誤"
+    "error": "帳號或密碼錯誤",
+    "backToHome": "返回首頁"
   },
   "landing": {
     "tagline": "家庭物品管理",
