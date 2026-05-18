@@ -1,13 +1,14 @@
 "use client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import * as api from "@/lib/api/transfers"
+import { STALE_TIME } from "./constants"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 type ListParams = { direction?: "incoming" | "outgoing" | "both"; status_filter?: "pending" | "resolved" | "all" }
 
 export function useTransfers(params: ListParams = {}) {
   const token = useAccessToken()
-  return useQuery({ queryKey: ["transfers", "index", params], queryFn: () => api.listTransfers(params, token), enabled: token !== null, staleTime: 30_000 })
+  return useQuery({ queryKey: ["transfers", "index", params], queryFn: () => api.listTransfers(params, token), enabled: token !== null, staleTime: STALE_TIME })
 }
 function invalidateAll(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["transfers"] })

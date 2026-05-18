@@ -4,8 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import * as api from "@/lib/api/notifications"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { STALE_TIME } from "./constants"
 
-const STALE = 30_000
 
 export function useNotifications(params: { unreadOnly?: boolean; limit?: number; offset?: number } = {}) {
   const token = useAccessToken()
@@ -14,7 +14,7 @@ export function useNotifications(params: { unreadOnly?: boolean; limit?: number;
     queryKey: ["notifications", "list", { unreadOnly, limit, offset }],
     queryFn: () => api.listNotifications({ unreadOnly, limit, offset }, token),
     enabled: token !== null,
-    staleTime: STALE,
+    staleTime: STALE_TIME,
   })
 }
 
@@ -24,7 +24,7 @@ export function useUnreadCount() {
     queryKey: ["notifications", "unread-count"],
     queryFn: () => api.getUnreadCount(token),
     enabled: token !== null,
-    staleTime: STALE,
+    staleTime: STALE_TIME,
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
   })

@@ -5,8 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import * as api from "@/lib/api/lists"
 import type { EntryCreateBody, EntryUpdateBody, ListCreateBody, ListKind, ListUpdateBody } from "@/lib/api/lists"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { STALE_TIME } from "./constants"
 
-const STALE = 30_000
 
 export function useLists(params: { kind?: ListKind } = {}) {
   const token = useAccessToken()
@@ -14,7 +14,7 @@ export function useLists(params: { kind?: ListKind } = {}) {
     queryKey: ["lists", "index", params],
     queryFn: () => api.listLists({ ...params, limit: 100 }, token),
     enabled: token !== null,
-    staleTime: STALE,
+    staleTime: STALE_TIME,
   })
 }
 
@@ -24,7 +24,7 @@ export function useList(listId: string | null) {
     queryKey: ["lists", "detail", listId],
     queryFn: () => api.getList(listId as string, token),
     enabled: token !== null && listId !== null,
-    staleTime: STALE,
+    staleTime: STALE_TIME,
   })
 }
 

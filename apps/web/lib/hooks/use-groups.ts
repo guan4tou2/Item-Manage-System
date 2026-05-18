@@ -1,15 +1,16 @@
 "use client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import * as api from "@/lib/api/groups"
+import { STALE_TIME } from "./constants"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 export function useGroups() {
   const token = useAccessToken()
-  return useQuery({ queryKey: ["groups", "index"], queryFn: () => api.listGroups(token), enabled: token !== null, staleTime: 30_000 })
+  return useQuery({ queryKey: ["groups", "index"], queryFn: () => api.listGroups(token), enabled: token !== null, staleTime: STALE_TIME })
 }
 export function useGroup(id: string | null) {
   const token = useAccessToken()
-  return useQuery({ queryKey: ["groups", "detail", id], queryFn: () => api.getGroup(id as string, token), enabled: token !== null && id !== null, staleTime: 30_000 })
+  return useQuery({ queryKey: ["groups", "detail", id], queryFn: () => api.getGroup(id as string, token), enabled: token !== null && id !== null, staleTime: STALE_TIME })
 }
 export function useCreateGroup() {
   const token = useAccessToken(); const qc = useQueryClient()

@@ -1,11 +1,12 @@
 "use client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import * as api from "@/lib/api/loans"
+import { STALE_TIME } from "./constants"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 export function useLoans(itemId: string) {
   const token = useAccessToken()
-  return useQuery({ queryKey: ["loans", itemId], queryFn: () => api.listLoans(itemId, token), enabled: token !== null, staleTime: 30_000 })
+  return useQuery({ queryKey: ["loans", itemId], queryFn: () => api.listLoans(itemId, token), enabled: token !== null, staleTime: STALE_TIME })
 }
 export function useCreateLoan(itemId: string) {
   const token = useAccessToken(); const qc = useQueryClient()

@@ -1,12 +1,13 @@
 "use client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import * as api from "@/lib/api/profile"
+import { STALE_TIME } from "./constants"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 export function useMe() {
   const token = useAccessToken()
-  return useQuery({ queryKey: ["profile", "me"], queryFn: () => api.getMe(token), enabled: token !== null, staleTime: 30_000 })
+  return useQuery({ queryKey: ["profile", "me"], queryFn: () => api.getMe(token), enabled: token !== null, staleTime: STALE_TIME })
 }
 
 export function useUpdateProfile() {
