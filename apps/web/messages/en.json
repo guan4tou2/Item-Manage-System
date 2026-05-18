@@ -19,7 +19,10 @@
       "items": "Items",
       "quantity": "Total quantity",
       "categories": "Categories",
-      "locations": "Locations"
+      "locations": "Locations",
+      "warehouses": "Warehouses",
+      "lowStock": "Low stock",
+      "activeLoans": "Active loans"
     },
     "recent": {
       "title": "Recent items",

@@ -69,18 +69,18 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard
-          label="倉庫"
+          label={t("dashboard.overview.warehouses")}
           value={overview.data?.total_warehouses}
           loading={overview.isLoading}
         />
         <StatCard
-          label="低庫存"
+          label={t("dashboard.overview.lowStock")}
           value={overview.data?.low_stock_items}
           loading={overview.isLoading}
           tone="warn"
         />
         <StatCard
-          label="活躍借出"
+          label={t("dashboard.overview.activeLoans")}
           value={overview.data?.active_loans}
           loading={overview.isLoading}
         />
