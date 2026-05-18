@@ -35,9 +35,9 @@ export default function ItemLabelPage() {
     <section className="space-y-6 p-6 print:space-y-0 print:p-0">
       <div className="flex items-center gap-2 print:hidden">
         <Button asChild variant="outline">
-          <Link href={`/items/${id}` as never}>返回物品</Link>
+          <Link href={`/items/${id}` as never}>{t("items.detail.backToItem")}</Link>
         </Button>
-        <Button onClick={() => window.print()}>列印</Button>
+        <Button onClick={() => window.print()}>{t("items.detail.print")}</Button>
       </div>
 
       {/*
