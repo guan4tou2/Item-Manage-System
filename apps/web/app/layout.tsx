@@ -14,8 +14,8 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "物品管理系統 v2",
-  description: "IMS v2 — 家庭物品管理",
+  title: "物品管理系統",
+  description: "家庭物品管理",
   manifest: "/manifest.webmanifest",
   applicationName: "IMS",
   appleWebApp: {
