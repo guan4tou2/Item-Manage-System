@@ -3,7 +3,6 @@ import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 
-// middleware 已處理：已登入訪問 `/` → redirect `/dashboard`
 export default function HomePage() {
   const t = useTranslations()
   return (
