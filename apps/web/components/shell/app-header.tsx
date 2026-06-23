@@ -26,7 +26,7 @@ export function AppHeader() {
       >
         {t("appName")}
       </Link>
-      <nav className="ml-6 hidden items-center gap-1 md:flex">
+      <nav className="ml-6 hidden min-w-0 items-center gap-1 overflow-x-auto lg:flex">
         {NAV_ITEMS.map((item) => {
           const active = pathname.startsWith(item.href)
           return (

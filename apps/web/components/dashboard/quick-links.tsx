@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 
 const LINKS = [
   { href: "/items", key: "items" as const },
+  { href: "/stocktakes", key: "stocktakes" as const },
   { href: "/statistics", key: "stats" as const },
   { href: "/settings/taxonomy", key: "taxonomy" as const },
 ]

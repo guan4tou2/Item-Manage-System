@@ -54,6 +54,7 @@ async def test_item_custom_values(client, auth):
     listed = await client.get(f"/api/items/{item['id']}/custom-values", headers=auth)
     assert listed.status_code == 200
     assert len(listed.json()) == 1
+    assert listed.json()[0]["value"] == "SN-123"
 
 
 # templates
@@ -66,3 +67,21 @@ async def test_template_crud(client, auth):
     tid = r.json()["id"]
     assert (await client.get("/api/item-templates", headers=auth)).status_code == 200
     assert (await client.delete(f"/api/item-templates/{tid}", headers=auth)).status_code == 204
+
+
+async def test_template_patch_updates_name_and_payload(client, auth):
+    created = await client.post(
+        "/api/item-templates", headers=auth,
+        json={"name": "標準螺絲", "payload": {"name": "M4x10", "quantity": 50}},
+    )
+    tid = created.json()["id"]
+
+    updated = await client.patch(
+        f"/api/item-templates/{tid}",
+        headers=auth,
+        json={"name": "長螺絲", "payload": {"name": "M4x20", "quantity": 25}},
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["name"] == "長螺絲"
+    assert updated.json()["payload"] == {"name": "M4x20", "quantity": 25}

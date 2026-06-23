@@ -27,6 +27,14 @@ export type EntryCreateBody =
 export type EntryUpdateBody =
   paths["/api/lists/{list_id}/entries/{entry_id}"]["patch"]["requestBody"]["content"]["application/json"]
 
+export interface RestockListItem {
+  item_id: string
+  name: string
+  quantity?: number
+  min_quantity?: number
+  deficit: number
+}
+
 export async function listLists(
   params: { kind?: ListKind; limit?: number; offset?: number },
   accessToken: string | null,
@@ -49,6 +57,39 @@ export async function createList(
     body: JSON.stringify(body),
   })
   return (await res.json()) as ListSummary
+}
+
+export async function createRestockListFromLowStockItems(
+  items: RestockListItem[],
+  accessToken: string | null,
+  options: { title?: string; description?: string | null } = {},
+): Promise<ListSummary> {
+  const today = new Date().toISOString().slice(0, 10)
+  const list = await createList(
+    {
+      kind: "shopping",
+      title: options.title ?? `Restock ${today}`,
+      description: options.description ?? null,
+    },
+    accessToken,
+  )
+
+  await Promise.all(
+    items.map((item) =>
+      createEntry(
+        list.id,
+        {
+          name: item.name,
+          quantity: Math.max(1, item.deficit),
+          link: `/items/${item.item_id}`,
+          is_done: false,
+        },
+        accessToken,
+      ),
+    ),
+  )
+
+  return list
 }
 
 export async function getList(id: string, accessToken: string | null): Promise<ListDetail> {

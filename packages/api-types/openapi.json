@@ -1515,6 +1515,98 @@
         }
       }
     },
+    "/api/items/bulk": {
+      "patch": {
+        "tags": [
+          "items"
+        ],
+        "summary": "Bulk Update Items",
+        "operationId": "bulk_update_items_api_items_bulk_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemBulkUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemBulkResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/items/bulk-delete": {
+      "post": {
+        "tags": [
+          "items"
+        ],
+        "summary": "Bulk Delete Items",
+        "operationId": "bulk_delete_items_api_items_bulk_delete_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemBulkDelete"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemBulkResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/items/{item_id}": {
       "get": {
         "tags": [
@@ -4533,6 +4625,61 @@
       }
     },
     "/api/item-templates/{template_id}": {
+      "patch": {
+        "tags": [
+          "customization"
+        ],
+        "summary": "Update Template",
+        "operationId": "update_template_api_item_templates__template_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "template_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Template Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemTemplateUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemTemplateRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "customization"
@@ -5811,7 +5958,7 @@
           "webhooks"
         ],
         "summary": "Process Retries",
-        "description": "Process every webhook delivery whose next_retry_at has arrived.\n\nThis is intended to be called by an external scheduler (cron, systemd\ntimer, GitHub Actions schedule, etc). It runs regardless of who the\ncaller is \u2014 a logged-in user is enough \u2014 because processing is scoped\nto rows that have been explicitly scheduled by `dispatch()`. No payload\nis exposed; only aggregate counts are returned.",
+        "description": "Process every webhook delivery whose next_retry_at has arrived.\n\nThis is intended to be called by an external scheduler (cron, systemd\ntimer, GitHub Actions schedule, etc). It runs regardless of who the\ncaller is — a logged-in user is enough — because processing is scoped\nto rows that have been explicitly scheduled by `dispatch()`. No payload\nis exposed; only aggregate counts are returned.",
         "operationId": "process_retries_api_webhooks_process_retries_post",
         "responses": {
           "200": {
@@ -6863,6 +7010,107 @@
         ],
         "title": "ImageRead"
       },
+      "ItemBulkDelete": {
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Item Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_ids"
+        ],
+        "title": "ItemBulkDelete"
+      },
+      "ItemBulkResult": {
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "title": "Updated",
+            "default": 0
+          },
+          "deleted": {
+            "type": "integer",
+            "title": "Deleted",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ItemBulkResult"
+      },
+      "ItemBulkUpdate": {
+        "properties": {
+          "item_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Item Ids"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "tag_names": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag Names"
+          },
+          "tag_mode": {
+            "type": "string",
+            "enum": [
+              "replace",
+              "append"
+            ],
+            "title": "Tag Mode",
+            "default": "replace"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_ids"
+        ],
+        "title": "ItemBulkUpdate"
+      },
       "ItemCreate": {
         "properties": {
           "name": {
@@ -7267,6 +7515,26 @@
           "created_at"
         ],
         "title": "ItemTemplateRead"
+      },
+      "ItemTemplateUpdate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "payload": {
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "payload"
+        ],
+        "title": "ItemTemplateUpdate"
       },
       "ItemTypeCreate": {
         "properties": {

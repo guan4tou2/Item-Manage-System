@@ -1,9 +1,16 @@
 "use client"
 
 import Link from "next/link"
+import { ListPlus, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useState } from "react"
 import { useTranslations } from "next-intl"
+import { toast } from "sonner"
 
 import type { LowStockItem } from "@/lib/api/stats"
+import { createRestockListFromLowStockItems } from "@/lib/api/lists"
+import { useAccessToken } from "@/lib/auth/use-auth"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface Props {
@@ -13,10 +20,49 @@ interface Props {
 
 export function LowStockCard({ items, loading }: Props) {
   const t = useTranslations()
+  const router = useRouter()
+  const token = useAccessToken()
+  const [creating, setCreating] = useState(false)
+
+  const createRestockList = async () => {
+    setCreating(true)
+    try {
+      const date = new Date().toISOString().slice(0, 10)
+      const list = await createRestockListFromLowStockItems(items, token, {
+        title: t("dashboard.lowStock.restockListTitle", { date }),
+      })
+      toast.success(t("dashboard.lowStock.restockCreated"))
+      router.push(`/lists/${list.id}` as never)
+    } catch {
+      toast.error(t("dashboard.lowStock.restockFailed"))
+    } finally {
+      setCreating(false)
+    }
+  }
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-base">{t("dashboard.lowStock.title")}</CardTitle>
+        {!loading && items.length > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={createRestockList}
+            disabled={creating}
+            className="w-full justify-center sm:w-auto"
+          >
+            {creating ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <ListPlus className="h-4 w-4" aria-hidden />
+            )}
+            {creating
+              ? t("dashboard.lowStock.creatingRestockList")
+              : t("dashboard.lowStock.createRestockList")}
+          </Button>
+        ) : null}
       </CardHeader>
       <CardContent>
         {loading ? (

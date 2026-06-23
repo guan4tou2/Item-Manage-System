@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { NextIntlClientProvider } from "next-intl"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import messages from "@/messages/zh-TW.json"
 
@@ -16,6 +16,7 @@ import { MobileNav } from "./mobile-nav"
 
 describe("MobileNav", () => {
   beforeEach(() => pushMock.mockReset())
+  afterEach(() => vi.restoreAllMocks())
 
   it("opens drawer and renders all nav labels", async () => {
     const user = userEvent.setup()
@@ -27,6 +28,7 @@ describe("MobileNav", () => {
     await user.click(screen.getByRole("button", { name: /開啟選單/ }))
     expect(await screen.findByText("儀表板")).toBeInTheDocument()
     expect(screen.getByText("物品")).toBeInTheDocument()
+    expect(screen.getByText("盤點")).toBeInTheDocument()
     expect(screen.getByText("清單")).toBeInTheDocument()
     expect(screen.getByText("設定")).toBeInTheDocument()
   })
@@ -41,5 +43,38 @@ describe("MobileNav", () => {
     await user.click(screen.getByRole("button", { name: /開啟選單/ }))
     await user.click(screen.getByText("物品"))
     expect(pushMock).toHaveBeenCalledWith("/items")
+  })
+
+  it("does not emit dialog description warnings", async () => {
+    const user = userEvent.setup()
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
+
+    render(
+      <NextIntlClientProvider locale="zh-TW" messages={messages}>
+        <MobileNav />
+      </NextIntlClientProvider>,
+    )
+
+    await user.click(screen.getByRole("button", { name: /開啟選單/ }))
+
+    const output = [...warnSpy.mock.calls, ...errorSpy.mock.calls]
+      .flat()
+      .join(" ")
+    expect(output).not.toContain("Missing `Description`")
+  })
+
+  it("uses a localized label for the close button", async () => {
+    const user = userEvent.setup()
+    render(
+      <NextIntlClientProvider locale="zh-TW" messages={messages}>
+        <MobileNav />
+      </NextIntlClientProvider>,
+    )
+
+    await user.click(screen.getByRole("button", { name: /開啟選單/ }))
+
+    expect(screen.getByRole("button", { name: "關閉選單" })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument()
   })
 })

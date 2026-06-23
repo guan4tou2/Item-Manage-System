@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
@@ -36,15 +37,18 @@ export function MobileNav() {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="lg:hidden"
           aria-label={t("a11y.openMenu")}
         >
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-64">
+      <SheetContent side="left" className="w-64" closeLabel={t("a11y.closeMenu")}>
         <SheetHeader>
           <SheetTitle>{t("appName")}</SheetTitle>
+          <SheetDescription className="sr-only">
+            {t("a11y.mobileNavigationDescription")}
+          </SheetDescription>
         </SheetHeader>
         <nav className="mt-6 flex flex-col gap-1">
           {NAV_ITEMS.map((item) => (

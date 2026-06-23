@@ -8,7 +8,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.item import ItemCreate, ItemListResponse, ItemRead, ItemUpdate
+from app.schemas.item import (
+    ItemBulkDelete,
+    ItemBulkResult,
+    ItemBulkUpdate,
+    ItemCreate,
+    ItemListResponse,
+    ItemRead,
+    ItemUpdate,
+)
 from app.services import items_service
 
 router = APIRouter(prefix="/api/items", tags=["items"])
@@ -57,6 +65,24 @@ async def create_item(
     session: AsyncSession = Depends(get_db),
 ) -> ItemRead:
     return await items_service.create_item(session, user.id, body)
+
+
+@router.patch("/bulk", response_model=ItemBulkResult)
+async def bulk_update_items(
+    body: ItemBulkUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> ItemBulkResult:
+    return await items_service.bulk_update_items(session, user.id, body)
+
+
+@router.post("/bulk-delete", response_model=ItemBulkResult)
+async def bulk_delete_items(
+    body: ItemBulkDelete,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> ItemBulkResult:
+    return await items_service.bulk_delete_items(session, user.id, body)
 
 
 @router.get("/{item_id}", response_model=ItemRead)

@@ -16,6 +16,7 @@ from app.schemas.customization import (
     ItemCustomValueSet,
     ItemTemplateCreate,
     ItemTemplateRead,
+    ItemTemplateUpdate,
     ItemTypeCreate,
     ItemTypeRead,
 )
@@ -82,6 +83,12 @@ async def delete_custom_field(session: AsyncSession, owner_id: UUID, field_id: i
 
 
 # --- item custom values ---
+def _read_custom_value(value: Any) -> Any:
+    if isinstance(value, dict) and "v" in value:
+        return value["v"]
+    return value
+
+
 async def _ensure_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> Item:
     item = (await session.execute(
         select(Item).where(
@@ -100,7 +107,13 @@ async def get_item_custom_values(
     rows = (await session.execute(
         select(ItemCustomValue).where(ItemCustomValue.item_id == item_id)
     )).scalars().all()
-    return [ItemCustomValueRead.model_validate(r) for r in rows]
+    return [
+        ItemCustomValueRead(
+            custom_field_id=r.custom_field_id,
+            value=_read_custom_value(r.value),
+        )
+        for r in rows
+    ]
 
 
 async def set_item_custom_value(
@@ -164,6 +177,27 @@ async def create_template(
         await session.commit()
         await session.refresh(t)
         return ItemTemplateRead.model_validate(t)
+    except Exception:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="name already exists")
+
+
+async def update_template(
+    session: AsyncSession, owner_id: UUID, template_id: int, body: ItemTemplateUpdate
+) -> ItemTemplateRead:
+    stmt = select(ItemTemplate).where(
+        ItemTemplate.id == template_id, ItemTemplate.owner_id == owner_id
+    )
+    template = (await session.execute(stmt)).scalar_one_or_none()
+    if template is None:
+        raise HTTPException(status_code=404, detail="template not found")
+
+    try:
+        template.name = body.name
+        template.payload = body.payload
+        await session.commit()
+        await session.refresh(template)
+        return ItemTemplateRead.model_validate(template)
     except Exception:
         await session.rollback()
         raise HTTPException(status_code=409, detail="name already exists")

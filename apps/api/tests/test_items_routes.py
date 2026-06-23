@@ -156,6 +156,104 @@ class TestItemUpdate:
         assert resp.status_code == 404
 
 
+class TestItemBulkUpdate:
+    async def test_bulk_update_replaces_tags_and_moves_location(self, client, auth_headers):
+        loc = (await client.post(
+            "/api/locations",
+            headers=auth_headers,
+            json={"floor": "2F", "room": "Storage"},
+        )).json()
+        a = (await client.post(
+            "/api/items",
+            headers=auth_headers,
+            json={"name": "a", "tag_names": ["old"]},
+        )).json()
+        b = (await client.post(
+            "/api/items",
+            headers=auth_headers,
+            json={"name": "b", "tag_names": ["old"]},
+        )).json()
+
+        resp = await client.patch(
+            "/api/items/bulk",
+            headers=auth_headers,
+            json={
+                "item_ids": [a["id"], b["id"]],
+                "location_id": loc["id"],
+                "tag_names": ["packed", "fragile"],
+                "tag_mode": "replace",
+            },
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {"updated": 2, "deleted": 0}
+        updated_a = (await client.get(f"/api/items/{a['id']}", headers=auth_headers)).json()
+        updated_b = (await client.get(f"/api/items/{b['id']}", headers=auth_headers)).json()
+        assert updated_a["location"]["id"] == loc["id"]
+        assert updated_b["location"]["id"] == loc["id"]
+        assert sorted(tag["name"] for tag in updated_a["tags"]) == ["fragile", "packed"]
+        assert sorted(tag["name"] for tag in updated_b["tags"]) == ["fragile", "packed"]
+
+    async def test_bulk_update_appends_tags(self, client, auth_headers):
+        item = (await client.post(
+            "/api/items",
+            headers=auth_headers,
+            json={"name": "a", "tag_names": ["old"]},
+        )).json()
+
+        resp = await client.patch(
+            "/api/items/bulk",
+            headers=auth_headers,
+            json={
+                "item_ids": [item["id"]],
+                "tag_names": ["old", "new"],
+                "tag_mode": "append",
+            },
+        )
+
+        assert resp.status_code == 200
+        updated = (await client.get(f"/api/items/{item['id']}", headers=auth_headers)).json()
+        assert sorted(tag["name"] for tag in updated["tags"]) == ["new", "old"]
+
+    async def test_bulk_update_empty_selection_422(self, client, auth_headers):
+        resp = await client.patch(
+            "/api/items/bulk",
+            headers=auth_headers,
+            json={"item_ids": [], "tag_names": ["packed"]},
+        )
+
+        assert resp.status_code == 422
+
+    async def test_bulk_update_cross_owner_fails_without_partial_changes(self, client, auth_headers):
+        own = (await client.post(
+            "/api/items",
+            headers=auth_headers,
+            json={"name": "own", "tag_names": ["keep"]},
+        )).json()
+        await client.post("/api/auth/register", json={
+            "email": "bulk-other@t.io", "username": "bulk_other", "password": "secret1234"})
+        other_token = (await client.post("/api/auth/login", json={
+            "username": "bulk_other", "password": "secret1234"})).json()["access_token"]
+        other = (await client.post(
+            "/api/items",
+            headers={"Authorization": f"Bearer {other_token}"},
+            json={"name": "other"},
+        )).json()
+
+        resp = await client.patch(
+            "/api/items/bulk",
+            headers=auth_headers,
+            json={
+                "item_ids": [own["id"], other["id"]],
+                "tag_names": ["changed"],
+            },
+        )
+
+        assert resp.status_code == 404
+        unchanged = (await client.get(f"/api/items/{own['id']}", headers=auth_headers)).json()
+        assert [tag["name"] for tag in unchanged["tags"]] == ["keep"]
+
+
 class TestItemDelete:
     async def test_soft_delete(self, client, auth_headers):
         created = (await client.post(
@@ -188,3 +286,45 @@ class TestItemDelete:
             headers={"Authorization": f"Bearer {tok_b}"},
         )
         assert resp.status_code == 404
+
+
+class TestItemBulkDelete:
+    async def test_bulk_delete_soft_deletes_items(self, client, auth_headers):
+        a = (await client.post("/api/items", headers=auth_headers, json={"name": "a"})).json()
+        b = (await client.post("/api/items", headers=auth_headers, json={"name": "b"})).json()
+
+        resp = await client.post(
+            "/api/items/bulk-delete",
+            headers=auth_headers,
+            json={"item_ids": [a["id"], b["id"]]},
+        )
+
+        assert resp.status_code == 200
+        assert resp.json() == {"updated": 0, "deleted": 2}
+        list_resp = await client.get("/api/items", headers=auth_headers)
+        assert list_resp.json()["total"] == 0
+
+    async def test_bulk_delete_cross_owner_fails_without_partial_changes(self, client, auth_headers):
+        own = (await client.post("/api/items", headers=auth_headers, json={"name": "own"})).json()
+        await client.post("/api/auth/register", json={
+            "email": "bulk-delete-other@t.io",
+            "username": "bulk_delete_other",
+            "password": "secret1234",
+        })
+        other_token = (await client.post("/api/auth/login", json={
+            "username": "bulk_delete_other", "password": "secret1234"})).json()["access_token"]
+        other = (await client.post(
+            "/api/items",
+            headers={"Authorization": f"Bearer {other_token}"},
+            json={"name": "other"},
+        )).json()
+
+        resp = await client.post(
+            "/api/items/bulk-delete",
+            headers=auth_headers,
+            json={"item_ids": [own["id"], other["id"]]},
+        )
+
+        assert resp.status_code == 404
+        still_there = await client.get(f"/api/items/{own['id']}", headers=auth_headers)
+        assert still_there.status_code == 200

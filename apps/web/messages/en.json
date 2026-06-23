@@ -10,6 +10,7 @@
     "notifications": "Notifications",
     "scan": "Scan",
     "settings": "Settings",
+    "stocktakes": "Stocktake",
     "statistics": "Statistics",
     "taxonomy": "Taxonomy"
   },
@@ -36,7 +37,12 @@
     "lowStock": {
       "title": "Low stock alert",
       "loading": "Loading…",
-      "empty": "No items below minimum stock"
+      "empty": "No items below minimum stock",
+      "createRestockList": "Create restock list",
+      "creatingRestockList": "Creating list…",
+      "restockListTitle": "Restock {date}",
+      "restockCreated": "Restock list created.",
+      "restockFailed": "Could not create restock list."
     },
     "activeLoans": {
       "title": "Active loans",
@@ -52,8 +58,74 @@
     },
     "quickLinks": {
       "items": "Manage items",
+      "stocktakes": "Run stocktake",
       "stats": "View statistics",
       "taxonomy": "Configure categories & locations"
+    }
+  },
+  "stocktakes": {
+    "actual": "Actual",
+    "actualQuantity": "Actual quantity",
+    "cancel": "Cancel stocktake",
+    "complete": "Complete stocktake",
+    "completedAt": "completed {date}",
+    "completing": "Completing…",
+    "createDescription": "Start a focused count and reconcile differences when it is complete.",
+    "createTitle": "New session",
+    "delta": "Delta",
+    "discrepancies": "Discrepancies",
+    "discrepancyCount": "Discrepancies",
+    "emptySessions": "No stocktakes yet.",
+    "expected": "Expected",
+    "completeAnyway": "Complete anyway",
+    "confirmCompleteBody": "This session still has quantity differences. Review the summary before applying corrections.",
+    "confirmCompleteSummary": "Matched {matched} · Missing {missing} · Over-counted {over} · Total delta {totalDelta}",
+    "confirmCompleteTitle": "Complete with discrepancies?",
+    "groups": {
+      "matched": "Matched ({count})",
+      "missing": "Missing ({count})",
+      "over": "Over-counted ({count})"
+    },
+    "itemCount": "Items",
+    "itemLabel": "Item",
+    "itemPlaceholder": "Select an item",
+    "keepCounting": "Keep counting",
+    "nameLabel": "Session name",
+    "namePlaceholder": "June shelf count",
+    "noItems": "Create items before recording counts.",
+    "noScans": "No items recorded in this session yet.",
+    "noteLabel": "Note",
+    "notePlaceholder": "Shelf, bin, or variance reason",
+    "openSessions": "Open sessions",
+    "recordCount": "Record count",
+    "recording": "Recording…",
+    "readyForNext": "Recorded, ready for next item",
+    "scanDescription": "Choose an item and enter the counted quantity.",
+    "scanTitle": "Record item count",
+    "scannedAt": "Scanned {date}",
+    "scannedItems": "Scanned items",
+    "scannedTitle": "Recorded counts",
+    "selectSession": "Create or select a stocktake session to begin.",
+    "sessionsTitle": "Sessions",
+    "start": "Start stocktake",
+    "startedAt": "Started {date}",
+    "starting": "Starting…",
+    "status": {
+      "cancelled": "Cancelled",
+      "completed": "Completed",
+      "open": "Open"
+    },
+    "statusLabel": "Status",
+    "subtitle": "Run cycle counts, capture actual quantities, and apply quantity corrections with history.",
+    "title": "Stocktakes",
+    "toast": {
+      "cancelled": "Stocktake cancelled.",
+      "completed": "Stocktake completed.",
+      "created": "Stocktake started.",
+      "createFailed": "Could not start stocktake.",
+      "resolveFailed": "Could not update stocktake.",
+      "scanFailed": "Could not record count.",
+      "scanned": "Count recorded."
     }
   },
   "stats": {
@@ -137,7 +209,8 @@
   "a11y": {
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "userMenu": "User menu"
+    "userMenu": "User menu",
+    "mobileNavigationDescription": "Main application navigation links"
   },
   "items": {
     "list": {
@@ -156,7 +229,39 @@
       "columnTags": "Tags",
       "page": "Page {page} of {total}",
       "previousPage": "Previous page",
-      "nextPage": "Next page"
+      "nextPage": "Next page",
+      "selectAll": "Select all items",
+      "selectItem": "Select {name}"
+    },
+    "bulk": {
+      "selectedCount": "{count} selected",
+      "selectionHint": "Bulk changes apply to visible selected items.",
+      "clear": "Clear",
+      "tagsLabel": "Bulk tags",
+      "tagsPlaceholder": "packed, ready",
+      "replaceTags": "Replace",
+      "appendTags": "Append",
+      "applyTags": "Apply tags",
+      "moveTo": "Move selected to",
+      "selectLocation": "Select location",
+      "move": "Move",
+      "printLabels": "Print labels",
+      "deleteSelected": "Delete selected",
+      "confirmDeleteTitle": "Delete selected items?",
+      "confirmDeleteBody": "{count} items will be marked deleted and removed from lists.",
+      "confirmDelete": "Delete {count} items",
+      "tagsApplied": "Tags updated for {count} items",
+      "locationMoved": "Moved {count} items",
+      "deleted": "Deleted {count} items",
+      "actionFailed": "Bulk action failed"
+    },
+    "labels": {
+      "title": "Print labels",
+      "summary": "{count} labels ready",
+      "empty": "Select items from the items page to print labels.",
+      "backToItems": "Back to items",
+      "skipped": "{count} label skipped",
+      "notFound": "No printable labels found"
     },
     "form": {
       "name": "Name",
@@ -167,6 +272,12 @@
       "notes": "Notes",
       "tags": "Tags",
       "tagsPlaceholder": "Type and press Enter",
+      "templates": "Templates",
+      "templateApplied": "Applied template: {name}",
+      "templateAppliedFields": "{count} fields applied: {fields}",
+      "clearTemplateValues": "Clear template values",
+      "customFields": "Custom fields",
+      "customFieldsDescription": "Values saved here follow the fields configured in Settings.",
       "image": "Image",
       "uploadImageFirst": "Please upload an image first",
       "aiSuggested": "AI has filled in suggested fields",
@@ -198,7 +309,19 @@
       "notFound": "Item not found",
       "printLabel": "Print label",
       "backToItem": "Back to item",
-      "print": "Print"
+      "print": "Print",
+      "addFavorite": "Add to favorites",
+      "removeFavorite": "Remove from favorites",
+      "saveAsTemplate": "Save as template",
+      "savingTemplate": "Saving template…",
+      "templateName": "{name} template",
+      "templateSaved": "Template saved.",
+      "templateSaveFailed": "Could not save this item as a template.",
+      "customFields": "Custom fields",
+      "customFieldsLoading": "Loading custom values…",
+      "noCustomValues": "No custom values yet.",
+      "booleanYes": "Yes",
+      "booleanNo": "No"
     },
     "toast": {
       "created": "Created",
@@ -272,7 +395,8 @@
     "actions": {
       "markRead": "Mark read",
       "markAllRead": "Mark all read",
-      "delete": "Delete"
+      "delete": "Delete",
+      "addToRestockList": "Add to restock list"
     },
     "empty": {
       "title": "No notifications yet",
@@ -403,12 +527,16 @@
     }
   },
   "settings": {
+    "subtitle": "Manage account access, preferences, integrations, and data movement from one operational workspace.",
     "title": "Settings",
     "tabs": {
       "profile": "Profile",
       "password": "Password",
       "preferences": "Preferences",
       "tokens": "API Tokens",
+      "customization": "Customization",
+      "channels": "Notifications",
+      "webhooks": "Webhooks",
       "data": "Import / Export",
       "admin": "Admin",
       "audit": "Audit Log"
@@ -468,6 +596,168 @@
       "lastUsed": "Last used {date}",
       "neverUsed": "Never used",
       "delete": "Delete"
+    },
+    "customization": {
+      "createField": "Create field",
+      "createTemplate": "Create template",
+      "createType": "Create type",
+      "creating": "Creating…",
+      "cancelTemplateEdit": "Cancel editing",
+      "deleteField": "Delete custom field {name}",
+      "deleteTemplate": "Delete template {name}",
+      "deleteType": "Delete item type {name}",
+      "description": "Define the reusable structure behind item records before using it in item workflows.",
+      "duplicateTemplate": "Duplicate template {name}",
+      "editTemplate": "Edit template {name}",
+      "emptyFields": "No custom fields yet",
+      "emptyPayload": "No defaults set",
+      "emptyTemplates": "No templates yet",
+      "emptyTypes": "No item types yet",
+      "fieldNameLabel": "Field name",
+      "fieldNamePlaceholder": "Warranty date",
+      "fieldsDescription": "Add extra typed attributes that can later be captured on items.",
+      "fieldsTitle": "Custom fields",
+      "fieldTypeLabel": "Field type",
+      "fieldTypes": {
+        "bool": "Boolean",
+        "date": "Date",
+        "number": "Number",
+        "text": "Text"
+      },
+      "loading": "Loading customization settings…",
+      "templateItemNameLabel": "Default item name",
+      "templateItemNamePlaceholder": "AA Battery",
+      "templateNameLabel": "Template name",
+      "templateNamePlaceholder": "Restock pack",
+      "templateNotesLabel": "Default notes",
+      "templateCustomValuesTitle": "Custom field defaults",
+      "templateCopyName": "{name} copy",
+      "templateQuantityLabel": "Default quantity",
+      "templatesDescription": "Save common item defaults for repeated inventory entries.",
+      "templatesTitle": "Item templates",
+      "templateSummaryNameQty": "{name} · qty {quantity}",
+      "title": "Customization",
+      "toast": {
+        "deleteFailed": "Could not delete this customization setting.",
+        "saveFailed": "Could not save customization settings.",
+        "saved": "Customization settings saved."
+      },
+      "typeIconLabel": "Icon key",
+      "typeIconPlaceholder": "plug",
+      "typeNameLabel": "Type name",
+      "typeNamePlaceholder": "Appliance",
+      "typesDescription": "Group items by operational type without changing categories.",
+      "typesTitle": "Item types",
+      "updateTemplate": "Update template",
+      "updating": "Updating…"
+    },
+    "channels": {
+      "linked": "Linked",
+      "loading": "Loading notification channels…",
+      "notLinked": "Not linked",
+      "serverMissing": "Server missing",
+      "serverReady": "Server ready",
+      "test": "Send test",
+      "unlink": "Unlink",
+      "email": {
+        "description": "Uses the email address on your account.",
+        "test": "Send test email",
+        "title": "Email"
+      },
+      "line": {
+        "description": "Pushes notifications to a linked LINE user.",
+        "save": "Save LINE",
+        "title": "LINE",
+        "userIdLabel": "LINE user ID",
+        "userIdPlaceholder": "U1234567890"
+      },
+      "telegram": {
+        "chatIdLabel": "Telegram chat ID",
+        "chatIdPlaceholder": "123456789",
+        "description": "Pushes notifications through your Telegram bot.",
+        "save": "Save Telegram",
+        "title": "Telegram"
+      },
+      "toast": {
+        "saveFailed": "Could not save the channel link.",
+        "saved": "Channel link saved.",
+        "subscribeFailed": "Could not subscribe this browser.",
+        "subscribed": "This browser is subscribed.",
+        "testDelivered": "Test notification delivered.",
+        "testFailed": "Test notification was not delivered.",
+        "unlinkFailed": "Could not unlink the channel.",
+        "unlinked": "Channel unlinked."
+      },
+      "webPush": {
+        "createdAt": "Linked {date}",
+        "description": "{count, plural, =0 {No browsers linked.} one {# browser linked.} other {# browsers linked.}}",
+        "linkedCount": "{count, plural, =0 {0 browsers} one {# browser} other {# browsers}}",
+        "loadingSubscriptions": "Loading browser subscriptions…",
+        "noSubscriptions": "No browsers are linked yet.",
+        "remove": "Remove subscription",
+        "subscribe": "Subscribe this browser",
+        "subscribing": "Subscribing…",
+        "subscriptions": "Browser subscriptions",
+        "title": "Web Push"
+      }
+    },
+    "webhooks": {
+      "active": "Active",
+      "allEvents": "All item events",
+      "attempt": "Attempt {attempt}",
+      "create": "Create webhook",
+      "createDescription": "Send item lifecycle changes to another system with an optional HMAC signature.",
+      "createFailed": "Could not create webhook",
+      "createTitle": "New endpoint",
+      "createdAt": "Created {date}",
+      "creating": "Creating…",
+      "deleteWebhook": "Delete {name}",
+      "deliveriesFor": "Recent deliveries for {name}",
+      "deliveriesTitle": "Delivery history",
+      "emptyBody": "Create an endpoint to receive item lifecycle events.",
+      "emptyTitle": "No webhooks yet",
+      "endpointsDescription": "Monitor delivery health, pause endpoints, and replay failed attempts.",
+      "endpointsTitle": "Configured endpoints",
+      "events": {
+        "item": {
+          "created": "Item created",
+          "updated": "Item updated",
+          "deleted": "Item deleted"
+        }
+      },
+      "eventsTitle": "Events",
+      "healthy": "Healthy",
+      "inactive": "Inactive",
+      "lastFired": "Last fired: {date}",
+      "loading": "Loading webhooks…",
+      "loadingDeliveries": "Loading delivery history…",
+      "nameLabel": "Webhook name",
+      "namePlaceholder": "Inventory sync",
+      "needsAttention": "Needs attention",
+      "nextRetryAt": "Next retry {date}",
+      "noDeliveriesBody": "Deliveries appear after items are created, updated, or deleted.",
+      "noDeliveriesTitle": "No deliveries yet",
+      "noSelection": "Create or select a webhook to inspect delivery attempts.",
+      "processRetries": "Process due retries",
+      "processedSummary": "Processed {processed} retries, {succeeded} succeeded, {remaining} remaining.",
+      "processedTitle": "Retry processing complete",
+      "processing": "Processing…",
+      "retryNow": "Retry now",
+      "retryScheduled": "Retry scheduled",
+      "retrying": "Retrying…",
+      "secretHelp": "When set, requests include X-IMS-Signature using HMAC-SHA256.",
+      "secretLabel": "Signing secret",
+      "secretPlaceholder": "Optional secret",
+      "selectWebhook": "Select a configured endpoint to inspect recent attempts.",
+      "status": {
+        "failed": "HTTP {status}",
+        "network": "Network error",
+        "success": "HTTP {status}"
+      },
+      "toggleActive": "Toggle {name}",
+      "tryAgain": "Check the endpoint URL and try again.",
+      "urlLabel": "Endpoint URL",
+      "waiting": "Waiting"
     },
     "audit": {
       "loading": "Loading…",

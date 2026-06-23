@@ -3,8 +3,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import * as api from "@/lib/api/items"
-import type { ItemCreate, ItemFilters, ItemUpdate } from "@/lib/api/items"
+import type {
+  ItemBulkDelete,
+  ItemBulkUpdate,
+  ItemCreate,
+  ItemFilters,
+  ItemUpdate,
+} from "@/lib/api/items"
 import { useAccessToken } from "@/lib/auth/use-auth"
+
+function invalidateItemWorkflowSurfaces(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: ["items"] })
+  qc.invalidateQueries({ queryKey: ["stats"] })
+  qc.invalidateQueries({ queryKey: ["tags"] })
+  qc.invalidateQueries({ queryKey: ["tags-with-counts"] })
+  qc.invalidateQueries({ queryKey: ["locations"] })
+  qc.invalidateQueries({ queryKey: ["categories"] })
+}
 
 export function useItems(filters: ItemFilters) {
   const token = useAccessToken()
@@ -58,5 +73,23 @@ export function useDeleteItem() {
       qc.removeQueries({ queryKey: ["items", id] })
       qc.invalidateQueries({ queryKey: ["items"] })
     },
+  })
+}
+
+export function useBulkUpdateItems() {
+  const token = useAccessToken()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: ItemBulkUpdate) => api.bulkUpdateItems(body, token),
+    onSuccess: () => invalidateItemWorkflowSurfaces(qc),
+  })
+}
+
+export function useBulkDeleteItems() {
+  const token = useAccessToken()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: ItemBulkDelete) => api.bulkDeleteItems(body, token),
+    onSuccess: () => invalidateItemWorkflowSurfaces(qc),
   })
 }

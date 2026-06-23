@@ -1,6 +1,6 @@
 "use client"
 
-import { X } from "lucide-react"
+import { ListPlus, Loader2, X } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,9 @@ interface Props {
   row: NotificationRead
   onOpen: (row: NotificationRead) => void
   onDelete: (id: string) => void
+  onAddToRestock?: (row: NotificationRead) => void
+  opening?: boolean
+  restockPending?: boolean
 }
 
 function formatRelative(iso: string): string {
@@ -25,11 +28,26 @@ function formatRelative(iso: string): string {
   return `${day}d`
 }
 
-export function NotificationItem({ row, onOpen, onDelete }: Props) {
+export function NotificationItem({
+  row,
+  onOpen,
+  onDelete,
+  onAddToRestock,
+  opening,
+  restockPending,
+}: Props) {
   const t = useTranslations()
   const unread = row.read_at === null
+  const canAddToRestock = row.type === "low_stock" && onAddToRestock
   return (
-    <li className={cn("group flex items-start gap-3 border-b p-4", !unread && "opacity-70")}>
+    <li
+      aria-label={row.title}
+      aria-busy={opening || restockPending ? "true" : "false"}
+      className={cn(
+        "group flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-start",
+        !unread && "opacity-70",
+      )}
+    >
       <button
         type="button"
         aria-label="Open notification"
@@ -51,14 +69,32 @@ export function NotificationItem({ row, onOpen, onDelete }: Props) {
           <p className="text-sm text-muted-foreground">{row.body}</p>
         ) : null}
       </button>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={t("notifications.actions.delete")}
-        onClick={() => onDelete(row.id)}
-      >
-        <X className="h-4 w-4" />
-      </Button>
+      <div className="flex items-center justify-end gap-2">
+        {canAddToRestock ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onAddToRestock(row)}
+            disabled={restockPending}
+          >
+            {restockPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <ListPlus className="h-4 w-4" aria-hidden />
+            )}
+            {t("notifications.actions.addToRestockList")}
+          </Button>
+        ) : null}
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t("notifications.actions.delete")}
+          onClick={() => onDelete(row.id)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
     </li>
   )
 }

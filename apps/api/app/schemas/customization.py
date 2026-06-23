@@ -57,6 +57,11 @@ class ItemTemplateCreate(BaseModel):
     payload: dict[str, Any]
 
 
+class ItemTemplateUpdate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    payload: dict[str, Any]
+
+
 class ItemTemplateRead(BaseModel):
     id: int
     name: str

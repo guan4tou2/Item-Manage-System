@@ -14,6 +14,7 @@ from app.schemas.customization import (
     ItemCustomValueSet,
     ItemTemplateCreate,
     ItemTemplateRead,
+    ItemTemplateUpdate,
     ItemTypeCreate,
     ItemTypeRead,
 )
@@ -129,6 +130,16 @@ async def create_template(
     session: AsyncSession = Depends(get_db),
 ):
     return await svc.create_template(session, user.id, body)
+
+
+@router.patch("/item-templates/{template_id}", response_model=ItemTemplateRead)
+async def update_template(
+    template_id: int,
+    body: ItemTemplateUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    return await svc.update_template(session, user.id, template_id, body)
 
 
 @router.delete("/item-templates/{template_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)

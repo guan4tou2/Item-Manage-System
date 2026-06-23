@@ -70,3 +70,45 @@ self.addEventListener("fetch", (event) => {
     )
   }
 })
+
+self.addEventListener("push", (event) => {
+  const fallback = { title: "IMS", body: "", url: "/notifications" }
+  let payload = fallback
+  if (event.data) {
+    try {
+      payload = { ...fallback, ...event.data.json() }
+    } catch {
+      payload = { ...fallback, body: event.data.text() }
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title || fallback.title, {
+      body: payload.body || "",
+      data: { url: payload.url || fallback.url },
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+    }),
+  )
+})
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+  const targetUrl = new URL(
+    event.notification.data?.url || "/notifications",
+    self.location.origin,
+  )
+
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        const existing = clients.find((client) => {
+          const url = new URL(client.url)
+          return url.origin === targetUrl.origin && url.pathname === targetUrl.pathname
+        })
+        if (existing) return existing.focus()
+        return self.clients.openWindow(targetUrl.href)
+      }),
+  )
+})

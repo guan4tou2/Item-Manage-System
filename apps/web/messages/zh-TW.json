@@ -10,6 +10,7 @@
     "notifications": "通知",
     "scan": "掃碼",
     "settings": "設定",
+    "stocktakes": "盤點",
     "statistics": "統計",
     "taxonomy": "分類與位置"
   },
@@ -36,7 +37,12 @@
     "lowStock": {
       "title": "低庫存警示",
       "loading": "載入中…",
-      "empty": "目前沒有物品低於最低庫存"
+      "empty": "目前沒有物品低於最低庫存",
+      "createRestockList": "建立補貨清單",
+      "creatingRestockList": "建立清單中…",
+      "restockListTitle": "補貨 {date}",
+      "restockCreated": "補貨清單已建立。",
+      "restockFailed": "無法建立補貨清單。"
     },
     "activeLoans": {
       "title": "活躍借出",
@@ -52,8 +58,74 @@
     },
     "quickLinks": {
       "items": "管理物品",
+      "stocktakes": "執行盤點",
       "stats": "查看統計",
       "taxonomy": "設定分類與位置"
+    }
+  },
+  "stocktakes": {
+    "actual": "實際",
+    "actualQuantity": "實際數量",
+    "cancel": "取消盤點",
+    "complete": "完成盤點",
+    "completedAt": "完成於 {date}",
+    "completing": "完成中…",
+    "createDescription": "建立一個專注盤點流程，完成時套用數量差異。",
+    "createTitle": "新盤點",
+    "delta": "差異",
+    "discrepancies": "差異",
+    "discrepancyCount": "差異",
+    "emptySessions": "尚無盤點。",
+    "expected": "預期",
+    "completeAnyway": "仍要完成",
+    "confirmCompleteBody": "此盤點仍有數量差異。套用修正前請先確認摘要。",
+    "confirmCompleteSummary": "符合 {matched} · 短少 {missing} · 超收 {over} · 總差異 {totalDelta}",
+    "confirmCompleteTitle": "仍有差異，要完成盤點嗎？",
+    "groups": {
+      "matched": "符合 ({count})",
+      "missing": "短少 ({count})",
+      "over": "超收 ({count})"
+    },
+    "itemCount": "物品",
+    "itemLabel": "物品",
+    "itemPlaceholder": "選擇物品",
+    "keepCounting": "繼續盤點",
+    "nameLabel": "盤點名稱",
+    "namePlaceholder": "六月層架盤點",
+    "noItems": "請先建立物品，再記錄盤點數量。",
+    "noScans": "此盤點尚未記錄任何物品。",
+    "noteLabel": "備註",
+    "notePlaceholder": "層架、箱位或差異原因",
+    "openSessions": "進行中",
+    "recordCount": "記錄數量",
+    "recording": "記錄中…",
+    "readyForNext": "已記錄，可繼續下一件",
+    "scanDescription": "選擇物品並輸入實際清點數量。",
+    "scanTitle": "記錄物品數量",
+    "scannedAt": "掃描於 {date}",
+    "scannedItems": "已記錄物品",
+    "scannedTitle": "盤點紀錄",
+    "selectSession": "建立或選取盤點後開始記錄。",
+    "sessionsTitle": "盤點列表",
+    "start": "開始盤點",
+    "startedAt": "開始於 {date}",
+    "starting": "開始中…",
+    "status": {
+      "cancelled": "已取消",
+      "completed": "已完成",
+      "open": "進行中"
+    },
+    "statusLabel": "狀態",
+    "subtitle": "執行循環盤點、記錄實際數量，並在完成時寫入數量修正歷史。",
+    "title": "盤點",
+    "toast": {
+      "cancelled": "盤點已取消。",
+      "completed": "盤點已完成。",
+      "created": "盤點已開始。",
+      "createFailed": "無法開始盤點。",
+      "resolveFailed": "無法更新盤點。",
+      "scanFailed": "無法記錄數量。",
+      "scanned": "已記錄數量。"
     }
   },
   "stats": {
@@ -137,7 +209,8 @@
   "a11y": {
     "openMenu": "開啟選單",
     "closeMenu": "關閉選單",
-    "userMenu": "使用者選單"
+    "userMenu": "使用者選單",
+    "mobileNavigationDescription": "主要應用程式導覽連結"
   },
   "items": {
     "list": {
@@ -156,7 +229,39 @@
       "columnTags": "標籤",
       "page": "第 {page} 頁 / 共 {total} 頁",
       "previousPage": "上一頁",
-      "nextPage": "下一頁"
+      "nextPage": "下一頁",
+      "selectAll": "選取所有物品",
+      "selectItem": "選取 {name}"
+    },
+    "bulk": {
+      "selectedCount": "已選取 {count} 件",
+      "selectionHint": "批次變更會套用到目前可見且已選取的物品。",
+      "clear": "清除",
+      "tagsLabel": "批次標籤",
+      "tagsPlaceholder": "打包, 待補",
+      "replaceTags": "取代",
+      "appendTags": "新增",
+      "applyTags": "套用標籤",
+      "moveTo": "移動選取物品到",
+      "selectLocation": "選擇位置",
+      "move": "移動",
+      "printLabels": "列印標籤",
+      "deleteSelected": "刪除已選",
+      "confirmDeleteTitle": "刪除已選取物品？",
+      "confirmDeleteBody": "{count} 件物品會被標記為已刪除，並從列表中移除。",
+      "confirmDelete": "刪除 {count} 件",
+      "tagsApplied": "已更新 {count} 件物品的標籤",
+      "locationMoved": "已移動 {count} 件物品",
+      "deleted": "已刪除 {count} 件物品",
+      "actionFailed": "批次操作失敗"
+    },
+    "labels": {
+      "title": "列印標籤",
+      "summary": "可列印 {count} 張標籤",
+      "empty": "請先在物品頁選取要列印標籤的物品。",
+      "backToItems": "返回物品",
+      "skipped": "已略過 {count} 張標籤",
+      "notFound": "找不到可列印的標籤"
     },
     "form": {
       "name": "名稱",
@@ -167,6 +272,12 @@
       "notes": "備註",
       "tags": "標籤",
       "tagsPlaceholder": "輸入後按 Enter 新增",
+      "templates": "模板",
+      "templateApplied": "已套用模板：{name}",
+      "templateAppliedFields": "已套用 {count} 個欄位：{fields}",
+      "clearTemplateValues": "清除模板值",
+      "customFields": "自訂欄位",
+      "customFieldsDescription": "這裡的值會依照設定頁定義的欄位儲存。",
       "image": "圖片",
       "uploadImageFirst": "請先上傳圖片",
       "aiSuggested": "AI 已填入建議欄位",
@@ -198,7 +309,19 @@
       "notFound": "找不到此物品",
       "printLabel": "列印標籤",
       "backToItem": "返回物品",
-      "print": "列印"
+      "print": "列印",
+      "addFavorite": "加入最愛",
+      "removeFavorite": "從最愛移除",
+      "saveAsTemplate": "另存為模板",
+      "savingTemplate": "儲存模板中…",
+      "templateName": "{name} 模板",
+      "templateSaved": "模板已儲存。",
+      "templateSaveFailed": "無法將此物品另存為模板。",
+      "customFields": "自訂欄位",
+      "customFieldsLoading": "自訂值載入中…",
+      "noCustomValues": "尚無自訂值。",
+      "booleanYes": "是",
+      "booleanNo": "否"
     },
     "toast": {
       "created": "已建立",
@@ -272,7 +395,8 @@
     "actions": {
       "markRead": "標為已讀",
       "markAllRead": "全部標為已讀",
-      "delete": "刪除"
+      "delete": "刪除",
+      "addToRestockList": "加入補貨清單"
     },
     "empty": {
       "title": "尚無通知",
@@ -403,12 +527,16 @@
     }
   },
   "settings": {
+    "subtitle": "集中管理帳號存取、偏好設定、整合與資料匯出入。",
     "title": "設定",
     "tabs": {
       "profile": "個人資料",
       "password": "密碼",
       "preferences": "偏好",
       "tokens": "API Tokens",
+      "customization": "自訂結構",
+      "channels": "通知管道",
+      "webhooks": "Webhooks",
       "data": "資料匯出入",
       "admin": "管理員",
       "audit": "稽核日誌"
@@ -468,6 +596,168 @@
       "lastUsed": "上次使用 {date}",
       "neverUsed": "從未使用",
       "delete": "刪除"
+    },
+    "customization": {
+      "createField": "建立欄位",
+      "createTemplate": "建立模板",
+      "createType": "建立類型",
+      "creating": "建立中…",
+      "cancelTemplateEdit": "取消編輯",
+      "deleteField": "刪除自訂欄位 {name}",
+      "deleteTemplate": "刪除模板 {name}",
+      "deleteType": "刪除物品類型 {name}",
+      "description": "先定義物品資料的可重用結構，之後可接到新增、編輯與盤點流程。",
+      "duplicateTemplate": "複製模板 {name}",
+      "editTemplate": "編輯模板 {name}",
+      "emptyFields": "尚無自訂欄位",
+      "emptyPayload": "尚未設定預設值",
+      "emptyTemplates": "尚無模板",
+      "emptyTypes": "尚無物品類型",
+      "fieldNameLabel": "欄位名稱",
+      "fieldNamePlaceholder": "保固日期",
+      "fieldsDescription": "新增可套用到物品上的額外型別欄位。",
+      "fieldsTitle": "自訂欄位",
+      "fieldTypeLabel": "欄位型別",
+      "fieldTypes": {
+        "bool": "布林值",
+        "date": "日期",
+        "number": "數字",
+        "text": "文字"
+      },
+      "loading": "讀取自訂結構設定中…",
+      "templateItemNameLabel": "預設物品名稱",
+      "templateItemNamePlaceholder": "AA 電池",
+      "templateNameLabel": "模板名稱",
+      "templateNamePlaceholder": "補貨包",
+      "templateNotesLabel": "預設備註",
+      "templateCustomValuesTitle": "自訂欄位預設值",
+      "templateCopyName": "{name} 副本",
+      "templateQuantityLabel": "預設數量",
+      "templatesDescription": "儲存常用物品預設值，讓重複新增更快。",
+      "templatesTitle": "物品模板",
+      "templateSummaryNameQty": "{name} · 數量 {quantity}",
+      "title": "自訂結構",
+      "toast": {
+        "deleteFailed": "無法刪除此自訂設定。",
+        "saveFailed": "無法儲存自訂設定。",
+        "saved": "自訂設定已儲存。"
+      },
+      "typeIconLabel": "圖示鍵",
+      "typeIconPlaceholder": "plug",
+      "typeNameLabel": "類型名稱",
+      "typeNamePlaceholder": "電器",
+      "typesDescription": "用操作類型整理物品，不影響既有分類。",
+      "typesTitle": "物品類型",
+      "updateTemplate": "更新模板",
+      "updating": "更新中…"
+    },
+    "channels": {
+      "linked": "已連結",
+      "loading": "讀取通知管道中…",
+      "notLinked": "未連結",
+      "serverMissing": "伺服器未設定",
+      "serverReady": "伺服器已就緒",
+      "test": "送出測試",
+      "unlink": "解除連結",
+      "email": {
+        "description": "使用帳號上的 email 位址。",
+        "test": "送出 email 測試",
+        "title": "Email"
+      },
+      "line": {
+        "description": "將通知推送到已連結的 LINE 使用者。",
+        "save": "儲存 LINE",
+        "title": "LINE",
+        "userIdLabel": "LINE user ID",
+        "userIdPlaceholder": "U1234567890"
+      },
+      "telegram": {
+        "chatIdLabel": "Telegram chat ID",
+        "chatIdPlaceholder": "123456789",
+        "description": "透過 Telegram bot 推送通知。",
+        "save": "儲存 Telegram",
+        "title": "Telegram"
+      },
+      "toast": {
+        "saveFailed": "無法儲存管道連結。",
+        "saved": "已儲存管道連結。",
+        "subscribeFailed": "無法訂閱此瀏覽器。",
+        "subscribed": "此瀏覽器已訂閱。",
+        "testDelivered": "測試通知已送達。",
+        "testFailed": "測試通知未送達。",
+        "unlinkFailed": "無法解除管道連結。",
+        "unlinked": "已解除管道連結。"
+      },
+      "webPush": {
+        "createdAt": "連結於 {date}",
+        "description": "{count, plural, =0 {尚無瀏覽器連結。} other {已連結 # 個瀏覽器。}}",
+        "linkedCount": "{count, plural, =0 {0 個瀏覽器} other {# 個瀏覽器}}",
+        "loadingSubscriptions": "讀取瀏覽器訂閱中…",
+        "noSubscriptions": "尚未連結任何瀏覽器。",
+        "remove": "移除訂閱",
+        "subscribe": "訂閱此瀏覽器",
+        "subscribing": "訂閱中…",
+        "subscriptions": "瀏覽器訂閱",
+        "title": "Web Push"
+      }
+    },
+    "webhooks": {
+      "active": "啟用中",
+      "allEvents": "所有物品事件",
+      "attempt": "第 {attempt} 次",
+      "create": "建立 webhook",
+      "createDescription": "將物品建立、更新、刪除事件送到其他系統，可選擇 HMAC 簽章。",
+      "createFailed": "無法建立 webhook",
+      "createTitle": "新增 endpoint",
+      "createdAt": "建立於 {date}",
+      "creating": "建立中…",
+      "deleteWebhook": "刪除 {name}",
+      "deliveriesFor": "{name} 的最近 delivery",
+      "deliveriesTitle": "Delivery 紀錄",
+      "emptyBody": "建立 endpoint 來接收物品生命週期事件。",
+      "emptyTitle": "尚無 webhook",
+      "endpointsDescription": "監控 delivery 健康狀態、暫停 endpoint，並重送失敗嘗試。",
+      "endpointsTitle": "已設定 endpoint",
+      "events": {
+        "item": {
+          "created": "物品建立",
+          "updated": "物品更新",
+          "deleted": "物品刪除"
+        }
+      },
+      "eventsTitle": "事件",
+      "healthy": "正常",
+      "inactive": "已停用",
+      "lastFired": "上次觸發：{date}",
+      "loading": "讀取 webhook 中…",
+      "loadingDeliveries": "讀取 delivery 紀錄中…",
+      "nameLabel": "Webhook 名稱",
+      "namePlaceholder": "庫存同步",
+      "needsAttention": "需處理",
+      "nextRetryAt": "下次重試 {date}",
+      "noDeliveriesBody": "建立、更新或刪除物品後，delivery 會顯示在這裡。",
+      "noDeliveriesTitle": "尚無 delivery",
+      "noSelection": "建立或選取 webhook 來查看 delivery 嘗試。",
+      "processRetries": "處理到期重試",
+      "processedSummary": "已處理 {processed} 筆重試，{succeeded} 筆成功，{remaining} 筆仍待處理。",
+      "processedTitle": "重試處理完成",
+      "processing": "處理中…",
+      "retryNow": "立即重試",
+      "retryScheduled": "已排程重試",
+      "retrying": "重試中…",
+      "secretHelp": "設定後，請求會帶上使用 HMAC-SHA256 產生的 X-IMS-Signature。",
+      "secretLabel": "簽章密鑰",
+      "secretPlaceholder": "選填密鑰",
+      "selectWebhook": "選取已設定 endpoint 來查看最近嘗試。",
+      "status": {
+        "failed": "HTTP {status}",
+        "network": "網路錯誤",
+        "success": "HTTP {status}"
+      },
+      "toggleActive": "切換 {name}",
+      "tryAgain": "請檢查 endpoint URL 後再試一次。",
+      "urlLabel": "Endpoint URL",
+      "waiting": "等待觸發"
     },
     "audit": {
       "loading": "讀取中…",

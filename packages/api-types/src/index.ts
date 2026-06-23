@@ -452,6 +452,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/items/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Bulk Update Items */
+        patch: operations["bulk_update_items_api_items_bulk_patch"];
+        trace?: never;
+    };
+    "/api/items/bulk-delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk Delete Items */
+        post: operations["bulk_delete_items_api_items_bulk_delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/items/{item_id}": {
         parameters: {
             query?: never;
@@ -1281,7 +1315,8 @@ export interface paths {
         delete: operations["delete_template_api_item_templates__template_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Template */
+        patch: operations["update_template_api_item_templates__template_id__patch"];
         trace?: never;
     };
     "/api/items/{item_id}/quantity-logs": {
@@ -1627,6 +1662,49 @@ export interface paths {
         get: operations["list_deliveries_api_webhooks__webhook_id__deliveries_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/webhooks/{webhook_id}/deliveries/{delivery_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Delivery */
+        post: operations["retry_delivery_api_webhooks__webhook_id__deliveries__delivery_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/webhooks/process-retries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Process Retries
+         * @description Process every webhook delivery whose next_retry_at has arrived.
+         *
+         *     This is intended to be called by an external scheduler (cron, systemd
+         *     timer, GitHub Actions schedule, etc). It runs regardless of who the
+         *     caller is — a logged-in user is enough — because processing is scoped
+         *     to rows that have been explicitly scheduled by `dispatch()`. No payload
+         *     is exposed; only aggregate counts are returned.
+         */
+        post: operations["process_retries_api_webhooks_process_retries_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2050,6 +2128,41 @@ export interface components {
              */
             created_at: string;
         };
+        /** ItemBulkDelete */
+        ItemBulkDelete: {
+            /** Item Ids */
+            item_ids: string[];
+        };
+        /** ItemBulkResult */
+        ItemBulkResult: {
+            /**
+             * Updated
+             * @default 0
+             */
+            updated: number;
+            /**
+             * Deleted
+             * @default 0
+             */
+            deleted: number;
+        };
+        /** ItemBulkUpdate */
+        ItemBulkUpdate: {
+            /** Item Ids */
+            item_ids: string[];
+            /** Category Id */
+            category_id?: number | null;
+            /** Location Id */
+            location_id?: number | null;
+            /** Tag Names */
+            tag_names?: string[] | null;
+            /**
+             * Tag Mode
+             * @default replace
+             * @enum {string}
+             */
+            tag_mode: "replace" | "append";
+        };
         /** ItemCreate */
         ItemCreate: {
             /** Name */
@@ -2180,6 +2293,13 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** ItemTemplateUpdate */
+        ItemTemplateUpdate: {
+            /** Name */
+            name: string;
+            /** Payload */
+            payload: Record<string, never>;
         };
         /** ItemTypeCreate */
         ItemTypeCreate: {
@@ -2672,6 +2792,15 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ProcessRetriesResult */
+        ProcessRetriesResult: {
+            /** Processed */
+            processed: number;
+            /** Succeeded */
+            succeeded: number;
+            /** Remaining */
+            remaining: number;
+        };
         /** PruneOrphansResult */
         PruneOrphansResult: {
             /** Deleted Count */
@@ -3099,6 +3228,10 @@ export interface components {
             status_code: number | null;
             /** Response Excerpt */
             response_excerpt: string | null;
+            /** Attempt */
+            attempt: number;
+            /** Next Retry At */
+            next_retry_at: string | null;
             /**
              * Created At
              * Format: date-time
@@ -4131,6 +4264,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_update_items_api_items_bulk_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemBulkUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemBulkResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_delete_items_api_items_bulk_delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemBulkDelete"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemBulkResult"];
                 };
             };
             /** @description Validation Error */
@@ -6052,6 +6251,41 @@ export interface operations {
             };
         };
     };
+    update_template_api_item_templates__template_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTemplateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemTemplateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_quantity_logs_api_items__item_id__quantity_logs_get: {
         parameters: {
             query?: never;
@@ -6860,6 +7094,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_delivery_api_webhooks__webhook_id__deliveries__delivery_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                webhook_id: string;
+                delivery_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    process_retries_api_webhooks_process_retries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessRetriesResult"];
                 };
             };
         };

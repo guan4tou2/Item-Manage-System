@@ -1,16 +1,17 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Sparkles } from "lucide-react"
+import { CheckCircle2, RotateCcw, Sparkles } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { useRef, useState } from "react"
+import { useForm, type Path } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
 import { ImageUpload } from "./image-upload"
 import { TagMultiSelect } from "./tag-multi-select"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -18,8 +19,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { suggestFromImage } from "@/lib/api/ai"
 import { getApiErrorDetail } from "@/lib/api/client"
 import type { CategoryTreeNode } from "@/lib/api/categories"
+import type { CustomFieldRead, ItemTemplateRead } from "@/lib/api/customization"
 import type { LocationRead } from "@/lib/api/locations"
 import { useAccessToken } from "@/lib/auth/use-auth"
+
+const customValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
 
 export const itemFormSchema = z.object({
   name: z.string().min(1, "nameRequired").max(200, "nameMax"),
@@ -36,6 +40,7 @@ export const itemFormSchema = z.object({
   notes: z.string().optional(),
   image_id: z.string().nullable().optional(),
   tag_names: z.array(z.string()),
+  custom_values: z.record(customValueSchema).default({}),
 })
 export type ItemFormValues = z.infer<typeof itemFormSchema>
 
@@ -47,6 +52,22 @@ interface Props {
   categories: CategoryTreeNode[]
   locations: LocationRead[]
   tagSuggestions: string[]
+  customFields?: CustomFieldRead[]
+  itemTemplates?: ItemTemplateRead[]
+}
+
+interface AppliedField {
+  path: Path<ItemFormValues>
+  label: string
+  before: unknown
+  applied: unknown
+  restoreEmptyString?: boolean
+}
+
+interface AppliedTemplateState {
+  id: number
+  name: string
+  fields: AppliedField[]
 }
 
 function flattenCategories(nodes: CategoryTreeNode[], depth = 0): Array<{ id: number; label: string }> {
@@ -58,13 +79,19 @@ function flattenCategories(nodes: CategoryTreeNode[], depth = 0): Array<{ id: nu
   return out
 }
 
+function valuesEqual(a: unknown, b: unknown) {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
 export function ItemForm({
   defaultValues, onSubmit, onCancel, submitting,
-  categories, locations, tagSuggestions,
+  categories, locations, tagSuggestions, customFields = [], itemTemplates = [],
 }: Props) {
   const t = useTranslations()
   const token = useAccessToken()
   const [aiBusy, setAiBusy] = useState(false)
+  const [appliedTemplate, setAppliedTemplate] = useState<AppliedTemplateState | null>(null)
+  const templateButtonRefs = useRef(new Map<number, HTMLButtonElement | null>())
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemFormSchema),
     defaultValues,
@@ -93,12 +120,144 @@ export function ItemForm({
     }
   }
 
+  const applyTemplate = (template: ItemTemplateRead) => {
+    const payload = template.payload
+    const appliedFields: AppliedField[] = []
+    const applyField = (
+      path: Path<ItemFormValues>,
+      value: unknown,
+      label: string,
+      options: { restoreEmptyString?: boolean } = {},
+    ) => {
+      appliedFields.push({
+        path,
+        label,
+        before: form.getValues(path),
+        applied: value,
+        restoreEmptyString: options.restoreEmptyString,
+      })
+      form.setValue(path, value as never, { shouldDirty: true, shouldTouch: true })
+    }
+
+    if (typeof payload.name === "string") {
+      applyField("name", payload.name, t("items.form.name"))
+    }
+    if (typeof payload.description === "string") {
+      applyField("description", payload.description, t("items.form.description"))
+    }
+    if (typeof payload.quantity === "number") {
+      applyField("quantity", payload.quantity, t("items.form.quantity"))
+    } else if (typeof payload.quantity === "string" && payload.quantity.trim() !== "") {
+      const quantity = Number(payload.quantity)
+      if (Number.isFinite(quantity)) {
+        applyField("quantity", quantity, t("items.form.quantity"))
+      }
+    }
+    if (typeof payload.notes === "string") {
+      applyField("notes", payload.notes, t("items.form.notes"))
+    }
+    if (Array.isArray(payload.tag_names)) {
+      applyField(
+        "tag_names",
+        payload.tag_names.filter((tag): tag is string => typeof tag === "string"),
+        t("items.form.tags"),
+      )
+    }
+    if (payload.custom_values && typeof payload.custom_values === "object" && !Array.isArray(payload.custom_values)) {
+      for (const [fieldId, value] of Object.entries(payload.custom_values)) {
+        if (
+          typeof value === "string" ||
+          typeof value === "number" ||
+          typeof value === "boolean" ||
+          value === null
+        ) {
+          const customField = customFields.find((field) => String(field.id) === fieldId)
+          applyField(
+            `custom_values.${fieldId}` as Path<ItemFormValues>,
+            value,
+            customField?.name ?? t("items.form.customFields"),
+            { restoreEmptyString: customField?.field_type !== "bool" },
+          )
+        }
+      }
+    }
+    setAppliedTemplate({ id: template.id, name: template.name, fields: appliedFields })
+  }
+
+  const clearAppliedTemplate = () => {
+    if (!appliedTemplate) return
+    const templateId = appliedTemplate.id
+    for (const field of appliedTemplate.fields) {
+      if (valuesEqual(form.getValues(field.path), field.applied)) {
+        const value =
+          field.restoreEmptyString && (field.before === null || field.before === undefined)
+            ? ""
+            : field.before
+        form.setValue(field.path, value as never, { shouldDirty: true, shouldTouch: true })
+      }
+    }
+    setAppliedTemplate(null)
+    window.setTimeout(() => {
+      templateButtonRefs.current.get(templateId)?.focus()
+    }, 0)
+  }
+
   return (
     <form
       onSubmit={form.handleSubmit(onSubmit)}
       className="space-y-4 max-w-xl"
       aria-label="item-form"
     >
+      {itemTemplates.length > 0 ? (
+        <section className="space-y-2 rounded-md border bg-muted/30 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <Label className="text-sm font-semibold">{t("items.form.templates")}</Label>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={clearAppliedTemplate}
+              disabled={!appliedTemplate}
+            >
+              <RotateCcw className="h-4 w-4" />
+              {t("items.form.clearTemplateValues")}
+            </Button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {itemTemplates.map((template) => (
+              <Button
+                key={template.id}
+                ref={(node) => {
+                  templateButtonRefs.current.set(template.id, node)
+                }}
+                type="button"
+                size="sm"
+                variant={appliedTemplate?.id === template.id ? "secondary" : "outline"}
+                aria-pressed={appliedTemplate?.id === template.id}
+                className="min-w-0 justify-start"
+                onClick={() => applyTemplate(template)}
+              >
+                <span className="truncate">{template.name}</span>
+              </Button>
+            ))}
+          </div>
+          {appliedTemplate ? (
+            <div role="status" className="rounded-md border bg-background px-3 py-2 text-sm">
+              <p className="flex items-center gap-2 font-medium">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                {t("items.form.templateApplied", { name: appliedTemplate.name })}
+              </p>
+              <p className="mt-1 text-muted-foreground">
+                {t("items.form.templateAppliedFields", {
+                  count: appliedTemplate.fields.length,
+                  fields: appliedTemplate.fields.map((field) => field.label).join(", "),
+                })}
+              </p>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
       <div>
         <Label htmlFor="name">{t("items.form.name")}</Label>
         <Input id="name" {...form.register("name")} />
@@ -173,6 +332,67 @@ export function ItemForm({
           suggestions={tagSuggestions}
         />
       </div>
+
+      {customFields.length > 0 ? (
+        <section className="space-y-3 rounded-md border p-4">
+          <div>
+            <h2 className="text-sm font-semibold">{t("items.form.customFields")}</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              {t("items.form.customFieldsDescription")}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {customFields.map((field) => {
+              const fieldPath = `custom_values.${field.id}` as const
+              const fieldId = `custom-field-${field.id}`
+
+              if (field.field_type === "bool") {
+                return (
+                  <div key={field.id} className="flex items-center gap-2 rounded-md border px-3 py-2">
+                    <Checkbox
+                      id={fieldId}
+                      checked={form.watch(fieldPath) === true}
+                      onCheckedChange={(checked) => {
+                        form.setValue(fieldPath, checked === true, { shouldDirty: true })
+                      }}
+                    />
+                    <Label htmlFor={fieldId} className="leading-5">
+                      {field.name}
+                    </Label>
+                  </div>
+                )
+              }
+
+              const inputType =
+                field.field_type === "number"
+                  ? "number"
+                  : field.field_type === "date"
+                    ? "date"
+                    : "text"
+              const registerOptions =
+                field.field_type === "number"
+                  ? {
+                      setValueAs: (value: string) =>
+                        value.trim() === "" ? null : Number(value),
+                    }
+                  : {
+                      setValueAs: (value: string) => (value.trim() === "" ? null : value),
+                    }
+
+              return (
+                <div key={field.id}>
+                  <Label htmlFor={fieldId}>{field.name}</Label>
+                  <Input
+                    id={fieldId}
+                    type={inputType}
+                    {...form.register(fieldPath, registerOptions)}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
 
       <div>
         <Label htmlFor="notes">{t("items.form.notes")}</Label>

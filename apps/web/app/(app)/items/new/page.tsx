@@ -1,7 +1,9 @@
 "use client"
 
+import { useQuery } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useState } from "react"
 import { toast } from "sonner"
 
 import { ItemForm, type ItemFormValues } from "@/components/items/item-form"
@@ -13,6 +15,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { listCustomFields, listItemTemplates, saveItemCustomValues } from "@/lib/api/customization"
+import { useAccessToken } from "@/lib/auth/use-auth"
 import { useCategories } from "@/lib/hooks/use-categories"
 import { useCreateItem } from "@/lib/hooks/use-items"
 import { useLocations } from "@/lib/hooks/use-locations"
@@ -27,17 +31,31 @@ const empty: ItemFormValues = {
   notes: "",
   image_id: null,
   tag_names: [],
+  custom_values: {},
 }
 
 export default function NewItemPage() {
   const t = useTranslations()
   const router = useRouter()
+  const token = useAccessToken()
+  const [saving, setSaving] = useState(false)
   const create = useCreateItem()
   const cats = useCategories()
   const locs = useLocations()
   const tags = useTags()
+  const customFields = useQuery({
+    queryKey: ["customization", "custom-fields"],
+    queryFn: () => listCustomFields(token),
+    enabled: token !== null,
+  })
+  const itemTemplates = useQuery({
+    queryKey: ["customization", "item-templates"],
+    queryFn: () => listItemTemplates(token),
+    enabled: token !== null,
+  })
 
   async function handleSubmit(values: ItemFormValues) {
+    setSaving(true)
     try {
       const created = await create.mutateAsync({
         name: values.name,
@@ -49,10 +67,18 @@ export default function NewItemPage() {
         image_id: values.image_id ?? undefined,
         tag_names: values.tag_names,
       })
+      await saveItemCustomValues(
+        created.id,
+        customFields.data ?? [],
+        values.custom_values,
+        token,
+      )
       toast.success(t("items.toast.created"))
       router.push(`/items/${created.id}`)
     } catch {
       toast.error(t("items.toast.saveFailed"))
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -74,10 +100,12 @@ export default function NewItemPage() {
         defaultValues={empty}
         onSubmit={handleSubmit}
         onCancel={() => router.push("/items")}
-        submitting={create.isPending}
+        submitting={saving || create.isPending}
         categories={cats.data ?? []}
         locations={locs.data ?? []}
         tagSuggestions={(tags.data ?? []).map((tag) => tag.name)}
+        customFields={customFields.data ?? []}
+        itemTemplates={itemTemplates.data ?? []}
       />
     </section>
   )

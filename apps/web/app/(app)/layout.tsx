@@ -11,12 +11,16 @@ import { useAccessToken } from "@/lib/auth/use-auth"
 export default function AppLayout({ children }: { children: ReactNode }) {
   const token = useAccessToken()
   const router = useRouter()
-  const [hydrated, setHydrated] = useState(() => useAuthStore.persist.hasHydrated())
+  const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
-    if (hydrated) return
-    return useAuthStore.persist.onFinishHydration(() => setHydrated(true))
-  }, [hydrated])
+    const persistApi = useAuthStore.persist
+    if (!persistApi || persistApi.hasHydrated()) {
+      setHydrated(true)
+      return
+    }
+    return persistApi.onFinishHydration(() => setHydrated(true))
+  }, [])
 
   useEffect(() => {
     // Second-layer guard: once persist finishes, if we still have no token,

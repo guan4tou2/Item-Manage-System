@@ -1,6 +1,6 @@
-import { act, fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
 import enMessages from "@/messages/en.json"
 import { InstallPwaButton } from "./install-pwa-button"
@@ -12,12 +12,15 @@ const Provider = ({ children }: { children: React.ReactNode }) => (
 )
 
 describe("InstallPwaButton", () => {
+  afterEach(() => vi.restoreAllMocks())
+
   it("renders nothing when no beforeinstallprompt event", () => {
     const { container } = render(<InstallPwaButton />, { wrapper: Provider })
     expect(container).toBeEmptyDOMElement()
   })
 
   it("appears when beforeinstallprompt fires and calls prompt on click", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     render(<InstallPwaButton />, { wrapper: Provider })
     const prompt = vi.fn().mockResolvedValue(undefined)
     const evt = new Event("beforeinstallprompt")
@@ -26,7 +29,12 @@ describe("InstallPwaButton", () => {
       window.dispatchEvent(evt)
     })
     const btn = await screen.findByRole("button", { name: /install/i })
-    fireEvent.click(btn)
-    expect(prompt).toHaveBeenCalled()
+    await act(async () => {
+      fireEvent.click(btn)
+    })
+    await waitFor(() => expect(prompt).toHaveBeenCalled())
+
+    const output = errorSpy.mock.calls.flat().join(" ")
+    expect(output).not.toContain("not wrapped in act")
   })
 })

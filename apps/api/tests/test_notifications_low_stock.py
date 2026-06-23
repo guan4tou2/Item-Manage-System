@@ -46,7 +46,7 @@ async def test_low_stock_refires_after_refill(client, auth):
     item_id = create.json()["id"]
     await client.patch(f"/api/items/{item_id}", headers=auth, json={"quantity": 1})
     await client.patch(f"/api/items/{item_id}", headers=auth, json={"quantity": 5})
-    await client.patch(f"/api/items/{item_id}", headers=auth, json={"quantity": 2})
+    await client.patch(f"/api/items/{item_id}", headers=auth, json={"quantity": 1})
     assert await _count_low_stock(client, auth) == 2
 
 
@@ -55,6 +55,13 @@ async def test_create_below_threshold_fires(client, auth):
         "/api/items", headers=auth, json={"name": "襪子", "quantity": 1, "min_quantity": 2},
     )
     assert await _count_low_stock(client, auth) == 1
+
+
+async def test_create_at_threshold_does_not_fire(client, auth):
+    await client.post(
+        "/api/items", headers=auth, json={"name": "膠帶", "quantity": 3, "min_quantity": 3},
+    )
+    assert await _count_low_stock(client, auth) == 0
 
 
 async def test_no_min_quantity_no_notification(client, auth):

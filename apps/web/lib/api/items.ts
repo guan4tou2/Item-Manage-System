@@ -5,8 +5,19 @@ type ItemRead = paths["/api/items/{item_id}"]["get"]["responses"]["200"]["conten
 type ItemListResponse = paths["/api/items"]["get"]["responses"]["200"]["content"]["application/json"]
 type ItemCreate = paths["/api/items"]["post"]["requestBody"]["content"]["application/json"]
 type ItemUpdate = paths["/api/items/{item_id}"]["patch"]["requestBody"]["content"]["application/json"]
+type ItemBulkUpdate = paths["/api/items/bulk"]["patch"]["requestBody"]["content"]["application/json"]
+type ItemBulkDelete = paths["/api/items/bulk-delete"]["post"]["requestBody"]["content"]["application/json"]
+type ItemBulkResult = paths["/api/items/bulk"]["patch"]["responses"]["200"]["content"]["application/json"]
 
-export type { ItemRead, ItemListResponse, ItemCreate, ItemUpdate }
+export type {
+  ItemRead,
+  ItemListResponse,
+  ItemCreate,
+  ItemUpdate,
+  ItemBulkUpdate,
+  ItemBulkDelete,
+  ItemBulkResult,
+}
 
 export interface ItemFilters {
   q?: string
@@ -53,6 +64,26 @@ export async function updateItem(id: string, body: ItemUpdate, accessToken: stri
     method: "PATCH", body: JSON.stringify(body), accessToken,
   })
   return (await res.json()) as ItemRead
+}
+
+export async function bulkUpdateItems(
+  body: ItemBulkUpdate,
+  accessToken: string | null,
+): Promise<ItemBulkResult> {
+  const res = await apiFetch("/items/bulk", {
+    method: "PATCH", body: JSON.stringify(body), accessToken,
+  })
+  return (await res.json()) as ItemBulkResult
+}
+
+export async function bulkDeleteItems(
+  body: ItemBulkDelete,
+  accessToken: string | null,
+): Promise<ItemBulkResult> {
+  const res = await apiFetch("/items/bulk-delete", {
+    method: "POST", body: JSON.stringify(body), accessToken,
+  })
+  return (await res.json()) as ItemBulkResult
 }
 
 export async function deleteItem(id: string, accessToken: string | null): Promise<void> {

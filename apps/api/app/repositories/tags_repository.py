@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from sqlalchemy import delete, func, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.tag import Tag, item_tags
@@ -148,7 +149,14 @@ async def get_or_create_many(
             result.append(existing)
         else:
             tag = Tag(owner_id=owner_id, name=n)
-            session.add(tag)
-            await session.flush()
+            try:
+                async with session.begin_nested():
+                    session.add(tag)
+                    await session.flush()
+            except IntegrityError:
+                existing = await get_by_name(session, owner_id, n)
+                if existing is None:
+                    raise
+                tag = existing
             result.append(tag)
     return result

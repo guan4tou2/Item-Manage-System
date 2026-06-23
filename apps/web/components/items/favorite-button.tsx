@@ -1,5 +1,6 @@
 "use client"
 import { Star } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -11,12 +12,13 @@ interface Props {
 }
 
 export function FavoriteButton({ itemId, isFavorite }: Props) {
+  const t = useTranslations()
   const toggle = useToggleFavorite()
   return (
     <Button
       size="icon"
       variant="ghost"
-      aria-label={isFavorite ? "unfavorite" : "favorite"}
+      aria-label={isFavorite ? t("items.detail.removeFavorite") : t("items.detail.addFavorite")}
       onClick={() => toggle.mutate(itemId)}
       disabled={toggle.isPending}
     >

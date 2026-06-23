@@ -60,4 +60,26 @@ describe("NotificationItem", () => {
     fireEvent.click(screen.getByRole("button", { name: /delete/i }))
     expect(onDelete).toHaveBeenCalledWith(baseRow.id)
   })
+
+  it("shows a restock action only for low-stock notifications", () => {
+    const onAddToRestock = vi.fn()
+    render(
+      <NotificationItem
+        row={{ ...baseRow, type: "low_stock", title: "Low stock", link: "/items/item-1" }}
+        onOpen={vi.fn()}
+        onDelete={vi.fn()}
+        onAddToRestock={onAddToRestock}
+      />,
+      { wrapper: Provider },
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to restock list" }))
+    expect(onAddToRestock).toHaveBeenCalled()
+  })
+
+  it("hides the restock action for non-low-stock notifications", () => {
+    render(<NotificationItem row={baseRow} onOpen={vi.fn()} onDelete={vi.fn()} />, { wrapper: Provider })
+
+    expect(screen.queryByRole("button", { name: "Add to restock list" })).not.toBeInTheDocument()
+  })
 })

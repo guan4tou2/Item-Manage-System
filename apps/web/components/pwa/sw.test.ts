@@ -32,4 +32,14 @@ describe("public/sw.js", () => {
   it("excludes /scan from navigate caching", () => {
     expect(swSource).toContain('"/scan"')
   })
+
+  it("shows web push notifications", () => {
+    expect(swSource).toMatch(/addEventListener\(\s*["']push["']/)
+    expect(swSource).toMatch(/showNotification\(/)
+  })
+
+  it("opens notification links when clicked", () => {
+    expect(swSource).toMatch(/addEventListener\(\s*["']notificationclick["']/)
+    expect(swSource).toMatch(/clients\.openWindow/)
+  })
 })

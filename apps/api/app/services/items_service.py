@@ -12,7 +12,15 @@ from app.repositories import (
     locations_repository,
     tags_repository,
 )
-from app.schemas.item import ItemCreate, ItemListResponse, ItemRead, ItemUpdate
+from app.schemas.item import (
+    ItemBulkDelete,
+    ItemBulkResult,
+    ItemBulkUpdate,
+    ItemCreate,
+    ItemListResponse,
+    ItemRead,
+    ItemUpdate,
+)
 from app.services import item_history_service, notifications_service, webhooks_service
 from app.services.visibility_service import visible_item_owner_ids
 
@@ -125,7 +133,7 @@ async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -
     if (
         created.min_quantity is not None
         and created.min_quantity > 0
-        and created.quantity <= created.min_quantity
+        and created.quantity < created.min_quantity
     ):
         await notifications_service.emit(
             session,
@@ -192,7 +200,7 @@ async def update_item(
         and saved.min_quantity is not None
         and saved.min_quantity > 0
         and old_quantity > saved.min_quantity
-        and saved.quantity <= saved.min_quantity
+        and saved.quantity < saved.min_quantity
     ):
         await notifications_service.emit(
             session,
@@ -208,6 +216,91 @@ async def update_item(
         {"id": str(saved.id), "name": saved.name},
     )
     return result
+
+
+def _unique_item_ids(item_ids: list[UUID]) -> list[UUID]:
+    seen: set[UUID] = set()
+    unique: list[UUID] = []
+    for item_id in item_ids:
+        if item_id in seen:
+            continue
+        seen.add(item_id)
+        unique.append(item_id)
+    return unique
+
+
+async def _get_owned_items_or_404(
+    session: AsyncSession,
+    owner_id: UUID,
+    item_ids: list[UUID],
+) -> list[Item]:
+    items: list[Item] = []
+    for item_id in _unique_item_ids(item_ids):
+        item = await items_repository.get_owned(session, owner_id, item_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="item not found")
+        items.append(item)
+    return items
+
+
+async def bulk_update_items(
+    session: AsyncSession,
+    owner_id: UUID,
+    body: ItemBulkUpdate,
+) -> ItemBulkResult:
+    items = await _get_owned_items_or_404(session, owner_id, body.item_ids)
+    fields_set = body.model_fields_set
+
+    if "category_id" in fields_set or "location_id" in fields_set:
+        await _validate_refs(
+            session,
+            owner_id,
+            body.category_id if "category_id" in fields_set else None,
+            body.location_id if "location_id" in fields_set else None,
+        )
+
+    tags = None
+    if "tag_names" in fields_set:
+        tags = await tags_repository.get_or_create_many(session, owner_id, body.tag_names or [])
+
+    for item in items:
+        if "category_id" in fields_set:
+            item.category_id = body.category_id
+        if "location_id" in fields_set:
+            item.location_id = body.location_id
+        if tags is not None:
+            if body.tag_mode == "append":
+                merged = {tag.name: tag for tag in item.tags}
+                for tag in tags:
+                    merged[tag.name] = tag
+                item.tags = list(merged.values())
+            else:
+                item.tags = tags
+
+    await session.commit()
+    for item in items:
+        await webhooks_service.dispatch(
+            session, owner_id, "item.updated",
+            {"id": str(item.id), "name": item.name},
+        )
+    return ItemBulkResult(updated=len(items))
+
+
+async def bulk_delete_items(
+    session: AsyncSession,
+    owner_id: UUID,
+    body: ItemBulkDelete,
+) -> ItemBulkResult:
+    items = await _get_owned_items_or_404(session, owner_id, body.item_ids)
+    for item in items:
+        item.is_deleted = True
+    await session.commit()
+    for item in items:
+        await webhooks_service.dispatch(
+            session, owner_id, "item.deleted",
+            {"id": str(item.id), "name": item.name},
+        )
+    return ItemBulkResult(deleted=len(items))
 
 
 async def delete_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> None:
