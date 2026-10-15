@@ -267,10 +267,10 @@
 - Modify: `apps/web/messages/{zh-TW,en}.json`
 
 **TODO:**
-- [ ] 批次物品列：總數＋**最急到期 badge（僅一枚）**（§5.4）；未追蹤物品列零變化
-- [ ] 篩選 chips：到期＝全部／已過期／7 天內（`expiry=` 參數）
-- [ ] 「到期模式」視圖：`sort=expiry_asc`、行內 −1（樂觀）、列展開看批次、清零回饋（toast＋`aria-live`，§5.5）；deep link 落點（儀表板卡與 Phase 24 通知摘要導向此）
-- [ ] 測試：badge 僅一枚且取最急、篩選參數、到期模式排序與 −1、清零回饋出現
+- [x] 批次物品列：總數＋**最急到期 badge（僅一枚）**（§5.4）；未追蹤物品列零變化
+- [x] 篩選 chips：到期＝全部／已過期／7 天內（`expiry=` 參數）
+- [x] 「到期模式」視圖：`sort=expiry_asc`、行內 −1（樂觀）、列展開看批次、清零回饋（toast＋`aria-live`，§5.5）；deep link 落點（儀表板卡與 Phase 24 通知摘要導向此）
+- [x] 測試：badge 僅一枚且取最急、篩選參數、到期模式排序與 −1、清零回饋出現
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/items/items-table.test.tsx 'app/(app)/items/items-list-client.test.tsx'`

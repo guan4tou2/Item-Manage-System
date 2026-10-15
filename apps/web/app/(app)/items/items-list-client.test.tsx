@@ -4,17 +4,20 @@ import { NextIntlClientProvider } from "next-intl"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ItemRead } from "@/lib/api/items"
+import * as batchesApi from "@/lib/api/batches"
 import * as itemsApi from "@/lib/api/items"
 import enMessages from "@/messages/en.json"
+import { toast } from "sonner"
 
 import { ItemsListClient } from "./items-list-client"
 
 const replace = vi.fn()
+const searchParamsRef = { current: new URLSearchParams() }
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/items",
   useRouter: () => ({ replace }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => searchParamsRef.current,
 }))
 
 vi.mock("@/lib/auth/use-auth", () => ({
@@ -87,6 +90,7 @@ function renderClient() {
 describe("ItemsListClient bulk actions", () => {
   beforeEach(() => {
     replace.mockReset()
+    searchParamsRef.current = new URLSearchParams()
     vi.restoreAllMocks()
     vi.spyOn(itemsApi, "listItems").mockResolvedValue({
       items: [item("item-1", "Router"), item("item-2", "Switch")],
@@ -96,6 +100,9 @@ describe("ItemsListClient bulk actions", () => {
     })
     vi.spyOn(itemsApi, "bulkUpdateItems").mockResolvedValue({ updated: 2, deleted: 0 })
     vi.spyOn(itemsApi, "bulkDeleteItems").mockResolvedValue({ updated: 0, deleted: 2 })
+    vi.spyOn(batchesApi, "consumeFefo").mockResolvedValue({
+      consumed: [{ batch_id: "batch-1", quantity: 1 }],
+    } as never)
   })
 
   it("confirms and bulk deletes selected items", async () => {
@@ -164,5 +171,41 @@ describe("ItemsListClient bulk actions", () => {
       "href",
       "/items/labels?ids=item-1",
     )
+  })
+
+  it("writes the expiry filter and sort when a chip is chosen", async () => {
+    renderClient()
+
+    fireEvent.click(await screen.findByRole("button", { name: "Within 7 days" }))
+
+    expect(replace).toHaveBeenCalledWith("/items?expiry=expiring_soon&sort=expiry_asc", {
+      scroll: false,
+    })
+  })
+
+  it("lands in expiry mode from a deep link and consumes FEFO one with clearing feedback", async () => {
+    searchParamsRef.current = new URLSearchParams("expiry=expired&sort=expiry_asc")
+    vi.spyOn(itemsApi, "listItems").mockResolvedValue({
+      items: [
+        {
+          ...item("item-1", "Milk"),
+          quantity: 1,
+          track_batches: true,
+          soonest_expiry: "2026-10-01",
+        },
+      ],
+      total: 1,
+      page: 1,
+      per_page: 20,
+    })
+
+    renderClient()
+
+    fireEvent.click(await screen.findByRole("button", { name: "Consume 1: Milk" }))
+
+    await waitFor(() =>
+      expect(batchesApi.consumeFefo).toHaveBeenCalledWith("item-1", { quantity: 1 }, "jwt"),
+    )
+    await waitFor(() => expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Cleared: Milk"))
   })
 })

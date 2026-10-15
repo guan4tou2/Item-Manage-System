@@ -231,7 +231,18 @@
       "previousPage": "Previous page",
       "nextPage": "Next page",
       "selectAll": "Select all items",
-      "selectItem": "Select {name}"
+      "selectItem": "Select {name}",
+      "expiryFilterLabel": "Expiry filter",
+      "expiryAll": "All",
+      "expiryExpired": "Expired",
+      "expirySoon": "Within 7 days",
+      "columnActions": "Actions",
+      "consumeOneAria": "Consume 1: {name}",
+      "cleared": "Cleared: {name}",
+      "consumedOne": "Consumed 1: {name}",
+      "noActiveBatches": "No active batches",
+      "expandBatches": "Expand batches",
+      "collapseBatches": "Collapse batches"
     },
     "bulk": {
       "selectedCount": "{count} selected",

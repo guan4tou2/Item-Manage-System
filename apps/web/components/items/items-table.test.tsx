@@ -1,16 +1,44 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
 import { describe, expect, it, vi } from "vitest"
 
 import type { ItemRead } from "@/lib/api/items"
 import enMessages from "@/messages/en.json"
+import { taipeiTodayIso } from "./expiry-badge"
 import { ItemsTable } from "./items-table"
+
+vi.mock("@/lib/auth/use-auth", () => ({
+  useAccessToken: () => "jwt",
+}))
+
+vi.mock("@/lib/api/batches", () => ({
+  listBatches: vi.fn(),
+}))
+
+import * as batchApi from "@/lib/api/batches"
 
 const Provider = ({ children }: { children: React.ReactNode }) => (
   <NextIntlClientProvider locale="en" messages={enMessages}>
     {children}
   </NextIntlClientProvider>
 )
+
+const BatchProvider = ({ children }: { children: React.ReactNode }) => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return (
+    <QueryClientProvider client={queryClient}>
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        {children}
+      </NextIntlClientProvider>
+    </QueryClientProvider>
+  )
+}
+
+function iso(offsetDays: number): string {
+  const base = Date.parse(`${taipeiTodayIso()}T00:00:00Z`)
+  return new Date(base + offsetDays * 86_400_000).toISOString().slice(0, 10)
+}
 
 const items: ItemRead[] = [
   {
@@ -115,5 +143,65 @@ describe("ItemsTable", () => {
     expect(screen.getAllByTestId("items-table-location-cell")[0]).toHaveAttribute("data-label", "Location")
     expect(screen.getAllByTestId("items-table-quantity-cell")[0]).toHaveAttribute("data-label", "Qty")
     expect(screen.getAllByTestId("items-table-tags-cell")[0]).toHaveAttribute("data-label", "Tags")
+  })
+
+  it("shows a single soonest-expiry badge on tracked rows only", () => {
+    render(
+      <ItemsTable
+        items={[
+          { ...items[0]!, id: "item-3", name: "Milk", track_batches: true, soonest_expiry: iso(-3) },
+          { ...items[1]!, id: "item-4", name: "Coffee", track_batches: true, soonest_expiry: iso(30) },
+        ]}
+      />,
+      { wrapper: Provider },
+    )
+
+    const badges = screen.getAllByText("Expired 3d")
+    expect(badges).toHaveLength(1)
+    expect(badges[0]).toHaveAttribute("data-status", "expired")
+    expect(screen.queryByText(iso(30))).not.toBeInTheDocument()
+  })
+
+  it("leaves untracked rows unchanged even with a stale expiry", () => {
+    render(<ItemsTable items={[{ ...items[0]!, track_batches: false, soonest_expiry: iso(-1) }]} />, {
+      wrapper: Provider,
+    })
+
+    expect(screen.queryByText("Expired 1d")).not.toBeInTheDocument()
+  })
+
+  it("exposes −1 and batch expansion in expiry mode", async () => {
+    const onConsumeOne = vi.fn()
+    vi.mocked(batchApi.listBatches).mockResolvedValue([
+      {
+        id: "batch-1",
+        quantity: 2,
+        expiry_date: iso(5),
+        note: null,
+        is_depleted: false,
+      } as never,
+    ])
+
+    render(
+      <ItemsTable
+        items={[
+          { ...items[0]!, track_batches: true, soonest_expiry: iso(2), quantity: 4 },
+          { ...items[1]!, id: "item-5", name: "Empty", track_batches: true, quantity: 0, soonest_expiry: null },
+        ]}
+        expiryMode
+        onConsumeOne={onConsumeOne}
+      />,
+      { wrapper: BatchProvider },
+    )
+
+    fireEvent.click(screen.getByRole("button", { name: "Consume 1: Router" }))
+    expect(onConsumeOne).toHaveBeenCalledWith(expect.objectContaining({ id: "item-1" }))
+    expect(screen.getByRole("button", { name: "Consume 1: Empty" })).toBeDisabled()
+    expect(screen.getByText("2d left")).toBeInTheDocument()
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Expand batches" })[0]!)
+
+    expect(await screen.findByText("5d left")).toBeInTheDocument()
+    expect(screen.getByText("2 left")).toBeInTheDocument()
   })
 })

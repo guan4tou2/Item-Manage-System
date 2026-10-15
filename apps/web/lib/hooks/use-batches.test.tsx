@@ -61,8 +61,8 @@ describe("use-batches", () => {
     } as never)
     const spy = vi.spyOn(queryClient, "invalidateQueries")
 
-    const { result } = renderHook(() => useConsumeFefo("item-1"), { wrapper })
-    result.current.mutate(1)
+    const { result } = renderHook(() => useConsumeFefo(), { wrapper })
+    result.current.mutate({ itemId: "item-1", quantity: 1 })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(api.consumeFefo).toHaveBeenCalledWith("item-1", { quantity: 1 }, "jwt")
@@ -117,5 +117,52 @@ describe("use-batches", () => {
     expect(
       queryClient.getQueryData<{ quantity: number }>(["items", "item-1"])?.quantity,
     ).toBe(3)
+  })
+
+  it("optimistically decrements matching list rows for FEFO consume", async () => {
+    queryClient.setQueryData(["items", { q: "milk" }], {
+      items: [
+        { id: "item-1", quantity: 2 },
+        { id: "item-2", quantity: 5 },
+      ],
+      total: 2,
+      page: 1,
+      per_page: 20,
+    })
+    vi.mocked(api.consumeFefo).mockImplementation(() => new Promise<never>(() => {}))
+
+    const { result } = renderHook(() => useConsumeFefo(), { wrapper })
+    result.current.mutate({ itemId: "item-1" })
+
+    await waitFor(() => {
+      const data = queryClient.getQueryData<{ items: { id: string; quantity: number }[] }>([
+        "items",
+        { q: "milk" },
+      ])
+      expect(data?.items[0]?.quantity).toBe(1)
+    })
+    const data = queryClient.getQueryData<{ items: { id: string; quantity: number }[] }>([
+      "items",
+      { q: "milk" },
+    ])
+    expect(data?.items[1]?.quantity).toBe(5)
+    expect(api.consumeFefo).toHaveBeenCalledWith("item-1", { quantity: 1 }, "jwt")
+  })
+
+  it("rolls back list rows when FEFO consume fails", async () => {
+    const original = {
+      items: [{ id: "item-1", quantity: 2 }],
+      total: 1,
+      page: 1,
+      per_page: 20,
+    }
+    queryClient.setQueryData(["items", { q: "milk" }], original)
+    vi.mocked(api.consumeFefo).mockRejectedValue(new Error("boom"))
+
+    const { result } = renderHook(() => useConsumeFefo(), { wrapper })
+    result.current.mutate({ itemId: "item-1" })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(queryClient.getQueryData(["items", { q: "milk" }])).toEqual(original)
   })
 })

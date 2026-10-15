@@ -25,7 +25,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { ItemFilters } from "@/lib/api/items"
+import type { ItemFilters, ItemRead } from "@/lib/api/items"
+import { useConsumeFefo } from "@/lib/hooks/use-batches"
 import { useBulkDeleteItems, useBulkUpdateItems, useItems } from "@/lib/hooks/use-items"
 import { useLocations } from "@/lib/hooks/use-locations"
 import { filtersFromSearchParams, filtersToSearchParams } from "@/lib/items/filters"
@@ -86,7 +87,9 @@ export function ItemsListClient() {
   const locations = useLocations()
   const bulkUpdate = useBulkUpdateItems()
   const bulkDelete = useBulkDeleteItems()
+  const consume = useConsumeFefo()
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [announce, setAnnounce] = useState("")
   const [bulkTags, setBulkTags] = useState("")
   const [tagMode, setTagMode] = useState<TagMode>("replace")
   const [targetLocationId, setTargetLocationId] = useState("")
@@ -99,6 +102,35 @@ export function ItemsListClient() {
 
   const selectedCount = selectedIds.length
   const bulkPending = bulkUpdate.isPending || bulkDelete.isPending
+  const expiryView = filters.expiry !== undefined || filters.sort === "expiry_asc"
+
+  const applyExpiryFilter = (value: "expired" | "expiring_soon" | undefined) => {
+    writeFilters({
+      ...filters,
+      expiry: value,
+      sort: value ? "expiry_asc" : undefined,
+      page: 1,
+    })
+  }
+
+  const consumeOne = (item: ItemRead) => {
+    consume.mutate(
+      { itemId: item.id, quantity: 1 },
+      {
+        onSuccess: () => {
+          // 清零回饋（§5.5）：toast ＋ aria-live
+          if (item.quantity <= 1) {
+            const message = t("items.list.cleared", { name: item.name })
+            toast.success(message)
+            setAnnounce(message)
+          } else {
+            setAnnounce(t("items.list.consumedOne", { name: item.name }))
+          }
+        },
+        onError: () => toast.error(t("items.batches.consumeFailed")),
+      },
+    )
+  }
 
   const resetSelection = () => {
     setSelectedIds([])
@@ -167,11 +199,49 @@ export function ItemsListClient() {
           </Button>
         </div>
 
+        <div
+          className="flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label={t("items.list.expiryFilterLabel")}
+        >
+          <Button
+            type="button"
+            size="sm"
+            variant={filters.expiry === undefined ? "secondary" : "outline"}
+            aria-pressed={filters.expiry === undefined}
+            onClick={() => applyExpiryFilter(undefined)}
+          >
+            {t("items.list.expiryAll")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={filters.expiry === "expired" ? "secondary" : "outline"}
+            aria-pressed={filters.expiry === "expired"}
+            onClick={() => applyExpiryFilter("expired")}
+          >
+            {t("items.list.expiryExpired")}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={filters.expiry === "expiring_soon" ? "secondary" : "outline"}
+            aria-pressed={filters.expiry === "expiring_soon"}
+            onClick={() => applyExpiryFilter("expiring_soon")}
+          >
+            {t("items.list.expirySoon")}
+          </Button>
+        </div>
+
+        <p aria-live="polite" className="sr-only">
+          {announce}
+        </p>
+
         {isLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : !data || data.items.length === 0 ? (
           <div className="rounded border p-6 text-center text-muted-foreground">
-            {data && data.total === 0 && !filters.q && !filters.categoryId && !filters.locationId && !filters.tagIds ? (
+            {data && data.total === 0 && !filters.q && !filters.categoryId && !filters.locationId && !filters.tagIds && !filters.expiry ? (
               <>
                 <p>{t("items.list.empty")}</p>
                 <Button asChild variant="link">
@@ -338,6 +408,8 @@ export function ItemsListClient() {
               items={data.items}
               selectedIds={selectedIds}
               onSelectionChange={setSelectedIds}
+              expiryMode={expiryView}
+              onConsumeOne={consumeOne}
             />
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>{t("items.list.page", {

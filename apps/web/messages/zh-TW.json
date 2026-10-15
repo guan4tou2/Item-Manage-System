@@ -231,7 +231,18 @@
       "previousPage": "上一頁",
       "nextPage": "下一頁",
       "selectAll": "選取所有物品",
-      "selectItem": "選取 {name}"
+      "selectItem": "選取 {name}",
+      "expiryFilterLabel": "到期篩選",
+      "expiryAll": "全部",
+      "expiryExpired": "已過期",
+      "expirySoon": "7 天內",
+      "columnActions": "操作",
+      "consumeOneAria": "消耗 1：{name}",
+      "cleared": "已清零：{name}",
+      "consumedOne": "已消耗 1：{name}",
+      "noActiveBatches": "沒有進行中的批次",
+      "expandBatches": "展開批次",
+      "collapseBatches": "收合批次"
     },
     "bulk": {
       "selectedCount": "已選取 {count} 件",

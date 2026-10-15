@@ -14,6 +14,24 @@ function invalidateBatchSurfaces(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["stats"] })
 }
 
+/** 對所有 ["items"] 快取做樂觀 −N：列表（{ items: [...] }）與 [\"items\", id] 詳情皆涵蓋。 */
+function optimisticDecrement(data: unknown, itemId: string, quantity: number): unknown {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return data
+  const record = data as Record<string, unknown>
+  if (Array.isArray(record.items)) {
+    return {
+      ...record,
+      items: (record.items as ItemRead[]).map((item) =>
+        item.id === itemId ? { ...item, quantity: Math.max(0, item.quantity - quantity) } : item,
+      ),
+    }
+  }
+  if (record.id === itemId && typeof record.quantity === "number") {
+    return { ...record, quantity: Math.max(0, record.quantity - quantity) }
+  }
+  return data
+}
+
 export function useBatches(itemId: string | undefined) {
   const token = useAccessToken()
   return useQuery({
@@ -95,12 +113,26 @@ export function useConsumeBatch(itemId: string) {
   })
 }
 
-export function useConsumeFefo(itemId: string) {
+export function useConsumeFefo() {
   const token = useAccessToken()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (quantity: number) => api.consumeFefo(itemId, { quantity }, token),
-    onSuccess: () => invalidateBatchSurfaces(qc),
+    mutationFn: ({ itemId, quantity = 1 }: { itemId: string; quantity?: number }) =>
+      api.consumeFefo(itemId, { quantity }, token),
+    onMutate: async ({ itemId, quantity = 1 }) => {
+      await qc.cancelQueries({ queryKey: ["items"] })
+      const snapshots = qc.getQueriesData({ queryKey: ["items"] })
+      qc.setQueriesData({ queryKey: ["items"] }, (data) =>
+        optimisticDecrement(data, itemId, quantity),
+      )
+      return { snapshots }
+    },
+    onError: (_error, _variables, context) => {
+      for (const [key, data] of context?.snapshots ?? []) {
+        qc.setQueryData(key, data)
+      }
+    },
+    onSettled: () => invalidateBatchSurfaces(qc),
   })
 }
 

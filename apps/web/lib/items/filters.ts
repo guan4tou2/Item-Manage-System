@@ -21,6 +21,10 @@ export function filtersFromSearchParams(params: URLSearchParams): ItemFilters {
   }
   const page = params.get("page")
   if (page) f.page = Math.max(1, Number(page))
+  const expiry = params.get("expiry")
+  if (expiry === "expired" || expiry === "expiring_soon") f.expiry = expiry
+  const sort = params.get("sort")
+  if (sort === "expiry_asc") f.sort = sort
   return f
 }
 
@@ -30,6 +34,8 @@ export function filtersToSearchParams(f: ItemFilters): URLSearchParams {
   if (f.categoryId != null) p.set("category", String(f.categoryId))
   if (f.locationId != null) p.set("location", String(f.locationId))
   if (f.tagIds && f.tagIds.length > 0) p.set("tags", f.tagIds.join(","))
+  if (f.expiry) p.set("expiry", f.expiry)
+  if (f.sort) p.set("sort", f.sort)
   if (f.page && f.page > 1) p.set("page", String(f.page))
   return p
 }
