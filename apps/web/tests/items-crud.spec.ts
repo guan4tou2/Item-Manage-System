@@ -54,7 +54,7 @@ test("items full CRUD lifecycle", async ({ page, request }) => {
   await expect(page.getByRole("heading", { name: "LED 燈泡" })).toBeVisible()
 
   await page.getByRole("button", { name: "刪除" }).first().click()
-  await page.getByRole("button", { name: "刪除" }).nth(1).click()
+  await page.getByRole("alertdialog").getByRole("button", { name: "刪除" }).click()
   await page.waitForURL("**/items")
   await expect(page.getByText("還沒有任何物品")).toBeVisible()
 })

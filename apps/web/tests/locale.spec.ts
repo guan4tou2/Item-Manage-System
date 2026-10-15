@@ -24,9 +24,9 @@ test("authenticated user can switch locale and it persists", async ({ page, requ
   await page.getByRole("menuitemradio", { name: /English/ }).click()
 
   // UI 標籤應變成英文
-  await expect(page.getByRole("link", { name: "Items" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Items", exact: true })).toBeVisible()
 
   // reload 後仍是英文
   await page.reload()
-  await expect(page.getByRole("link", { name: "Items" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Items", exact: true })).toBeVisible()
 })

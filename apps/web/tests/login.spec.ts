@@ -28,5 +28,5 @@ test("wrong password shows error", async ({ page }) => {
   await page.getByLabel("密碼").fill("wrong-pass")
   await page.getByRole("button", { name: /登入/ }).click()
 
-  await expect(page.getByRole("alert")).toHaveText("帳號或密碼錯誤")
+  await expect(page.getByRole("alert").filter({ hasText: "帳號或密碼錯誤" })).toBeVisible()
 })

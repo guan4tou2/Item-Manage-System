@@ -46,7 +46,7 @@ test.describe("Theme persistence", () => {
     await page.getByLabel("使用者名稱").fill(username)
     await page.getByLabel("密碼").fill(password)
     await page.getByRole("button", { name: /登入/ }).click()
-    await page.waitForURL("/")
+    await page.waitForURL("**/dashboard")
     await page.goto("/__dev/components")
     await page.waitForFunction(() =>
       document.documentElement.classList.contains("dark"),
@@ -78,7 +78,7 @@ test.describe("Theme persistence", () => {
     await page.getByLabel("使用者名稱").fill(username)
     await page.getByLabel("密碼").fill(password)
     await page.getByRole("button", { name: /登入/ }).click()
-    await page.waitForURL("/")
+    await page.waitForURL("**/dashboard")
 
     await page.goto("/__dev/components")
     const before = await page.locator("html").getAttribute("class")

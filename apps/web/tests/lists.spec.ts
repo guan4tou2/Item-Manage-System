@@ -42,7 +42,7 @@ test("create list, add entries, toggle, delete entry", async ({ page, request })
   await page.getByRole("checkbox", { name: "帳篷" }).click()
   await expect(page.getByText(/2 項 · 1 已完成/)).toBeVisible()
 
-  const row = page.getByText("睡袋").locator("..").locator("..")
+  const row = page.getByRole("listitem").filter({ hasText: "睡袋" })
   await row.getByRole("button", { name: "刪除" }).click()
   await expect(page.getByText("睡袋")).toHaveCount(0)
 })

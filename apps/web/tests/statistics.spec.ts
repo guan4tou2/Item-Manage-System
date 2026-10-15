@@ -16,14 +16,15 @@ async function loginUi(page: import("@playwright/test").Page, username: string) 
   await page.waitForURL("**/dashboard")
 }
 
-test("statistics page shows three chart cards", async ({ page, request }) => {
+test("statistics page shows chart cards", async ({ page, request }) => {
   const u = `stat_${unique()}`
   await register(request, u)
   await loginUi(page, u)
   await page.goto("/statistics")
-  await expect(page.getByRole("heading", { name: "依分類" })).toBeVisible()
-  await expect(page.getByRole("heading", { name: "依位置" })).toBeVisible()
-  await expect(page.getByRole("heading", { name: "熱門標籤" })).toBeVisible()
+  // 圖表卡片標題（CardTitle 為 div，非 heading 語意）
+  await expect(page.getByText("依分類", { exact: true })).toBeVisible()
+  await expect(page.getByText("依位置", { exact: true })).toBeVisible()
+  await expect(page.getByText("熱門標籤", { exact: true })).toBeVisible()
 })
 
 test("empty DB shows empty state in each chart", async ({ page, request }) => {
@@ -31,5 +32,6 @@ test("empty DB shows empty state in each chart", async ({ page, request }) => {
   await register(request, u)
   await loginUi(page, u)
   await page.goto("/statistics")
-  await expect(page.getByText("尚無資料")).toHaveCount(3)
+  // 五張圖表（趨勢／分類／位置／倉庫／標籤）皆顯示空狀態
+  await expect(page.getByText("尚無資料", { exact: true })).toHaveCount(5)
 })
