@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl"
 
 import { ActiveLoansCard } from "@/components/dashboard/active-loans-card"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
+import { ExpiryCard } from "@/components/dashboard/expiry-card"
 import { LowStockCard } from "@/components/dashboard/low-stock-card"
 import { QuickLinks } from "@/components/dashboard/quick-links"
 import { RecentItemsCard } from "@/components/dashboard/recent-items-card"
@@ -17,6 +18,7 @@ import {
 import {
   useActiveLoans,
   useActivity,
+  useExpiryStats,
   useLowStock,
   useOverview,
   useRecent,
@@ -29,6 +31,7 @@ export default function DashboardPage() {
   const lowStock = useLowStock(5)
   const activeLoans = useActiveLoans(5)
   const activity = useActivity(10)
+  const expiry = useExpiryStats(30)
 
   return (
     <section className="space-y-6 p-6">
@@ -87,6 +90,12 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <ExpiryCard
+          stats={expiry.data}
+          loading={expiry.isLoading}
+          error={expiry.isError}
+          onRetry={() => void expiry.refetch()}
+        />
         <LowStockCard items={lowStock.data ?? []} loading={lowStock.isLoading} />
         <ActiveLoansCard
           loans={activeLoans.data ?? []}

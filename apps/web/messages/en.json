@@ -44,6 +44,18 @@
       "restockCreated": "Restock list created.",
       "restockFailed": "Could not create restock list."
     },
+    "expiry": {
+      "title": "Expiry actions",
+      "loadFailed": "Could not load expiry data.",
+      "retry": "Retry",
+      "allGood": "All clear · nothing expiring",
+      "expired": "Expired",
+      "expiredCount": "{count, plural, one {# item} other {# items}}",
+      "expiringSoon": "Expiring within 7 days",
+      "expiringSoonCount": "{count, plural, one {# item} other {# items}}",
+      "soonestExpired": "Soonest: {name}, expired {days}d ago",
+      "soonestExpiring": "Soonest: {name}, {days}d left"
+    },
     "activeLoans": {
       "title": "Active loans",
       "loading": "Loading…",

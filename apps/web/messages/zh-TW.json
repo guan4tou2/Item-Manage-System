@@ -44,6 +44,18 @@
       "restockCreated": "補貨清單已建立。",
       "restockFailed": "無法建立補貨清單。"
     },
+    "expiry": {
+      "title": "到期行動",
+      "loadFailed": "無法載入到期資訊。",
+      "retry": "重試",
+      "allGood": "一切安好・無到期物",
+      "expired": "已過期",
+      "expiredCount": "{count} 件",
+      "expiringSoon": "7 天內到期",
+      "expiringSoonCount": "{count} 件",
+      "soonestExpired": "最急：{name}，已過期 {days} 天",
+      "soonestExpiring": "最急：{name}，{days} 天內到期"
+    },
     "activeLoans": {
       "title": "活躍借出",
       "loading": "載入中…",

@@ -283,10 +283,10 @@
 - Modify: `apps/web/messages/{zh-TW,en}.json`
 
 **TODO:**
-- [ ] 卡片：數字（已過期／N 天內）＋下一步 deep link（`/items?expiry=expired`／`expiring_soon`）＋狀態註記（§5.1）
-- [ ] 排序：已過期 ＞ 7 天內到期 ＞ 低庫存（行動卡群組）
-- [ ] 空狀態：無到期資料 → 卡片不渲染或顯示「無即將到期」（依 §5.1 既有空狀態慣例）
-- [ ] 測試：數字映射、deep link、排序位置、載入中 skeleton
+- [x] 卡片：數字（已過期／N 天內）＋下一步 deep link（`/items?expiry=expired`／`expiring_soon`）＋狀態註記（§5.1）
+- [x] 排序：已過期 ＞ 7 天內到期 ＞ 低庫存（行動卡群組）
+- [x] 空狀態：無到期資料 → 卡片不渲染或顯示「無即將到期」（依 §5.1 既有空狀態慣例）
+- [x] 測試：數字映射、deep link、排序位置、載入中 skeleton
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/dashboard/expiry-card.test.tsx`
