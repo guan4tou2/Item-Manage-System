@@ -11,6 +11,7 @@ from app.schemas.stats import (
     ActiveLoan,
     ActivityEntry,
     CategoryBucket,
+    ExpiryStats,
     LocationBucket,
     LowStockItem,
     OverviewStats,
@@ -80,6 +81,15 @@ async def low_stock(
     session: AsyncSession = Depends(get_db),
 ) -> list[LowStockItem]:
     return await stats_service.get_low_stock(session, user.id, limit=limit)
+
+
+@router.get("/expiry", response_model=ExpiryStats)
+async def expiry(
+    days: int = Query(default=30, ge=1, le=365),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> ExpiryStats:
+    return await stats_service.get_expiry(session, user.id, days=days)
 
 
 @router.get("/active-loans", response_model=list[ActiveLoan])

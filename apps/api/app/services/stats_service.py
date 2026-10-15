@@ -10,6 +10,7 @@ from app.schemas.stats import (
     ActiveLoan,
     ActivityEntry,
     CategoryBucket,
+    ExpiryStats,
     LocationBucket,
     LowStockItem,
     OverviewStats,
@@ -57,6 +58,13 @@ async def get_low_stock(
 ) -> list[LowStockItem]:
     rows = await stats_repository.low_stock(session, owner_id, limit=limit)
     return [LowStockItem(**r) for r in rows]
+
+
+async def get_expiry(
+    session: AsyncSession, owner_id: UUID, *, days: int
+) -> ExpiryStats:
+    data = await stats_repository.expiry(session, owner_id, days=days)
+    return ExpiryStats(**data)
 
 
 async def get_active_loans(

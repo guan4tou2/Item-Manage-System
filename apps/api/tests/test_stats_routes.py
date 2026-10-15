@@ -1,4 +1,8 @@
+from datetime import timedelta
+
 import pytest
+
+from app.clock import today_taipei
 
 
 @pytest.fixture
@@ -102,3 +106,76 @@ class TestRecent:
     async def test_limit_validation(self, client, auth):
         r = await client.get("/api/stats/recent?limit=21", headers=auth)
         assert r.status_code == 422
+
+
+class TestExpiry:
+    async def _tracked(self, client, auth, *, name: str, days: int | None) -> str:
+        item = (
+            await client.post(
+                "/api/items", headers=auth, json={"name": name, "quantity": 1}
+            )
+        ).json()
+        body: dict = {}
+        if days is not None:
+            body["expiry_date"] = (today_taipei() + timedelta(days=days)).isoformat()
+        resp = await client.post(
+            f"/api/items/{item['id']}/batches", headers=auth, json=body
+        )
+        assert resp.status_code == 201, resp.text
+        return item["id"]
+
+    async def test_empty(self, client, auth):
+        r = await client.get("/api/stats/expiry", headers=auth)
+        assert r.status_code == 200
+        assert r.json() == {"expired_count": 0, "expiring_count": 0, "items": []}
+
+    async def test_counts_and_order(self, client, auth):
+        await self._tracked(client, auth, name="過期", days=-1)
+        soon_id = await self._tracked(client, auth, name="快了", days=3)
+        await self._tracked(client, auth, name="遠", days=40)
+        await self._tracked(client, auth, name="無期", days=None)
+
+        body = (await client.get("/api/stats/expiry", headers=auth)).json()
+
+        assert body["expired_count"] == 1
+        assert body["expiring_count"] == 1
+        assert [i["name"] for i in body["items"]] == ["過期", "快了"]
+        assert body["items"][0]["status"] == "expired"
+        assert body["items"][0]["days_left"] == -1
+        assert body["items"][1]["status"] == "expiring"
+        assert body["items"][1]["item_id"] == soon_id
+
+    async def test_days_window(self, client, auth):
+        await self._tracked(client, auth, name="三天", days=3)
+
+        r = await client.get("/api/stats/expiry?days=2", headers=auth)
+        assert r.json()["expiring_count"] == 0
+        assert r.json()["items"] == []
+
+        r = await client.get("/api/stats/expiry?days=3", headers=auth)
+        assert r.json()["expiring_count"] == 1
+        assert r.json()["items"][0]["name"] == "三天"
+
+    async def test_days_bounds(self, client, auth):
+        assert (
+            await client.get("/api/stats/expiry?days=1", headers=auth)
+        ).status_code == 200
+        assert (
+            await client.get("/api/stats/expiry?days=365", headers=auth)
+        ).status_code == 200
+        assert (
+            await client.get("/api/stats/expiry?days=0", headers=auth)
+        ).status_code == 422
+        assert (
+            await client.get("/api/stats/expiry?days=366", headers=auth)
+        ).status_code == 422
+
+    async def test_items_capped_at_10(self, client, auth):
+        for i in range(12):
+            await self._tracked(client, auth, name=f"i{i:02d}", days=1 + i)
+
+        body = (await client.get("/api/stats/expiry", headers=auth)).json()
+
+        assert body["expiring_count"] == 12
+        assert len(body["items"]) == 10
+        assert body["items"][0]["name"] == "i00"

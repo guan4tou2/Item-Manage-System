@@ -3,12 +3,14 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
+from app.clock import days_left, expiry_status, today_taipei
 from app.models.category import Category
 from app.models.item import Item
+from app.models.item_batch import ItemBatch
 from app.models.item_history import ItemVersion, QuantityLog
 from app.models.loan import ItemLoan
 from app.models.location import Location
@@ -403,3 +405,72 @@ async def recent_activity(
 
     entries.sort(key=lambda e: e["at"], reverse=True)
     return entries[:limit]
+
+
+async def expiry(
+    session: AsyncSession, owner_id: UUID, *, days: int, limit: int = 10
+) -> dict:
+    """到期統計（Phase 22）：單一聚合子查詢取每物品最急到期。
+
+    範圍比照 `low_stock`（owner 自有、未刪除）；`days` 為 expiring 視窗
+    （today ≤ soonest ≤ today+days）；`items` 為視窗內（含已過期）soonest
+    最早前 `limit` 筆。全程僅兩個查詢，不得 per-item 查詢。
+    """
+    today = today_taipei()
+    horizon = today + timedelta(days=days)
+    soonest = (
+        select(func.min(ItemBatch.expiry_date))
+        .where(
+            ItemBatch.item_id == Item.id,
+            ItemBatch.is_depleted.is_(False),
+        )
+        .correlate(Item)
+        .scalar_subquery()
+    )
+
+    counts_stmt = (
+        select(
+            func.coalesce(func.sum(case((soonest < today, 1), else_=0)), 0),
+            func.coalesce(
+                func.sum(
+                    case((and_(soonest >= today, soonest <= horizon), 1), else_=0)
+                ),
+                0,
+            ),
+        )
+        .select_from(Item)
+        .where(
+            Item.owner_id == owner_id,
+            Item.is_deleted.is_(False),
+            soonest.is_not(None),
+        )
+    )
+    expired_count, expiring_count = (await session.execute(counts_stmt)).one()
+
+    items_stmt = (
+        select(Item.id, Item.name, Item.quantity, soonest.label("soonest_expiry"))
+        .where(
+            Item.owner_id == owner_id,
+            Item.is_deleted.is_(False),
+            soonest.is_not(None),
+            soonest <= horizon,
+        )
+        .order_by(soonest.asc(), Item.name)
+        .limit(limit)
+    )
+    rows = (await session.execute(items_stmt)).all()
+    return {
+        "expired_count": int(expired_count),
+        "expiring_count": int(expiring_count),
+        "items": [
+            {
+                "item_id": r.id,
+                "name": r.name,
+                "quantity": int(r.quantity),
+                "soonest_expiry": r.soonest_expiry,
+                "days_left": days_left(r.soonest_expiry, today=today),
+                "status": expiry_status(r.soonest_expiry, today=today),
+            }
+            for r in rows
+        ],
+    }
