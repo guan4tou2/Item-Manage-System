@@ -25,12 +25,12 @@ export function NewTransferDialog({ itemId }: { itemId: string }) {
         <DialogHeader><DialogTitle>{t("collab.transfer.new.title")}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1">
-            <Label>{t("collab.transfer.new.toUsername")}</Label>
-            <Input value={to} onChange={(e) => setTo(e.target.value)} autoFocus />
+            <Label htmlFor="transfer-to-username">{t("collab.transfer.new.toUsername")}</Label>
+            <Input id="transfer-to-username" value={to} onChange={(e) => setTo(e.target.value)} autoFocus />
           </div>
           <div className="space-y-1">
-            <Label>{t("collab.transfer.new.message")}</Label>
-            <Textarea value={msg} onChange={(e) => setMsg(e.target.value)} rows={2} />
+            <Label htmlFor="transfer-message">{t("collab.transfer.new.message")}</Label>
+            <Textarea id="transfer-message" value={msg} onChange={(e) => setMsg(e.target.value)} rows={2} />
           </div>
         </div>
         <DialogFooter>

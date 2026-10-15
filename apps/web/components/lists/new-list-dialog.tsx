@@ -80,8 +80,9 @@ export function NewListDialog() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>{t("lists.new.titlePlaceholder")}</Label>
+            <Label htmlFor="new-list-title">{t("lists.new.titlePlaceholder")}</Label>
             <Input
+              id="new-list-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t("lists.new.titlePlaceholder")}
@@ -89,8 +90,9 @@ export function NewListDialog() {
             />
           </div>
           <div className="space-y-2">
-            <Label>{t("lists.new.descriptionPlaceholder")}</Label>
+            <Label htmlFor="new-list-description">{t("lists.new.descriptionPlaceholder")}</Label>
             <Textarea
+              id="new-list-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
