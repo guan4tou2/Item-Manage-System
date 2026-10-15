@@ -15,7 +15,7 @@
 | 測試 | API 454 個測試函式、Web 41 個測試檔（約 160+ 案例）（以靜態掃描計數；執行前需先安裝依賴）；每次推進 main 前雙套全綠為慣例 |
 | 遷移進度 | Alembic 至 `0015`（webhook retry），下一支從 `0016` 起編號 |
 | 通知架構 | `emit()` 建立站內通知後 fan-out 至所有已綁定外部管道（Email/LINE/Telegram/Web Push）；**無 per-type 偏好控制** |
-| 排程架構 | **無作用中的排程器**。`apscheduler` 依賴為 v1 遺留、目前未使用；既有延遲任務模式 = 外部 cron 呼叫端點（Phase 21 `POST /api/webhooks/process-retries`） |
+| 排程架構 | **無作用中的排程器**。`apscheduler` 依賴為 v1 遺留、目前未使用（Phase 24 展開時移除）；既有延遲任務模式 = 外部 cron 呼叫端點（Phase 21 `POST /api/webhooks/process-retries`） |
 | 位置結構 | `locations` 為平面三欄（floor / room / zone），無巢狀 |
 | 物品欄位缺口 | **無到期日、無條碼、無成本** 欄位 |
 | 備份 | 只有 `GET /api/backup/export`，**無匯入還原** |
@@ -64,6 +64,18 @@
 4. **獨立小項穿插補位**：估值、Webhook UI 彼此獨立、工程量小，可穿插在大型 phase 之間保持推進節奏。
 5. **AI 深化工程最大、依賴最少**：放後段，且收據辨識依賴成本欄位（Phase 27）、批次入庫與收據共用草稿審核 UI（Phase 32 → 33）。
 6. **依賴鏈**：排程基建（24）→ 定期報表（31）；成本（27）→ 報表估值（31）、收據（33）。
+
+```
+Phase 依賴圖（依 §四 總表）：
+  22 ─┐
+      ├──▶ 24 ──┐
+  23 ─┘         ├──▶ 31
+  27 ──────────┘
+
+  25 ┄(barcode 選配)┄▶ 32 ──▶ 33 ◀── 27
+
+  無依賴：26、28、29、30、34
+```
 
 ---
 
@@ -122,19 +134,19 @@
 
 | 群組 | 頁面 |
 |------|------|
-| 個人 | 個人資料、密碼、偏好（Phase 27 幣別設定在此） |
+| 個人 | 個人資料、密碼、偏好（Phase 27 幣別設定在此；Phase 34 AI 傳送開關在此） |
 | 通知與提醒 | 通知管道、通知偏好（Phase 23）、提醒排程（Phase 24，唯讀）、報表開關（Phase 31） |
-| 整合與資料 | Webhooks（Phase 28）、API 權杖、CSV 匯入/匯出、備份（Phase 29） |
+| 整合與資料 | Webhooks（Phase 28）、API 權杖、CSV 匯入/匯出、備份（Phase 29）、自訂欄位與模板、分類／位置／標籤（既有 `/settings/taxonomy` 子頁） |
 | 管理 | 成員管理、稽核記錄 |
 
 - 硬上限：首層群組 ≤ 4、每群組頁面 ≤ 6；超出即重新分類，不得直接加頁
-- Phase 23 第一步 = 完成重構（既有 10 個設定頁功能零回歸），再把「通知偏好」放入「通知與提醒」
+- Phase 23 第一步 = 完成重構；零回歸範圍＝既有 10 個設定面板＋`/settings/taxonomy` 子頁＋admin-only 面板可見性規則（含 BootstrapAdminButton 首次引導）；再把「通知偏好」放入「通知與提醒」
 
 ### 5.3 全站一級導覽契約（Phase 31 落地）
 
 - `/reports` 併入「分析」群組（桌面：統計 dropdown 含報表；行動：drawer 二層展開），首層項目數維持 11
 - 行動版 drawer 支援「群組標題 ＋ 二層展開」（新元件，計入 Phase 31 範圍）
-- 未來新頁面（如 AI 草稿佇列）優先掛「既有群組成員」或「頁內入口」，不新增首層項目
+- 未來新頁面（如 AI 草稿佇列＝物品新增頁內入口）優先掛「既有群組成員」或「頁內入口」，不新增首層項目；AI 傳送開關置於設定「個人＞偏好」（Phase 34）
 
 ### 5.4 互動狀態契約（所有新介面最低要求）
 
@@ -230,6 +242,8 @@
   - `item_batches`：`id`(UUID)、`item_id`(FK cascade)、`quantity`(int ≥0)、`expiry_date`(date, nullable)、`received_at`(date, nullable)、`note`(nullable)、`created_at`、`updated_at`
   - 批次數量歸零 → 保留列並標記 `is_depleted`（歷史可追溯）；UI 收進「已耗盡」折疊區、預設收起，不得污染主列表（見 §5.4）
   - `items.track_batches`(bool, default false)：開啟後 `items.quantity` 為快取總和，維持既有查詢/統計相容
+  - 索引：`item_batches.item_id`、`item_batches.expiry_date`（列表聚合、統計與 job 掃描用）
+  - 閱讀路徑：物品列表的批次聚合（總數＋最急到期）與統計/掃描一律走單一聚合查詢＋索引，非 per-item 逐列查詢
 - **API**（沿用既有 nested 風格，同 `/api/items/{id}/loans`）
   - `GET /api/items/{id}/batches` — 列表含 derived `days_left`、`status: ok | expiring | expired`
   - `POST /api/items/{id}/batches` — 進貨（建立批次）
@@ -252,12 +266,29 @@
 2. **盤點整合**：盤點差額以「調整批次」表達（正差 → 新批次 note=`stocktake:<session>`；負差 → FEFO 消耗），維持 invariant
 3. 建立第一批時自動開啟 `track_batches`（降低摩擦），當前數量併入一筆無到期日批次
 4. **模式可關閉（併回總量）**：關閉對話框明示「批次將合併為單一數量，到期日資訊將刪除」→ 確認後刪除批次、`items.quantity` 維持；不存在「追蹤關閉但有批次」狀態，invariant 無例外
+5. **併發安全**：所有批次寫入（進貨／消耗／盤點調整／模式切換）以 `SELECT … FOR UPDATE` 鎖定 item 列（或原子 UPDATE＋rowcount 檢查），防雙擊／雙視窗並行 consume 造成 lost update
+6. **「今天」唯一定義**：`days_left`／`status`／列表篩選／Phase 24 門檻判定一律使用 Asia/Taipei 的「今天」（單一 helper，與 §5.6 排程時區一致）
+
+**數量 invariant 流**
+
+```
+進貨／消耗（−1、FEFO）／盤點調整／模式切換
+                     │
+                     ▼
+      批次 service 單一入口（FOR UPDATE 鎖 item 列）
+                     ├──▶ item_batches（新增／消耗／調整／耗盡標記）
+                     ├──▶ items.quantity = Σ 未耗盡批次（快取總和）
+                     └──▶ quantity_logs（reason 含批次資訊）
+```
 
 **驗收大綱**
 - FEFO 消耗正確性（跨批次、剛好歸零、超額拒絕）
 - invariant 測試（批次操作、盤點、CSV 匯入後）
+- 列表聚合查詢數不隨列數成長（query count 斷言）
 - 到期模式視圖：剩餘天數排序、行內 −1、樂觀更新與清零回饋（§5.5）
 - 未開啟追蹤模式的物品行為零回歸
+- 併發雙 consume（同 item 並行）→ invariant 仍成立、無 lost update
+- 台北午夜邊界：23:59／00:00 前後 `days_left`／篩選結果正確
 - i18n 全字串（zh-TW + en）、深色模式
 
 ---
@@ -280,8 +311,10 @@
 
 **驗收大綱**
 - 偏好過濾單元測試（emit / deliver_all 各情境、不可關類別強制）
+- API 契約：GET 回傳矩陣結構（類型×管道）、PUT→GET 反映、未知 type／管道拒絕
 - UI 測試（切換、儲存、重置）
 - 既有通知流程零回歸
+- **CRITICAL 回歸（設定 IA 重構）**：10 面板子路由化後逐一面板 smoke（render＋核心操作）、`/settings/taxonomy` 子頁、admin-only 可見性（非 admin 隱藏、BootstrapAdminButton 首次引導）；以既有 customization／webhook／channels 3 個面板測試為基礎擴充；`navigation.spec.ts` 加設定子路由可達性抽查
 
 **備註**：與 Phase 24 可平行；若 24 先上，到期通知會短暫無偏好控制（可接受，因預設低噪音）。
 
@@ -291,19 +324,36 @@
 
 **目標**：建立可重複使用的排程 job 機制（本輪內 Phase 31 報表會重用）；第一個 job = 到期掃描與摘要提醒。
 
+**Job 執行流**
+
+```
+外部 cron ─(PAT)─▶ POST /api/jobs/{job_name}/run
+                        │
+                        ▼
+              job registry（expiry-scan；report.monthly）
+                        ├──▶ 掃描門檻（Asia/Taipei 今天）
+                        ├──▶ expiry_alerts 查／寫（UNIQUE 冪等）
+                        ├──▶ 摘要 emit（尊重 Phase 23 偏好）
+                        └──▶ job_runs 記錄（設定頁顯示／停跑警示）
+```
+
 **範圍**
 - **機制（決策：外部 cron ＋ 冪等 job 端點）**
-  - 與 Phase 21 `process-retries` 模式一致：`POST /api/jobs/{job_name}/run`（或每 job 一端點，如 `POST /api/jobs/expiry-scan`），回 `{ job, processed, emitted }`
+  - 與 Phase 21 `process-retries` 模式一致：**定案通用端點** `POST /api/jobs/{job_name}/run`（job registry 登錄制；Phase 31 `report.monthly` 共用），回 `{ job, processed, emitted }`；未知 `job_name` → 404；**觸發權＝帳號管理員（admin）；非管理員 → 403**（比 `process-retries` 更嚴；cron 文件範例使用管理員 PAT）
   - 認證：登入使用者（PAT）即可，語義同 `process-retries`（只處理已排程工作、不外洩 payload）
   - 文件補 cron 範例：crontab ／ systemd timer ／ GitHub Actions schedule
   - **冪等性**：同日重跑不重複發送（dedupe 記錄 `(batch_id, level, date)`）
-  - 不使用 `apscheduler`（依賴閒置中；避免多 worker 生命週期複雜度）。未來若有分鐘級需求再另行評估
+  - 不使用 `apscheduler`（依賴閒置中；避免多 worker 生命週期複雜度）；**展開時一併移除 `apscheduler` 依賴（pyproject＋lock）**。未來若有分鐘級需求再另行評估
+- **DB**
+  - `job_runs`：`job_name`、`status`、`started_at`、`finished_at`、`result`(JSON) — 供設定頁「上次執行時間」與停跑觀測
+  - `expiry_alerts`：`batch_id`(FK)、`level`(`d30|d7|d0|expired`)、`sent_on`(date) — UNIQUE(`batch_id`, `level`, `sent_on`)，冪等 dedupe 記錄
 - **到期掃描邏輯**
   - 門檻：預設 30 天前、7 天前、當天、過期後（`expired` 每日彙總；**14 天後停止推播、站內保留**）
   - **摘要式**：每用戶每日最多一則彙總（「3 件即將到期、1 件已過期」＋ deep link），非逐批轟炸
   - 尊重 Phase 23 偏好（含 Email/LINE/TG/Push 過濾）
+- **失敗語義**：執行中途異常 → `job_runs.status = failed` ＋ error 摘要；**已寫入的 alerts 保留**（部分成功可接受）；重跑依 dedupe 只補未送出的差額、不重複
 - **Web**
-  - 設定頁「通知與提醒」群組顯示「提醒排程」：目前門檻、上次執行時間（唯讀；門檻可調為 stretch）
+  - 設定頁「通知與提醒」群組顯示「提醒排程」：目前門檻、上次執行時間（唯讀；門檻可調為 stretch）；**停跑警示：未執行過或超過預期間隔 → 顯示警示文案＋cron 設定文檔連結**
   - 儀表板到期卡片（Phase 22 已建）疊加「今天已彙總提醒」註記（卡片角落 muted 小字＋鈴鐺 icon；不改變排序與尺寸）
 
 **驗收大綱**
@@ -311,6 +361,10 @@
 - 冪等：同日重跑 emit 次數不變
 - 偏好過濾（關閉 → 不外送、站內也不建立）
 - 無批次物品、無到期批次 → job 正常結束且零輸出
+- 停跑警示：`job_runs` 為空或 last_run 過舊 → 設定頁顯示警示態
+- 中途失敗 → `job_runs.status` 正確轉 failed；重跑只補未送、不重複
+- 端到端整合：進貨（含到期日）→ 掃描 → emit → 管道過濾 → deep link 落點存在
+- 權限：非管理員觸發 → 403；未知 `job_name` → 404
 
 **依賴**：Phase 22（資料）、Phase 23（偏好）
 
@@ -358,8 +412,9 @@
 - **DB（migration）**：`locations` 重構
   - 欄位：`id`、`owner_id`、`parent_id`(self-FK, nullable)、`name`、`kind`（選填：`floor|room|shelf|box|other` 或自由文字）、`sort_order`、`floor_plan_image_id`(保留)
   - 查詢策略：adjacency list ＋ recursive CTE（PG 與 SQLite 測試皆支援）；材料化路徑（materialized path）為後續優化選項
-  - **遷移**：舊 floor/room/zone → 一次性長出對應層級節點並重新指向（best-effort）。**保證：每件物品遷移後仍有 location_id（無孤兒）**；不保證路徑保真，但遷移報告列出節點合併數；之後在使用者 UI 整理
+  - **遷移**：舊 floor/room/zone → 一次性長出對應層級節點並重新指向（best-effort）。**保證：每件物品遷移後仍有 location_id（無孤兒）**；不保證路徑保真，但遷移報告列出節點合併數、孤兒節點數與未指派物品數；之後在使用者 UI 整理
   - `items.location_id` FK 維持，指向任意節點
+- **warehouse 關係**：warehouse 維持獨立軸、樹不吸收倉庫；Phase 27/31 的 location 維度一律以樹節點為準（warehouse 單獨分組），避免報表分組重複或遺漏
 - **API**
   - 既有 locations CRUD 改造（支援 `parent_id`、move、reorder）
   - `GET /api/locations/tree`、`GET /api/locations/{id}/path`
@@ -425,15 +480,17 @@
   - 驗證 `format_version`；回 per-entity 計數摘要與錯誤列舉
   - **衝突策略（兩模式）**
     - `create_only`（預設、安全）：所有實體以新 id 建立；名稱衝突自動加後綴；不覆蓋任何現有資料
-    - `replace`（高風險）：清空當前帳號資料再匯入；UI 需輸入確認字串
+    - `replace`（高風險）：**單一資料庫交易**清空當前帳號資料並匯入，失敗全數回滾；UI 需輸入確認字串＋匯入前自動提示先匯出備份
   - **不還原**：`audit_logs`、`api_tokens`（安全）；webhooks 還原為**停用**狀態（安全預設，不自動啟用）
-  - 關聯重建：category/location/warehouse/tag 以名稱匹配或建立；loans、quantity_logs 以 id-map 重建
+  - 關聯重建：category/location/warehouse/tag 以名稱匹配或建立；loans、quantity_logs、`item_batches` 以 id-map 重建；匯入完成後逐 item 對帳 `items.quantity == Σ 未耗盡批次`（不一致列入結果報告）
+  - **還原範圍與版本**：可還原實體＝當期 schema 全量（含 22–27、31 各 phase 新增欄位/表：`barcode`/`barcode_lookups`、位置樹、`cost`/幣別、`notification_preferences`、`reports` 等，以實際展開時序盤點登錄）；`format_version` 遞增規則＝新增可選欄位 +1、破壞性變更 +1，並附新舊相容矩陣（舊檔可匯入；新檔於舊版明確拒絕）
 - **Web**：設定頁「整合與資料」群組「備份」頁 — 匯出（既有）＋ 匯入（選檔 → dry-run 摘要（per-entity「現有 → 匯入後」對照，見 §5.4）→ 確認 → 結果報告三態）
 
 **驗收大綱**
 - round-trip：export → import 到空帳號 → 資料等價
 - dry-run 零寫入
-- `replace` 模式隔離性（不影響其他帳號）
+- `replace` 模式隔離性（不影響其他帳號）與失敗回滾（匯入中途錯誤 → 原資料完整）
+- 還原後 invariant 成立（批次物品對帳）
 - 大檔處理（串流或大小上限）
 
 ---
@@ -455,10 +512,11 @@
 | 清單編輯 | ✅ | ✅ | ✅ | ❌ |
 | 群組管理/角色指派 | ✅ | ✅ | ❌ | ❌ |
 
+- **DB（migration）**：`group_members.role`（`admin | editor | viewer`，default `editor`＋CHECK）；既有成員 backfill → `editor`；`owner` 唯一事實來源維持 `groups.owner_id`（權限檢查先判 owner，再判 role）
 - **API**：權限檢查集中於 visibility/group service；`PATCH /api/groups/{id}/members/{user_id}` 角色變更；變更寫 audit log
 - **Web**：群組詳情頁角色管理；viewer 依 §5.5 旅程契約（編輯入口不渲染＋首次一次性說明＋詳情頁引導句；403 為後端防線）
 
-**驗收大綱**：矩陣式測試（角色 × 操作）、越權 403、audit 記錄
+**驗收大綱**：矩陣式測試（角色 × 操作）、越權 403、audit 記錄、遷移後既有群組權限零回歸（含 owner 判定）
 
 ---
 
@@ -469,13 +527,13 @@
 **範圍**
 - **機制**：重用 Phase 24 job 機制（`report.monthly`）；每月 1 日生成上月報表
 - **內容**：新增物品數、消耗（批次/數量調整）、借出/歸還、過期與即將到期、**庫存估值變化（依賴 27）**、熱門分類/位置
-- **DB**：`reports`（`user_id`、`period`、`payload` JSON、`generated_at`）
-- **交付**：站內通知（`report_ready` 類型）＋ Email HTML（CSV 附件為 stretch）；Email 與站內詳情共用同一 payload 渲染（站內詳情即 Email 預覽）；`/reports` 頁瀏覽歷史（清單 + 詳情）
+- **DB**：`reports`（`user_id`、`period`（`YYYY-MM`，Asia/Taipei）、`payload` JSON、`generated_at`）；**範圍**＝該使用者可見的全部物品（含群組共用），不摻入他人私人資料
+- **交付**：站內通知（`report_ready` 類型）＋ Email HTML（CSV 附件為 stretch）；Email 與站內詳情共用同一 payload 渲染（站內詳情即 Email 預覽）；**Email 最小契約**：雙語模板（zh-TW／en 依收件者偏好）＋ plain-text fallback＋CSV 檔名 i18n；`/reports` 頁瀏覽歷史（清單 + 詳情）
 - **導覽**：`/reports` 併入「分析」群組（見 §5.3）；行動版 drawer 二層分組元件計入本 phase
 - **設定**：開啟/關閉（預設開，置於設定「通知與提醒」群組）；先做月報，週報 stretch
 - **時區**：固定 `Asia/Taipei`（見 §5.6）
 
-**驗收大綱**：排程冪等、空資料用戶跳過不發、內容正確性（fixture 對帳）、Email fail-soft
+**驗收大綱**：排程冪等、空資料用戶跳過不發、內容正確性（fixture 對帳）、Email fail-soft、月初邊界（Asia/Taipei，含 UTC 差異）
 
 **依賴**：Phase 24（排程機制）、Phase 27（估值資料）
 
@@ -487,14 +545,14 @@
 
 **範圍**
 - **批次入庫流程**
-  - 多圖上傳（多選檔案/連續拍照）→ 逐一呼叫既有 Gemini suggest 流程（背景/佇列，顯示進度）
+  - 多圖上傳（多選檔案/連續拍照）→ 上傳即建 `pending` 草稿；**處理模型：伺服器端狀態機＋前端逐張觸發** — 前端依序呼叫 `POST /api/ai/drafts/{id}/process`（伺服器單張呼叫既有 Gemini suggest；成功 → `ready`、失敗 → `failed`＋error）；**不引入背景 worker**
   - **草稿審核 UI**：卡片式（縮圖、AI 名稱/描述/分類/標籤建議、可編輯、接受/丟棄）；四態卡（排隊/辨識中/失敗重試/完成）＋頂部批量條（全選／全部接受／全部丟棄），狀態與離開恢復見 §5.4
   - 審核完成 → 批次建立；失敗可重試；速率控制（Gemini 配額）
-- **DB**：`ai_draft_items`（`owner_id`、`source: batch_photo | receipt`（為 33 預留）、`image_id`、`payload` JSON、`status: pending|accepted|discarded`、`created_at`）— 存伺服器端，刷新不丟
+- **DB**：`ai_draft_items`（`owner_id`、`source: batch_photo | receipt`（為 33 預留）、`image_id`、`payload` JSON、`status: pending|processing|ready|failed|accepted|discarded`、`error`(nullable)、`processed_at`(nullable)、`created_at`）— 存伺服器端，刷新不丟（四態卡以狀態為唯一來源）
 - **智慧分類建議**：以本人歷史資料生成「名稱關鍵詞 → 分類/位置/標籤」局部規則；AI 建議附「依歷史：廚房」徽章；LLM 不可用時規則仍生效
 - **隱私**：僅使用本人資料
 
-**驗收大綱**：批處理狀態機、配額錯誤處理、草稿編輯後建立正確、建議排序（歷史優先）
+**驗收大綱**：批處理狀態機、配額錯誤處理、草稿編輯後建立正確、建議排序（歷史優先）、失敗重試與離開恢復（伺服器端狀態為唯一來源）
 
 ---
 
@@ -525,7 +583,7 @@
 - **物品問答**：對檢索出的 top-k 物品摘要問答，回答附引用連結；明確聲明「以系統資料為限」
 - **成本/安全**：rate limit、每日配額、prompt injection 防護（物品名/描述視為資料，非指令）；opt-in 開關（送出物品摘要至 Gemini）
 
-**驗收大綱**：filters 轉譯純函式測試（含歧義句）、注入案例、無 LLM 時 fallback、配額耗盡行為
+**驗收大綱**：filters 轉譯純函式測試（含歧義句）、注入案例、無 LLM 時 fallback、配額耗盡行為、golden eval（≥20 句→filters；mock 模式進 CI、`EVAL_LIVE=1` 手動呼叫 Gemini 計分）
 
 ---
 
@@ -534,7 +592,7 @@
 ### 排程機制（Phase 24 建立、31 重用）
 - 模式：**外部 cron ＋ 冪等 job 端點**（與 Phase 21 `process-retries` 一致）
 - 認證：登入（PAT）；部署文件補 cron 範例
-- `apscheduler` 依賴為 v1 遺留、維持未啟用；若未來需要分鐘級排程再評估 worker 進程
+- `apscheduler` 依賴為 v1 遺留、維持未啟用（Phase 24 展開時移除）；若未來需要分鐘級排程再評估 worker 進程
 - 所有 job 必須冪等且可重入（同日重跑安全）
 
 ### 位置樹查詢
@@ -549,6 +607,7 @@
 - API 變更後 regen `packages/api-types`；web `tsc --noEmit`
 - CHANGELOG 逐 phase 條目（`2.0.0-alpha.22` 起續編）
 - migration 從 `0016` 起編號
+- **LLM eval（小型）**：`apps/api/evals/` — golden cases（jsonl）＋ pytest 評分；mock 模式進 CI、`EVAL_LIVE=1` 手動呼叫 Gemini 計分；34 起累積，32／33 prompt 變更時同步補 case；不阻塞 merge
 
 ### 備份紀律
 - Phase 26（位置樹）執行前，**強制** `GET /api/backup/export` 留存；若 Phase 29 已提前完成，改用還原流程驗證
@@ -580,7 +639,7 @@
 |---|------|------|------|
 | 1 | Phase 26 破壞性遷移 | 位置樹砍掉重建 | 遷移前強制備份；dry-run 腳本；考慮 29 提前 |
 | 2 | 通知量體 | 到期提醒上線後量體成長 | 23 偏好中心先於 24；摘要式每日一則 |
-| 3 | Gemini 成本/配額 | 32–34 大量使用 | per-user rate limit、每日配額、規則式 fallback |
+| 3 | Gemini 成本/配額 | 32–34 大量使用 | per-user rate limit（額度耗盡僅影響該用戶，非全站）、每日配額、規則式 fallback |
 | 4 | 外部條碼 provider 穩定性 | Open Food Facts / Open Library 可用性 | 快取、逾時、fail-soft、手動輸入保底 |
 | 5 | 批次與盤點整合 | 差額如何反映到批次 | 調整批次方案（見 Phase 22 決策 2），實作時驗證 |
 | 6 | 幣別假設 | 單一幣別、無匯率 | 已決策；文件註明 |
@@ -598,15 +657,21 @@
 3. TDD 實作 → API pytest ＋ Web vitest 全綠 → regen api-types → typecheck
 4. CHANGELOG 條目 → merge 回 main → 更新 `docs/v2-roadmap.md` Phase 表
 5. 每個里程碑結束時回顧本文件，按實際狀況調整後續排序
+6. **平行化策略（多 worktree）**：Lane A：22 → 24（共用 items／batches／jobs）；Lane A2：23（settings/web，可與 24 平行）；Lane B：26（locations 破壞性，單獨線＋遷移前備份）；Lane C：25（scan／barcode）；Lane D：27 → 31（statistics／reports）；Lane E：28／29／30（互不衝突）；Lane F：32 → 33 → 34（AI 鏈）。衝突熱點：settings 目錄（23 首發，其後各線僅加子路由頁）、items 模組（22／25／26／27 觸碰 → 序列化或小心 rebase）
 
 ---
 
 ## GSTACK REVIEW REPORT
 
-> `/plan-design-review`（2026-10-15）× Item-Manage-System，審查對象：本文件（main 分支未提交變更）。
-> gstack designer 未安裝 → 文字審查（無視覺 mockup）。Outside voices：2 份獨立設計批評（強模型＋免費模型），共識項已內化為 §五契約。
+> Item-Manage-System × 本文件（main 分支）。gstack 工具鏈未安裝 → 文字模式（best effort：review-log／telemetry 以本附錄＋`~/.gstack/projects/guan4tou2-Item-Manage-System/` 檔案代替）。
+> 2026-10-15 完成兩輪計畫審查：`/plan-design-review`（§五契約、D3–D17）＋ `/plan-eng-review`（21 findings 全數批准入稿）。Outside voices：設計 2 份＋工程 2 份（含免費模型）獨立報告，已交叉分析。
 
-### 評分軌跡
+| Runs | Status | Findings |
+|------|--------|----------|
+| `/plan-design-review` · 2026-10-15 | CLEAR | 7 passes；score 3→9/10；D3–D17 定案入稿 |
+| `/plan-eng-review` · 2026-10-15 | CLEAR | 21 findings（F1–F6／S2-A~C／S3-A~E／S4-A／OV-1~6）全數 fold；0 unresolved |
+
+### 評分軌跡（plan-design-review）
 
 | Pass | 維度 | 審查前 | 審查後 |
 |------|------|--------|--------|
@@ -623,7 +688,10 @@
 - 完整視覺重設計、品牌重塑（維持現有設計系統）
 - Background Sync／離線新增；稽核查詢 UI（本輪已排除）
 - 品類化到期策略（N=7 固定；未來以「物品層級覆寫」擴充）
-- DESIGN.md 建立、視覺 mockup 產出（列為後續）
+- 視覺 mockup 產出（後續；`DESIGN.md` 已於 consultation 產出）
+- （eng）完整 LLM eval 平台（僅小型 golden harness）
+- （eng）Email 深色／無障礙完整契約（僅最小契約：雙語＋plain-text fallback）
+- （eng）位置樹路徑保真（維持 best-effort；遷移報告列合併／孤兒／未指派數）
 
 ### What already exists（已內化的既有資產）
 
@@ -632,6 +700,9 @@
 - §5.4 狀態表重用 `skeleton`／`sonner` toast／`alert-dialog`／`Badge`
 - §5.5 到期模式視圖為 items 列表擴充模式，非新頁面
 - §5.7 FAB 為新 shell 元件；樹鍵盤操作沿用既有無障礙模式
+- （eng）job 模式沿用 `process-retries` 外部 cron 慣例；通知 fan-out 過濾點既有（`emit()`／`deliver_all()`）
+- （eng）備份 export 既有（`format_version:1`）；測試三層資產既有（pytest 454／vitest 41 檔／playwright 11 specs）
+- （eng）`QuantityLog`／`users.preferences` JSONB／Gemini `suggest_from_image` 既有；到期標註概念來自 v1（移植為批次模型）
 
 ### 實作任務（各 phase 展開時帶入）
 
@@ -644,6 +715,15 @@
 | §5.5 | 22（到期模式視圖）、30（viewer） | 旅程與回饋實作 |
 | §5.6 | 22（tokens）、27（金額格式）、32（AiMark） | token 建立＋對比度測試 |
 | §5.7 | 25（FAB）、26（樹雙模式）、30（a11y） | 響應式與無障礙驗收 |
+| eng F5・S4-A | 22 | FOR UPDATE＋Asia/Taipei helper＋聚合索引＋query count 斷言 |
+| eng F1・S2-B・S2-C・OV-5 | 24 | job_runs／expiry_alerts、admin 觸發（403）、失敗語義、停跑警示、移除 apscheduler、未知 job→404 |
+| eng F2 | 30 | `group_members.role`＋backfill＋矩陣／403 測試 |
+| eng F3・OV-2 | 29 | 全量實體＋format_version 政策＋交易回滾＋invariant 對帳 |
+| eng F4・OV-4 | 32 | 狀態機 enum＋逐張觸發＋恢復；§5.2 個人＞偏好 AI 開關 |
+| eng S2-A・S3-A | 23 | 10 面板＋taxonomy＋admin 可見性 CRITICAL 回歸；API 契約測試 |
+| eng S3-B~E・S4-A | 23/24/31/34 | 契約／端到端／月初時區／golden eval（`apps/api/evals/`） |
+| eng OV-1・OV-3・OV-5 | 26/31 | warehouse 正交＋報告檢查列；報表 scope／period＋Email 契約 |
+| eng（inline 圖） | 22/24/29/30/32 | 批次 service／jobs／backup import／visibility／ai draft 服務加 ASCII 流程註解 |
 
 ### 待辦（TODOS.md）
 
@@ -657,4 +737,10 @@
 - 2026-10-15：`/plan-design-review` on `docs/plans/2026-10-15-next-iteration-roadmap.md`，7 passes 完成
 - 決策 D3–D17 已與使用者逐項確認並寫入本文件（§五 ＋ 各 phase 範圍）
 - Outside voices：2 份獨立報告已交叉分析（高信心共識：儀表板層級、IA 崩潰、狀態缺口、備份信任斷點、viewer 體驗）
+- 2026-10-15：`/plan-eng-review` 完成（Sections 1–4 ＋ outside voice ×2 ＋ required outputs）；21 findings 全數經使用者逐一批准並已入稿；Test Plan Artifact＝`docs/plans/2026-10-15-eng-review-test-plan.md`；tasks JSONL＝`~/.gstack/projects/guan4tou2-Item-Manage-System/tasks-eng-review-*.jsonl`
+- 工程 outside voices：2 份獨立報告交叉分析（採納：warehouse 正交、還原版本政策、報表範圍／Email 契約、AI 入口落點、三項澄清；裁定不動：viewer enforcement 已覆蓋、nav 11 已核實、M3 依賴已聲明）
 - 已知限制：本機未安裝 gstack 工具鏈（designer/browse/log），review log 以本附錄為正式紀錄
+
+**VERDICT:** DESIGN + ENG CLEARED — ready to implement
+
+NO UNRESOLVED DECISIONS
