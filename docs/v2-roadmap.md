@@ -78,10 +78,10 @@ v1（Flask + Jinja2）程式碼仍保留於 `app/`、`templates/`、`static/` �
 
 ## 後續候選（尚未排程）
 
-依價值排序。完成項目已從此列表移到上方的 Phase 表格。
+> **2026-10-15 更新**：新一輪規劃（Phase 22–34）已移至 [`plans/2026-10-15-next-iteration-roadmap.md`](plans/2026-10-15-next-iteration-roadmap.md)，涵蓋批次到期管理、通知偏好、排程自動化、條碼掃描、位置樹重建、估值、Webhook UI、備份還原、權限細化、定期報表與 AI 深化。原候選處置如下：
 
-1. **Background Sync**：`/items/new` 在離線狀態接受新增，同步後 flush（需要 IndexedDB 佇列 + SW `sync` 事件）
-2. **多 location 階層**：目前 floor/room/zone 是 flat 三層，若需要巢狀 tree 會重做 schema
-3. **Webhook retry UI**：Phase 21 已加後端與 `process-retries` 端點；前端可再補 delivery 列表視覺化 + 手動 retry 按鈕
+1. **Background Sync**：本次未排入，保留於新 roadmap 的〈未排程候選〉
+2. **多 location 階層**：已排入 → 新 roadmap Phase 26（多層位置樹重建）
+3. **Webhook retry UI**：已排入 → 新 roadmap Phase 28（Webhook 管理 UI）
 
 排程時請把選定項目升成正式 phase，走既有的 worktree → 測試 → merge 節奏。
