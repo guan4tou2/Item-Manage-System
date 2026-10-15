@@ -82,18 +82,18 @@
 - Test: `apps/api/tests/test_batches_service.py`
 
 **TODO:**
-- [ ] service 模組 docstring 放 roadmap 的「數量 invariant 流」ASCII 圖（inline 圖落點之一）
-- [ ] 每個會動數量的 public 函式開頭：`select(Item) … .with_for_update()`（PG 鎖列；SQLite no-op 由測試證明不影響）
-- [ ] `create_batch(session, owner_id, item_id, body)`：首建自動 `track_batches=true`（決策 3）；`body.quantity` 省略時＝`item.quantity`（若 item.quantity=0 則必填）；`received_at` 省略時＝`today_taipei()`；寫入後 recalc＋log（`reason=f"batch:add:{batch_id}"`）
-- [ ] `update_batch`（數量/到期日/備註）：絕對值設定；`quantity ≥ 1`（0 走 consume/delete）；recalc＋log（`batch:update`）
-- [ ] `delete_batch`：硬刪（校正誤輸入；已耗盡歷史另由 `is_depleted` 保留）；recalc＋log（`batch:delete`）
-- [ ] `consume_from_batch(batch_id, qty)`：**原子條件 UPDATE** `SET quantity = quantity - :q, is_depleted = (quantity - :q <= 0) WHERE id=:id AND item_id=:item AND quantity >= :q AND is_depleted=false` → `rowcount == 0` → 409；recalc＋log（`batch:consume:{batch_id}`）
-- [ ] `consume_fefo(qty)`：讀取未耗盡批次排序（`CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END, expiry_date, received_at, created_at`；避免方言 NULLS LAST 差異）；Σ < qty → 409「庫存不足」且零變更；逐批原子扣除；recalc＋log（`batch:fefo`）
-- [ ] `disable_tracking(item_id)`：**合併**——刪除全部批次、`items.quantity` 維持（決策 4）、`track_batches=false`；不存在「關閉但有批次」狀態
-- [ ] `adjust_for_stocktake(session, owner_id, item, stocktake_id, actual_qty)`：`delta > 0` → 建批次（note=`stocktake:<id>`）；`delta < 0` → FEFO 消耗（因 invariant，Σ ≥ |delta| 恆成立）；log（`stocktake:<id>`）
-- [ ] recalc 以**單一 SQL**：`UPDATE items SET quantity = (SELECT COALESCE(SUM(quantity),0) FROM item_batches WHERE item_id=:id AND is_depleted=false) WHERE id=:id`；之後 `session.refresh(item)` 再回傳；commit 次序＝先批次變更＋recalc（單一 commit），後 `log_quantity_change`（沿用「log 自帶 commit」既有慣例）
-- [ ] 測試 helper `assert_invariant(session, item_id)`：`item.quantity == Σ 未耗盡`
-- [ ] 測試：FEFO 跨批次／同到期日 tie-break／剛好歸零（`is_depleted=true` 且不再計入）／超額 409 且零變更／**stale-read（取舊批次列後他人先扣，條件 UPDATE 仍安全、不得負數）**／首建沿用 `item.quantity`／disable 後批次清空且 quantity 不變／stocktake 正負差／`QuantityLog.reason` 逐值斷言
+- [x] service 模組 docstring 放 roadmap 的「數量 invariant 流」ASCII 圖（inline 圖落點之一）
+- [x] 每個會動數量的 public 函式開頭：`select(Item) … .with_for_update()`（PG 鎖列；SQLite no-op 由測試證明不影響）
+- [x] `create_batch(session, owner_id, item_id, body)`：首建自動 `track_batches=true`（決策 3）；`body.quantity` 省略時＝`item.quantity`（若 item.quantity=0 則必填）；`received_at` 省略時＝`today_taipei()`；寫入後 recalc＋log（`reason=f"batch:add:{batch_id}"`）
+- [x] `update_batch`（數量/到期日/備註）：絕對值設定；`quantity ≥ 1`（0 走 consume/delete）；recalc＋log（`batch:update`）
+- [x] `delete_batch`：硬刪（校正誤輸入；已耗盡歷史另由 `is_depleted` 保留）；recalc＋log（`batch:delete`）
+- [x] `consume_from_batch(batch_id, qty)`：**原子條件 UPDATE** `SET quantity = quantity - :q, is_depleted = (quantity - :q <= 0) WHERE id=:id AND item_id=:item AND quantity >= :q AND is_depleted=false` → `rowcount == 0` → 409；recalc＋log（`batch:consume:{batch_id}`）
+- [x] `consume_fefo(qty)`：讀取未耗盡批次排序（`CASE WHEN expiry_date IS NULL THEN 1 ELSE 0 END, expiry_date, received_at, created_at`；避免方言 NULLS LAST 差異）；Σ < qty → 409「庫存不足」且零變更；逐批原子扣除；recalc＋log（`batch:fefo`）
+- [x] `disable_tracking(item_id)`：**合併**——刪除全部批次、`items.quantity` 維持（決策 4）、`track_batches=false`；不存在「關閉但有批次」狀態
+- [x] `adjust_for_stocktake(session, owner_id, item, stocktake_id, actual_qty)`：`delta > 0` → 建批次（note=`stocktake:<id>`）；`delta < 0` → FEFO 消耗（因 invariant，Σ ≥ |delta| 恆成立）；log（`stocktake:<id>`）
+- [x] recalc 以**單一 SQL**：`UPDATE items SET quantity = (SELECT COALESCE(SUM(quantity),0) FROM item_batches WHERE item_id=:id AND is_depleted=false) WHERE id=:id`；之後 `session.refresh(item)` 再回傳；commit 次序＝先批次變更＋recalc（單一 commit），後 `log_quantity_change`（沿用「log 自帶 commit」既有慣例）
+- [x] 測試 helper `assert_invariant(session, item_id)`：`item.quantity == Σ 未耗盡`
+- [x] 測試：FEFO 跨批次／同到期日 tie-break／剛好歸零（`is_depleted=true` 且不再計入）／超額 409 且零變更／**stale-read（取舊批次列後他人先扣，條件 UPDATE 仍安全、不得負數）**／首建沿用 `item.quantity`／disable 後批次清空且 quantity 不變／stocktake 正負差／`QuantityLog.reason` 逐值斷言
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_batches_service.py`

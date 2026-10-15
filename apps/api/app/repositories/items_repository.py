@@ -35,12 +35,22 @@ def _load_options():
     )
 
 
-async def get_owned(session: AsyncSession, owner_id: UUID, item_id: UUID) -> Item | None:
+async def get_owned(
+    session: AsyncSession,
+    owner_id: UUID,
+    item_id: UUID,
+    *,
+    for_update: bool = False,
+) -> Item | None:
     stmt = (
         _base_query(owner_id)
         .where(Item.id == item_id)
         .options(*_load_options())
     )
+    if for_update:
+        # PG 才有效：鎖 item 列序列化批次寫入；SQLite 方言會省略，
+        # 正確性另由 batches_repository 的條件式 UPDATE 承擔。
+        stmt = stmt.with_for_update()
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
