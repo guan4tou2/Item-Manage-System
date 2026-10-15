@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest"
 
-import { applyUpdate, wireUpdateDetector } from "./sw-update-detector"
+import { applyUpdate, shouldReloadOnControllerChange, wireUpdateDetector } from "./sw-update-detector"
 
 type Listener = (ev?: unknown) => void
 
@@ -185,5 +185,47 @@ describe("applyUpdate", () => {
     const waiting = makeFakeWorker("installed")
     applyUpdate(waiting as unknown as ServiceWorker)
     expect(waiting.postMessage).toHaveBeenCalledWith({ type: "SKIP_WAITING" })
+  })
+})
+
+describe("shouldReloadOnControllerChange", () => {
+  it("首裝接管（頁面原本不受控制）不重載", () => {
+    expect(
+      shouldReloadOnControllerChange({
+        reloaded: false,
+        initiallyControlled: false,
+        updateAccepted: false,
+      }),
+    ).toBe(false)
+  })
+
+  it("更新接管（頁面原本已受控制）重載", () => {
+    expect(
+      shouldReloadOnControllerChange({
+        reloaded: false,
+        initiallyControlled: true,
+        updateAccepted: false,
+      }),
+    ).toBe(true)
+  })
+
+  it("使用者已接受更新時重載（即使頁面原本不受控制）", () => {
+    expect(
+      shouldReloadOnControllerChange({
+        reloaded: false,
+        initiallyControlled: false,
+        updateAccepted: true,
+      }),
+    ).toBe(true)
+  })
+
+  it("已重載過就不再重載（避免迴圈）", () => {
+    expect(
+      shouldReloadOnControllerChange({
+        reloaded: true,
+        initiallyControlled: true,
+        updateAccepted: true,
+      }),
+    ).toBe(false)
   })
 })

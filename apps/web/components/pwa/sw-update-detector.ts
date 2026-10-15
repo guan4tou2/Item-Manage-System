@@ -10,7 +10,11 @@
  *   3. This detector fires `onUpdateReady(waitingWorker)`.
  *   4. Caller shows a prompt; on accept, calls `applyUpdate(waitingWorker)`.
  *   5. Detector sees `controllerchange` and calls `onControllerChange()`.
- *   6. Caller reloads the page.
+ *   6. Caller reloads the page — but only when the page was already
+ *      controlled or the user accepted the prompt (see
+ *      `shouldReloadOnControllerChange`). The first-install claim of an
+ *      uncontrolled page must NOT reload: it would wipe whatever the user
+ *      has typed since load (and makes e2e suites flaky).
  *
  * Extracted as a pure function so we can unit-test the branching without
  * spinning up a real ServiceWorker.
@@ -71,4 +75,22 @@ export function wireUpdateDetector(
  */
 export function applyUpdate(waiting: ServiceWorker): void {
   waiting.postMessage({ type: "SKIP_WAITING" })
+}
+
+/**
+ * Decide whether a `controllerchange` should reload the page.
+ *
+ * `sw.js` calls `clients.claim()` on activate, so the browser fires
+ * `controllerchange` both for the first-ever install (page was uncontrolled,
+ * null → worker) and for update takeovers (worker → new worker). Only the
+ * latter needs a reload; reloading on first install loses in-flight input on
+ * every first visit.
+ */
+export function shouldReloadOnControllerChange(state: {
+  reloaded: boolean
+  initiallyControlled: boolean
+  updateAccepted: boolean
+}): boolean {
+  if (state.reloaded) return false
+  return state.initiallyControlled || state.updateAccepted
 }

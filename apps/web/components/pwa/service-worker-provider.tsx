@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
-import { applyUpdate, wireUpdateDetector } from "./sw-update-detector"
+import { applyUpdate, shouldReloadOnControllerChange, wireUpdateDetector } from "./sw-update-detector"
 
 export function ServiceWorkerProvider() {
   const t = useTranslations()
@@ -14,6 +14,9 @@ export function ServiceWorkerProvider() {
 
     let cleanup: (() => void) | null = null
     let reloaded = false
+    // 本頁載入起始時是否已受 SW 控制；首裝接管（null → worker）不重載。
+    const initiallyControlled = Boolean(navigator.serviceWorker.controller)
+    let updateAccepted = false
 
     navigator.serviceWorker
       .register("/sw.js")
@@ -25,12 +28,16 @@ export function ServiceWorkerProvider() {
               duration: Infinity,
               action: {
                 label: t("pwa.update.reload"),
-                onClick: () => applyUpdate(waiting),
+                onClick: () => {
+                  updateAccepted = true
+                  applyUpdate(waiting)
+                },
               },
             })
           },
           onControllerChange: () => {
-            if (reloaded) return
+            if (!shouldReloadOnControllerChange({ reloaded, initiallyControlled, updateAccepted }))
+              return
             reloaded = true
             window.location.reload()
           },
