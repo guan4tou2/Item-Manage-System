@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -72,6 +72,8 @@ class ItemRead(BaseModel):
     description: Optional[str]
     quantity: int
     min_quantity: Optional[int]
+    track_batches: bool = False
+    soonest_expiry: Optional[date] = None
     notes: Optional[str]
     is_favorite: bool
     image_id: Optional[UUID]

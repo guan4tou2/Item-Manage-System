@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -47,6 +48,21 @@ class LowStockItem(BaseModel):
     quantity: int
     min_quantity: int
     deficit: int  # min_quantity - quantity, always >= 1 when surfaced
+
+
+class ExpiryItem(BaseModel):
+    item_id: UUID
+    name: str
+    quantity: int
+    soonest_expiry: date | None
+    days_left: int | None
+    status: Literal["ok", "expiring", "expired"]
+
+
+class ExpiryStats(BaseModel):
+    expired_count: int
+    expiring_count: int
+    items: list[ExpiryItem]
 
 
 class ActiveLoan(BaseModel):

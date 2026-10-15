@@ -32,6 +32,7 @@ def _to_read(item: Item) -> ItemRead:
         "description": item.description,
         "quantity": item.quantity,
         "min_quantity": item.min_quantity,
+        "track_batches": item.track_batches,
         "notes": item.notes,
         "is_favorite": item.is_favorite,
         "image_id": item.image_id,
