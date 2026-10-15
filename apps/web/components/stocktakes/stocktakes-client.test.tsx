@@ -80,6 +80,7 @@ const item = {
   description: null,
   quantity: 10,
   min_quantity: null,
+  track_batches: false,
   notes: null,
   is_favorite: false,
   image_id: null,

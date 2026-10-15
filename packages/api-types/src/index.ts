@@ -505,6 +505,93 @@ export interface paths {
         patch: operations["update_item_api_items__item_id__patch"];
         trace?: never;
     };
+    "/api/items/{item_id}/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Batches */
+        get: operations["list_batches_api_items__item_id__batches_get"];
+        put?: never;
+        /** Create Batch */
+        post: operations["create_batch_api_items__item_id__batches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items/{item_id}/batches/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable Tracking */
+        post: operations["disable_tracking_api_items__item_id__batches_disable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items/{item_id}/batches/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Batch */
+        delete: operations["delete_batch_api_items__item_id__batches__batch_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Batch */
+        patch: operations["update_batch_api_items__item_id__batches__batch_id__patch"];
+        trace?: never;
+    };
+    "/api/items/{item_id}/batches/{batch_id}/consume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume From Batch */
+        post: operations["consume_from_batch_api_items__item_id__batches__batch_id__consume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items/{item_id}/consume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Consume Fefo */
+        post: operations["consume_fefo_api_items__item_id__consume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stats/overview": {
         parameters: {
             query?: never;
@@ -616,6 +703,23 @@ export interface paths {
         };
         /** Low Stock */
         get: operations["low_stock_api_stats_low_stock_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/stats/expiry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Expiry */
+        get: operations["expiry_api_stats_expiry_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1886,6 +1990,86 @@ export interface components {
              */
             created_at: string;
         };
+        /** BatchConsume */
+        BatchConsume: {
+            /** Quantity */
+            quantity: number;
+        };
+        /** BatchConsumeResult */
+        BatchConsumeResult: {
+            /** Consumed */
+            consumed: components["schemas"]["BatchConsumeSplit"][];
+        };
+        /** BatchConsumeSplit */
+        BatchConsumeSplit: {
+            /**
+             * Batch Id
+             * Format: uuid
+             */
+            batch_id: string;
+            /** Quantity */
+            quantity: number;
+        };
+        /** BatchCreate */
+        BatchCreate: {
+            /** Quantity */
+            quantity?: number | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Received At */
+            received_at?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /** BatchRead */
+        BatchRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Quantity */
+            quantity: number;
+            /** Expiry Date */
+            expiry_date: string | null;
+            /** Received At */
+            received_at: string | null;
+            /** Note */
+            note: string | null;
+            /** Is Depleted */
+            is_depleted: boolean;
+            /** Days Left */
+            days_left: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "expiring" | "expired";
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** BatchUpdate */
+        BatchUpdate: {
+            /** Quantity */
+            quantity?: number | null;
+            /** Expiry Date */
+            expiry_date?: string | null;
+            /** Note */
+            note?: string | null;
+        };
         /** Body_bulk_import_items_api_items_bulk_import_post */
         Body_bulk_import_items_api_items_bulk_import_post: {
             /**
@@ -2004,6 +2188,36 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** ExpiryItem */
+        ExpiryItem: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Soonest Expiry */
+            soonest_expiry: string | null;
+            /** Days Left */
+            days_left: number | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "expiring" | "expired";
+        };
+        /** ExpiryStats */
+        ExpiryStats: {
+            /** Expired Count */
+            expired_count: number;
+            /** Expiring Count */
+            expiring_count: number;
+            /** Items */
+            items: components["schemas"]["ExpiryItem"][];
         };
         /** GroupAddMember */
         GroupAddMember: {
@@ -2243,6 +2457,13 @@ export interface components {
             quantity: number;
             /** Min Quantity */
             min_quantity: number | null;
+            /**
+             * Track Batches
+             * @default false
+             */
+            track_batches: boolean;
+            /** Soonest Expiry */
+            soonest_expiry?: string | null;
             /** Notes */
             notes: string | null;
             /** Is Favorite */
@@ -4184,6 +4405,8 @@ export interface operations {
                 warehouse_id?: number | null;
                 tag_ids?: number[] | null;
                 favorite?: boolean | null;
+                expiry?: ("expired" | "expiring_soon") | null;
+                sort?: "expiry_asc" | null;
                 page?: number;
                 per_page?: number;
             };
@@ -4438,6 +4661,240 @@ export interface operations {
             };
         };
     };
+    list_batches_api_items__item_id__batches_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_batch_api_items__item_id__batches_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disable_tracking_api_items__item_id__batches_disable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_batch_api_items__item_id__batches__batch_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_batch_api_items__item_id__batches__batch_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    consume_from_batch_api_items__item_id__batches__batch_id__consume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchConsume"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    consume_fefo_api_items__item_id__consume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchConsume"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchConsumeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     overview_api_stats_overview_get: {
         parameters: {
             query?: never;
@@ -4598,6 +5055,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LowStockItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    expiry_api_stats_expiry_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpiryStats"];
                 };
             };
             /** @description Validation Error */

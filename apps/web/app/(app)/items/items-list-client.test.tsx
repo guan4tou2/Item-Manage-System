@@ -52,6 +52,7 @@ function item(id: string, name: string): ItemRead {
     description: null,
     quantity: 1,
     min_quantity: null,
+    track_batches: false,
     notes: null,
     is_favorite: false,
     image_id: null,

@@ -199,8 +199,8 @@
 - Modify: `packages/api-types/openapi.json`、`packages/api-types/src/index.ts`
 
 **TODO:**
-- [ ] `pnpm -F @ims/api-types gen:types`（`generate.mjs`）；確認 diff 僅含本 phase 端點與 schema
-- [ ] `pnpm -F @ims/web typecheck` 通過
+- [x] `pnpm -F @ims/api-types gen:types`（`generate.mjs`）；確認 diff 僅含本 phase 端點與 schema
+- [x] `pnpm -F @ims/web typecheck` 通過
 
 **Commands:**
 - `pnpm -F @ims/api-types gen:types && pnpm -F @ims/web typecheck`
