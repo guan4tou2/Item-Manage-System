@@ -7,6 +7,7 @@ from app.routes import (
     ai,
     auth,
     backup,
+    batches,
     categories,
     customization,
     external_channels,
@@ -55,6 +56,8 @@ def create_app() -> FastAPI:
     app.include_router(tags.router)
     app.include_router(items_bulk.router)
     app.include_router(items.router)
+    app.include_router(batches.router)
+    app.include_router(batches.item_consume_router)
     app.include_router(stats.router)
     app.include_router(notifications.router)
     app.include_router(lists.router)

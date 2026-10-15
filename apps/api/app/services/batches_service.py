@@ -265,7 +265,9 @@ async def disable_tracking(session: AsyncSession, owner_id: UUID, item_id: UUID)
     await batches_repository.delete_all_for_item(session, item_id)
     item.track_batches = False
     await session.commit()
-    return item
+    # commit 後重新載入（含 relationships），確保回傳物件可直接轉 ItemRead
+    fresh = await items_repository.get_owned(session, owner_id, item_id)
+    return fresh if fresh is not None else item
 
 
 async def adjust_for_stocktake(
