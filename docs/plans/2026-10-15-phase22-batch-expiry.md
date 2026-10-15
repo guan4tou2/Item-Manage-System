@@ -64,11 +64,11 @@
 - Test: `apps/api/tests/test_clock.py`
 
 **TODO:**
-- [ ] `today_taipei(now: datetime | None = None) -> date`：`datetime.now(UTC)` 轉 `ZoneInfo("Asia/Taipei")` 取 date；`now` 參數供測試注入
-- [ ] `days_left(expiry_date: date, *, today: date | None = None) -> int`
-- [ ] 常數 `EXPIRING_SOON_DAYS = 7`（列表篩選與 badge 共用；`status` 判定：`days_left < 0` → `expired`；`0 ≤ days_left ≤ 7` → `expiring`；其餘 `ok`）
-- [ ] 邊界測試：`2026-10-15T15:59:59Z` → 台北 `2026-10-15`（23:59:59）；`2026-10-15T16:00:00Z` → `2026-10-16`（00:00）；`days_left` 於 23:59/00:00 前後正確
-- [ ] 註記：本 helper 是全站「今天」唯一來源（含 Phase 24 門檻判定），其他模組不得再寫 `date.today()`
+- [x] `today_taipei(now: datetime | None = None) -> date`：`datetime.now(UTC)` 轉 `ZoneInfo("Asia/Taipei")` 取 date；`now` 參數供測試注入
+- [x] `days_left(expiry_date: date, *, today: date | None = None) -> int`
+- [x] 常數 `EXPIRING_SOON_DAYS = 7`（列表篩選與 badge 共用；`status` 判定：`days_left < 0` → `expired`；`0 ≤ days_left ≤ 7` → `expiring`；其餘 `ok`）
+- [x] 邊界測試：`2026-10-15T15:59:59Z` → 台北 `2026-10-15`（23:59:59）；`2026-10-15T16:00:00Z` → `2026-10-16`（00:00）；`days_left` 於 23:59/00:00 前後正確
+- [x] 註記：本 helper 是全站「今天」唯一來源（含 Phase 24 門檻判定），其他模組不得再寫 `date.today()`
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_clock.py`
