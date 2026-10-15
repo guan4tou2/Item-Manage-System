@@ -160,8 +160,8 @@
 - Test: `apps/api/tests/test_stats_routes.py`
 
 **TODO:**
-- [ ] 參數 `days: int = 30`（1–365）；回 `ExpiryStats`：`expired_count`、`expiring_count`（≤days）、`items`（soonest 最早前 10 筆，聚合單查詢；沿用既有 visibility/owner 範圍慣例，比照 `low_stock`）
-- [ ] 測試：空資料、僅過期、days 邊界（1／365／0 → 422）、排序正確
+- [x] 參數 `days: int = 30`（1–365）；回 `ExpiryStats`：`expired_count`、`expiring_count`（≤days）、`items`（soonest 最早前 10 筆，聚合單查詢；沿用既有 visibility/owner 範圍慣例，比照 `low_stock`）
+- [x] 測試：空資料、僅過期、days 邊界（1／365／0 → 422）、排序正確
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_stats_routes.py`
@@ -173,8 +173,8 @@
 - Test: `apps/api/tests/test_stocktake.py`（追加案例）
 
 **TODO:**
-- [ ] complete 流程逐列：`row.expected != actual` 時——`item.track_batches` → `batches_service.adjust_for_stocktake(...)`；否則維持現行直改路徑
-- [ ] 測試：正差建批次（note=`stocktake:<id>`）、負差 FEFO、完成後 invariant 成立、`QuantityLog.reason` 含 `stocktake:`、untracked 案例零回歸
+- [x] complete 流程逐列：`row.expected != actual` 時——`item.track_batches` → `batches_service.adjust_for_stocktake(...)`；否則維持現行直改路徑
+- [x] 測試：正差建批次（note=`stocktake:<id>`）、負差 FEFO、完成後 invariant 成立、`QuantityLog.reason` 含 `stocktake:`、untracked 案例零回歸
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_stocktake.py`

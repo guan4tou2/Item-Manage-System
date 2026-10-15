@@ -15,7 +15,7 @@ from app.schemas.stocktake import (
     StocktakeItemScan,
     StocktakeRead,
 )
-from app.services import item_history_service
+from app.services import batches_service, item_history_service
 
 
 async def _summary(session: AsyncSession, st: Stocktake) -> StocktakeRead:
@@ -130,6 +130,16 @@ async def complete_stocktake(
             continue
         item = await session.get(Item, row.item_id)
         if item is None:
+            continue
+        if item.track_batches:
+            # tracked 物品一律走批次入口（Phase 22 決策 2）：正差建批次、負差 FEFO
+            await batches_service.adjust_for_stocktake(
+                session,
+                owner_id,
+                item.id,
+                stocktake_id=st.id,
+                actual_quantity=row.actual_quantity,
+            )
             continue
         old_quantity = item.quantity
         item.quantity = row.actual_quantity

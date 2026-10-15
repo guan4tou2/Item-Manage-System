@@ -1,5 +1,10 @@
 from __future__ import annotations
+
+from datetime import timedelta
+
 import pytest
+
+from app.clock import today_taipei
 
 
 @pytest.fixture
@@ -55,3 +60,103 @@ async def test_scan_on_closed_stocktake_409(client, auth):
         json={"item_id": item["id"], "actual_quantity": 1},
     )
     assert r.status_code == 409
+
+
+async def test_stocktake_tracked_positive_delta_creates_batch(client, auth):
+    item = (
+        await client.post("/api/items", headers=auth, json={"name": "T", "quantity": 5})
+    ).json()
+    setup = await client.post(f"/api/items/{item['id']}/batches", headers=auth, json={})
+    assert setup.status_code == 201
+
+    st = (
+        await client.post("/api/stocktakes", headers=auth, json={"name": "批次盤點"})
+    ).json()
+    await client.post(
+        f"/api/stocktakes/{st['id']}/scan",
+        headers=auth,
+        json={"item_id": item["id"], "actual_quantity": 8},
+    )
+    done = await client.post(f"/api/stocktakes/{st['id']}/complete", headers=auth)
+    assert done.status_code == 200
+
+    fresh = (await client.get(f"/api/items/{item['id']}", headers=auth)).json()
+    assert fresh["quantity"] == 8
+
+    batches = (
+        await client.get(f"/api/items/{item['id']}/batches", headers=auth)
+    ).json()
+    assert len(batches) == 2
+    added = next(b for b in batches if b["note"] and b["note"].startswith("stocktake:"))
+    assert added["quantity"] == 3
+    assert added["expiry_date"] is None
+    assert sum(b["quantity"] for b in batches if not b["is_depleted"]) == 8
+
+    logs = (
+        await client.get(f"/api/items/{item['id']}/quantity-logs", headers=auth)
+    ).json()
+    assert any(
+        "stocktake:" in (l.get("reason") or "")
+        and l["old_quantity"] == 5
+        and l["new_quantity"] == 8
+        for l in logs
+    )
+
+
+async def test_stocktake_tracked_negative_delta_consumes_fefo(client, auth):
+    item = (
+        await client.post("/api/items", headers=auth, json={"name": "F", "quantity": 0})
+    ).json()
+    early = (
+        await client.post(
+            f"/api/items/{item['id']}/batches",
+            headers=auth,
+            json={
+                "quantity": 2,
+                "expiry_date": (today_taipei() + timedelta(days=3)).isoformat(),
+            },
+        )
+    ).json()
+    late = (
+        await client.post(
+            f"/api/items/{item['id']}/batches",
+            headers=auth,
+            json={
+                "quantity": 3,
+                "expiry_date": (today_taipei() + timedelta(days=30)).isoformat(),
+            },
+        )
+    ).json()
+
+    st = (
+        await client.post("/api/stocktakes", headers=auth, json={"name": "批次盤點2"})
+    ).json()
+    await client.post(
+        f"/api/stocktakes/{st['id']}/scan",
+        headers=auth,
+        json={"item_id": item["id"], "actual_quantity": 2},
+    )
+    done = await client.post(f"/api/stocktakes/{st['id']}/complete", headers=auth)
+    assert done.status_code == 200
+
+    fresh = (await client.get(f"/api/items/{item['id']}", headers=auth)).json()
+    assert fresh["quantity"] == 2
+
+    batches = (
+        await client.get(f"/api/items/{item['id']}/batches", headers=auth)
+    ).json()
+    by_id = {b["id"]: b for b in batches}
+    assert by_id[early["id"]]["is_depleted"] is True
+    assert by_id[early["id"]]["quantity"] == 0
+    assert by_id[late["id"]]["quantity"] == 2
+    assert sum(b["quantity"] for b in batches if not b["is_depleted"]) == 2
+
+    logs = (
+        await client.get(f"/api/items/{item['id']}/quantity-logs", headers=auth)
+    ).json()
+    assert any(
+        "stocktake:" in (l.get("reason") or "")
+        and l["old_quantity"] == 5
+        and l["new_quantity"] == 2
+        for l in logs
+    )
