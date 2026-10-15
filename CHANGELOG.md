@@ -6,6 +6,24 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.22] — Phase 22：批次庫存＋到期管理
+
+- 新資料表 `item_batches`、`items.track_batches` 旗標；Alembic 遷移 `0016`
+- 新 API：`GET/POST /api/items/{id}/batches`、`POST /api/items/{id}/consume`（FEFO，支援 `quantity`）、`POST /api/items/{id}/batches/disable`（合併並關閉追蹤）、`PATCH/DELETE /api/batches/{batch_id}`、`POST /api/batches/{batch_id}/consume`、`GET /api/stats/expiry?days=`
+- FEFO 消耗依到期日升冪（無到期日最後）、支援跨批次拆分；超額消耗 409 不靜默；併發雙 consume 以原子條件 UPDATE＋rowcount 保證（SQLite／Postgres 皆無 lost update）
+- 追蹤物品數量一律由批次重算（進貨／消耗／關閉追蹤／盤點／CSV 匯入皆維持 invariant）；`PATCH` tracked 物品 `quantity` → 409 導向批次端點
+- 列表聚合：`soonest_expiry` 以 correlated MIN 子查詢計算（查詢數不隨列數成長）；新增 `expiry=expired|expiring_soon` 與 `sort=expiry_asc` 篩選
+- 到期門檻：`days_left<0` 過期、0–7 天即將到期（`EXPIRING_SOON_DAYS=7`）；`clock.py` 為全站「今天」唯一來源（Asia/Taipei）
+- 新 UI：物品詳情批次區塊（進貨／−1 樂觀消耗含回滾／已耗盡折疊／關閉追蹤確認）、物品表單「追蹤批次」切換（新建送出後建立首批、編輯開啟當下即建立）、物品列表到期 badge／篩選 chips／到期模式（行內 −1、批次展開、清零 toast＋`aria-live`）、儀表板到期行動卡（deep link 至篩選視圖）
+- 色彩契約 §5.6：新增 `--warning`／`--success` tokens；到期 badge 過期紅／7 天內橙／其餘中性，且附文字標籤（非僅顏色）
+- 新增 79 個 API 測試（441 → 520）；新增 56 個 web 測試（162 → 218，41 → 48 檔）
+- 修正（Final Verification 期間發現的真實缺陷）：
+  - Service Worker 首裝接管（`clients.claim()`）不再整頁 reload：原本每次首次造訪都會在載入後約 1 秒重載、抹掉使用者正在輸入的內容；改為僅在「更新接管」或使用者按下重新載入時重載（`shouldReloadOnControllerChange`）
+  - 登入表單改為不受控輸入＋`FormData`：避免 hydration 完成時 React 以空 state 覆寫已輸入的帳密
+  - React Query 對 4xx（含 404/401）不再重試：錯誤 UI 即時顯示（原本需等約 7 秒退避重試，「找不到此物品」才會出現）
+  - 清單／轉移對話框補齊 `label`↔`input` 關聯（可及性；原本 label 未綁定輸入框）
+  - `/__dev/*` 展示頁：`app/__dev` 因 Next 私有資料夾規則（`_` 前綴）永不路由，改置 `app/dev` 並以 rewrite 保留原路徑；新增 `ENABLE_DEV_ROUTES` build arg／env 開關（預設關閉，生產環境仍 404）
+
 ## [2.0.0-alpha.21] — Phase 21：Webhook 重試
 
 - `webhook_deliveries` 新增 `attempt`（1-indexed 嘗試次數）與 `next_retry_at`（下次重試時間）欄位，Alembic 遷移 `0015`

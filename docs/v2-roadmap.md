@@ -43,11 +43,13 @@
 | 19 | CSV tags round-trip | ✅ | export/import `tag_names`，pipe-delimited、dedup、per-owner 隔離 |
 | 20 | Tag 管理 UI | ✅ | `/tags` 端點群 + taxonomy 頁籤：rename / merge / delete / prune-orphans |
 | 21 | Webhook 重試 | ✅ | exponential backoff (30s/2m/8m/30m)、manual retry、process-retries endpoint |
+| 22 | 批次庫存＋到期管理 | ✅ | 批次 CRUD／FEFO 消耗／到期篩選＋到期模式／儀表板到期行動卡 |
 
 ## 測試規模
 
-- API 測試：441 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：87 passed（vitest + @testing-library/react + jsdom）
+- API 測試：520 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
+- Web 測試：218 passed（vitest + @testing-library/react + jsdom）
+- Playwright e2e：12 spec（登入／物品／批次到期／清單／通知／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）

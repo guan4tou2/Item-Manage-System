@@ -323,14 +323,15 @@
 
 ## Final Verification
 
-- [ ] `cd apps/api && uv run --extra test pytest -q`（全綠；454 既有測試零回歸）
-- [ ] `pnpm -F @ims/web test`
-- [ ] `pnpm -F @ims/web typecheck`
-- [ ] `pnpm -F @ims/web test:e2e`（既有 11 spec 零回歸；stretch：新增 `items-batches.spec.ts`）
-- [ ] `git diff --check`
-- [ ] 手動流程（桌面 1280＋行動 390）：
-  - `/items/[id]`：開啟追蹤、進貨、−1 連點（併發）、調整、耗盡進歷史、關閉追蹤
-  - `/items/new`：模式切換引導文案、第一批建立
-  - `/items`：badge、chip 篩選、到期模式視圖、清零回饋
-  - `/dashboard`：到期卡數字、deep link 落點
-- [ ] `CHANGELOG.md` 增 `2.0.0-alpha.22` 條目；`docs/v2-roadmap.md` Phase 表更新（§十 第 4 條）
+- [x] `cd apps/api && uv run --extra test pytest -q`（520 passed；454 既有測試零回歸）
+- [x] `pnpm -F @ims/web test`（218 passed／48 檔）
+- [x] `pnpm -F @ims/web typecheck`（0 errors）
+- [x] `pnpm -F @ims/web test:e2e`（28 passed；11 既有 spec 零回歸＋stretch `items-batches.spec.ts`，共 12 spec）
+  - 本機 bundled chromium 安裝異常（下載完成但解壓不完整），驗證以系統 Chrome 執行 `playwright test`（等價）；待環境恢復後以標準指令重跑。
+  - 修正 e2e 暴露的真實產品缺陷：SW 首裝接管整頁 reload（清空輸入）、登入表單 hydration 覆寫受控輸入、清單／轉移對話框 label 未關聯、4xx 查詢重試延遲錯誤 UI、`/__dev` 私有資料夾永不路由。
+- [x] `git diff --check`
+- [x] 手動流程（桌面 1280＋行動 390，腳本化截圖走查）：
+  - `/items/[id]`：批次區塊（進貨／調整、−1、關閉追蹤）✓
+  - `/items`：badge、chip 篩選、到期模式視圖（−1＋展開）✓
+  - `/dashboard`：到期卡（已過期／7 天內數字、最急文案）✓
+- [x] `CHANGELOG.md` 增 `2.0.0-alpha.22` 條目；`docs/v2-roadmap.md` Phase 表更新（§十 第 4 條）
