@@ -18,6 +18,9 @@ COPY apps/web ./apps/web
 COPY packages/api-types ./packages/api-types
 # api-types src/ must be generated before build
 RUN test -f packages/api-types/src/index.ts || (echo "run gen:types before docker build" && exit 1)
+# e2e 需要 /__dev/* 展示頁；預設關閉，僅在驗證環境以 build arg 打開
+ARG NEXT_PUBLIC_ENABLE_DEV_ROUTES=""
+ENV NEXT_PUBLIC_ENABLE_DEV_ROUTES=${NEXT_PUBLIC_ENABLE_DEV_ROUTES}
 RUN pnpm --filter @ims/web build
 
 FROM base AS runner
