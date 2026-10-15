@@ -14,13 +14,16 @@ export function LoginForm() {
   const t = useTranslations()
   const router = useRouter()
   const login = useLogin()
-  const [username, setUsername] = useState("")
-  const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
+    // Uncontrolled＋FormData：避免 hydration 完成時 React 以受控 state（空字串）
+    // 覆寫使用者（或自動填入／e2e）已輸入的值，造成必須送出的欄位被清空。
+    const formData = new FormData(event.currentTarget)
+    const username = String(formData.get("username") ?? "")
+    const password = String(formData.get("password") ?? "")
     try {
       await login.mutateAsync({ username, password })
       router.push("/dashboard")
@@ -35,14 +38,7 @@ export function LoginForm() {
       <h1 className="text-2xl font-bold">{t("login.title")}</h1>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="username">{t("login.username")}</Label>
-        <Input
-          id="username"
-          name="username"
-          autoComplete="username"
-          required
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
+        <Input id="username" name="username" autoComplete="username" required />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="password">{t("login.password")}</Label>
@@ -52,8 +48,6 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
       {error && (
