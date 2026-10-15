@@ -186,9 +186,9 @@
 - Test: `apps/api/tests/test_csv_*.py`（新增或追加）
 
 **TODO:**
-- [ ] 確認／補上：匯入建立的新物品為 `track_batches=false`；**不得**直接改寫既有 tracked 物品的 `quantity`（若現況有 match-update 行為則改為略過＋回報列錯誤）
-- [ ] invariant 測試（roadmap 驗收 2）：匯入含 tracked 物品的資料集後，全部 tracked 物品恆等式成立
-- [ ] stretch：`GET /api/items/export.csv` 對「恰一筆未耗盡批次」的物品加 `expiry_date` 欄（完整批次匯出留待後續）
+- [x] 確認／補上：匯入建立的新物品為 `track_batches=false`；**不得**直接改寫既有 tracked 物品的 `quantity`（若現況有 match-update 行為則改為略過＋回報列錯誤）
+- [x] invariant 測試（roadmap 驗收 2）：匯入含 tracked 物品的資料集後，全部 tracked 物品恆等式成立
+- [x] stretch：`GET /api/items/export.csv` 對「恰一筆未耗盡批次」的物品加 `expiry_date` 欄（完整批次匯出留待後續）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q`（CSV 測試檔名以 `ls apps/api/tests | grep csv` 為準）

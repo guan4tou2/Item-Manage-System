@@ -3,14 +3,16 @@ from __future__ import annotations
 import csv
 import io
 from dataclasses import dataclass
+from datetime import date
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.category import Category
 from app.models.item import Item
+from app.models.item_batch import ItemBatch
 from app.models.location import Location
 from app.models.tag import Tag
 from app.models.warehouse import Warehouse
@@ -36,6 +38,7 @@ EXPORT_COLUMNS = [
     "is_favorite",
     "created_at",
     "updated_at",
+    "expiry_date",
 ]
 
 # Optional columns recognized by the importer.
@@ -90,12 +93,33 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
         for w in (await session.execute(w_stmt)).scalars().all():
             wh_names[w.id] = w.name
 
+    # Phase 22 stretch：恰一筆未耗盡批次時帶出到期日（完整批次匯出留待後續）
+    item_ids = [r.id for r in rows]
+    single_batch_expiry: dict[UUID, date | None] = {}
+    if item_ids:
+        agg_stmt = (
+            select(
+                ItemBatch.item_id,
+                func.count(ItemBatch.id),
+                func.min(ItemBatch.expiry_date),
+            )
+            .where(
+                ItemBatch.item_id.in_(item_ids),
+                ItemBatch.is_depleted.is_(False),
+            )
+            .group_by(ItemBatch.item_id)
+        )
+        for item_id, batch_count, soonest in (await session.execute(agg_stmt)).all():
+            if int(batch_count) == 1:
+                single_batch_expiry[item_id] = soonest
+
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=EXPORT_COLUMNS)
     writer.writeheader()
     for item in rows:
         loc = item.location
         tag_names = TAG_SEPARATOR.join(sorted(t.name for t in item.tags)) if item.tags else ""
+        expiry_date = single_batch_expiry.get(item.id)
         writer.writerow({
             "id": str(item.id),
             "name": item.name,
@@ -112,6 +136,7 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
             "is_favorite": "true" if item.is_favorite else "false",
             "created_at": item.created_at.isoformat(),
             "updated_at": item.updated_at.isoformat(),
+            "expiry_date": expiry_date.isoformat() if expiry_date else "",
         })
     return buf.getvalue()
 
