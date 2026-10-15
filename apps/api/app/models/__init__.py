@@ -5,6 +5,7 @@ from app.models.favorite_audit_token import ApiToken, AuditLog
 from app.models.group import Group, GroupMember
 from app.models.image import Image
 from app.models.item import Item
+from app.models.item_batch import ItemBatch
 from app.models.item_history import ItemVersion, QuantityLog
 from app.models.list import List, ListEntry
 from app.models.loan import ItemLoan
@@ -20,6 +21,7 @@ from app.models.webhook import Webhook, WebhookDelivery
 __all__ = [
     "User",
     "Item",
+    "ItemBatch",
     "Category",
     "Location",
     "Tag",

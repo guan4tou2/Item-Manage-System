@@ -47,11 +47,11 @@
 - Test: `apps/api/tests/test_item_batch_model.py`
 
 **TODO:**
-- [ ] `ItemBatch`：`id`(UUID pk)、`item_id`(FK `items.id` ondelete=CASCADE)、`quantity`(int, nullable=False)、`expiry_date`(Date, nullable)、`received_at`(Date, nullable)、`note`(Text, nullable)、`is_depleted`(bool, default false, server_default false)、`created_at`/`updated_at`（比照 `item.py` 的 `_utcnow` 慣例）
-- [ ] 索引：`item_id`、複合 `(item_id, is_depleted)`、`expiry_date`（列表聚合、統計與 job 掃描用）
-- [ ] `items.track_batches`：bool、default false、server_default `false`
-- [ ] migration 0016：`revision="0016"`、`down_revision="0015"`；upgrade/downgrade 對稱（比照 `0015_webhook_retry.py` 風格）
-- [ ] smoke test：建 item＋batch、刪 item 時 cascade 清批次、`is_depleted` 預設 false
+- [x] `ItemBatch`：`id`(UUID pk)、`item_id`(FK `items.id` ondelete=CASCADE)、`quantity`(int, nullable=False)、`expiry_date`(Date, nullable)、`received_at`(Date, nullable)、`note`(Text, nullable)、`is_depleted`(bool, default false, server_default false)、`created_at`/`updated_at`（比照 `item.py` 的 `_utcnow` 慣例）
+- [x] 索引：`item_id`、複合 `(item_id, is_depleted)`、`expiry_date`（列表聚合、統計與 job 掃描用）
+- [x] `items.track_batches`：bool、default false、server_default `false`
+- [x] migration 0016：`revision="0016"`、`down_revision="0015"`；upgrade/downgrade 對稱（比照 `0015_webhook_retry.py` 風格）
+- [x] smoke test：建 item＋batch、刪 item 時 cascade 清批次、`is_depleted` 預設 false
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_item_batch_model.py`
