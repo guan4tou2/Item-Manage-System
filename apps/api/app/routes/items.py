@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response, status
@@ -30,6 +31,8 @@ async def list_items(
     warehouse_id: int | None = None,
     tag_ids: list[int] | None = Query(default=None),
     favorite: bool | None = None,
+    expiry: Literal["expired", "expiring_soon"] | None = None,
+    sort: Literal["expiry_asc"] | None = None,
     page: int = Query(default=1, ge=1),
     per_page: int = Query(default=20, ge=1, le=100),
     user: User = Depends(get_current_user),
@@ -44,6 +47,8 @@ async def list_items(
         warehouse_id=warehouse_id,
         tag_ids=tag_ids,
         favorite=favorite,
+        expiry=expiry,
+        sort=sort,
         page=page,
         per_page=per_page,
     )

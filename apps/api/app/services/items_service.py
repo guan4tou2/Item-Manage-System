@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -25,7 +26,7 @@ from app.services import item_history_service, notifications_service, webhooks_s
 from app.services.visibility_service import visible_item_owner_ids
 
 
-def _to_read(item: Item) -> ItemRead:
+def _to_read(item: Item, *, soonest_expiry: date | None = None) -> ItemRead:
     return ItemRead.model_validate({
         "id": item.id,
         "name": item.name,
@@ -33,6 +34,7 @@ def _to_read(item: Item) -> ItemRead:
         "quantity": item.quantity,
         "min_quantity": item.min_quantity,
         "track_batches": item.track_batches,
+        "soonest_expiry": soonest_expiry,
         "notes": item.notes,
         "is_favorite": item.is_favorite,
         "image_id": item.image_id,
@@ -82,6 +84,8 @@ async def list_items(
     warehouse_id: int | None = None,
     tag_ids: list[int] | None,
     favorite: bool | None = None,
+    expiry: str | None = None,
+    sort: str | None = None,
     page: int,
     per_page: int,
 ) -> ItemListResponse:
@@ -95,11 +99,13 @@ async def list_items(
         warehouse_id=warehouse_id,
         tag_ids=tag_ids,
         favorite=favorite,
+        expiry=expiry,
+        sort=sort,
         page=page,
         per_page=per_page,
     )
     return ItemListResponse(
-        items=[_to_read(r) for r in rows],
+        items=[_to_read(row[0], soonest_expiry=row[1]) for row in rows],
         total=total,
         page=page,
         per_page=per_page,
@@ -158,6 +164,12 @@ async def update_item(
     item = await items_repository.get_owned(session, owner_id, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
+    fields = body.model_dump(exclude_unset=True)
+    if item.track_batches and "quantity" in fields:
+        raise HTTPException(
+            status_code=409,
+            detail="item tracks batches; change quantity via batch endpoints",
+        )
     old_quantity = item.quantity
     # Snapshot pre-update state for version history
     pre_snapshot = {
@@ -173,7 +185,6 @@ async def update_item(
     await item_history_service.snapshot_version(
         session, item_id=item.id, user_id=owner_id, snapshot=pre_snapshot,
     )
-    fields = body.model_dump(exclude_unset=True)
     quantity_changing = "quantity" in fields
     if "category_id" in fields or "location_id" in fields:
         await _validate_refs(

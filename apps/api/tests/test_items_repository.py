@@ -34,7 +34,7 @@ async def test_list_ignores_deleted(db_session, seed):
         q=None, category_id=None, location_id=None, tag_ids=None,
         page=1, per_page=10,
     )
-    names = {r.name for r in rows}
+    names = {r[0].name for r in rows}
     assert "deleted one" not in names
     assert total == 3
 
@@ -45,7 +45,7 @@ async def test_search_q_ilike(db_session, seed):
         q="fruit", category_id=None, location_id=None, tag_ids=None,
         page=1, per_page=10,
     )
-    assert {r.name for r in rows} == {"apple", "banana"}
+    assert {r[0].name for r in rows} == {"apple", "banana"}
     assert total == 2
 
 
@@ -55,7 +55,7 @@ async def test_filter_category(db_session, seed):
         q=None, category_id=seed["cat"].id, location_id=None, tag_ids=None,
         page=1, per_page=10,
     )
-    assert {r.name for r in rows} == {"apple"}
+    assert {r[0].name for r in rows} == {"apple"}
 
 
 async def test_filter_location(db_session, seed):
@@ -64,7 +64,7 @@ async def test_filter_location(db_session, seed):
         q=None, category_id=None, location_id=seed["loc"].id, tag_ids=None,
         page=1, per_page=10,
     )
-    assert {r.name for r in rows} == {"apple"}
+    assert {r[0].name for r in rows} == {"apple"}
 
 
 async def test_filter_tags_any_match(db_session, seed):
@@ -73,7 +73,7 @@ async def test_filter_tags_any_match(db_session, seed):
         q=None, category_id=None, location_id=None, tag_ids=[seed["t1"].id],
         page=1, per_page=10,
     )
-    assert {r.name for r in rows} == {"apple", "cherry"}
+    assert {r[0].name for r in rows} == {"apple", "cherry"}
 
 
 async def test_pagination(db_session, seed):
@@ -98,7 +98,7 @@ async def test_soft_delete(db_session, seed):
         q=None, category_id=None, location_id=None, tag_ids=None,
         page=1, per_page=10,
     )
-    target = next(r for r in rows_before if r.name == "apple")
+    target = next(r[0] for r in rows_before if r[0].name == "apple")
     await repo.soft_delete(db_session, target)
     rows_after, total_after = await repo.list_paginated(
         db_session, seed["user"].id,
@@ -106,7 +106,7 @@ async def test_soft_delete(db_session, seed):
         page=1, per_page=10,
     )
     assert total_after == total_before - 1
-    assert "apple" not in {r.name for r in rows_after}
+    assert "apple" not in {r[0].name for r in rows_after}
 
 
 async def test_get_owned_found(db_session, seed):
@@ -115,7 +115,7 @@ async def test_get_owned_found(db_session, seed):
         q=None, category_id=None, location_id=None, tag_ids=None,
         page=1, per_page=10,
     )
-    target = next(r for r in rows if r.name == "apple")
+    target = next(r[0] for r in rows if r[0].name == "apple")
     found = await repo.get_owned(db_session, seed["user"].id, target.id)
     assert found is not None
     assert found.id == target.id
@@ -134,7 +134,7 @@ async def test_get_owned_wrong_owner_returns_none(db_session, seed):
         q=None, category_id=None, location_id=None, tag_ids=None,
         page=1, per_page=10,
     )
-    target = next(r for r in rows if r.name == "apple")
+    target = next(r[0] for r in rows if r[0].name == "apple")
     found = await repo.get_owned(db_session, other.id, target.id)
     assert found is None
 
@@ -145,7 +145,7 @@ async def test_get_owned_soft_deleted_returns_none(db_session, seed):
         q=None, category_id=None, location_id=None, tag_ids=None,
         page=1, per_page=10,
     )
-    target = next(r for r in rows if r.name == "apple")
+    target = next(r[0] for r in rows if r[0].name == "apple")
     await repo.soft_delete(db_session, target)
     found = await repo.get_owned(db_session, seed["user"].id, target.id)
     assert found is None
@@ -168,7 +168,7 @@ async def test_cross_owner_isolation(db_session, seed):
         q=None, category_id=None, location_id=None, tag_ids=None,
         page=1, per_page=10,
     )
-    names = {r.name for r in rows}
+    names = {r[0].name for r in rows}
     assert "user2-secret" not in names
     assert total == 3
 

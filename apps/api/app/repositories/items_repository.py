@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from datetime import date, timedelta
 from uuid import UUID
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.clock import EXPIRING_SOON_DAYS, today_taipei
 from app.models.item import Item
+from app.models.item_batch import ItemBatch
 from app.models.tag import item_tags
 
 
@@ -65,6 +68,22 @@ async def get_visible(
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
+def _soonest_expiry_subquery():
+    """每個 item 的最急到期（未耗盡批次）；單一聚合子查詢、走 (item_id,is_depleted) 索引。
+
+    列表聚合走單一 SQL，杜絕對每個 item 逐列查詢（Phase 22 驗收 3）。
+    """
+    return (
+        select(func.min(ItemBatch.expiry_date))
+        .where(
+            ItemBatch.item_id == Item.id,
+            ItemBatch.is_depleted.is_(False),
+        )
+        .correlate(Item)
+        .scalar_subquery()
+    )
+
+
 async def list_paginated(
     session: AsyncSession,
     owner_ids,
@@ -75,10 +94,13 @@ async def list_paginated(
     warehouse_id: int | None = None,
     tag_ids: list[int] | None,
     favorite: bool | None = None,
+    expiry: str | None = None,
+    sort: str | None = None,
     page: int,
     per_page: int,
-) -> tuple[list[Item], int]:
+) -> tuple[list[tuple[Item, date | None]], int]:
     base = _base_query(owner_ids)
+    soonest = _soonest_expiry_subquery()
 
     if q:
         like = f"%{q}%"
@@ -97,17 +119,34 @@ async def list_paginated(
         )
     if favorite is not None:
         base = base.where(Item.is_favorite.is_(favorite))
+    if expiry == "expired":
+        base = base.where(soonest < today_taipei())
+    elif expiry == "expiring_soon":
+        today = today_taipei()
+        base = base.where(
+            soonest.is_not(None),
+            soonest >= today,
+            soonest <= today + timedelta(days=EXPIRING_SOON_DAYS),
+        )
 
     total_stmt = select(func.count()).select_from(base.subquery())
     total = (await session.execute(total_stmt)).scalar_one()
 
+    stmt = base.add_columns(soonest.label("soonest_expiry"))
+    if sort == "expiry_asc":
+        stmt = stmt.order_by(
+            case((soonest.is_(None), 1), else_=0),
+            soonest.asc(),
+            Item.created_at.desc(),
+        )
+    else:
+        stmt = stmt.order_by(Item.created_at.desc())
     stmt = (
-        base.order_by(Item.created_at.desc())
-        .offset((page - 1) * per_page)
+        stmt.offset((page - 1) * per_page)
         .limit(per_page)
         .options(*_load_options())
     )
-    rows = list((await session.execute(stmt)).scalars().all())
+    rows = list((await session.execute(stmt)).all())
     return rows, total
 
 

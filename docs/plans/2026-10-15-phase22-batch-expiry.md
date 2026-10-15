@@ -107,11 +107,11 @@
 - Test: `apps/api/tests/test_batch_schemas.py`
 
 **TODO:**
-- [ ] `BatchCreate`：`quantity: int | None`(≥1)、`expiry_date: date | None`、`received_at: date | None`、`note: str | None`
-- [ ] `BatchUpdate`：`quantity: int | None`(≥1)／`expiry_date`／`note` 皆 optional（exclude_unset 語義）
-- [ ] `BatchConsume`：`quantity: int`(≥1)
-- [ ] `BatchRead`：全欄位＋derived `days_left: int | None`、`status: Literal["ok","expiring","expired"]`（無到期日 → `days_left=None`、`status="ok"`）
-- [ ] `ExpiryItem`：`id`、`name`、`quantity`、`soonest_expiry`、`days_left`、`status`；`ExpiryStats`：`expired_count`、`expiring_count`、`items: list[ExpiryItem]`
+- [x] `BatchCreate`：`quantity: int | None`(≥1)、`expiry_date: date | None`、`received_at: date | None`、`note: str | None`
+- [x] `BatchUpdate`：`quantity: int | None`(≥1)／`expiry_date`／`note` 皆 optional（exclude_unset 語義）
+- [x] `BatchConsume`：`quantity: int`(≥1)
+- [x] `BatchRead`：全欄位＋derived `days_left: int | None`、`status: Literal["ok","expiring","expired"]`（無到期日 → `days_left=None`、`status="ok"`）
+- [x] `ExpiryItem`：`id`、`name`、`quantity`、`soonest_expiry`、`days_left`、`status`；`ExpiryStats`：`expired_count`、`expiring_count`、`items: list[ExpiryItem]`
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_batch_schemas.py`
@@ -124,12 +124,12 @@
 - Test: `apps/api/tests/test_batches_routes.py`
 
 **TODO:**
-- [ ] `APIRouter(prefix="/api/items/{item_id}/batches", tags=["batches"])`，全部 `Depends(get_current_user)`＋`get_db`（比照 `loans.py`）
-- [ ] `GET ""` 列表：回全部批次（含已耗盡，`is_depleted` 旗標由前端分流「歷史」折疊）；排序：未耗盡在前→到期日 asc（null 最後）→received_at
-- [ ] `POST ""` 進貨（201）；`PATCH "/{batch_id}"`；`DELETE "/{batch_id}"`（204）
-- [ ] `POST "/{batch_id}/consume"` `{quantity}`（批次內耗用）；FEFO 便捷端點 `POST /api/items/{item_id}/consume`（roadmap L253）——**不在 batches prefix 下**，於同檔另建 `item_consume_router = APIRouter(prefix="/api/items/{item_id}", tags=["batches"])`，`main.py` 兩個 router 一起掛
-- [ ] `POST "/disable"`（合併並關閉，回 `ItemRead`）——決策 4 配套端點，roadmap L250–253 未列，於此定案
-- [ ] route 測試：外部 owner 404、超額 consume 409、`quantity=0` 422、disable 後 `GET ""` 回空、FEFO 與單批消耗路徑皆通
+- [x] `APIRouter(prefix="/api/items/{item_id}/batches", tags=["batches"])`，全部 `Depends(get_current_user)`＋`get_db`（比照 `loans.py`）
+- [x] `GET ""` 列表：回全部批次（含已耗盡，`is_depleted` 旗標由前端分流「歷史」折疊）；排序：未耗盡在前→到期日 asc（null 最後）→received_at
+- [x] `POST ""` 進貨（201）；`PATCH "/{batch_id}"`；`DELETE "/{batch_id}"`（204）
+- [x] `POST "/{batch_id}/consume"` `{quantity}`（批次內耗用）；FEFO 便捷端點 `POST /api/items/{item_id}/consume`（roadmap L253）——**不在 batches prefix 下**，於同檔另建 `item_consume_router = APIRouter(prefix="/api/items/{item_id}", tags=["batches"])`，`main.py` 兩個 router 一起掛
+- [x] `POST "/disable"`（合併並關閉，回 `ItemRead`）——決策 4 配套端點，roadmap L250–253 未列，於此定案
+- [x] route 測試：外部 owner 404、超額 consume 409、`quantity=0` 422、disable 後 `GET ""` 回空、FEFO 與單批消耗路徑皆通
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_batches_routes.py`
@@ -143,11 +143,11 @@
 - Test: `apps/api/tests/test_items_service.py`、`apps/api/tests/test_items_routes.py`、新增 `apps/api/tests/test_items_expiry_query.py`
 
 **TODO:**
-- [ ] `update_item`：`item.track_batches` 且 fields 含 `quantity` → 409（detail 明示改用批次端點）；`track_batches` 不由 `ItemUpdate` 直改（僅批次端點管理）
-- [ ] 列表聚合（**單一查詢**）：LEFT JOIN `(SELECT item_id, MIN(expiry_date) AS soonest FROM item_batches WHERE is_depleted=false GROUP BY item_id)`，`soonest_expiry` 回傳；不得 per-item 查詢
-- [ ] `GET /api/items?expiry=expired|expiring_soon`：以同一聚合 subquery 條件過濾（`expired`: soonest < today；`expiring_soon`: today ≤ soonest ≤ today+7）；`sort=expiry_asc`（soonest asc、null 最後）供到期模式視圖
-- [ ] **query count 斷言**（roadmap 驗收 3）：以 `event.listens_for(engine.sync_engine, "before_cursor_execute")` 計 SELECT 數；種 3 筆 vs 30 筆 tracked 物品，`GET /api/items` 的 SELECT 數相同
-- [ ] 回歸測試：未開啟追蹤的物品行為不變（PATCH quantity 照舊、列表欄位增補不破壞既有 schema 消費者）
+- [x] `update_item`：`item.track_batches` 且 fields 含 `quantity` → 409（detail 明示改用批次端點）；`track_batches` 不由 `ItemUpdate` 直改（僅批次端點管理）
+- [x] 列表聚合（**單一查詢**）：LEFT JOIN `(SELECT item_id, MIN(expiry_date) AS soonest FROM item_batches WHERE is_depleted=false GROUP BY item_id)`，`soonest_expiry` 回傳；不得 per-item 查詢
+- [x] `GET /api/items?expiry=expired|expiring_soon`：以同一聚合 subquery 條件過濾（`expired`: soonest < today；`expiring_soon`: today ≤ soonest ≤ today+7）；`sort=expiry_asc`（soonest asc、null 最後）供到期模式視圖
+- [x] **query count 斷言**（roadmap 驗收 3）：以 `event.listens_for(engine.sync_engine, "before_cursor_execute")` 計 SELECT 數；種 3 筆 vs 30 筆 tracked 物品，`GET /api/items` 的 SELECT 數相同
+- [x] 回歸測試：未開啟追蹤的物品行為不變（PATCH quantity 照舊、列表欄位增補不破壞既有 schema 消費者）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_items_service.py tests/test_items_routes.py tests/test_items_expiry_query.py`
