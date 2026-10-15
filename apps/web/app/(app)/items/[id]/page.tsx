@@ -30,6 +30,7 @@ import type { ItemRead } from "@/lib/api/items"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { useAccessToken } from "@/lib/auth/use-auth"
 import { useDeleteItem, useItem } from "@/lib/hooks/use-items"
+import { BatchSection } from "@/components/items/batch-section"
 
 function templatePayloadFromItem(item: ItemRead, customValues: ItemCustomValueRead[]) {
   const payload: Record<string, unknown> = {
@@ -199,6 +200,8 @@ export default function ItemDetailPage() {
           <dd className="whitespace-pre-wrap">{i.notes || "—"}</dd>
         </div>
       </dl>
+
+      {i.track_batches ? <BatchSection itemId={i.id} canEdit={isOwner} /> : null}
 
       {isOwner ? (
         <ItemCustomValuesDetail

@@ -3,7 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import * as api from "@/lib/api/batches"
-import type { BatchCreate, BatchUpdate } from "@/lib/api/batches"
+import type { BatchCreate, BatchRead, BatchUpdate } from "@/lib/api/batches"
+import type { ItemRead } from "@/lib/api/items"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 function invalidateBatchSurfaces(qc: ReturnType<typeof useQueryClient>) {
@@ -56,7 +57,41 @@ export function useConsumeBatch(itemId: string) {
   return useMutation({
     mutationFn: ({ batchId, quantity }: { batchId: string; quantity: number }) =>
       api.consumeBatch(itemId, batchId, { quantity }, token),
-    onSuccess: () => invalidateBatchSurfaces(qc),
+    onMutate: async ({ batchId, quantity }) => {
+      await qc.cancelQueries({ queryKey: ["batches", itemId] })
+      const previousBatches = qc.getQueryData<BatchRead[]>(["batches", itemId])
+      const previousItem = qc.getQueryData<ItemRead>(["items", itemId])
+      if (previousBatches) {
+        qc.setQueryData<BatchRead[]>(
+          ["batches", itemId],
+          previousBatches.map((batch) =>
+            batch.id === batchId
+              ? {
+                  ...batch,
+                  quantity: Math.max(0, batch.quantity - quantity),
+                  is_depleted: batch.quantity - quantity <= 0,
+                }
+              : batch,
+          ),
+        )
+      }
+      if (previousItem) {
+        qc.setQueryData<ItemRead>(["items", itemId], {
+          ...previousItem,
+          quantity: Math.max(0, previousItem.quantity - quantity),
+        })
+      }
+      return { previousBatches, previousItem }
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousBatches !== undefined) {
+        qc.setQueryData(["batches", itemId], context.previousBatches)
+      }
+      if (context?.previousItem !== undefined) {
+        qc.setQueryData(["items", itemId], context.previousItem)
+      }
+    },
+    onSettled: () => invalidateBatchSurfaces(qc),
   })
 }
 

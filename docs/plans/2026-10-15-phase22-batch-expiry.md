@@ -234,12 +234,12 @@
 - Modify: `apps/web/messages/zh-TW.json`、`apps/web/messages/en.json`
 
 **TODO:**
-- [ ] 列表列：到期日 badge（已過期紅／≤7 天橙／其餘中性，用 §5.6 tokens）＋剩餘天數＋數量；行內「−1」**樂觀更新**（`onMutate` 改 cache、`onError` 回滾＋toast）
-- [ ] 「進貨／調整」以既有 sheet/dialog 元件（沿用 `item-form` 現用元件）開表單：數量、到期日、備註
-- [ ] 「已耗盡」折疊區：預設收起、不混入主列表（§5.4）
-- [ ] 「關閉追蹤」：確認對話框明示「批次將合併為單一數量，到期日資訊將刪除」→ `disable` 端點
-- [ ] 狀態：loading skeleton／空狀態（引導「進貨建立第一批」）／錯誤 toast
-- [ ] 測試：badge 顏色對應、−1 樂觀與回滾、折疊預設關、關閉對話框文案、清零後該列移入歷史
+- [x] 列表列：到期日 badge（已過期紅／≤7 天橙／其餘中性，用 §5.6 tokens）＋剩餘天數＋數量；行內「−1」**樂觀更新**（`onMutate` 改 cache、`onError` 回滾＋toast）
+- [x] 「進貨／調整」以既有 sheet/dialog 元件（沿用 `item-form` 現用元件）開表單：數量、到期日、備註
+- [x] 「已耗盡」折疊區：預設收起、不混入主列表（§5.4）
+- [x] 「關閉追蹤」：確認對話框明示「批次將合併為單一數量，到期日資訊將刪除」→ `disable` 端點
+- [x] 狀態：loading skeleton／空狀態（引導「進貨建立第一批」）／錯誤 toast
+- [x] 測試：badge 顏色對應、−1 樂觀與回滾、折疊預設關、關閉對話框文案、清零後該列移入歷史
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/items/batch-section.test.tsx`

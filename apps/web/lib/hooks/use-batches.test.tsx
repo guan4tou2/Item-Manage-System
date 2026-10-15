@@ -20,7 +20,7 @@ vi.mock("@/lib/api/batches", () => ({
 }))
 
 import * as api from "@/lib/api/batches"
-import { useBatches, useConsumeFefo, useCreateBatch } from "./use-batches"
+import { useBatches, useConsumeBatch, useConsumeFefo, useCreateBatch } from "./use-batches"
 
 let queryClient: QueryClient
 
@@ -82,5 +82,40 @@ describe("use-batches", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(api.createBatch).toHaveBeenCalledWith("item-1", { quantity: 3 }, "jwt")
+  })
+
+  it("optimistically decrements batch and item caches while in flight", async () => {
+    queryClient.setQueryData(["batches", "item-1"], [
+      { id: "batch-1", quantity: 3, is_depleted: false },
+    ])
+    queryClient.setQueryData(["items", "item-1"], { id: "item-1", quantity: 3 })
+    vi.mocked(api.consumeBatch).mockImplementation(() => new Promise<never>(() => {}))
+
+    const { result } = renderHook(() => useConsumeBatch("item-1"), { wrapper })
+    result.current.mutate({ batchId: "batch-1", quantity: 1 })
+
+    await waitFor(() => {
+      const rows = queryClient.getQueryData<{ quantity: number }[]>(["batches", "item-1"])
+      expect(rows?.[0]?.quantity).toBe(2)
+    })
+    expect(
+      queryClient.getQueryData<{ quantity: number }>(["items", "item-1"])?.quantity,
+    ).toBe(2)
+  })
+
+  it("rolls back optimistic caches on consume error", async () => {
+    const originalBatches = [{ id: "batch-1", quantity: 3, is_depleted: false }]
+    queryClient.setQueryData(["batches", "item-1"], originalBatches)
+    queryClient.setQueryData(["items", "item-1"], { id: "item-1", quantity: 3 })
+    vi.mocked(api.consumeBatch).mockRejectedValue(new Error("boom"))
+
+    const { result } = renderHook(() => useConsumeBatch("item-1"), { wrapper })
+    result.current.mutate({ batchId: "batch-1", quantity: 1 })
+
+    await waitFor(() => expect(result.current.isError).toBe(true))
+    expect(queryClient.getQueryData(["batches", "item-1"])).toEqual(originalBatches)
+    expect(
+      queryClient.getQueryData<{ quantity: number }>(["items", "item-1"])?.quantity,
+    ).toBe(3)
   })
 })
