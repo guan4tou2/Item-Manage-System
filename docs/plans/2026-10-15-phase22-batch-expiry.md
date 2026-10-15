@@ -298,10 +298,10 @@
 - Modify: `docs/plans/2026-10-15-next-iteration-roadmap.md`（§5.4 補 P22 介面狀態列）
 
 **TODO:**
-- [ ] zh-TW＋en 全字串；無 hard-coded 文案
-- [ ] 深色模式檢查（badge 紅／橙在深色下對比達標，用 §5.6 tokens）
-- [ ] a11y：鍵盤可達「−1」「進貨」、`aria-live` 清零回饋、badge 有文字標籤非僅顏色
-- [ ] §5.4 狀態表補上本 phase 介面列（loading／empty／error／optimistic／成功回饋）
+- [x] zh-TW＋en 全字串；無 hard-coded 文案
+- [x] 深色模式檢查（badge 紅／橙在深色下對比達標，用 §5.6 tokens）
+- [x] a11y：鍵盤可達「−1」「進貨」、`aria-live` 清零回饋、badge 有文字標籤非僅顏色
+- [x] §5.4 狀態表補上本 phase 介面列（loading／empty／error／optimistic／成功回饋）
 
 **Commands:**
 - `pnpm -F @ims/web test && pnpm -F @ims/web typecheck`

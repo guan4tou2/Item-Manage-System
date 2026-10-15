@@ -233,7 +233,7 @@ export function ItemsListClient() {
           </Button>
         </div>
 
-        <p aria-live="polite" className="sr-only">
+        <p aria-live="polite" data-testid="items-list-announce" className="sr-only">
           {announce}
         </p>
 

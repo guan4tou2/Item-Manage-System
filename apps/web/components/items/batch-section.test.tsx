@@ -107,6 +107,27 @@ describe("BatchSection", () => {
     expect(await screen.findByText("剩 4")).toBeInTheDocument()
   })
 
+  it("鍵盤可達操作鈕且消耗回饋走 aria-live", async () => {
+    vi.mocked(api.listBatches).mockResolvedValue([batch({ id: "b1", quantity: 2 })])
+    vi.mocked(api.consumeBatch).mockResolvedValue(batch({ id: "b1", quantity: 1 }))
+
+    renderSection()
+
+    const restock = await screen.findByRole("button", { name: "進貨／調整" })
+    restock.focus()
+    expect(restock).toHaveFocus()
+
+    const consumeButton = screen.getByRole("button", { name: "消耗 1（剩餘 2）" })
+    consumeButton.focus()
+    expect(consumeButton).toHaveFocus()
+
+    fireEvent.click(consumeButton)
+
+    await waitFor(() =>
+      expect(screen.getByText("已消耗 1", { selector: "[aria-live]" })).toBeInTheDocument(),
+    )
+  })
+
   it("−1 失敗時回滾並 toast", async () => {
     vi.mocked(api.listBatches).mockResolvedValue([batch({ id: "b1", quantity: 5 })])
     vi.mocked(api.consumeBatch).mockRejectedValue(new Error("boom"))

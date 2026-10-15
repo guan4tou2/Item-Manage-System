@@ -207,5 +207,6 @@ describe("ItemsListClient bulk actions", () => {
       expect(batchesApi.consumeFefo).toHaveBeenCalledWith("item-1", { quantity: 1 }, "jwt"),
     )
     await waitFor(() => expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Cleared: Milk"))
+    expect(screen.getByTestId("items-list-announce")).toHaveTextContent("Cleared: Milk")
   })
 })
