@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { suggestFromImage } from "@/lib/api/ai"
 import { getApiErrorDetail } from "@/lib/api/client"
@@ -54,6 +55,9 @@ interface Props {
   tagSuggestions: string[]
   customFields?: CustomFieldRead[]
   itemTemplates?: ItemTemplateRead[]
+  trackBatches?: boolean
+  trackBatchesLocked?: boolean
+  onTrackBatchesChange?: (value: boolean) => void
 }
 
 interface AppliedField {
@@ -86,6 +90,7 @@ function valuesEqual(a: unknown, b: unknown) {
 export function ItemForm({
   defaultValues, onSubmit, onCancel, submitting,
   categories, locations, tagSuggestions, customFields = [], itemTemplates = [],
+  trackBatches = false, trackBatchesLocked = false, onTrackBatchesChange,
 }: Props) {
   const t = useTranslations()
   const token = useAccessToken()
@@ -309,20 +314,52 @@ export function ItemForm({
         </div>
       </div>
 
-      <div>
-        <Label htmlFor="quantity">{t("items.form.quantity")}</Label>
-        <Input
-          id="quantity"
-          type="number"
-          min={0}
-          {...form.register("quantity")}
-        />
-        {form.formState.errors.quantity && (
-          <p role="alert" className="mt-1 text-sm text-destructive">
-            {t(`items.form.validation.${form.formState.errors.quantity.message}`)}
+      <div className="rounded-md border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label htmlFor="track-batches">{t("items.form.trackBatches")}</Label>
+            <p id="track-batches-hint" className="text-xs text-muted-foreground">
+              {t("items.form.trackBatchesHint")}
+            </p>
+          </div>
+          <Switch
+            id="track-batches"
+            checked={trackBatches}
+            onCheckedChange={(checked) => onTrackBatchesChange?.(checked)}
+            disabled={trackBatchesLocked}
+            aria-describedby="track-batches-hint"
+          />
+        </div>
+        {trackBatches && trackBatchesLocked ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t("items.form.trackBatchesLockedHint")}
           </p>
-        )}
+        ) : null}
       </div>
+
+      {trackBatches ? (
+        <div>
+          <Label>{t("items.form.quantity")}</Label>
+          <p className="mt-1 rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+            {t("items.form.trackBatchesQuantityHint", { quantity: form.watch("quantity") })}
+          </p>
+        </div>
+      ) : (
+        <div>
+          <Label htmlFor="quantity">{t("items.form.quantity")}</Label>
+          <Input
+            id="quantity"
+            type="number"
+            min={0}
+            {...form.register("quantity")}
+          />
+          {form.formState.errors.quantity && (
+            <p role="alert" className="mt-1 text-sm text-destructive">
+              {t(`items.form.validation.${form.formState.errors.quantity.message}`)}
+            </p>
+          )}
+        </div>
+      )}
 
       <div>
         <Label>{t("items.form.tags")}</Label>

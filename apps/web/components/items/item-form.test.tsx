@@ -83,6 +83,11 @@ function renderItemForm(
     payload: Record<string, unknown>
     created_at: string
   }>,
+  batchOptions: {
+    trackBatches?: boolean
+    trackBatchesLocked?: boolean
+    onTrackBatchesChange?: (value: boolean) => void
+  } = {},
 ) {
   return {
     onSubmit,
@@ -97,6 +102,9 @@ function renderItemForm(
           locations={[]}
           tagSuggestions={[]}
           itemTemplates={itemTemplates}
+          trackBatches={batchOptions.trackBatches}
+          trackBatchesLocked={batchOptions.trackBatchesLocked}
+          onTrackBatchesChange={batchOptions.onTrackBatchesChange}
           customFields={[
             { id: 1, name: "Serial number", field_type: "text", created_at: "2026-06-19T00:00:00Z" },
             { id: 2, name: "Capacity", field_type: "number", created_at: "2026-06-19T00:00:00Z" },
@@ -277,5 +285,60 @@ describe("ItemForm templates", () => {
     await waitFor(() => {
       expect(templateButton).toHaveFocus()
     })
+  })
+})
+
+describe("ItemForm batch tracking", () => {
+  const defaults: ItemFormValues = {
+    name: "thing",
+    description: "",
+    category_id: null,
+    location_id: null,
+    quantity: 1,
+    notes: "",
+    image_id: null,
+    tag_names: [],
+    custom_values: {},
+  }
+
+  it("shows the quantity input while tracking is off", () => {
+    renderItemForm(defaults)
+
+    expect(screen.getByLabelText("Quantity")).toBeInTheDocument()
+    expect(screen.getByLabelText("Track batches")).not.toBeChecked()
+  })
+
+  it("hides quantity and explains absorption when tracking is on", () => {
+    renderItemForm(defaults, vi.fn(), [], { trackBatches: true })
+
+    expect(screen.queryByLabelText("Quantity")).not.toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "The first batch will fold in the existing quantity of 1 with no expiry date.",
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it("locks the switch and points to the item page once tracking is on", () => {
+    renderItemForm(defaults, vi.fn(), [], {
+      trackBatches: true,
+      trackBatchesLocked: true,
+    })
+
+    expect(screen.getByLabelText("Track batches")).toBeDisabled()
+    expect(
+      screen.getByText(
+        "Batch tracking is on; disable it from the batch section on the item page.",
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it("reports switch changes to the parent", () => {
+    const onChange = vi.fn()
+    renderItemForm(defaults, vi.fn(), [], { onTrackBatchesChange: onChange })
+
+    fireEvent.click(screen.getByLabelText("Track batches"))
+
+    expect(onChange).toHaveBeenCalledWith(true)
   })
 })

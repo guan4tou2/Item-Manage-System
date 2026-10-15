@@ -15,6 +15,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { createBatch } from "@/lib/api/batches"
 import { listCustomFields, listItemTemplates, saveItemCustomValues } from "@/lib/api/customization"
 import { useAccessToken } from "@/lib/auth/use-auth"
 import { useCategories } from "@/lib/hooks/use-categories"
@@ -39,6 +40,7 @@ export default function NewItemPage() {
   const router = useRouter()
   const token = useAccessToken()
   const [saving, setSaving] = useState(false)
+  const [trackBatches, setTrackBatches] = useState(false)
   const create = useCreateItem()
   const cats = useCategories()
   const locs = useLocations()
@@ -67,6 +69,16 @@ export default function NewItemPage() {
         image_id: values.image_id ?? undefined,
         tag_names: values.tag_names,
       })
+      if (trackBatches) {
+        // 開啟追蹤：建立第一批（省略 quantity → 沿用既有數量併入無到期日批次）
+        try {
+          await createBatch(created.id, {}, token)
+        } catch {
+          toast.error(t("items.form.trackBatchesEnableFailed"))
+          router.push(`/items/${created.id}`)
+          return
+        }
+      }
       await saveItemCustomValues(
         created.id,
         customFields.data ?? [],
@@ -106,6 +118,8 @@ export default function NewItemPage() {
         tagSuggestions={(tags.data ?? []).map((tag) => tag.name)}
         customFields={customFields.data ?? []}
         itemTemplates={itemTemplates.data ?? []}
+        trackBatches={trackBatches}
+        onTrackBatchesChange={setTrackBatches}
       />
     </section>
   )

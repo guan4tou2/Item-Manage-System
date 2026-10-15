@@ -21,7 +21,9 @@ import {
   listItemCustomValues,
   saveItemCustomValues,
 } from "@/lib/api/customization"
+import { getApiErrorDetail } from "@/lib/api/client"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { useCreateBatch } from "@/lib/hooks/use-batches"
 import { useCategories } from "@/lib/hooks/use-categories"
 import { useItem, useUpdateItem } from "@/lib/hooks/use-items"
 import { useLocations } from "@/lib/hooks/use-locations"
@@ -35,8 +37,10 @@ export default function EditItemPage() {
   const token = useAccessToken()
   const queryClient = useQueryClient()
   const [saving, setSaving] = useState(false)
+  const [trackingOverride, setTrackingOverride] = useState<boolean | null>(null)
   const item = useItem(id)
   const update = useUpdateItem(id)
+  const enableBatches = useCreateBatch(id)
   const cats = useCategories()
   const locs = useLocations()
   const tags = useTags()
@@ -86,6 +90,19 @@ export default function EditItemPage() {
     custom_values: customValueDefaults,
   }
 
+  const tracking = trackingOverride ?? item.data.track_batches
+
+  async function enableTracking() {
+    // 編輯既有物品：開啟當下即 POST batches（省略 quantity → 沿用既有數量併入第一批）
+    try {
+      await enableBatches.mutateAsync({})
+      setTrackingOverride(true)
+      toast.success(t("items.form.trackBatchesEnabled"))
+    } catch (error) {
+      toast.error(getApiErrorDetail(error) ?? t("items.form.trackBatchesEnableFailed"))
+    }
+  }
+
   async function handleSubmit(values: ItemFormValues) {
     setSaving(true)
     try {
@@ -94,7 +111,8 @@ export default function EditItemPage() {
         description: values.description || null,
         category_id: values.category_id,
         location_id: values.location_id,
-        quantity: values.quantity,
+        // tracked 物品不得改 quantity（API 409）；追蹤中一律略過
+        ...(tracking ? {} : { quantity: values.quantity }),
         notes: values.notes || null,
         image_id: values.image_id ?? null,
         tag_names: values.tag_names,
@@ -137,6 +155,11 @@ export default function EditItemPage() {
         locations={locs.data ?? []}
         tagSuggestions={(tags.data ?? []).map((tag) => tag.name)}
         customFields={customFields.data ?? []}
+        trackBatches={tracking}
+        trackBatchesLocked={tracking}
+        onTrackBatchesChange={(next) => {
+          if (next) void enableTracking()
+        }}
       />
     </section>
   )
