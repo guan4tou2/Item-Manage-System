@@ -24,6 +24,8 @@ export interface ItemFilters {
   categoryId?: number
   locationId?: number
   tagIds?: number[]
+  expiry?: "expired" | "expiring_soon"
+  sort?: "expiry_asc"
   page?: number
   perPage?: number
 }
@@ -36,6 +38,8 @@ function buildQuery(filters: ItemFilters): string {
   if (filters.tagIds && filters.tagIds.length > 0) {
     for (const id of filters.tagIds) params.append("tag_ids", String(id))
   }
+  if (filters.expiry) params.set("expiry", filters.expiry)
+  if (filters.sort) params.set("sort", filters.sort)
   if (filters.page != null) params.set("page", String(filters.page))
   if (filters.perPage != null) params.set("per_page", String(filters.perPage))
   const s = params.toString()

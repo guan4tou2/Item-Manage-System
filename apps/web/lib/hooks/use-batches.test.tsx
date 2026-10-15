@@ -1,0 +1,86 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { renderHook, waitFor } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { ReactNode } from "react"
+
+const auth = vi.hoisted(() => ({ token: "jwt" as string | null }))
+
+vi.mock("@/lib/auth/use-auth", () => ({
+  useAccessToken: () => auth.token,
+}))
+
+vi.mock("@/lib/api/batches", () => ({
+  listBatches: vi.fn(),
+  createBatch: vi.fn(),
+  updateBatch: vi.fn(),
+  deleteBatch: vi.fn(),
+  consumeBatch: vi.fn(),
+  consumeFefo: vi.fn(),
+  disableBatches: vi.fn(),
+}))
+
+import * as api from "@/lib/api/batches"
+import { useBatches, useConsumeFefo, useCreateBatch } from "./use-batches"
+
+let queryClient: QueryClient
+
+function wrapper({ children }: { children: ReactNode }) {
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+}
+
+describe("use-batches", () => {
+  beforeEach(() => {
+    auth.token = "jwt"
+    vi.clearAllMocks()
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    })
+  })
+
+  it("fetches batches for the item with the access token", async () => {
+    vi.mocked(api.listBatches).mockResolvedValue([{ id: "batch-1", quantity: 2 }] as never)
+
+    const { result } = renderHook(() => useBatches("item-1"), { wrapper })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.listBatches).toHaveBeenCalledWith("item-1", "jwt")
+    expect(result.current.data).toEqual([{ id: "batch-1", quantity: 2 }])
+  })
+
+  it("does not fetch without a token", () => {
+    auth.token = null
+
+    renderHook(() => useBatches("item-1"), { wrapper })
+
+    expect(api.listBatches).not.toHaveBeenCalled()
+  })
+
+  it("invalidates batches, items, and stats after FEFO consume", async () => {
+    vi.mocked(api.consumeFefo).mockResolvedValue({
+      consumed: [{ batch_id: "batch-1", quantity: 1 }],
+    } as never)
+    const spy = vi.spyOn(queryClient, "invalidateQueries")
+
+    const { result } = renderHook(() => useConsumeFefo("item-1"), { wrapper })
+    result.current.mutate(1)
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.consumeFefo).toHaveBeenCalledWith("item-1", { quantity: 1 }, "jwt")
+    const keys = spy.mock.calls.map((call) =>
+      JSON.stringify((call[0] as { queryKey?: readonly unknown[] } | undefined)?.queryKey),
+    )
+    expect(keys).toContain(JSON.stringify(["batches"]))
+    expect(keys).toContain(JSON.stringify(["items"]))
+    expect(keys).toContain(JSON.stringify(["stats"]))
+  })
+
+  it("creates a batch through the create hook", async () => {
+    vi.mocked(api.createBatch).mockResolvedValue({ id: "batch-2" } as never)
+
+    const { result } = renderHook(() => useCreateBatch("item-1"), { wrapper })
+    result.current.mutate({ quantity: 3 })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(api.createBatch).toHaveBeenCalledWith("item-1", { quantity: 3 }, "jwt")
+  })
+})

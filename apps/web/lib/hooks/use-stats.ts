@@ -106,3 +106,13 @@ export function useActivity(limit = 20) {
     staleTime: STALE_TIME,
   })
 }
+
+export function useExpiryStats(days = 30) {
+  const token = useAccessToken()
+  return useQuery({
+    queryKey: ["stats", "expiry", days],
+    queryFn: () => api.getExpiryStats(days, token),
+    enabled: token !== null,
+    staleTime: STALE_TIME,
+  })
+}

@@ -219,9 +219,9 @@
 - Test: `apps/web/lib/hooks/use-batches.test.tsx`（或沿用既有 hook 測試風格）
 
 **TODO:**
-- [ ] client：list／create／update／delete／consume（單批）／consumeFefo／disable
-- [ ] query key：`["batches", itemId]`；mutation 成功後 invalidate `["batches"]`、`["items"]`、`["item", itemId]`、`["stats"]`
-- [ ] 測試：路徑／method／body 序列化／token 傳遞
+- [x] client：list／create／update／delete／consume（單批）／consumeFefo／disable
+- [x] query key：`["batches", itemId]`；mutation 成功後 invalidate `["batches"]`、`["items"]`、`["item", itemId]`、`["stats"]`
+- [x] 測試：路徑／method／body 序列化／token 傳遞
 
 **Commands:**
 - `pnpm -F @ims/web test -- lib/api/batches.test.ts lib/hooks/use-batches.test.tsx`

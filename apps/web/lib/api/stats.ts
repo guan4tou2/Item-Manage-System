@@ -11,6 +11,7 @@ export type LowStockItem = paths["/api/stats/low-stock"]["get"]["responses"]["20
 export type ActiveLoan = paths["/api/stats/active-loans"]["get"]["responses"]["200"]["content"]["application/json"][number]
 export type TrendPoint = paths["/api/stats/trend"]["get"]["responses"]["200"]["content"]["application/json"][number]
 export type ActivityEntry = paths["/api/stats/activity"]["get"]["responses"]["200"]["content"]["application/json"][number]
+export type ExpiryStats = paths["/api/stats/expiry"]["get"]["responses"]["200"]["content"]["application/json"]
 
 export async function getOverview(accessToken: string | null): Promise<OverviewStats> {
   const res = await apiFetch("/stats/overview", { accessToken })
@@ -60,4 +61,9 @@ export async function getTrend(days: number, accessToken: string | null): Promis
 export async function getActivity(limit: number, accessToken: string | null): Promise<ActivityEntry[]> {
   const res = await apiFetch(`/stats/activity?limit=${limit}`, { accessToken })
   return (await res.json()) as ActivityEntry[]
+}
+
+export async function getExpiryStats(days: number, accessToken: string | null): Promise<ExpiryStats> {
+  const res = await apiFetch(`/stats/expiry?days=${days}`, { accessToken })
+  return (await res.json()) as ExpiryStats
 }

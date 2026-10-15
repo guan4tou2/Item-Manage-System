@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { bulkDeleteItems, bulkUpdateItems } from "./items"
+import { bulkDeleteItems, bulkUpdateItems, listItems } from "./items"
 
 const originalFetch = global.fetch
 
@@ -61,6 +61,17 @@ describe("items api client", () => {
         body: JSON.stringify({ item_ids: ["item-1", "item-2"] }),
         credentials: "include",
       }),
+    )
+  })
+
+  it("serializes expiry and sort filters", async () => {
+    mockJson({ items: [], total: 0, page: 1, per_page: 20 })
+
+    await listItems({ expiry: "expiring_soon", sort: "expiry_asc" }, "jwt")
+
+    expect(global.fetch).toHaveBeenLastCalledWith(
+      "/api/items?expiry=expiring_soon&sort=expiry_asc",
+      expect.objectContaining({ credentials: "include" }),
     )
   })
 })
