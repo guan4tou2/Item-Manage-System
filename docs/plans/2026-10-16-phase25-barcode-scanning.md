@@ -245,9 +245,9 @@
 - Modify: `apps/web/components/shell/app-shell.tsx`
 
 **TODO:**
-- [ ] `Link href="/scan"`：`md:hidden`、`fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40` 圓形 ≥44px、`aria-label={t("scan.fabAria")}`、icon（ScanLine）
-- [ ] i18n `scan.fabAria`（zh-TW「掃描」／en "Scan"）；掛載 `app-shell`（`main` 之外、登入區內）
-- [ ] 測試：渲染含 aria-label 與 `md:hidden`；href `/scan`
+- [x] `Link href="/scan"`：`md:hidden`、`fixed right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40` 圓形 ≥44px、`aria-label={t("scan.fabAria")}`、icon（ScanLine）
+- [x] i18n `scan.fabAria`（zh-TW「掃描」／en "Scan"）；掛載 `app-shell`（`main` 之外、登入區內）
+- [x] 測試：渲染含 aria-label 與 `md:hidden`；href `/scan`
 
 **Commands:**
 - `pnpm -F @ims/web test -- src/components/shell`

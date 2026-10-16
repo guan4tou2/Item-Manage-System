@@ -200,6 +200,7 @@
       "stillCreate": "仍要新增",
       "unsupported": "此條碼沒有對應的公開資料庫。"
     },
+    "fabAria": "掃描條碼",
     "result": {
       "label": "最近解碼結果：",
       "found": "✓ 偵測到物品 ID，已跳轉",

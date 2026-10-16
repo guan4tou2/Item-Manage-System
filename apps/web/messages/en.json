@@ -200,6 +200,7 @@
       "stillCreate": "Create anyway",
       "unsupported": "No public database for this barcode type."
     },
+    "fabAria": "Scan barcode",
     "result": {
       "label": "Last decoded result:",
       "found": "✓ Item ID detected, redirecting",
