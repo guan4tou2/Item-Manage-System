@@ -6562,6 +6562,100 @@
         ]
       }
     },
+    "/api/jobs/{job_name}/run": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Run Job",
+        "operationId": "run_job_api_jobs__job_name__run_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobRunResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_name}/status": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Job Status",
+        "operationId": "job_status_api_jobs__job_name__status_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "job_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/items/{item_id}/qr.png": {
       "get": {
         "tags": [
@@ -8698,6 +8792,141 @@
           "created_at"
         ],
         "title": "ItemVersionRead"
+      },
+      "JobRunInfo": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "started_at"
+        ],
+        "title": "JobRunInfo"
+      },
+      "JobRunResult": {
+        "properties": {
+          "job": {
+            "type": "string",
+            "title": "Job"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "processed": {
+            "type": "integer",
+            "title": "Processed"
+          },
+          "emitted": {
+            "type": "integer",
+            "title": "Emitted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job",
+          "status",
+          "processed",
+          "emitted"
+        ],
+        "title": "JobRunResult",
+        "description": "`POST /api/jobs/{job_name}/run` 回應（`status`＝succeeded／failed）。"
+      },
+      "JobStatus": {
+        "properties": {
+          "job": {
+            "type": "string",
+            "title": "Job"
+          },
+          "thresholds": {
+            "$ref": "#/components/schemas/JobThresholds"
+          },
+          "last_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JobRunInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale"
+          }
+        },
+        "type": "object",
+        "required": [
+          "job",
+          "thresholds",
+          "stale"
+        ],
+        "title": "JobStatus"
+      },
+      "JobThresholds": {
+        "properties": {
+          "stale_after_hours": {
+            "type": "integer",
+            "title": "Stale After Hours"
+          },
+          "advance_days": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Advance Days"
+          },
+          "expired_stop_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expired Stop Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stale_after_hours"
+        ],
+        "title": "JobThresholds",
+        "description": "設定頁顯示用；`stale_after_hours` 為通用停跑判定，其餘由 job spec 提供。"
       },
       "LineLinkSet": {
         "properties": {

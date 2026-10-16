@@ -167,4 +167,13 @@ def _digest_body(type_key: str, soonest: _Candidate, day: date) -> str:
     return f"最急：{soonest.item_name}（剩 {remaining} 天）"
 
 
-jobs_service.register(jobs_service.JobSpec(name="expiry-scan", run=scan))
+jobs_service.register(
+    jobs_service.JobSpec(
+        name="expiry-scan",
+        run=scan,
+        thresholds={
+            "advance_days": list(ADVANCE_LEVEL_DAYS.values()),
+            "expired_stop_days": EXPIRED_STOP_DAYS,
+        },
+    )
+)

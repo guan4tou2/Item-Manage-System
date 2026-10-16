@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from typing import Awaitable, Callable
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +19,9 @@ from app.models.job_run import JobRun
 from app.repositories import job_runs_repository as repo
 
 logger = logging.getLogger(__name__)
+
+#: 停跑判定：最近一次執行開始時間超過此小時數（或從未執行）→ stale
+STALE_AFTER_HOURS = 26
 
 
 class UnknownJobError(Exception):
@@ -47,6 +50,7 @@ class JobResult:
 class JobSpec:
     name: str
     run: Callable[[AsyncSession, date], Awaitable[JobResult]]
+    thresholds: dict[str, object] = field(default_factory=dict)
 
 
 JOBS: dict[str, JobSpec] = {}
@@ -54,6 +58,16 @@ JOBS: dict[str, JobSpec] = {}
 
 def register(spec: JobSpec) -> None:
     JOBS[spec.name] = spec
+
+
+def is_stale(last: JobRun | None) -> bool:
+    """從未執行、或最近一次開始時間逾 `STALE_AFTER_HOURS` → 停跑。"""
+    if last is None:
+        return True
+    started = last.started_at
+    if started.tzinfo is None:  # SQLite 回傳 naive；一律視為 UTC
+        started = started.replace(tzinfo=UTC)
+    return datetime.now(UTC) - started > timedelta(hours=STALE_AFTER_HOURS)
 
 
 async def run_job(session: AsyncSession, name: str) -> JobRun:

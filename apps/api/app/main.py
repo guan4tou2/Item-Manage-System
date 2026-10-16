@@ -17,6 +17,7 @@ from app.routes import (
     item_history,
     items,
     items_bulk,
+    jobs,
     labels,
     lists,
     loans,
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(warehouses.router)
     app.include_router(backup.router)
     app.include_router(webhooks.router)
+    app.include_router(jobs.router)
     app.include_router(labels.router)
     return app
 

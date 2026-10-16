@@ -1834,6 +1834,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/jobs/{job_name}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Job */
+        post: operations["run_job_api_jobs__job_name__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/jobs/{job_name}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Job Status */
+        get: operations["job_status_api_jobs__job_name__status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/items/{item_id}/qr.png": {
         parameters: {
             query?: never;
@@ -2606,6 +2640,55 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** JobRunInfo */
+        JobRunInfo: {
+            /** Status */
+            status: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Result */
+            result?: Record<string, never> | null;
+        };
+        /**
+         * JobRunResult
+         * @description `POST /api/jobs/{job_name}/run` 回應（`status`＝succeeded／failed）。
+         */
+        JobRunResult: {
+            /** Job */
+            job: string;
+            /** Status */
+            status: string;
+            /** Processed */
+            processed: number;
+            /** Emitted */
+            emitted: number;
+        };
+        /** JobStatus */
+        JobStatus: {
+            /** Job */
+            job: string;
+            thresholds: components["schemas"]["JobThresholds"];
+            last_run?: components["schemas"]["JobRunInfo"] | null;
+            /** Stale */
+            stale: boolean;
+        };
+        /**
+         * JobThresholds
+         * @description 設定頁顯示用；`stale_after_hours` 為通用停跑判定，其餘由 job spec 提供。
+         */
+        JobThresholds: {
+            /** Stale After Hours */
+            stale_after_hours: number;
+            /** Advance Days */
+            advance_days?: number[];
+            /** Expired Stop Days */
+            expired_stop_days?: number | null;
         };
         /** LineLinkSet */
         LineLinkSet: {
@@ -7768,6 +7851,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProcessRetriesResult"];
+                };
+            };
+        };
+    };
+    run_job_api_jobs__job_name__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRunResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_status_api_jobs__job_name__status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

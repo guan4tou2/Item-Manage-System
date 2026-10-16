@@ -1,0 +1,137 @@
+from __future__ import annotations
+
+from datetime import timedelta
+
+import pytest
+
+from app.clock import today_taipei
+from app.models.item import Item
+from app.models.item_batch import ItemBatch
+
+
+async def _register_and_login(client, username):
+    await client.post(
+        "/api/auth/register",
+        json={"email": f"{username}@t.io", "username": username, "password": "secret1234"},
+    )
+    r = await client.post(
+        "/api/auth/login", json={"username": username, "password": "secret1234"}
+    )
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+async def _make_admin(client, headers):
+    r = await client.post("/api/auth/bootstrap-admin", headers=headers)
+    assert r.status_code == 200
+    return headers
+
+
+@pytest.fixture
+async def admin_auth(client):
+    h = await _register_and_login(client, "jobs_admin")
+    return await _make_admin(client, h)
+
+
+@pytest.fixture
+async def regular_auth(client):
+    return await _register_and_login(client, "jobs_user")
+
+
+async def _seed_batch(client, db_session, headers, *, expiry_in: int = 3) -> None:
+    me = (await client.get("/api/users/me", headers=headers)).json()
+    item = Item(owner_id=me["id"], name="牛奶")
+    db_session.add(item)
+    await db_session.flush()
+    db_session.add(
+        ItemBatch(
+            item_id=item.id,
+            quantity=1,
+            expiry_date=today_taipei() + timedelta(days=expiry_in),
+        )
+    )
+    await db_session.commit()
+
+
+async def test_run_requires_authentication(client):
+    r = await client.post("/api/jobs/expiry-scan/run")
+    assert r.status_code == 401
+
+
+async def test_run_forbidden_for_non_admin(client, regular_auth):
+    r = await client.post("/api/jobs/expiry-scan/run", headers=regular_auth)
+    assert r.status_code == 403
+
+
+async def test_run_unknown_job_404(client, admin_auth):
+    r = await client.post("/api/jobs/nope/run", headers=admin_auth)
+    assert r.status_code == 404
+
+
+async def test_run_success_records_and_status(client, admin_auth, db_session):
+    await _seed_batch(client, db_session, admin_auth)
+
+    r = await client.post("/api/jobs/expiry-scan/run", headers=admin_auth)
+
+    assert r.status_code == 200
+    assert r.json() == {
+        "job": "expiry-scan",
+        "status": "succeeded",
+        "processed": 2,
+        "emitted": 1,
+    }
+
+    s = await client.get("/api/jobs/expiry-scan/status", headers=admin_auth)
+    assert s.status_code == 200
+    body = s.json()
+    assert body["job"] == "expiry-scan"
+    assert body["stale"] is False
+    assert body["thresholds"] == {
+        "stale_after_hours": 26,
+        "advance_days": [30, 7, 0],
+        "expired_stop_days": 14,
+    }
+    assert body["last_run"]["status"] == "succeeded"
+    assert body["last_run"]["result"]["processed"] == 2
+    assert body["last_run"]["finished_at"] is not None
+
+
+async def test_run_same_day_idempotent(client, admin_auth, db_session):
+    await _seed_batch(client, db_session, admin_auth)
+
+    await client.post("/api/jobs/expiry-scan/run", headers=admin_auth)
+    r = await client.post("/api/jobs/expiry-scan/run", headers=admin_auth)
+
+    assert r.json()["processed"] == 0
+    assert r.json()["emitted"] == 0
+
+
+async def test_status_never_run_for_regular_user(client, regular_auth):
+    s = await client.get("/api/jobs/expiry-scan/status", headers=regular_auth)
+    assert s.status_code == 200
+    assert s.json()["last_run"] is None
+    assert s.json()["stale"] is True
+
+
+async def test_status_unknown_job_404(client, regular_auth):
+    r = await client.get("/api/jobs/nope/status", headers=regular_auth)
+    assert r.status_code == 404
+
+
+async def test_status_requires_authentication(client):
+    r = await client.get("/api/jobs/expiry-scan/status")
+    assert r.status_code == 401
+
+
+async def test_admin_pat_can_trigger(client, admin_auth, db_session):
+    await _seed_batch(client, db_session, admin_auth)
+    created = (
+        await client.post(
+            "/api/users/me/tokens", headers=admin_auth, json={"name": "cron"}
+        )
+    ).json()
+    pat = {"Authorization": f"Bearer {created['token']}"}
+
+    r = await client.post("/api/jobs/expiry-scan/run", headers=pat)
+
+    assert r.status_code == 200
+    assert r.json()["status"] == "succeeded"
