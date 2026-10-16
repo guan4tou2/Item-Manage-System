@@ -190,9 +190,9 @@
 - 依賴：`packages/api-types`（T1.4 產物：`BarcodeLookupResponse` 等型別）
 
 **TODO:**
-- [ ] `lookupBarcode(code, token)`：`GET /api/barcodes/{encodeURIComponent(code)}`；型別自 `@ims/api-types`
-- [ ] `useBarcodeLookup(code: string | null)`：react-query、`enabled: !!code`、`retry: false`、`staleTime: 5min`（server 快取 30 天為權威）
-- [ ] 測試：成功／401／網路錯誤；`enabled` 關閉不發請求
+- [x] `lookupBarcode(code, token)`：`GET /api/barcodes/{encodeURIComponent(code)}`；型別自 `@ims/api-types`
+- [x] `useBarcodeLookup(code: string | null)`：react-query、`enabled: !!code`、`retry: false`、`staleTime: 5min`（server 快取 30 天為權威）
+- [x] 測試：成功／401／網路錯誤；`enabled` 關閉不發請求
 
 **Commands:**
 - `pnpm -F @ims/web test -- src/lib/api/barcodes`
