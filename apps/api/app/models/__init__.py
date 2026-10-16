@@ -1,3 +1,4 @@
+from app.models.barcode_lookup import BarcodeLookup
 from app.models.category import Category
 from app.models.customization import CustomField, ItemCustomValue, ItemTemplate, ItemType
 from app.models.expiry_alert import ExpiryAlert
@@ -56,4 +57,5 @@ __all__ = [
     "WebhookDelivery",
     "JobRun",
     "ExpiryAlert",
+    "BarcodeLookup",
 ]

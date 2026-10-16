@@ -85,11 +85,11 @@
 - Test: `apps/api/tests/test_barcode_models_smoke.py`
 
 **TODO:**
-- [ ] `Item.barcode`：`String(32)` nullable、`Index("ix_items_owner_barcode", "owner_id", "barcode")`（**不設唯一**——同條碼多件）
-- [ ] `BarcodeLookup`：`id`(UUID pk)、`code`(String(64), nullable=False, **unique**)、`source`(String(32), nullable=False)、`payload`(`JSONType`, nullable=True＝負快取)、`fetched_at`(DateTime, nullable=False)
-- [ ] migration 0019：`revision="0019"`、`down_revision="0018"`；upgrade＝`items` 加欄＋index、建 `barcode_lookups`＋unique；downgrade 對稱
-- [ ] smoke：建含 barcode 的 item（同 owner 同 barcode 兩件允許）；`BarcodeLookup` code unique 違反；payload 存 dict 取回一致
-- [ ] 真實 PG 驗證：`docker compose cp`＋`alembic upgrade head`→`alembic current`＝0019
+- [x] `Item.barcode`：`String(32)` nullable、`Index("ix_items_owner_barcode", "owner_id", "barcode")`（**不設唯一**——同條碼多件）
+- [x] `BarcodeLookup`：`id`(UUID pk)、`code`(String(64), nullable=False, **unique**)、`source`(String(32), nullable=False)、`payload`(`JSONType`, nullable=True＝負快取)、`fetched_at`(DateTime, nullable=False)
+- [x] migration 0019：`revision="0019"`、`down_revision="0018"`；upgrade＝`items` 加欄＋index、建 `barcode_lookups`＋unique；downgrade 對稱
+- [x] smoke：建含 barcode 的 item（同 owner 同 barcode 兩件允許）；`BarcodeLookup` code unique 違反；payload 存 dict 取回一致
+- [x] 真實 PG 驗證：`docker compose cp`＋`alembic upgrade head`→`alembic current`＝0019
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_barcode_models_smoke.py`
