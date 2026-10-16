@@ -1,6 +1,6 @@
 "use client"
 
-import { AlertCircle, CheckCircle2, ChevronRight, Clock } from "lucide-react"
+import { AlertCircle, Bell, CheckCircle2, ChevronRight, Clock } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
@@ -100,6 +100,15 @@ export function ExpiryCard({ stats, loading, error, onRetry }: Props) {
                       name: soonest.name,
                       days: soonest.days_left ?? 0,
                     })}
+              </p>
+            ) : null}
+            {stats?.reminded_today ? (
+              <p
+                className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                data-testid="expiry-card-reminded"
+              >
+                <Bell className="h-3.5 w-3.5" aria-hidden="true" />
+                {t("dashboard.expiry.remindedToday")}
               </p>
             ) : null}
           </>

@@ -24,6 +24,7 @@ vi.mock("@/lib/hooks/use-stats", () => ({
     data: {
       expired_count: 2,
       expiring_count: 1,
+      reminded_today: false,
       items: [],
     },
     isLoading: false,

@@ -54,7 +54,8 @@
       "expiringSoon": "Expiring within 7 days",
       "expiringSoonCount": "{count, plural, one {# item} other {# items}}",
       "soonestExpired": "Soonest: {name}, expired {days}d ago",
-      "soonestExpiring": "Soonest: {name}, {days}d left"
+      "soonestExpiring": "Soonest: {name}, {days}d left",
+      "remindedToday": "Digest sent today"
     },
     "activeLoans": {
       "title": "Active loans",

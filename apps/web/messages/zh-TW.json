@@ -54,7 +54,8 @@
       "expiringSoon": "7 天內到期",
       "expiringSoonCount": "{count} 件",
       "soonestExpired": "最急：{name}，已過期 {days} 天",
-      "soonestExpiring": "最急：{name}，{days} 天內到期"
+      "soonestExpiring": "最急：{name}，{days} 天內到期",
+      "remindedToday": "今天已彙總提醒"
     },
     "activeLoans": {
       "title": "活躍借出",

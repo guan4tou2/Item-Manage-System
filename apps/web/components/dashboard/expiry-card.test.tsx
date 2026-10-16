@@ -16,6 +16,7 @@ const Provider = ({ children }: { children: React.ReactNode }) => (
 const stats: ExpiryStats = {
   expired_count: 2,
   expiring_count: 1,
+  reminded_today: false,
   items: [
     {
       item_id: "item-1",
@@ -53,12 +54,31 @@ describe("ExpiryCard", () => {
   })
 
   it("shows the quiet empty state when nothing is expiring", () => {
-    render(<ExpiryCard stats={{ expired_count: 0, expiring_count: 0, items: [] }} />, {
-      wrapper: Provider,
-    })
+    render(
+      <ExpiryCard
+        stats={{ expired_count: 0, expiring_count: 0, reminded_today: false, items: [] }}
+      />,
+      { wrapper: Provider },
+    )
 
     expect(screen.getByText("All clear · nothing expiring")).toBeInTheDocument()
     expect(screen.queryByRole("link")).not.toBeInTheDocument()
+  })
+
+  it("annotates the digest as sent today when reminded_today", () => {
+    render(<ExpiryCard stats={{ ...stats, reminded_today: true }} />, {
+      wrapper: Provider,
+    })
+
+    expect(screen.getByTestId("expiry-card-reminded")).toHaveTextContent(
+      "Digest sent today",
+    )
+  })
+
+  it("omits the digest note when not reminded today", () => {
+    render(<ExpiryCard stats={stats} />, { wrapper: Provider })
+
+    expect(screen.queryByTestId("expiry-card-reminded")).not.toBeInTheDocument()
   })
 
   it("renders skeletons while loading", () => {
