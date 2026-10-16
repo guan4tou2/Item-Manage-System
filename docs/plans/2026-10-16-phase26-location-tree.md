@@ -120,10 +120,10 @@
 - Regenerate: `packages/api-types/*`
 
 **TODO:**
-- [ ] schemas：`LocationCreate(parent_id?, name, kind?, sort_order=0, floor_plan_image_id?)`、`LocationUpdate(name?/kind?/sort_order?/floor_plan_image_id?/parent_id?)`（`extra="forbid"`）、`LocationRead(id, parent_id, name, kind, sort_order, floor_plan_image_id, path)`、`LocationTreeNode(LocationRead + item_count + children)`、`LocationPath(id, path, nodes)`、`LocationReorder(parent_id?, location_ids)`
-- [ ] routes：`GET ""`（平坦＋path）、`GET "/tree"`（**置於 `/{location_id}` 之前**避免路徑衝突）、`GET "/{location_id}/path"`、`POST ""`、`POST "/reorder"`、`PATCH "/{location_id}"`、`DELETE "/{location_id}"`（409 結構化 detail）
-- [ ] 測試改寫：CRUD＋`path` 正確；`/tree` 巢狀＋`item_count`；`/path` 三層；anonymous 401；跨 owner 404；名稱為空 422；`kind` 過長 422；409 兩態 detail 內容；reorder 422；move 422 cycle
-- [ ] api-types 重生成（`LocationRead`／`LocationTreeNode`／`LocationPath`／`LocationReorder`）
+- [x] schemas：`LocationCreate(parent_id?, name, kind?, sort_order=0, floor_plan_image_id?)`（`extra="forbid"`——讓舊客戶端送 floor/room/zone 直接 422 而非靜默丟棄）、`LocationUpdate(name?/kind?/sort_order?/floor_plan_image_id?/parent_id?)`（`extra="forbid"`）、`LocationRead(id, parent_id, name, kind, sort_order, floor_plan_image_id, path)`、`LocationTreeNode(LocationRead + item_count + children)`、`LocationPath(id, path, nodes)`、`LocationReorder(parent_id?, location_ids)`
+- [x] routes：`GET ""`（平坦＋path）、`GET "/tree"`（**置於 `/{location_id}` 之前**避免路徑衝突）、`GET "/{location_id}/path"`、`POST ""`、`POST "/reorder"`、`PATCH "/{location_id}"`、`DELETE "/{location_id}"`（409 結構化 detail）
+- [x] 測試改寫：CRUD＋`path` 正確；`/tree` 巢狀＋`item_count`；`/path` 三層；anonymous 401（全端點）；跨 owner 404／隔離；名稱為空 422；`kind` 過長 422；非白名單欄位 422；409 兩態 detail 內容；reorder 422（重複／不完整／跨 parent／跨 owner）；move 422 cycle；sort_order／floor_plan／kind 自由文字（21 例）
+- [x] api-types 重生成（`LocationRead`／`LocationTreeNode`／`LocationPath`／`LocationReorder`；舊 floor/room/zone 欄位移除）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_locations_routes.py tests/test_location_advanced.py`

@@ -251,11 +251,34 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Locations */
+        /**
+         * List Locations
+         * @description 平坦清單（走訪序）＋完整路徑——供樹狀選擇器與行動版扁平搜尋。
+         */
         get: operations["list_locations_api_locations_get"];
         put?: never;
         /** Create Location */
         post: operations["create_location_api_locations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/locations/tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Location Tree
+         * @description 巢狀樹（節點附直接物品數）——供 `/locations` 管理頁。
+         */
+        get: operations["location_tree_api_locations_tree_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -279,6 +302,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/locations/{location_id}/path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Location Path */
+        get: operations["location_path_api_locations__location_id__path_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/locations/{location_id}": {
         parameters: {
             query?: never;
@@ -293,7 +333,10 @@ export interface paths {
         delete: operations["delete_location_api_locations__location_id__delete"];
         options?: never;
         head?: never;
-        /** Update Location */
+        /**
+         * Update Location
+         * @description 改名／改 kind／改排序／換 floor plan；帶 `parent_id` 時即為**搬移**。
+         */
         patch: operations["update_location_api_locations__location_id__patch"];
         trace?: never;
     };
@@ -3030,12 +3073,12 @@ export interface components {
         };
         /** LocationCreate */
         LocationCreate: {
-            /** Floor */
-            floor: string;
-            /** Room */
-            room?: string | null;
-            /** Zone */
-            zone?: string | null;
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind?: string | null;
             /**
              * Sort Order
              * @default 0
@@ -3043,17 +3086,35 @@ export interface components {
             sort_order: number;
             /** Floor Plan Image Id */
             floor_plan_image_id?: string | null;
+        };
+        /** LocationPath */
+        LocationPath: {
+            /** Id */
+            id: number;
+            /** Path */
+            path: string;
+            /** Nodes */
+            nodes: components["schemas"]["LocationPathNode"][];
+        };
+        /** LocationPathNode */
+        LocationPathNode: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind?: string | null;
         };
         /** LocationRead */
         LocationRead: {
             /** Id */
             id: number;
-            /** Floor */
-            floor: string;
-            /** Room */
-            room: string | null;
-            /** Zone */
-            zone: string | null;
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind?: string | null;
             /**
              * Sort Order
              * @default 0
@@ -3061,20 +3122,51 @@ export interface components {
             sort_order: number;
             /** Floor Plan Image Id */
             floor_plan_image_id?: string | null;
+            /** Path */
+            path: string;
         };
         /** LocationReorder */
         LocationReorder: {
+            /** Parent Id */
+            parent_id?: number | null;
             /** Location Ids */
             location_ids: number[];
         };
+        /** LocationTreeNode */
+        LocationTreeNode: {
+            /** Id */
+            id: number;
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind?: string | null;
+            /**
+             * Sort Order
+             * @default 0
+             */
+            sort_order: number;
+            /** Floor Plan Image Id */
+            floor_plan_image_id?: string | null;
+            /** Path */
+            path: string;
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+            /** Children */
+            children?: components["schemas"]["LocationTreeNode"][];
+        };
         /** LocationUpdate */
         LocationUpdate: {
-            /** Floor */
-            floor?: string | null;
-            /** Room */
-            room?: string | null;
-            /** Zone */
-            zone?: string | null;
+            /** Parent Id */
+            parent_id?: number | null;
+            /** Name */
+            name?: string | null;
+            /** Kind */
+            kind?: string | null;
             /** Sort Order */
             sort_order?: number | null;
             /** Floor Plan Image Id */
@@ -4309,6 +4401,26 @@ export interface operations {
             };
         };
     };
+    location_tree_api_locations_tree_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationTreeNode"][];
+                };
+            };
+        };
+    };
     reorder_locations_api_locations_reorder_post: {
         parameters: {
             query?: never;
@@ -4329,6 +4441,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LocationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    location_path_api_locations__location_id__path_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationPath"];
                 };
             };
             /** @description Validation Error */

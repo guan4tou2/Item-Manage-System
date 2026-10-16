@@ -13,6 +13,8 @@ class LocationCreate(BaseModel):
     sort_order: int = Field(default=0, ge=0)
     floor_plan_image_id: Optional[UUID] = None
 
+    model_config = ConfigDict(extra="forbid")
+
 
 class LocationUpdate(BaseModel):
     parent_id: Optional[int] = None

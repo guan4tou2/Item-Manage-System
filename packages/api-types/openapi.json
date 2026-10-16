@@ -704,6 +704,7 @@
           "locations"
         ],
         "summary": "List Locations",
+        "description": "平坦清單（走訪序）＋完整路徑——供樹狀選擇器與行動版扁平搜尋。",
         "operationId": "list_locations_api_locations_get",
         "responses": {
           "200": {
@@ -772,6 +773,37 @@
         ]
       }
     },
+    "/api/locations/tree": {
+      "get": {
+        "tags": [
+          "locations"
+        ],
+        "summary": "Location Tree",
+        "description": "巢狀樹（節點附直接物品數）——供 `/locations` 管理頁。",
+        "operationId": "location_tree_api_locations_tree_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LocationTreeNode"
+                  },
+                  "type": "array",
+                  "title": "Response Location Tree Api Locations Tree Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/locations/reorder": {
       "post": {
         "tags": [
@@ -822,12 +854,60 @@
         ]
       }
     },
+    "/api/locations/{location_id}/path": {
+      "get": {
+        "tags": [
+          "locations"
+        ],
+        "summary": "Location Path",
+        "operationId": "location_path_api_locations__location_id__path_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Location Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationPath"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/locations/{location_id}": {
       "patch": {
         "tags": [
           "locations"
         ],
         "summary": "Update Location",
+        "description": "改名／改 kind／改排序／換 floor plan；帶 `parent_id` 時即為**搬移**。",
         "operationId": "update_location_api_locations__location_id__patch",
         "security": [
           {
@@ -10047,35 +10127,34 @@
       },
       "LocationCreate": {
         "properties": {
-          "floor": {
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "name": {
             "type": "string",
             "maxLength": 50,
             "minLength": 1,
-            "title": "Floor"
+            "title": "Name"
           },
-          "room": {
+          "kind": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 50
+                "maxLength": 20
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Room"
-          },
-          "zone": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 50
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Zone"
+            "title": "Kind"
           },
           "sort_order": {
             "type": "integer",
@@ -10096,11 +10175,67 @@
             "title": "Floor Plan Image Id"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
-          "floor"
+          "name"
         ],
         "title": "LocationCreate"
+      },
+      "LocationPath": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/LocationPathNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "path",
+          "nodes"
+        ],
+        "title": "LocationPath"
+      },
+      "LocationPathNode": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "LocationPathNode"
       },
       "LocationRead": {
         "properties": {
@@ -10108,11 +10243,22 @@
             "type": "integer",
             "title": "Id"
           },
-          "floor": {
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "name": {
             "type": "string",
-            "title": "Floor"
+            "title": "Name"
           },
-          "room": {
+          "kind": {
             "anyOf": [
               {
                 "type": "string"
@@ -10121,18 +10267,7 @@
                 "type": "null"
               }
             ],
-            "title": "Room"
-          },
-          "zone": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Zone"
+            "title": "Kind"
           },
           "sort_order": {
             "type": "integer",
@@ -10150,24 +10285,39 @@
               }
             ],
             "title": "Floor Plan Image Id"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
           }
         },
         "type": "object",
         "required": [
           "id",
-          "floor",
-          "room",
-          "zone"
+          "name",
+          "path"
         ],
         "title": "LocationRead"
       },
       "LocationReorder": {
         "properties": {
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
           "location_ids": {
             "items": {
               "type": "integer"
             },
             "type": "array",
+            "minItems": 1,
             "title": "Location Ids"
           }
         },
@@ -10177,9 +10327,94 @@
         ],
         "title": "LocationReorder"
       },
+      "LocationTreeNode": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "sort_order": {
+            "type": "integer",
+            "title": "Sort Order",
+            "default": 0
+          },
+          "floor_plan_image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Floor Plan Image Id"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "item_count": {
+            "type": "integer",
+            "title": "Item Count",
+            "default": 0
+          },
+          "children": {
+            "items": {
+              "$ref": "#/components/schemas/LocationTreeNode"
+            },
+            "type": "array",
+            "title": "Children"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "path"
+        ],
+        "title": "LocationTreeNode"
+      },
       "LocationUpdate": {
         "properties": {
-          "floor": {
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "name": {
             "anyOf": [
               {
                 "type": "string",
@@ -10190,31 +10425,19 @@
                 "type": "null"
               }
             ],
-            "title": "Floor"
+            "title": "Name"
           },
-          "room": {
+          "kind": {
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 50
+                "maxLength": 20
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Room"
-          },
-          "zone": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 50
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Zone"
+            "title": "Kind"
           },
           "sort_order": {
             "anyOf": [

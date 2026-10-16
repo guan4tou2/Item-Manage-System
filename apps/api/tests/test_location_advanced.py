@@ -1,161 +1,154 @@
 from __future__ import annotations
 
-import io
-import struct
-import zlib
-
 import pytest
+from sqlalchemy import select
 
-
-def _tiny_png() -> bytes:
-    signature = b"\x89PNG\r\n\x1a\n"
-
-    def chunk(tag: bytes, data: bytes) -> bytes:
-        return (
-            struct.pack(">I", len(data))
-            + tag
-            + data
-            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
-        )
-
-    ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
-    raw = b"\x00\xff\x00\x00"
-    idat = zlib.compress(raw)
-    return signature + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
-
-
-@pytest.fixture(autouse=True)
-def _isolated_media(tmp_path, monkeypatch):
-    monkeypatch.setenv("MEDIA_DIR", str(tmp_path))
-    from app.config import get_settings
-    get_settings.cache_clear()
+from app.models.location import Location
 
 
 @pytest.fixture
 async def auth(client):
     await client.post(
         "/api/auth/register",
-        json={"email": "loc_adv@t.io", "username": "loc_adv_user", "password": "secret1234"},
+        json={"email": "locadv@t.io", "username": "loc_adv", "password": "secret1234"},
     )
     r = await client.post(
-        "/api/auth/login",
-        json={"username": "loc_adv_user", "password": "secret1234"},
+        "/api/auth/login", json={"username": "loc_adv", "password": "secret1234"}
     )
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
 
 
-async def _create(client, auth, floor: str, sort_order: int | None = None) -> dict:
-    payload: dict = {"floor": floor}
-    if sort_order is not None:
-        payload["sort_order"] = sort_order
+async def _create(client, auth, **payload) -> dict:
     r = await client.post("/api/locations", headers=auth, json=payload)
     assert r.status_code == 201, r.text
     return r.json()
 
 
 async def test_create_with_sort_order(client, auth):
-    body = await _create(client, auth, "3F", sort_order=5)
-    assert body["sort_order"] == 5
+    node = await _create(client, auth, name="1F", sort_order=5)
+    assert node["sort_order"] == 5
 
 
-async def test_list_orders_by_sort_order(client, auth):
-    # create in non-natural floor order to verify sort_order wins over alphabetical
-    a = await _create(client, auth, "3F", sort_order=2)
-    b = await _create(client, auth, "1F", sort_order=0)
-    c = await _create(client, auth, "2F", sort_order=1)
-    r = await client.get("/api/locations", headers=auth)
-    assert r.status_code == 200
-    ids = [row["id"] for row in r.json()]
-    assert ids == [b["id"], c["id"], a["id"]]
+async def test_default_sort_order_is_zero(client, auth):
+    node = await _create(client, auth, name="1F")
+    assert node["sort_order"] == 0
+
+
+async def test_list_orders_by_sort_order_then_name(client, auth):
+    root = await _create(client, auth, name="1F")
+    await _create(client, auth, name="C", parent_id=root["id"], sort_order=2)
+    await _create(client, auth, name="A", parent_id=root["id"], sort_order=1)
+    await _create(client, auth, name="B", parent_id=root["id"], sort_order=1)
+
+    rows = (await client.get("/api/locations", headers=auth)).json()
+
+    assert [row["name"] for row in rows] == ["1F", "A", "B", "C"]
 
 
 async def test_patch_floor_plan_image_id(client, auth):
-    # upload an image first
-    png = _tiny_png()
-    files = {"file": ("fp.png", png, "image/png")}
-    img = (await client.post("/api/images", headers=auth, files=files)).json()
-    loc = await _create(client, auth, "1F")
+    node = await _create(client, auth, name="1F")
+    image_id = "11111111-1111-4111-8111-111111111111"
+
     r = await client.patch(
-        f"/api/locations/{loc['id']}",
+        f"/api/locations/{node['id']}",
         headers=auth,
-        json={"floor_plan_image_id": img["id"]},
+        json={"floor_plan_image_id": image_id},
     )
     assert r.status_code == 200
-    assert r.json()["floor_plan_image_id"] == img["id"]
+    assert r.json()["floor_plan_image_id"] == image_id
 
 
 async def test_patch_sort_order(client, auth):
-    loc = await _create(client, auth, "1F", sort_order=0)
+    node = await _create(client, auth, name="1F", sort_order=0)
     r = await client.patch(
-        f"/api/locations/{loc['id']}",
-        headers=auth,
-        json={"sort_order": 99},
+        f"/api/locations/{node['id']}", headers=auth, json={"sort_order": 3}
     )
-    assert r.status_code == 200
-    assert r.json()["sort_order"] == 99
+    assert r.json()["sort_order"] == 3
+
+
+async def test_patch_kind_accepts_free_text_and_presets(client, auth):
+    node = await _create(client, auth, name="1F")
+    preset = await client.patch(
+        f"/api/locations/{node['id']}", headers=auth, json={"kind": "shelf"}
+    )
+    assert preset.json()["kind"] == "shelf"
+    free = await client.patch(
+        f"/api/locations/{node['id']}", headers=auth, json={"kind": "車庫層板"}
+    )
+    assert free.json()["kind"] == "車庫層板"
 
 
 async def test_reorder_rewrites_positions(client, auth):
-    a = await _create(client, auth, "A-floor", sort_order=0)
-    b = await _create(client, auth, "B-floor", sort_order=1)
-    c = await _create(client, auth, "C-floor", sort_order=2)
+    root = await _create(client, auth, name="1F")
+    a = await _create(client, auth, name="A", parent_id=root["id"], sort_order=0)
+    b = await _create(client, auth, name="B", parent_id=root["id"], sort_order=1)
+    c = await _create(client, auth, name="C", parent_id=root["id"], sort_order=2)
 
-    # reverse order
     r = await client.post(
         "/api/locations/reorder",
         headers=auth,
-        json={"location_ids": [c["id"], b["id"], a["id"]]},
+        json={"parent_id": root["id"], "location_ids": [c["id"], a["id"], b["id"]]},
     )
-    assert r.status_code == 200, r.text
-    rows = r.json()
-    ids = [row["id"] for row in rows]
-    assert ids == [c["id"], b["id"], a["id"]]
-    sort_orders = {row["id"]: row["sort_order"] for row in rows}
-    assert sort_orders[c["id"]] == 0
-    assert sort_orders[b["id"]] == 1
-    assert sort_orders[a["id"]] == 2
+    assert r.status_code == 200
+    names = [row["name"] for row in r.json()]
+    assert names == ["1F", "C", "A", "B"]
 
-
-async def test_reorder_rejects_duplicates(client, auth):
-    a = await _create(client, auth, "A", sort_order=0)
-    r = await client.post(
+    roots = await client.post(
         "/api/locations/reorder",
         headers=auth,
-        json={"location_ids": [a["id"], a["id"]]},
+        json={"parent_id": None, "location_ids": [root["id"]]},
     )
-    assert r.status_code == 400
+    assert roots.status_code == 200
 
 
-async def test_reorder_rejects_unknown_id(client, auth):
-    a = await _create(client, auth, "A", sort_order=0)
-    r = await client.post(
+async def test_reorder_rejects_duplicates_unknown_and_incomplete(client, auth):
+    root = await _create(client, auth, name="1F")
+    a = await _create(client, auth, name="A", parent_id=root["id"])
+    await _create(client, auth, name="B", parent_id=root["id"])
+
+    duplicates = await client.post(
         "/api/locations/reorder",
         headers=auth,
-        json={"location_ids": [a["id"], 999999]},
+        json={"parent_id": root["id"], "location_ids": [a["id"], a["id"]]},
     )
-    assert r.status_code == 404
+    assert duplicates.status_code == 422
+
+    unknown_parent = await client.post(
+        "/api/locations/reorder",
+        headers=auth,
+        json={"parent_id": 99999, "location_ids": [a["id"]]},
+    )
+    assert unknown_parent.status_code == 404
+
+    incomplete = await client.post(
+        "/api/locations/reorder",
+        headers=auth,
+        json={"parent_id": root["id"], "location_ids": [a["id"]]},
+    )
+    assert incomplete.status_code == 422
+    assert incomplete.json()["detail"]["code"] == "invalid_siblings"
 
 
 async def test_reorder_rejects_cross_owner(client, auth):
-    # owner 1 creates a location
-    owned = await _create(client, auth, "A", sort_order=0)
-    # register a second user
+    root = await _create(client, auth, name="1F")
+    child = await _create(client, auth, name="廚房", parent_id=root["id"])
+
     await client.post(
         "/api/auth/register",
-        json={"email": "other_loc@t.io", "username": "other_loc_user", "password": "secret1234"},
+        json={"email": "locadv2@t.io", "username": "loc_adv_2", "password": "secret1234"},
     )
+    login = await client.post(
+        "/api/auth/login", json={"username": "loc_adv_2", "password": "secret1234"}
+    )
+    other = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    mine = await _create(client, other, name="別人的")
+
     r = await client.post(
-        "/api/auth/login",
-        json={"username": "other_loc_user", "password": "secret1234"},
-    )
-    other = {"Authorization": f"Bearer {r.json()['access_token']}"}
-    # other user attempts to reorder owner1's location id
-    resp = await client.post(
         "/api/locations/reorder",
         headers=other,
-        json={"location_ids": [owned["id"]]},
+        json={"parent_id": None, "location_ids": [mine["id"], child["id"]]},
     )
-    assert resp.status_code == 404
+    assert r.status_code == 422
 
 
 async def test_reorder_requires_auth(client):
@@ -163,6 +156,16 @@ async def test_reorder_requires_auth(client):
     assert r.status_code == 401
 
 
-async def test_default_sort_order_is_zero(client, auth):
-    body = await _create(client, auth, "1F")
-    assert body["sort_order"] == 0
+async def test_delete_cascades_nothing_and_keeps_tree_consistent(client, auth, db_session):
+    root = await _create(client, auth, name="1F")
+    child = await _create(client, auth, name="廚房", parent_id=root["id"])
+
+    assert (
+        await client.delete(f"/api/locations/{child['id']}", headers=auth)
+    ).status_code == 204
+
+    rows = (await db_session.execute(select(Location))).scalars().all()
+    assert [row.name for row in rows] == ["1F"]
+
+    tree = (await client.get("/api/locations/tree", headers=auth)).json()
+    assert tree[0]["children"] == []
