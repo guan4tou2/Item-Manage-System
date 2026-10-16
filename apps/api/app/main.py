@@ -7,6 +7,7 @@ from app.routes import (
     ai,
     auth,
     backup,
+    barcodes,
     batches,
     categories,
     customization,
@@ -77,6 +78,7 @@ def create_app() -> FastAPI:
     app.include_router(webhooks.router)
     app.include_router(jobs.router)
     app.include_router(labels.router)
+    app.include_router(barcodes.router)
     return app
 
 

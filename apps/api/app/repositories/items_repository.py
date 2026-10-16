@@ -84,6 +84,19 @@ def _soonest_expiry_subquery():
     )
 
 
+async def list_by_barcode(
+    session: AsyncSession, owner_id: UUID, code: str
+) -> list[Item]:
+    """內查：owner 範圍、canonical 精確比對（同條碼可多件）。"""
+    stmt = (
+        _base_query(owner_id)
+        .where(Item.barcode == code)
+        .order_by(Item.name.asc(), Item.created_at.desc())
+        .options(*_load_options())
+    )
+    return list((await session.execute(stmt)).scalars().all())
+
+
 async def list_paginated(
     session: AsyncSession,
     owner_ids,

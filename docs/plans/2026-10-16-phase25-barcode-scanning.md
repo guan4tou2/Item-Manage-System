@@ -128,10 +128,10 @@
 - Test: `apps/api/tests/test_barcodes_routes.py`
 
 **TODO:**
-- [ ] `items_repository.list_by_barcode(session, owner_id, code)`：owner 範圍、`is_deleted = false`、`barcode == code`（canonical）、依 name 排序；回傳附 `location_path` 建構所需欄位（join locations；`[floor, room, zone].filter(join " / ")`）
-- [ ] schemas：`BarcodeLocalMatch`（`id`/`name`/`quantity`/`image_id`/`location_path`）、`BarcodeExternal`（`source`/`name`/`description`/`image_url`/`suggested_category_id`）、`BarcodeLookupResponse`（定案 4 形狀）
-- [ ] route：canonicalize → 空／>64 字 422；`local_matches` 非空 → `skipped`；否則 `lookup_external`＋`suggest_category_id`（僅 `ok`）
-- [ ] 測試：匿名 401；單筆/多筆/零筆；`skipped` 語義（有 local 不呼叫 provider——以 monkeypatch 計數）；`unsupported`（checksum 壞的 13 位）；422（空／超長）；owner 隔離（他用戶條碼不現）；`location_path` 格式；`image_id` 透傳
+- [x] `items_repository.list_by_barcode(session, owner_id, code)`：owner 範圍、`is_deleted = false`、`barcode == code`（canonical）、依 name 排序；回傳附 `location_path` 建構所需欄位（join locations；`[floor, room, zone].filter(join " / ")`）
+- [x] schemas：`BarcodeLocalMatch`（`id`/`name`/`quantity`/`image_id`/`location_path`）、`BarcodeExternal`（`source`/`name`/`description`/`image_url`/`suggested_category_id`）、`BarcodeLookupResponse`（定案 4 形狀）
+- [x] route：canonicalize → 空／>64 字 422；`local_matches` 非空 → `skipped`；否則 `lookup_external`＋`suggest_category_id`（僅 `ok`）
+- [x] 測試：匿名 401；單筆/多筆/零筆；`skipped` 語義（有 local 不呼叫 provider——以 monkeypatch 計數）；`unsupported`（checksum 壞的 13 位）；422（空／超長）；owner 隔離（他用戶條碼不現）；`location_path` 格式；`image_id` 透傳
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_barcodes_routes.py`
