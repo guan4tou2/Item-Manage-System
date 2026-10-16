@@ -43,6 +43,9 @@ tmp/
 *.bak
 *.backup
 
+# 本地工具流量記錄（mitm_mcp；勿入版控，見 f42d0c6）
+mitm_mcp_traffic.db
+
 # Planning files
 .sisyphus/
 
