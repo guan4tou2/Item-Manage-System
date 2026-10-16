@@ -107,6 +107,17 @@ export function NotificationPreferencesPanel() {
       channel: t(`channelLabels.${channel}`),
     })
 
+  // 觸控區 ≥44px（§5.7）：:before 覆蓋層將 24px 高開關擴為 44px 可點區。
+  const renderSwitch = (type: PreferenceType, channel: string) => (
+    <Switch
+      aria-label={switchLabels(type, channel)}
+      checked={data.matrix[type.key]?.[channel] ?? false}
+      className="relative before:absolute before:inset-x-0 before:-inset-y-2.5 before:content-['']"
+      disabled={type.locked || !data.channel_availability[channel]}
+      onCheckedChange={(checked) => onToggle(type.key, channel, checked)}
+    />
+  )
+
   const groups = GROUP_ORDER.map((id) => ({
     id,
     types: data.types.filter((type) => type.group === id),
@@ -185,14 +196,7 @@ export function NotificationPreferencesPanel() {
                         </TableCell>
                         {data.channels.map((channel) => (
                           <TableCell className="text-center" key={channel}>
-                            <Switch
-                              aria-label={switchLabels(type, channel)}
-                              checked={data.matrix[type.key]?.[channel] ?? false}
-                              disabled={type.locked || !data.channel_availability[channel]}
-                              onCheckedChange={(checked) =>
-                                onToggle(type.key, channel, checked)
-                              }
-                            />
+                            {renderSwitch(type, channel)}
                           </TableCell>
                         ))}
                       </TableRow>
@@ -209,7 +213,7 @@ export function NotificationPreferencesPanel() {
                     <div className="mt-3 space-y-3">
                       {data.channels.map((channel) => (
                         <div
-                          className="flex items-center justify-between gap-3"
+                          className="flex items-center justify-between gap-3 py-1.5"
                           key={channel}
                         >
                           <span className="text-sm">{t(`channelLabels.${channel}`)}</span>
@@ -222,14 +226,7 @@ export function NotificationPreferencesPanel() {
                                 {t("goLink")}
                               </Link>
                             ) : null}
-                            <Switch
-                              aria-label={switchLabels(type, channel)}
-                              checked={data.matrix[type.key]?.[channel] ?? false}
-                              disabled={type.locked || !data.channel_availability[channel]}
-                              onCheckedChange={(checked) =>
-                                onToggle(type.key, channel, checked)
-                              }
-                            />
+                            {renderSwitch(type, channel)}
                           </span>
                         </div>
                       ))}
