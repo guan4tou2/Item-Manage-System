@@ -13,7 +13,7 @@ async def test_export_empty(client, auth):
     r = await client.get("/api/backup/export", headers=auth)
     assert r.status_code == 200
     body = r.json()
-    assert body["format_version"] == 1
+    assert body["format_version"] == 2
     assert body["items"] == []
     assert body["categories"] == []
     assert "Content-Disposition" in r.headers
@@ -40,3 +40,29 @@ async def test_export_includes_warehouses(client, auth):
     await client.post("/api/warehouses", headers=auth, json={"name": "家裡"})
     body = (await client.get("/api/backup/export", headers=auth)).json()
     assert len(body["warehouses"]) == 1
+
+async def test_export_includes_tree_locations(client, auth):
+    floor = (
+        await client.post(
+            "/api/locations", headers=auth, json={"name": "1F", "kind": "floor"}
+        )
+    ).json()
+    room = (
+        await client.post(
+            "/api/locations",
+            headers=auth,
+            json={"name": "廚房", "parent_id": floor["id"], "kind": "room"},
+        )
+    ).json()
+
+    body = (await client.get("/api/backup/export", headers=auth)).json()
+
+    assert body["format_version"] == 2
+    by_id = {loc["id"]: loc for loc in body["locations"]}
+    assert by_id[floor["id"]]["parent_id"] is None
+    assert by_id[room["id"]]["parent_id"] == floor["id"]
+    assert by_id[room["id"]]["name"] == "廚房"
+    assert by_id[room["id"]]["kind"] == "room"
+    assert "sort_order" in by_id[room["id"]]
+    # 舊三欄不再輸出
+    assert "floor" not in by_id[room["id"]]

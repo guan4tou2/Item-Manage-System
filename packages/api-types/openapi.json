@@ -1405,6 +1405,20 @@
             }
           },
           {
+            "name": "location_scope",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "subtree",
+                "exact"
+              ],
+              "type": "string",
+              "default": "subtree",
+              "title": "Location Scope"
+            }
+          },
+          {
             "name": "warehouse_id",
             "in": "query",
             "required": false,

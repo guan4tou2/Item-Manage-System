@@ -107,7 +107,7 @@ async def export_full(session: AsyncSession, owner_id: UUID) -> dict[str, Any]:
     ]
 
     return {
-        "format_version": 1,
+        "format_version": 2,
         "exported_at": datetime.utcnow().isoformat() + "Z",
         "owner_id": str(owner_id),
         "items": items_data,
@@ -115,7 +115,11 @@ async def export_full(session: AsyncSession, owner_id: UUID) -> dict[str, Any]:
             _row_to_dict(c, ["id", "name", "parent_id"]) for c in categories
         ],
         "locations": [
-            _row_to_dict(loc, ["id", "floor", "room", "zone"]) for loc in locations
+            _row_to_dict(
+                loc,
+                ["id", "parent_id", "name", "kind", "sort_order", "floor_plan_image_id"],
+            )
+            for loc in locations
         ],
         "tags": [_row_to_dict(t, ["id", "name"]) for t in tags],
         "warehouses": [

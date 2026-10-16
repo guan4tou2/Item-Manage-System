@@ -59,7 +59,7 @@ async def test_overview_excludes_soft_deleted(db_session, two_users):
 async def test_overview_counts_taxonomy(db_session, two_users):
     alice, _ = two_users
     cat = Category(owner_id=alice.id, name="cat1")
-    loc = Location(owner_id=alice.id, floor="1F")
+    loc = Location(owner_id=alice.id, name="1F", kind="floor")
     tag = Tag(owner_id=alice.id, name="tag1")
     db_session.add_all([cat, loc, tag])
     await db_session.commit()
@@ -104,29 +104,35 @@ async def test_by_category_owner_isolation(db_session, two_users):
     assert rows == []
 
 
-async def test_by_location_composes_label_and_includes_null(db_session, two_users):
+async def test_by_location_counts_per_node_including_null(db_session, two_users):
     alice, _ = two_users
-    loc_full = Location(owner_id=alice.id, floor="1F", room="客廳", zone="電視櫃")
-    loc_partial = Location(owner_id=alice.id, floor="2F", room=None, zone="陽台")
-    db_session.add_all([loc_full, loc_partial])
+    floor_one = Location(owner_id=alice.id, name="1F", kind="floor")
+    db_session.add(floor_one)
+    await db_session.flush()
+    living = Location(owner_id=alice.id, parent_id=floor_one.id, name="客廳", kind="room")
+    db_session.add(living)
+    await db_session.flush()
+    cabinet = Location(owner_id=alice.id, parent_id=living.id, name="電視櫃")
+    floor_two = Location(owner_id=alice.id, name="2F", kind="floor")
+    db_session.add_all([cabinet, floor_two])
+    await db_session.flush()
+    balcony = Location(owner_id=alice.id, parent_id=floor_two.id, name="陽台")
+    db_session.add(balcony)
     await db_session.commit()
     db_session.add_all([
-        Item(owner_id=alice.id, name="i1", location_id=loc_full.id, quantity=1),
-        Item(owner_id=alice.id, name="i2", location_id=loc_full.id, quantity=1),
-        Item(owner_id=alice.id, name="i3", location_id=loc_partial.id, quantity=1),
+        Item(owner_id=alice.id, name="i1", location_id=cabinet.id, quantity=1),
+        Item(owner_id=alice.id, name="i2", location_id=cabinet.id, quantity=1),
+        Item(owner_id=alice.id, name="i3", location_id=balcony.id, quantity=1),
         Item(owner_id=alice.id, name="i4", quantity=1),
     ])
     await db_session.commit()
 
     rows = await stats_repository.by_location(db_session, alice.id)
     by_id = {r["location_id"]: r for r in rows}
-    assert by_id[loc_full.id] == {
-        "location_id": loc_full.id, "label": "1F / 客廳 / 電視櫃", "count": 2,
-    }
-    assert by_id[loc_partial.id] == {
-        "location_id": loc_partial.id, "label": "2F / 陽台", "count": 1,
-    }
-    assert by_id[None] == {"location_id": None, "label": None, "count": 1}
+    # 直接物品數（label 由 service 以樹路徑組裝）
+    assert by_id[cabinet.id] == {"location_id": cabinet.id, "count": 2}
+    assert by_id[balcony.id] == {"location_id": balcony.id, "count": 1}
+    assert by_id[None] == {"location_id": None, "count": 1}
 
 
 async def test_by_tag_counts_usage_desc_and_respects_limit(db_session, two_users):

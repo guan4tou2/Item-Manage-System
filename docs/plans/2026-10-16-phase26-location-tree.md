@@ -141,13 +141,13 @@
 - Regenerate: `packages/api-types/*`
 
 **TODO:**
-- [ ] items：`list_paginated(..., location_scope="subtree"|"exact")`——`subtree` 以 `descendant_ids` 轉 `IN`；route `?location_scope=`；頁面列以 `paths_for` 補 `location.path`
-- [ ] `ItemRead.location`＝`LocationRead`（含 path）；`_validate_refs` 不變（同 owner 驗證）
-- [ ] stats `by_location`：label 改由 `paths_for` 取得（無位置 → `label=None`）
-- [ ] CSV：export 改 `location_path`（移除三欄；值＝path 或空）；import 支援 `location_path` 與舊三欄（`_ensure_location_path(owner, path)`：以 `/` 分割、逐層重用或建立、kind 依深度）；`IMPORT_OPTIONAL` 更新
-- [ ] backup：locations 區段改樹欄位；`format_version` 1 → **2**
-- [ ] `barcodes.py`：`_location_path` 改用 `paths_for`（候選清單路徑一致）
-- [ ] 測試：`location_scope` 預設含子孫（三層 fixture）／`exact` 僅此層／與其他篩選組合；`ItemRead.location.path` 正確；stats label＝完整路徑；CSV 匯出欄位名稱與值、匯入 `location_path` 建立三層節點、舊三欄相容、round-trip；backup `format_version==2` 且 locations 樹欄位；barcode `/api/barcodes/{code}` 候選 `location_path` 為完整路徑；物品列表／搜尋／統計回歸全綠
+- [x] items：`list_paginated(..., location_scope="subtree"|"exact")`——`subtree` 以 `descendant_ids` 轉 `IN`（repository 改收 `location_ids: list[int] | None`，空集合 → 明確無結果）；route `?location_scope=`（`Literal`，非法值 422）；頁面列以 `paths_for` 補 `location.path`
+- [x] `ItemRead.location`＝`LocationRead`（含 path）；`_paths_for_items` 依 **item.owner**（共享清單／群組可見的他人物品也正確）批次取路徑；`_validate_refs` 不變（同 owner 驗證）
+- [x] stats `by_location`：repository 回 `{location_id, count}`；service 以樹路徑組裝 `label`（無位置 → `label=None`）
+- [x] CSV：export 改 `location_path`（移除三欄；值＝path 或空）；import 支援 `location_path` 與舊三欄（`_ensure_location_path`：以 `/` 分割、逐層重用或建立、kind 依深度 1=floor／2=room／≥3=other；快取以路徑前綴共用中間節點）；`IMPORT_OPTIONAL` 更新（保留三欄為相容列）
+- [x] backup：locations 區段改樹欄位（`id, parent_id, name, kind, sort_order, floor_plan_image_id`）；`format_version` 1 → **2**
+- [x] `barcodes.py`：候選 `location_path` 改用 `paths_for`（完整樹路徑，與列表／詳情一致）
+- [x] 測試：新增 `test_items_location_scope.py`（預設含子孫／exact／與 q 組合／`location.path` 完整／搬移後 path 更新／未知節點空結果／非法 scope 422／bulk 搬移後可刪節點）；CSV（`location_path` 建三層樹＋kind 推定、舊三欄相容、匯出匯入 round-trip）；backup（v2＋樹欄位、舊三欄不再輸出）；stats（repository 直接計數＋service label）；barcode（樹路徑）；全套 **691 passed**
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q`

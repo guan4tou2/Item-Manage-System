@@ -63,7 +63,13 @@ async def test_lookup_requires_authentication(client):
 async def test_lookup_single_local_match_with_canonical_input(client, db_session):
     headers = await _auth(client, "bc_single")
     uid = await _uid(client, headers)
-    loc = Location(owner_id=uid, floor="1F", room="廚房", zone="上櫃")
+    floor = Location(owner_id=uid, name="1F", kind="floor")
+    db_session.add(floor)
+    await db_session.flush()
+    kitchen = Location(owner_id=uid, parent_id=floor.id, name="廚房", kind="room")
+    db_session.add(kitchen)
+    await db_session.flush()
+    loc = Location(owner_id=uid, parent_id=kitchen.id, name="上櫃")
     db_session.add(loc)
     await db_session.flush()
     item = Item(

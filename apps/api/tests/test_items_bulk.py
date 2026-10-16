@@ -39,11 +39,16 @@ async def test_export_empty(client, auth):
 
 async def test_export_includes_items_with_taxonomy(client, auth):
     cat = (await client.post("/api/categories", headers=auth, json={"name": "tools"})).json()
+    floor = (
+        await client.post(
+            "/api/locations", headers=auth, json={"name": "1F", "kind": "floor"}
+        )
+    ).json()
     loc = (
         await client.post(
             "/api/locations",
             headers=auth,
-            json={"floor": "1F", "room": "garage"},
+            json={"name": "garage", "parent_id": floor["id"], "kind": "room"},
         )
     ).json()
     wh = (await client.post("/api/warehouses", headers=auth, json={"name": "Main"})).json()
@@ -70,8 +75,7 @@ async def test_export_includes_items_with_taxonomy(client, auth):
     assert row[idx["quantity"]] == "2"
     assert row[idx["min_quantity"]] == "1"
     assert row[idx["category_name"]] == "tools"
-    assert row[idx["location_floor"]] == "1F"
-    assert row[idx["location_room"]] == "garage"
+    assert row[idx["location_path"]] == "1F / garage"
     assert row[idx["warehouse_name"]] == "Main"
     assert row[idx["notes"]] == "heavy"
 
@@ -135,9 +139,9 @@ async def test_import_barcode_canonicalizes_and_roundtrips(client, auth):
 
 async def test_import_auto_creates_taxonomy(client, auth):
     csv_bytes = _csv([
-        "name,quantity,category_name,location_floor,location_room,warehouse_name",
-        "drill,3,tools,2F,workshop,North",
-        "saw,1,tools,2F,workshop,North",
+        "name,quantity,category_name,location_path,warehouse_name",
+        "drill,3,tools,2F / workshop,North",
+        "saw,1,tools,2F / workshop,North",
     ])
     files = {"file": ("items.csv", csv_bytes, "text/csv")}
     r = await client.post("/api/items/bulk-import", headers=auth, files=files)
@@ -150,7 +154,8 @@ async def test_import_auto_creates_taxonomy(client, auth):
     whs = (await client.get("/api/warehouses", headers=auth)).json()
     assert len([w for w in whs if w["name"] == "North"]) == 1
     locs = (await client.get("/api/locations", headers=auth)).json()
-    assert len([l for l in locs if l["floor"] == "2F"]) == 1
+    paths = {l["path"] for l in locs}
+    assert "2F" in paths and "2F / workshop" in paths
 
 
 async def test_import_reuses_existing_taxonomy(client, auth):
@@ -392,3 +397,75 @@ async def test_import_roundtrip_preserves_tags(client, auth):
     by_name = {i["name"]: i for i in listed["items"]}
     assert _tag_names_of(by_name["blade"]) == {"sharp"}
     assert _tag_names_of(by_name["wok"]) == {"kitchen", "heavy"}
+
+async def test_import_location_path_creates_tree_and_legacy_columns_still_work(
+    client, auth
+):
+    csv_bytes = _csv([
+        "name,location_path",
+        "牛奶,1F / 廚房 / 上櫃",
+        "水餃,1F / 廚房 / 冰箱",
+    ])
+    files = {"file": ("items.csv", csv_bytes, "text/csv")}
+    r = await client.post("/api/items/bulk-import", headers=auth, files=files)
+    assert r.status_code == 200
+    assert r.json()["created_count"] == 2
+
+    locs = (await client.get("/api/locations", headers=auth)).json()
+    assert [l["path"] for l in locs] == [
+        "1F",
+        "1F / 廚房",
+        "1F / 廚房 / 上櫃",
+        "1F / 廚房 / 冰箱",
+    ]
+    by_path = {l["path"]: l for l in locs}
+    assert by_path["1F"]["kind"] == "floor"
+    assert by_path["1F / 廚房"]["kind"] == "room"
+    assert by_path["1F / 廚房 / 上櫃"]["kind"] == "other"
+
+    # 舊檔三欄格式（Phase 26 前）相容：併為同一路徑
+    legacy = _csv([
+        "name,location_floor,location_room,location_zone",
+        "雞蛋,2F,書房,抽屜",
+    ])
+    r2 = await client.post(
+        "/api/items/bulk-import",
+        headers=auth,
+        files={"file": ("legacy.csv", legacy, "text/csv")},
+    )
+    assert r2.json()["created_count"] == 1
+    locs2 = (await client.get("/api/locations", headers=auth)).json()
+    assert "2F / 書房 / 抽屜" in {l["path"] for l in locs2}
+
+
+async def test_export_import_roundtrip_preserves_location_path(client, auth):
+    floor = (
+        await client.post(
+            "/api/locations", headers=auth, json={"name": "3F", "kind": "floor"}
+        )
+    ).json()
+    room = (
+        await client.post(
+            "/api/locations",
+            headers=auth,
+            json={"name": "儲藏室", "parent_id": floor["id"], "kind": "room"},
+        )
+    ).json()
+    await client.post(
+        "/api/items",
+        headers=auth,
+        json={"name": "電池", "location_id": room["id"]},
+    )
+
+    exported = (await client.get("/api/items/export.csv", headers=auth)).text
+    assert "3F / 儲藏室" in exported
+
+    r = await client.post(
+        "/api/items/bulk-import",
+        headers=auth,
+        files={"file": ("items.csv", exported.encode("utf-8"), "text/csv")},
+    )
+    assert r.json()["created_count"] == 1
+    items = (await client.get("/api/items", headers=auth)).json()
+    paths = {i["location"]["path"] for i in items["items"]}
+    assert paths == {"3F / 儲藏室"}

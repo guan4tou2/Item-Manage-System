@@ -4780,6 +4780,7 @@ export interface operations {
                 q?: string | null;
                 category_id?: number | null;
                 location_id?: number | null;
+                location_scope?: "subtree" | "exact";
                 warehouse_id?: number | null;
                 tag_ids?: number[] | null;
                 favorite?: boolean | null;

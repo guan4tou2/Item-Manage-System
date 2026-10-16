@@ -16,6 +16,7 @@ from app.models.item_batch import ItemBatch
 from app.models.location import Location
 from app.models.tag import Tag
 from app.models.warehouse import Warehouse
+from app.repositories import locations_repository
 from app.services import barcode_service
 
 
@@ -31,9 +32,7 @@ EXPORT_COLUMNS = [
     "quantity",
     "min_quantity",
     "category_name",
-    "location_floor",
-    "location_room",
-    "location_zone",
+    "location_path",
     "warehouse_name",
     "tag_names",
     "notes",
@@ -51,6 +50,8 @@ IMPORT_OPTIONAL = {
     "min_quantity",
     "notes",
     "category_name",
+    "location_path",
+    # 舊檔相容（Phase 26 前的三欄格式；與 location_path 併為同一路徑邏輯）
     "location_floor",
     "location_room",
     "location_zone",
@@ -116,11 +117,17 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
             if int(batch_count) == 1:
                 single_batch_expiry[item_id] = soonest
 
+    location_paths: dict[int, str] = {}
+    if item_ids:
+        location_ids = sorted({r.location_id for r in rows if r.location_id is not None})
+        if location_ids:
+            locations = await locations_repository.fetch_all(session, owner_id)
+            location_paths = locations_repository.paths_for(locations, location_ids)
+
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=EXPORT_COLUMNS)
     writer.writeheader()
     for item in rows:
-        loc = item.location
         tag_names = TAG_SEPARATOR.join(sorted(t.name for t in item.tags)) if item.tags else ""
         expiry_date = single_batch_expiry.get(item.id)
         writer.writerow({
@@ -131,9 +138,9 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
             "quantity": item.quantity,
             "min_quantity": item.min_quantity if item.min_quantity is not None else "",
             "category_name": item.category.name if item.category else "",
-            "location_floor": loc.floor if loc else "",
-            "location_room": loc.room if loc and loc.room else "",
-            "location_zone": loc.zone if loc and loc.zone else "",
+            "location_path": (
+                location_paths.get(item.location_id, "") if item.location_id else ""
+            ),
             "warehouse_name": wh_names.get(item.warehouse_id) if item.warehouse_id else "",
             "tag_names": tag_names,
             "notes": item.notes or "",
@@ -237,32 +244,54 @@ def _parse_tag_names(raw: str | None) -> list[str]:
     return out
 
 
-async def _ensure_location(
+KIND_BY_DEPTH = {1: "floor", 2: "room"}
+
+
+async def _ensure_location_path(
     session: AsyncSession,
     owner_id: UUID,
-    floor: str,
-    room: str | None,
-    zone: str | None,
-    cache: dict[tuple[str, str | None, str | None], int],
-) -> int:
-    key = (floor, room or None, zone or None)
-    if key in cache:
-        return cache[key]
-    stmt = select(Location).where(
-        Location.owner_id == owner_id,
-        Location.floor == floor,
-        Location.room == (room if room else None),
-        Location.zone == (zone if zone else None),
-    )
-    existing = (await session.execute(stmt)).scalar_one_or_none()
-    if existing is not None:
-        cache[key] = existing.id
-        return existing.id
-    loc = Location(owner_id=owner_id, floor=floor, room=room or None, zone=zone or None)
-    session.add(loc)
-    await session.flush()
-    cache[key] = loc.id
-    return loc.id
+    parts: list[str],
+    cache: dict[tuple[str, ...], int],
+) -> int | None:
+    """依路徑逐層建立／重用位置樹節點；回傳最深節點 id（無層級 → None）。
+
+    深度 1→`floor`、2→`room`、≥3→`other`；快取以「路徑前綴」為鍵，同一匯入檔
+    內共用中間節點。
+    """
+    normalized = [part.strip() for part in parts if part and part.strip()]
+    if not normalized:
+        return None
+    parent_id: int | None = None
+    for depth, name in enumerate(normalized, start=1):
+        prefix = tuple(normalized[:depth])
+        cached = cache.get(prefix)
+        if cached is not None:
+            parent_id = cached
+            continue
+        stmt = select(Location).where(
+            Location.owner_id == owner_id, Location.name == name
+        )
+        stmt = (
+            stmt.where(Location.parent_id.is_(None))
+            if parent_id is None
+            else stmt.where(Location.parent_id == parent_id)
+        )
+        existing = (await session.execute(stmt)).scalar_one_or_none()
+        if existing is not None:
+            node_id = existing.id
+        else:
+            node = Location(
+                owner_id=owner_id,
+                parent_id=parent_id,
+                name=name,
+                kind=KIND_BY_DEPTH.get(depth, "other"),
+            )
+            session.add(node)
+            await session.flush()
+            node_id = node.id
+        cache[prefix] = node_id
+        parent_id = node_id
+    return parent_id
 
 
 async def import_csv(
@@ -295,7 +324,7 @@ async def import_csv(
     to_create: list[Item] = []
     cat_cache: dict[str, int] = {}
     wh_cache: dict[str, int] = {}
-    loc_cache: dict[tuple[str, str | None, str | None], int] = {}
+    loc_cache: dict[tuple[str, ...], int] = {}
     tag_cache: dict[str, Tag] = {}
     total = 0
 
@@ -330,16 +359,17 @@ async def import_csv(
             )
 
         location_id: int | None = None
-        floor = (row.get("location_floor") or "").strip()
-        if floor:
-            location_id = await _ensure_location(
-                session,
-                owner_id,
-                floor,
-                (row.get("location_room") or "").strip() or None,
-                (row.get("location_zone") or "").strip() or None,
-                loc_cache,
-            )
+        raw_path = (row.get("location_path") or "").strip()
+        if raw_path:
+            parts = raw_path.split("/")
+        else:
+            # 舊檔相容：三欄格式（floor/room/zone）併為同一路徑
+            parts = [
+                (row.get("location_floor") or "").strip(),
+                (row.get("location_room") or "").strip(),
+                (row.get("location_zone") or "").strip(),
+            ]
+        location_id = await _ensure_location_path(session, owner_id, parts, loc_cache)
 
         item = Item(
             owner_id=owner_id,

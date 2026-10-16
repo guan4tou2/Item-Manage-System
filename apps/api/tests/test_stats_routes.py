@@ -58,11 +58,19 @@ class TestByCategory:
 
 class TestByLocation:
     async def test_label_format(self, client, auth):
-        loc = await client.post(
-            "/api/locations", headers=auth,
-            json={"floor": "1F", "room": "客廳", "zone": None},
-        )
-        lid = loc.json()["id"]
+        floor = (
+            await client.post(
+                "/api/locations", headers=auth, json={"name": "1F", "kind": "floor"}
+            )
+        ).json()
+        living = (
+            await client.post(
+                "/api/locations",
+                headers=auth,
+                json={"name": "客廳", "parent_id": floor["id"], "kind": "room"},
+            )
+        ).json()
+        lid = living["id"]
         await client.post("/api/items", headers=auth, json={"name": "p", "location_id": lid})
         r = await client.get("/api/stats/by-location", headers=auth)
         assert r.status_code == 200

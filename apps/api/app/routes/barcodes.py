@@ -7,7 +7,7 @@ from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.item import Item
 from app.models.user import User
-from app.repositories import items_repository
+from app.repositories import items_repository, locations_repository
 from app.schemas.barcode import (
     BarcodeExternal,
     BarcodeLocalMatch,
@@ -20,11 +20,10 @@ router = APIRouter(prefix="/api/barcodes", tags=["barcodes"])
 MAX_CODE_LENGTH = 64
 
 
-def _location_path(item: Item) -> str | None:
-    if item.location is None:
+def _location_path(item: Item, paths: dict[int, str]) -> str | None:
+    if item.location_id is None:
         return None
-    parts = [item.location.floor, item.location.room, item.location.zone]
-    return " / ".join(part for part in parts if part) or None
+    return paths.get(item.location_id)
 
 
 @router.get("/{code}", response_model=BarcodeLookupResponse)
@@ -39,13 +38,21 @@ async def lookup_barcode(
         raise HTTPException(status_code=422, detail="invalid barcode")
 
     items = await items_repository.list_by_barcode(session, user.id, canonical)
+    paths: dict[int, str] = {}
+    if items:
+        location_ids = sorted(
+            {item.location_id for item in items if item.location_id is not None}
+        )
+        if location_ids:
+            locations = await locations_repository.fetch_all(session, user.id)
+            paths = locations_repository.paths_for(locations, location_ids)
     matches = [
         BarcodeLocalMatch(
             id=item.id,
             name=item.name,
             quantity=item.quantity,
             image_id=item.image_id,
-            location_path=_location_path(item),
+            location_path=_location_path(item, paths),
         )
         for item in items
     ]

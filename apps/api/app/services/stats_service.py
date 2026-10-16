@@ -4,7 +4,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories import stats_repository
+from app.repositories import locations_repository, stats_repository
 from app.schemas.item import ItemRead
 from app.schemas.stats import (
     ActiveLoan,
@@ -32,7 +32,22 @@ async def get_by_category(session: AsyncSession, owner_id: UUID) -> list[Categor
 
 async def get_by_location(session: AsyncSession, owner_id: UUID) -> list[LocationBucket]:
     rows = await stats_repository.by_location(session, owner_id)
-    return [LocationBucket(**r) for r in rows]
+    ids = [r["location_id"] for r in rows if r["location_id"] is not None]
+    paths: dict[int, str] = {}
+    if ids:
+        locations = await locations_repository.fetch_all(session, owner_id)
+        paths = locations_repository.paths_for(locations, ids)
+    out: list[LocationBucket] = []
+    for row in rows:
+        location_id = row["location_id"]
+        out.append(
+            LocationBucket(
+                location_id=location_id,
+                label=paths.get(location_id) if location_id is not None else None,
+                count=row["count"],
+            )
+        )
+    return out
 
 
 async def get_by_tag(session: AsyncSession, owner_id: UUID, *, limit: int) -> list[TagBucket]:

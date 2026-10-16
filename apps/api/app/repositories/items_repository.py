@@ -103,7 +103,7 @@ async def list_paginated(
     *,
     q: str | None,
     category_id: int | None,
-    location_id: int | None,
+    location_ids: list[int] | None,
     warehouse_id: int | None = None,
     tag_ids: list[int] | None,
     favorite: bool | None = None,
@@ -126,8 +126,9 @@ async def list_paginated(
         )
     if category_id is not None:
         base = base.where(Item.category_id == category_id)
-    if location_id is not None:
-        base = base.where(Item.location_id == location_id)
+    if location_ids is not None:
+        # 空集合（例如無子孫的）→ 明確無結果，避免退化成「不篩選」
+        base = base.where(Item.location_id.in_(location_ids or [-1]))
     if warehouse_id is not None:
         base = base.where(Item.warehouse_id == warehouse_id)
     if tag_ids:

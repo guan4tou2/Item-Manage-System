@@ -31,7 +31,40 @@ from app.services import (
 from app.services.visibility_service import visible_item_owner_ids
 
 
-def _to_read(item: Item, *, soonest_expiry: date | None = None) -> ItemRead:
+def _location_view(loc, *, path: str | None) -> dict:
+    return {
+        "id": loc.id,
+        "parent_id": loc.parent_id,
+        "name": loc.name,
+        "kind": loc.kind,
+        "sort_order": loc.sort_order,
+        "floor_plan_image_id": loc.floor_plan_image_id,
+        "path": path or loc.name,
+    }
+
+
+async def _paths_for_items(session: AsyncSession, items) -> dict[int, str]:
+    """item 所屬 owner 的位置樹路徑（物品可能屬於他人：共享清單／群組可見）。"""
+    by_owner: dict[UUID, set[int]] = {}
+    for item in items:
+        if item.location_id is None:
+            continue
+        by_owner.setdefault(item.owner_id, set()).add(item.location_id)
+    if not by_owner:
+        return {}
+    out: dict[int, str] = {}
+    for owner, location_ids in by_owner.items():
+        locations = await locations_repository.fetch_all(session, owner)
+        out.update(locations_repository.paths_for(locations, sorted(location_ids)))
+    return out
+
+
+def _to_read(
+    item: Item,
+    *,
+    soonest_expiry: date | None = None,
+    location_path: str | None = None,
+) -> ItemRead:
     return ItemRead.model_validate({
         "id": item.id,
         "name": item.name,
@@ -50,9 +83,21 @@ def _to_read(item: Item, *, soonest_expiry: date | None = None) -> ItemRead:
         "created_at": item.created_at,
         "updated_at": item.updated_at,
         "category": item.category,
-        "location": item.location,
+        "location": (
+            _location_view(item.location, path=location_path)
+            if item.location is not None
+            else None
+        ),
         "tags": item.tags,
     })
+
+
+async def _read_with_location(
+    session: AsyncSession, item: Item, *, soonest_expiry: date | None = None
+) -> ItemRead:
+    paths = await _paths_for_items(session, [item])
+    path = paths.get(item.location_id) if item.location_id is not None else None
+    return _to_read(item, soonest_expiry=soonest_expiry, location_path=path)
 
 
 async def toggle_favorite(
@@ -63,7 +108,7 @@ async def toggle_favorite(
         raise HTTPException(status_code=404, detail="item not found")
     item.is_favorite = not item.is_favorite
     saved = await items_repository.save(session, item)
-    return _to_read(saved)
+    return await _read_with_location(session, saved)
 
 
 async def _validate_refs(
@@ -87,6 +132,7 @@ async def list_items(
     q: str | None,
     category_id: int | None,
     location_id: int | None,
+    location_scope: str = "subtree",
     warehouse_id: int | None = None,
     tag_ids: list[int] | None,
     favorite: bool | None = None,
@@ -96,12 +142,23 @@ async def list_items(
     per_page: int,
 ) -> ItemListResponse:
     visible = await visible_item_owner_ids(session, owner_id)
+    resolved_location_ids: list[int] | None = None
+    if location_id is not None:
+        if location_scope == "exact":
+            resolved_location_ids = [location_id]
+        else:
+            # 預設含子孫；節點不存在／非本人 → 空集合（明確無結果）
+            resolved_location_ids = sorted(
+                await locations_repository.descendant_ids(
+                    session, owner_id, [location_id]
+                )
+            )
     rows, total = await items_repository.list_paginated(
         session,
         visible,
         q=q,
         category_id=category_id,
-        location_id=location_id,
+        location_ids=resolved_location_ids,
         warehouse_id=warehouse_id,
         tag_ids=tag_ids,
         favorite=favorite,
@@ -110,8 +167,20 @@ async def list_items(
         page=page,
         per_page=per_page,
     )
+    paths = await _paths_for_items(session, [row[0] for row in rows])
     return ItemListResponse(
-        items=[_to_read(row[0], soonest_expiry=row[1]) for row in rows],
+        items=[
+            _to_read(
+                row[0],
+                soonest_expiry=row[1],
+                location_path=(
+                    paths.get(row[0].location_id)
+                    if row[0].location_id is not None
+                    else None
+                ),
+            )
+            for row in rows
+        ],
         total=total,
         page=page,
         per_page=per_page,
@@ -123,7 +192,7 @@ async def get_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> Item
     item = await items_repository.get_visible(session, visible, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
-    return _to_read(item)
+    return await _read_with_location(session, item)
 
 
 async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -> ItemRead:
@@ -157,7 +226,7 @@ async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -
             body=f"目前數量：{created.quantity}，提醒閾值：{created.min_quantity}",
             link=f"/items/{created.id}",
         )
-    result = _to_read(created)
+    result = await _read_with_location(session, created)
     await webhooks_service.dispatch(
         session, owner_id, "item.created",
         {"id": str(created.id), "name": created.name},
@@ -231,7 +300,7 @@ async def update_item(
             body=f"目前數量：{saved.quantity}，提醒閾值：{saved.min_quantity}",
             link=f"/items/{saved.id}",
         )
-    result = _to_read(saved)
+    result = await _read_with_location(session, saved)
     await webhooks_service.dispatch(
         session, owner_id, "item.updated",
         {"id": str(saved.id), "name": saved.name},

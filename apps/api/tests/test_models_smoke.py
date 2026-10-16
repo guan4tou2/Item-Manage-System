@@ -32,7 +32,7 @@ async def test_item_roundtrip(db_session, make_user):
 async def test_category_tag_location_roundtrip(db_session, make_user):
     user = await make_user("smoke2")
     cat = Category(owner_id=user.id, name="tools")
-    loc = Location(owner_id=user.id, floor="1F", room="garage")
+    loc = Location(owner_id=user.id, name="1F", kind="floor")
     tag = Tag(owner_id=user.id, name="sharp")
     db_session.add_all([cat, loc, tag])
     await db_session.commit()
@@ -41,7 +41,8 @@ async def test_category_tag_location_roundtrip(db_session, make_user):
     await db_session.commit()
     await db_session.refresh(item, ["category", "location", "tags"])
     assert item.category.name == "tools"
-    assert item.location.floor == "1F"
+    assert item.location.name == "1F"
+    assert item.location.kind == "floor"
     assert [t.name for t in item.tags] == ["sharp"]
 
 
