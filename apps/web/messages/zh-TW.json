@@ -614,6 +614,7 @@
         "password": { "description": "變更登入密碼", "title": "密碼" },
         "preferences": { "description": "語言與主題", "title": "偏好" },
         "profile": { "description": "顯示名稱與電子郵件", "title": "個人資料" },
+        "reminders": { "description": "到期提醒的掃描門檻與上次執行狀態", "title": "提醒排程" },
         "taxonomy": { "description": "整理物品的分類結構", "title": "分類／位置／標籤" },
         "tokens": { "description": "供程式與行動 App 存取的權杖", "title": "API Tokens" },
         "webhooks": { "description": "將事件推送到外部系統", "title": "Webhooks" }
@@ -668,6 +669,30 @@
           "request": "轉移請求"
         }
       }
+    },
+    "reminders": {
+      "loading": "載入提醒排程狀態…",
+      "loadFailed": "無法載入提醒排程狀態。",
+      "retry": "重試",
+      "thresholdsTitle": "目前門檻",
+      "thresholdAdvance": "到期前 {days} 天提醒",
+      "thresholdDueToday": "到期當天提醒",
+      "thresholdExpiredStop": "過期後每日提醒，至過期 {days} 天止",
+      "thresholdsNote": "本版門檻為固定值，僅顯示不可調整。",
+      "lastRunTitle": "上次執行",
+      "lastRunNever": "尚未執行過",
+      "lastRunRunning": "執行中",
+      "lastRunSucceeded": "成功",
+      "lastRunFailed": "失敗",
+      "lastRunSummary": "處理 {processed} 筆・發送 {emitted} 則摘要",
+      "warnNever": "提醒排程尚未執行過——請設定外部 cron 每日呼叫。",
+      "warnStale": "已超過 {hours} 小時未執行——請檢查 cron 設定。",
+      "warnFailed": "上次執行發生錯誤——請檢查排程與執行紀錄。",
+      "setupCronHint": "在伺服器 crontab 加入（每日台北時間 09:00）：",
+      "setupPatHint": "需要管理員 PAT：",
+      "setupPatLink": "建立存取權杖",
+      "setupDocsHint": "完整範例（systemd timer／GitHub Actions）：",
+      "setupDocsLink": "排程文件"
     },
     "profile": {
       "email": "電子郵件",

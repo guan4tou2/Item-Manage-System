@@ -614,6 +614,7 @@
         "password": { "description": "Change your login password", "title": "Password" },
         "preferences": { "description": "Language and theme", "title": "Preferences" },
         "profile": { "description": "Display name and email", "title": "Profile" },
+        "reminders": { "description": "Expiry reminder thresholds and last run status", "title": "Reminder schedule" },
         "taxonomy": { "description": "Organize the item taxonomy", "title": "Categories / Locations / Tags" },
         "tokens": { "description": "Tokens for scripts and mobile apps", "title": "API Tokens" },
         "webhooks": { "description": "Push events to external systems", "title": "Webhooks" }
@@ -668,6 +669,30 @@
           "request": "Transfer request"
         }
       }
+    },
+    "reminders": {
+      "loading": "Loading reminder schedule…",
+      "loadFailed": "Could not load the reminder schedule.",
+      "retry": "Retry",
+      "thresholdsTitle": "Current thresholds",
+      "thresholdAdvance": "{days} days before expiry",
+      "thresholdDueToday": "On the expiry day",
+      "thresholdExpiredStop": "Daily after expiry, up to {days} days",
+      "thresholdsNote": "Thresholds are fixed in this version and shown read-only.",
+      "lastRunTitle": "Last run",
+      "lastRunNever": "Not run yet",
+      "lastRunRunning": "Running",
+      "lastRunSucceeded": "Succeeded",
+      "lastRunFailed": "Failed",
+      "lastRunSummary": "{processed} processed · {emitted} digests sent",
+      "warnNever": "The reminder job has never run — set up an external daily cron.",
+      "warnStale": "No run for over {hours} hours — check the cron schedule.",
+      "warnFailed": "The last run failed — check the schedule and run history.",
+      "setupCronHint": "Add this line to the server crontab (daily, Asia/Taipei 09:00):",
+      "setupPatHint": "Requires an admin PAT:",
+      "setupPatLink": "Create access token",
+      "setupDocsHint": "Full examples (systemd timer / GitHub Actions):",
+      "setupDocsLink": "Scheduling docs"
     },
     "profile": {
       "email": "Email",
