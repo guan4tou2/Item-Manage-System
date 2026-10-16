@@ -161,7 +161,7 @@ class TestItemBulkUpdate:
         loc = (await client.post(
             "/api/locations",
             headers=auth_headers,
-            json={"floor": "2F", "room": "Storage"},
+            json={"name": "2F", "kind": "floor"},
         )).json()
         a = (await client.post(
             "/api/items",

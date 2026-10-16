@@ -102,10 +102,11 @@
 - Test: `apps/api/tests/test_locations_tree_service.py`
 
 **TODO:**
-- [ ] repository：`list_for_owner`（走訪序，需 path 排序：以 recursive CTE 產生 `path_names` 並排序）、`get_owned`、`create`／`update`／`delete`（既有風格）、`children_of(session, owner_id, parent_id)`、`descendant_ids(session, owner_id, root_ids) -> set[int]`（含自身；CTE）、`paths_for(session, owner_id, location_ids) -> dict[int, str]`（單一查詢、ancestor 串接）、`tree_rows(session, owner_id)`（節點＋`item_count` 聚合）、`count_children`／`count_items`
-- [ ] service：`list_all`（回傳含 `path` 的結構）、`tree`（巢狀組裝）、`path_of(id)`、`create`（`parent_id` 需存在且同 owner，否則 404；同 parent 同名 → 409 `{code:"duplicate_name"}`）、`update`（`name`／`kind`／`sort_order`／`floor_plan_image_id`；`parent_id` 存在時＝move，經 `_assert_no_cycle`）、`reorder(parent_id, ids)`（需完整子集合，否則 422）、`delete`（`children>0` → 409 `has_children`；`items>0` → 409 `has_items`；兩者皆附計數）
-- [ ] `_assert_no_cycle`：目標 parent 為自身或其子孫 → 422 `{code:"cycle"}`
-- [ ] 測試：CTE（`descendant_ids` 三層正確、`paths_for` 多節點正確）；move 成功／移到自身／移到子孫 → 422；跨 owner parent → 404；同名兄弟 → 409；reorder 完整集合成功／缺漏 → 422／跨 parent → 422；delete 有子 → 409＋counts／有物品 → 409＋counts／乾淨 → 204（含「搬到別處後即可刪除」流程）；走訪序穩定
+- [x] repository：`list_for_owner`（走訪序，需 path 排序：以 recursive CTE 產生 `path_names` 並排序）、`get_owned`、`create`／`update`／`delete`（既有風格）、`children_of(session, owner_id, parent_id)`、`descendant_ids(session, owner_id, root_ids) -> set[int]`（含自身；CTE）、`paths_for(session, owner_id, location_ids) -> dict[int, str]`（單一查詢、ancestor 串接）、`tree_rows(session, owner_id)`（節點＋`item_count` 聚合）、`count_children`／`count_items`
+  - 實作定案：`descendant_ids` 用 recursive CTE（唯一需要單一 SQL 之處）；**走訪序與路徑以 Python 組裝**（`fetch_all` ＋ `walk_order`／`path_for`／`paths_for` 純函式）——位置節點數量小，單純且可單元測試
+- [x] service：`list_all`（回傳含 `path` 的結構）、`tree`（巢狀組裝）、`path_of(id)`、`create`（`parent_id` 需存在且同 owner，否則 404；同 parent 同名 → 409 `{code:"duplicate_name"}`）、`update`（`name`／`kind`／`sort_order`／`floor_plan_image_id`；`parent_id` 存在時＝move，經 `_assert_no_cycle`）、`reorder(parent_id, ids)`（需完整子集合，否則 422）、`delete`（`children>0` → 409 `has_children`；`items>0` → 409 `has_items`；兩者皆附計數）
+- [x] `_assert_no_cycle`：目標 parent 為自身或其子孫 → 422 `{code:"cycle"}`
+- [x] 測試：CTE（`descendant_ids` 三層正確、`paths_for` 多節點正確）；move 成功／移到自身／移到子孫 → 422；跨 owner parent → 404；同名兄弟 → 409；reorder 完整集合成功／缺漏 → 422／跨 parent → 422；delete 有子 → 409＋counts／有物品 → 409＋counts／乾淨 → 204（含「搬到別處後即可刪除」流程）；走訪序穩定（19 例）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_locations_tree_service.py`
