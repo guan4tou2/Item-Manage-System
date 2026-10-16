@@ -609,6 +609,7 @@
         "customization": { "description": "Item types, custom fields, and templates", "title": "Customization" },
         "data": { "description": "Bulk import and export items as CSV", "title": "Import / Export" },
         "members": { "description": "Activate, deactivate accounts, and roles", "title": "Members" },
+        "notifications": { "description": "Choose which channels deliver each notification type", "title": "Notification preferences" },
         "password": { "description": "Change your login password", "title": "Password" },
         "preferences": { "description": "Language and theme", "title": "Preferences" },
         "profile": { "description": "Display name and email", "title": "Profile" },
@@ -619,11 +620,52 @@
       "retry": "Retry"
     },
     "notificationPreferences": {
+      "cancel": "Cancel",
+      "channelLabels": {
+        "email": "Email",
+        "in_app": "In-app",
+        "line": "LINE",
+        "telegram": "Telegram",
+        "web_push": "Browser push"
+      },
+      "defaultsDetail": "All notifications default to on. The only exceptions are Email, LINE, and Telegram for “Expiring soon” and “Expired”, which default off (in-app and browser push stay on).",
+      "defaultsSummary": "Using defaults",
+      "goLink": "Link now",
+      "groups": {
+        "collab": "Loans & collaboration",
+        "items": "Item alerts",
+        "system": "System & reports"
+      },
+      "loadError": "Could not load notification preferences. Please try again.",
+      "loading": "Loading notification preferences…",
+      "lockedTooltip": "This notification type cannot be turned off",
+      "reset": "Reset to defaults",
+      "resetBody": "All custom notification preferences will be cleared and return to defaults.",
+      "resetConfirm": "Reset",
+      "resetTitle": "Reset to defaults?",
+      "retry": "Retry",
       "toast": {
         "reset": "Reset to defaults",
         "resetFailed": "Reset failed, please try again",
         "updated": "Preferences updated",
         "updateFailed": "Update failed, reverted"
+      },
+      "toggleAria": "{type}: {channel}",
+      "typeColumn": "Notification type",
+      "typeLabels": {
+        "expired": "Expired",
+        "expiring_soon": "Expiring soon",
+        "group_invite": "Group invite",
+        "loan_open": "Loan reminder",
+        "loan_overdue": "Loan overdue",
+        "loan_returned": "Loan returned",
+        "low_stock": "Low stock",
+        "report_ready": "Report ready",
+        "system": "System",
+        "transfer": {
+          "accepted": "Transfer accepted",
+          "request": "Transfer request"
+        }
       }
     },
     "profile": {

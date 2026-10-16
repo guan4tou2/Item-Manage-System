@@ -27,6 +27,7 @@ export const SETTINGS_GROUPS: readonly SettingsGroupDef[] = [
     id: "notifications",
     pages: [
       { id: "channels", href: "/settings/channels" as Route },
+      { id: "notifications", href: "/settings/notifications" as Route },
     ],
   },
   {

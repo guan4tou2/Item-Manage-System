@@ -73,6 +73,9 @@ describe("SettingsPage", () => {
     expect(
       screen.getByRole("link", { name: new RegExp(t.index.pages.audit.title) }),
     ).toHaveAttribute("href", "/settings/audit")
+    expect(
+      screen.getByRole("link", { name: new RegExp(t.index.pages.notifications.title) }),
+    ).toHaveAttribute("href", "/settings/notifications")
   })
 
   it("hides the admin group and shows bootstrap guidance for non-admins", () => {
