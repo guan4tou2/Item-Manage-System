@@ -2269,6 +2269,8 @@ export interface components {
             expired_count: number;
             /** Expiring Count */
             expiring_count: number;
+            /** Reminded Today */
+            reminded_today: boolean;
             /** Items */
             items: components["schemas"]["ExpiryItem"][];
         };

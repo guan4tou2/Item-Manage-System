@@ -9,6 +9,7 @@ from sqlalchemy.orm import aliased, selectinload
 
 from app.clock import days_left, expiry_status, today_taipei
 from app.models.category import Category
+from app.models.expiry_alert import ExpiryAlert
 from app.models.item import Item
 from app.models.item_batch import ItemBatch
 from app.models.item_history import ItemVersion, QuantityLog
@@ -414,7 +415,8 @@ async def expiry(
 
     範圍比照 `low_stock`（owner 自有、未刪除）；`days` 為 expiring 視窗
     （today ≤ soonest ≤ today+days）；`items` 為視窗內（含已過期）soonest
-    最早前 `limit` 筆。全程僅兩個查詢，不得 per-item 查詢。
+    最早前 `limit` 筆。全程固定三個查詢（＋Phase 24 `reminded_today`
+    EXISTS），不得 per-item 查詢。
     """
     today = today_taipei()
     horizon = today + timedelta(days=days)
@@ -459,9 +461,24 @@ async def expiry(
         .limit(limit)
     )
     rows = (await session.execute(items_stmt)).all()
+
+    # 「今天已彙總提醒」：該 owner 的批次今日有任一 expiry_alerts（不限物品
+    # 刪除狀態——提醒確實發生過）。常數查詢，不隨列數成長。
+    reminded_stmt = (
+        select(ExpiryAlert.id)
+        .join(ItemBatch, ItemBatch.id == ExpiryAlert.batch_id)
+        .join(Item, Item.id == ItemBatch.item_id)
+        .where(Item.owner_id == owner_id, ExpiryAlert.sent_on == today)
+        .limit(1)
+    )
+    reminded_today = (
+        await session.execute(reminded_stmt)
+    ).scalar_one_or_none() is not None
+
     return {
         "expired_count": int(expired_count),
         "expiring_count": int(expiring_count),
+        "reminded_today": reminded_today,
         "items": [
             {
                 "item_id": r.id,

@@ -7761,6 +7761,10 @@
             "type": "integer",
             "title": "Expiring Count"
           },
+          "reminded_today": {
+            "type": "boolean",
+            "title": "Reminded Today"
+          },
           "items": {
             "items": {
               "$ref": "#/components/schemas/ExpiryItem"
@@ -7773,6 +7777,7 @@
         "required": [
           "expired_count",
           "expiring_count",
+          "reminded_today",
           "items"
         ],
         "title": "ExpiryStats"

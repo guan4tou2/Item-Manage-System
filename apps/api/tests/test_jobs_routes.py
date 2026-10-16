@@ -94,6 +94,10 @@ async def test_run_success_records_and_status(client, admin_auth, db_session):
     assert body["last_run"]["result"]["processed"] == 2
     assert body["last_run"]["finished_at"] is not None
 
+    # run 後：儀表板到期卡註記來源
+    stats = (await client.get("/api/stats/expiry", headers=admin_auth)).json()
+    assert stats["reminded_today"] is True
+
 
 async def test_run_same_day_idempotent(client, admin_auth, db_session):
     await _seed_batch(client, db_session, admin_auth)

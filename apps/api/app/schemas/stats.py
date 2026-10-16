@@ -62,6 +62,7 @@ class ExpiryItem(BaseModel):
 class ExpiryStats(BaseModel):
     expired_count: int
     expiring_count: int
+    reminded_today: bool
     items: list[ExpiryItem]
 
 

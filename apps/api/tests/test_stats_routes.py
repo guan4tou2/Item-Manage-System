@@ -127,7 +127,12 @@ class TestExpiry:
     async def test_empty(self, client, auth):
         r = await client.get("/api/stats/expiry", headers=auth)
         assert r.status_code == 200
-        assert r.json() == {"expired_count": 0, "expiring_count": 0, "items": []}
+        assert r.json() == {
+            "expired_count": 0,
+            "expiring_count": 0,
+            "reminded_today": False,
+            "items": [],
+        }
 
     async def test_counts_and_order(self, client, auth):
         await self._tracked(client, auth, name="過期", days=-1)
