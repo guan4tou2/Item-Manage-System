@@ -55,11 +55,11 @@
 - Test: `apps/web/app/(app)/settings/page.test.tsx`
 
 **TODO:**
-- [ ] 群組映射（§5.2）：個人（profile／password／preferences）｜通知與提醒（channels／notifications）｜整合與資料（webhooks／tokens／data／customization／taxonomy）｜管理（members／audit）——首層 4、各組 ≤6
-- [ ] 索引頁：群組卡片（標題＋頁面連結列：名稱＋一句說明＋chevron）；`BootstrapAdminButton` 置頂保留（元件僅非 admin 渲染，行為不變）；`管理`卡 `is_admin !== true` 時整卡不渲染
-- [ ] 卡片與連結鍵盤可達；行動版單欄堆疊
-- [ ] i18n：新增 `settings.index.*`（群組名／頁名／說明）；既有 `settings.tabs.*` 遷移為頁面標題（不留死鍵）
-- [ ] 測試：四群組與連結 href 正確、非 admin 隱藏「管理」、`useMe` loading＝skeleton、`BootstrapAdminButton` 僅非 admin 可見
+- [x] 群組映射（§5.2）：個人（profile／password／preferences）｜通知與提醒（channels／notifications）｜整合與資料（webhooks／tokens／data／customization／taxonomy）｜管理（members／audit）——首層 4、各組 ≤6
+- [x] 索引頁：群組卡片（標題＋頁面連結列：名稱＋一句說明＋chevron）；`BootstrapAdminButton` 置頂保留（元件僅非 admin 渲染，行為不變）；`管理`卡 `is_admin !== true` 時整卡不渲染
+- [x] 卡片與連結鍵盤可達；行動版單欄堆疊
+- [x] i18n：新增 `settings.index.*`（群組名／頁名／說明）；既有 `settings.tabs.*` 遷移為頁面標題（不留死鍵）
+- [x] 測試：四群組與連結 href 正確、非 admin 隱藏「管理」、`useMe` loading＝skeleton、`BootstrapAdminButton` 僅非 admin 可見
 
 **Commands:**
 - `pnpm -F @ims/web test app/(app)/settings`
@@ -82,11 +82,11 @@
   - `apps/web/components/settings/profile-form.test.tsx`、`password-form.test.tsx`、`preferences-form.test.tsx`、`api-tokens-panel.test.tsx`、`csv-panel.test.tsx`、`admin-users-panel.test.tsx`、`audit-log-panel.test.tsx`
 
 **TODO:**
-- [ ] `/settings/taxonomy` 不動（麵包屑已指回 `/settings`）；`quick-links`／`nav-items`／`user-menu` 既有連結不動（typecheck 驗 typedRoutes）
-- [ ] 移除舊 tabs 版首頁邏輯（settings 首頁不再用 `Tabs`）
-- [ ] 面板元件**零修改**（搬的是容器不是元件）；既有 3 個 panel 測試不動、維持綠
-- [ ] 每個 smoke：render＋核心操作 1 個（tokens：列表渲染／csv：匯出按鈕曝光／admin-users：使用者列表載入／audit：記錄載入／preferences：主題切換等）——mock `lib/api/*` 比照既有 pattern
-- [ ] `AdminOnly` 的非 admin 空態與 loading 由 T1.1 元件測試覆蓋；panel smoke 僅 happy path＋1 個互動
+- [x] `/settings/taxonomy` 不動（麵包屑已指回 `/settings`）；`quick-links`／`nav-items`／`user-menu` 既有連結不動（typecheck 驗 typedRoutes）
+- [x] 移除舊 tabs 版首頁邏輯（settings 首頁不再用 `Tabs`）
+- [x] 面板元件**零修改**（搬的是容器不是元件）；既有 3 個 panel 測試不動、維持綠
+- [x] 每個 smoke：render＋核心操作 1 個（tokens：列表渲染／csv：匯出按鈕曝光／admin-users：使用者列表載入／audit：記錄載入／preferences：主題切換等）——mock `lib/api/*` 比照既有 pattern
+- [x] `AdminOnly` 的非 admin 空態與 loading 由 T1.1 元件測試覆蓋；panel smoke 僅 happy path＋1 個互動
 
 **Commands:**
 - `pnpm -F @ims/web test`
@@ -99,11 +99,11 @@
 - Create: `apps/web/tests/settings.spec.ts`
 
 **TODO:**
-- [ ] navigation.spec：登入後 `/settings` 見四群組卡；點「個人資料」「通知管道」到達對應子路由；taxonomy 由索引卡可達
-- [ ] settings.spec：非 admin 登入 → 「管理」卡不渲染＋`BootstrapAdminButton` 可見 → 點擊 →「管理」卡出現且 `/settings/members` 可達
+- [x] navigation.spec：登入後 `/settings` 見四群組卡；點「個人資料」「通知管道」到達對應子路由；taxonomy 由索引卡可達
+- [x] settings.spec：非 admin 登入 → 「管理」卡不渲染＋`BootstrapAdminButton` 可見 → 點擊 →「管理」卡出現且 `/settings/members` 可達
   - 註：bootstrap 依環境狀態分支——先以 API 探測（`POST /auth/bootstrap-admin` 的回應／`is_admin`），系統已有 admin 時驗證「無引導按鈕、管理卡以 admin 身分可見」；不假設 DB 為空
-- [ ] 直接 URL 非 admin 訪問 `/settings/members` → 「此頁僅限管理員」空態（不 redirect）
-- [ ] 既有 12 支 spec 全數不回歸（settings 首頁無 tabs 後，不受影響）
+- [x] 直接 URL 非 admin 訪問 `/settings/members` → 「此頁僅限管理員」空態（不 redirect）
+- [x] 既有 12 支 spec 全數不回歸（settings 首頁無 tabs 後，不受影響）
 
 **Commands:**
 - `docker compose up -d`（首次）→ `cd apps/web && pnpm exec playwright test`
@@ -121,9 +121,9 @@
 - Test: `apps/api/tests/test_notification_preference_model_smoke.py`
 
 **TODO:**
-- [ ] `NotificationPreference`：`id`(UUID pk)、`user_id`(FK `users.id` ondelete=CASCADE, index)、`type`(String(40), nullable=False)、`channel`(String(20), nullable=False)、`enabled`(bool, nullable=False)、`created_at`/`updated_at`（`_utcnow` 慣例）；`UniqueConstraint("user_id","type","channel", name="uq_notification_prefs_cell")`
-- [ ] migration 0017：`revision="0017"`、`down_revision="0016"`；upgrade＝建表＋unique＋user_id index；downgrade 對稱（比照 `0016_item_batches.py` 風格）
-- [ ] smoke：建列、同 cell 重複→unique 違反、刪 user→cascade 清列
+- [x] `NotificationPreference`：`id`(UUID pk)、`user_id`(FK `users.id` ondelete=CASCADE, index)、`type`(String(40), nullable=False)、`channel`(String(20), nullable=False)、`enabled`(bool, nullable=False)、`created_at`/`updated_at`（`_utcnow` 慣例）；`UniqueConstraint("user_id","type","channel", name="uq_notification_prefs_cell")`
+- [x] migration 0017：`revision="0017"`、`down_revision="0016"`；upgrade＝建表＋unique＋user_id index；downgrade 對稱（比照 `0016_item_batches.py` 風格）
+- [x] smoke：建列、同 cell 重複→unique 違反、刪 user→cascade 清列
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_notification_preference_model_smoke.py`
@@ -137,13 +137,13 @@
 - Test: `apps/api/tests/test_notification_prefs_service.py`
 
 **TODO:**
-- [ ] 常數（唯一出口）：`TYPES`（有序 11 類＋group：`items`／`collab`／`system`）、`CHANNELS`（`in_app`／`email`／`line`／`telegram`／`web_push`）、`LOCKED_TYPES = {group_invite, system}`、`EMIT_TYPE_MAP = {"system.welcome": "system", "admin.test": "system"}`、`TYPE_DEFAULT_OVERRIDES`（`expired`／`expiring_soon`：email／line／telegram=False）、`DEFAULT_ENABLED = True`
-- [ ] `default_enabled(type, channel)`；`is_enabled(session, user_id, *, type, channel)`：鎖定→True；emit 字串經 `EMIT_TYPE_MAP`（未映射→True＋debug log）；查覆寫列、無列→預設
-- [ ] `get_snapshot(session, user_id)`：types（含 group／locked）、channels、matrix（有效值）、`has_custom`、`channel_availability`（使用者側綁定）
-- [ ] `apply_updates(session, user_id, updates)`：驗證 type／channel 合法、鎖定不可關；`enabled == default` → 刪覆寫列、否則 upsert；單交易；回傳新 snapshot
-- [ ] `reset(session, user_id)`：刪全部覆寫；回傳 snapshot
-- [ ] repo 慣例：`get_cell`／`list_for_user`／`upsert`／`delete_cell`／`delete_all`／`has_any`
-- [ ] 測試：全新使用者＝全預設＋`has_custom=False`；覆寫→再切回預設（列被刪）；鎖定列關閉→錯誤；未知 type／channel→錯誤；`system.welcome` 受 `system` 控制、未映射字串→True；`expired` 預設 in_app True／email False
+- [x] 常數（唯一出口）：`TYPES`（有序 11 類＋group：`items`／`collab`／`system`）、`CHANNELS`（`in_app`／`email`／`line`／`telegram`／`web_push`）、`LOCKED_TYPES = {group_invite, system}`、`EMIT_TYPE_MAP = {"system.welcome": "system", "admin.test": "system"}`、`TYPE_DEFAULT_OVERRIDES`（`expired`／`expiring_soon`：email／line／telegram=False）、`DEFAULT_ENABLED = True`
+- [x] `default_enabled(type, channel)`；`is_enabled(session, user_id, *, type, channel)`：鎖定→True；emit 字串經 `EMIT_TYPE_MAP`（未映射→True＋debug log）；查覆寫列、無列→預設
+- [x] `get_snapshot(session, user_id)`：types（含 group／locked）、channels、matrix（有效值）、`has_custom`、`channel_availability`（使用者側綁定）
+- [x] `apply_updates(session, user_id, updates)`：驗證 type／channel 合法、鎖定不可關；`enabled == default` → 刪覆寫列、否則 upsert；單交易；回傳新 snapshot
+- [x] `reset(session, user_id)`：刪全部覆寫；回傳 snapshot
+- [x] repo 慣例：`get_cell`／`list_for_user`／`upsert`／`delete_cell`／`delete_all`／`has_any`
+- [x] 測試：全新使用者＝全預設＋`has_custom=False`；覆寫→再切回預設（列被刪）；鎖定列關閉→錯誤；未知 type／channel→錯誤；`system.welcome` 受 `system` 控制、未映射字串→True；`expired` 預設 in_app True／email False
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_notification_prefs_service.py`
@@ -156,10 +156,10 @@
 - Test: `apps/api/tests/test_notifications_prefs_filtering.py`
 
 **TODO:**
-- [ ] `emit()`：`in_app` 偏好關 → **不建站內列**（回 None）；偏好查詢 fail-soft（查詢失敗視為開啟）；照舊 fail-soft 呼叫 `deliver_all(..., type=type)`
-- [ ] `deliver_all(..., *, type)`：email／line／telegram／web_push 各自送出前 `is_enabled(...)`；鎖定類型不受偏好影響；簽名變更同步所有呼叫端（唯一生產呼叫點＝emit）
-- [ ] 既有測試零回歸（預設全開＝現行行為）：`test_notifications_service.py`／`test_notifications_low_stock.py`／`test_notifications_welcome.py`／`test_notifications_routes.py`／`test_external_channels.py` 全綠（若有直呼 `deliver_all` 的測試，同步補 `type`）
-- [ ] 新測試：關 `low_stock`×`email` → email 不呼叫、站內仍有；關 `low_stock`×`in_app` → 站內無列、email 仍發；全關 → 皆無（emit 回 None）；`group_invite`／`system` 關不掉（強制發）；`system.welcome` 經映射受 `system` 控制
+- [x] `emit()`：`in_app` 偏好關 → **不建站內列**（回 None）；偏好查詢 fail-soft（查詢失敗視為開啟）；照舊 fail-soft 呼叫 `deliver_all(..., type=type)`
+- [x] `deliver_all(..., *, type)`：email／line／telegram／web_push 各自送出前 `is_enabled(...)`；鎖定類型不受偏好影響；簽名變更同步所有呼叫端（唯一生產呼叫點＝emit）
+- [x] 既有測試零回歸（預設全開＝現行行為）：`test_notifications_service.py`／`test_notifications_low_stock.py`／`test_notifications_welcome.py`／`test_notifications_routes.py`／`test_external_channels.py` 全綠（若有直呼 `deliver_all` 的測試，同步補 `type`）
+- [x] 新測試：關 `low_stock`×`email` → email 不呼叫、站內仍有；關 `low_stock`×`in_app` → 站內無列、email 仍發；全關 → 皆無（emit 回 None）；`group_invite`／`system` 關不掉（強制發）；`system.welcome` 經映射受 `system` 控制
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q`
@@ -173,12 +173,12 @@
 - Regen: `pnpm -F @ims/api-types gen:types`
 
 **TODO:**
-- [ ] GET → snapshot（形狀見「API 契約」節）
-- [ ] PUT `{"updates":[{type,channel,enabled}]}`：422＝未知 type／channel、鎖定列 `enabled=false`；成功回新 snapshot
-- [ ] DELETE → 重置回預設、回 snapshot；**路由宣告順序必須在 `/{notification_id}` 之前**（DELETE 動詞路徑衝突）
-- [ ] 401（未登入）行為與既有 notifications 路由一致
-- [ ] 契約測試：GET 形狀（11×5＋locked／availability）、PUT→GET 反映、PUT 冪等、切回預設→`has_custom` 回 false、422 各案、DELETE 後全預設
-- [ ] api-types 重生成並 `typecheck`
+- [x] GET → snapshot（形狀見「API 契約」節）
+- [x] PUT `{"updates":[{type,channel,enabled}]}`：422＝未知 type／channel、鎖定列 `enabled=false`；成功回新 snapshot
+- [x] DELETE → 重置回預設、回 snapshot；**路由宣告順序必須在 `/{notification_id}` 之前**（DELETE 動詞路徑衝突）
+- [x] 401（未登入）行為與既有 notifications 路由一致
+- [x] 契約測試：GET 形狀（11×5＋locked／availability）、PUT→GET 反映、PUT 冪等、切回預設→`has_custom` 回 false、422 各案、DELETE 後全預設
+- [x] api-types 重生成並 `typecheck`
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_notification_preferences_routes.py`
@@ -196,9 +196,9 @@
 - Test: `apps/web/lib/api/notification-preferences.test.ts`（比照 `lib/api/channels.test.ts`）
 
 **TODO:**
-- [ ] client：`getNotificationPreferences()`／`updateNotificationPreferences(updates)`／`resetNotificationPreferences()`（型別取 `@ims/api-types`）
-- [ ] hooks：query key（如 `["notification-preferences"]`）；`onMutate`＝取消進行中查詢＋快照＋樂觀套用；`onError`＝回滾＋toast；`onSuccess`＝以伺服器 snapshot `setQueryData`＋「偏好已更新」toast
-- [ ] 測試：樂觀套用、錯誤回滾、snapshot 覆蓋
+- [x] client：`getNotificationPreferences()`／`updateNotificationPreferences(updates)`／`resetNotificationPreferences()`（型別取 `@ims/api-types`）
+- [x] hooks：query key（如 `["notification-preferences"]`）；`onMutate`＝取消進行中查詢＋快照＋樂觀套用；`onError`＝回滾＋toast；`onSuccess`＝以伺服器 snapshot `setQueryData`＋「偏好已更新」toast
+- [x] 測試：樂觀套用、錯誤回滾、snapshot 覆蓋
 
 **Commands:**
 - `pnpm -F @ims/web test lib/api/notification-preferences`
@@ -211,15 +211,15 @@
 - Test: `apps/web/components/settings/notification-preferences-panel.test.tsx`、`apps/web/app/(app)/settings/notifications/page.test.tsx`
 
 **TODO:**
-- [ ] 三群組卡（§5.4）：物品提醒（low_stock／expiring_soon／expired）｜借還與協作（loan_*／transfer.*／group_invite）｜系統與報表（report_ready／system）
-- [ ] 桌面＝矩陣表（列＝類型、欄＝5 管道 toggle）；`md` 以下＝每類型卡片（管道 toggle 列）——§5.7 寬表格卡片化
-- [ ] 樂觀切換＋失敗回滾＋toast（aria-live）；成功 toast「偏好已更新」
-- [ ] 鎖定列：鎖頭 icon＋tooltip「此類通知不可關閉」，toggle disabled
-- [ ] 未綁定（line／telegram／web_push）：該欄（桌）／列（卡）disabled＋「前往綁定」連 `/settings/channels`
-- [ ] 空狀態（`has_custom=false`）：頂部摘要條「目前使用預設值」＋副文精確描述預設（比照 §5.4『目前等同全部開啟』語意，含到期提醒例外）；有覆寫時隱藏
-- [ ] 「重置為預設」按鈕（`has_custom` 時顯示）：確認對話框 → DELETE → toast「已重置為預設」
-- [ ] LOADING＝三群組卡 skeleton；載入失敗＝頁面錯誤＋重試
-- [ ] 測試：矩陣 render、toggle→樂觀＋mutation 呼叫、錯誤回滾、鎖定 disabled＋tooltip、未綁定 disabled＋連結、空狀態摘要條出現／消失、重置流程
+- [x] 三群組卡（§5.4）：物品提醒（low_stock／expiring_soon／expired）｜借還與協作（loan_*／transfer.*／group_invite）｜系統與報表（report_ready／system）
+- [x] 桌面＝矩陣表（列＝類型、欄＝5 管道 toggle）；`md` 以下＝每類型卡片（管道 toggle 列）——§5.7 寬表格卡片化
+- [x] 樂觀切換＋失敗回滾＋toast（aria-live）；成功 toast「偏好已更新」
+- [x] 鎖定列：鎖頭 icon＋tooltip「此類通知不可關閉」，toggle disabled
+- [x] 未綁定（line／telegram／web_push）：該欄（桌）／列（卡）disabled＋「前往綁定」連 `/settings/channels`
+- [x] 空狀態（`has_custom=false`）：頂部摘要條「目前使用預設值」＋副文精確描述預設（比照 §5.4『目前等同全部開啟』語意，含到期提醒例外）；有覆寫時隱藏
+- [x] 「重置為預設」按鈕（`has_custom` 時顯示）：確認對話框 → DELETE → toast「已重置為預設」
+- [x] LOADING＝三群組卡 skeleton；載入失敗＝頁面錯誤＋重試
+- [x] 測試：矩陣 render、toggle→樂觀＋mutation 呼叫、錯誤回滾、鎖定 disabled＋tooltip、未綁定 disabled＋連結、空狀態摘要條出現／消失、重置流程
 
 **Commands:**
 - `pnpm -F @ims/web test`
@@ -231,10 +231,10 @@
 - Modify: 上述新元件（文案與樣式）
 
 **TODO:**
-- [ ] `settings.notificationPreferences.*`：群組名、11 類型名、5 管道名、狀態文案、tooltip、按鈕、toast（zh-TW＋en 全鍵對齊）
-- [ ] 深色模式以既有 token 檢查對比（不新增語義色）
-- [ ] a11y（§5.7）：toggle 鍵盤可達、tap target ≥44px、icon-only 必有 aria-label、toast aria-live、狀態不只用顏色（鎖頭 icon＋tooltip 文字）
-- [ ] 桌面／行動斷點實機檢查（實作期以瀏覽器截圖）
+- [x] `settings.notificationPreferences.*`：群組名、11 類型名、5 管道名、狀態文案、tooltip、按鈕、toast（zh-TW＋en 全鍵對齊）
+- [x] 深色模式以既有 token 檢查對比（不新增語義色）
+- [x] a11y（§5.7）：toggle 鍵盤可達、tap target ≥44px、icon-only 必有 aria-label、toast aria-live、狀態不只用顏色（鎖頭 icon＋tooltip 文字）
+- [x] 桌面／行動斷點實機檢查（實作期以瀏覽器截圖；見 Final Verification 視覺走查）
 
 **Commands:**
 - `pnpm -F @ims/web test && pnpm -F @ims/web typecheck`
@@ -250,11 +250,11 @@
 - Create: `apps/web/tests/notification-preferences.spec.ts`
 
 **TODO:**
-- [ ] 登入 → `/settings/notifications`：三群組卡 render；切換 `low_stock`×email → toast → 重載後仍為關
-- [ ] 鎖定列 toggle 不可操作（disabled）
-- [ ] 未綁定（line）欄位 disabled＋「前往綁定」→ 到達 `/settings/channels`
-- [ ] 「重置為預設」→ 回復預設（摘要條再現）
-- [ ] 通知零回歸：`notifications.spec.ts` 維持綠（站內未讀／已讀流程不受影響）
+- [x] 登入 → `/settings/notifications`：三群組卡 render；切換 `low_stock`×email → toast → 重載後仍為關
+- [x] 鎖定列 toggle 不可操作（disabled）
+- [x] 未綁定（line）欄位 disabled＋「前往綁定」→ 到達 `/settings/channels`
+- [x] 「重置為預設」→ 回復預設（摘要條再現）
+- [x] 通知零回歸：`notifications.spec.ts` 維持綠（站內未讀／已讀流程不受影響）
 
 **Commands:**
 - `docker compose up -d` → `cd apps/web && pnpm exec playwright test`
@@ -267,9 +267,9 @@
 - Modify: 本計畫（勾選＋Final Verification 環境註記）
 
 **TODO:**
-- [ ] CHANGELOG：設定 IA 重構（含零回歸驗證）＋通知偏好中心＋API 契約＋行為整合
-- [ ] roadmap Phase 表更新；本計畫全部勾選
-- [ ] `git diff --check`；桌面（1280）＋行動（390）視覺走查：索引頁、偏好頁（表／卡）、鎖定與未綁定態、空狀態、toast、深色
+- [x] CHANGELOG：設定 IA 重構（含零回歸驗證）＋通知偏好中心＋API 契約＋行為整合
+- [x] roadmap Phase 表更新；本計畫全部勾選
+- [x] `git diff --check`；桌面（1280）＋行動（390）視覺走查：索引頁、偏好頁（表／卡）、鎖定與未綁定態、空狀態、toast、深色
 
 ---
 
@@ -345,10 +345,12 @@
 
 ## Final Verification
 
-- [ ] `cd apps/api && uv run --extra test pytest -q` 全綠（≥520＋新增，零回歸）
-- [ ] `pnpm -F @ims/web test`、`pnpm -F @ims/web typecheck` 全綠
-- [ ] `docker compose up -d` → `cd apps/web && pnpm exec playwright test`：全 spec（12＋新）綠
-- [ ] `pnpm -F @ims/api-types gen:types` 後無未預期 diff
-- [ ] 視覺走查：設定索引（桌／行動）、偏好矩陣（桌）／卡片（行動）、鎖定／未綁定／空狀態、toast；深色模式
-- [ ] `git diff --check`；CHANGELOG／roadmap／本計畫勾選完成
-- [ ] 收尾：commit 齊、merge 回 main、`docker compose down`
+- [x] `cd apps/api && uv run --extra test pytest -q` 全綠（560 passed；520 既有零回歸）
+- [x] `pnpm -F @ims/web test`、`pnpm -F @ims/web typecheck` 全綠（258 passed／61 檔；typecheck 0 errors）
+- [x] `docker compose up -d --build api web` → `cd apps/web && pnpm exec playwright test`：35 passed／14 spec（含新增 4 情境）全綠
+  - 本機 bundled chromium 安裝異常（下載僅 204K stub、spawn `EBADARCH`；以鏡像站 `--force` 重裝仍未恢復）：以系統 Chrome 臨時 config（`playwright.chrome.config.ts`，不入版控、收尾刪除）等價驗證
+  - 既有 `items-crud`／`collaboration` 於平行 2 workers 下偶發 30s 超時；trace 證實為測試端資料競爭（collaboration：Bob 的 transfers 列表請求賽跑 Alice 的 POST，回 `[]` 後無重取），當下 API 無任何 5xx／例外；單跑穩定、多次全套 35 passed，與本 Phase 無關
+- [x] `pnpm -F @ims/api-types gen:types` 後無未預期 diff（重生成後 `packages/api-types/` diff 為空）
+- [x] 視覺走查（桌面 1280＋行動 390，腳本化截圖）：設定索引四群組卡（非 admin 隱藏管理群組＋BootstrapAdminButton）、偏好預設態（摘要條）／自訂態（重置鈕切換＋「偏好已更新」toast）／重置 AlertDialog／深色矩陣（對比達標）／行動 390 卡片（鎖定＋未綁定態）✓
+- [x] `git diff --check`；CHANGELOG／roadmap／本計畫勾選完成
+- [x] 收尾：commit 齊、merge 回 main、`docker compose down`（本 commit 後執行）

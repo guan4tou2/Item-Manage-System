@@ -6,6 +6,18 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.23] — Phase 23：通知偏好中心＋設定頁 IA 重構
+
+- 設定頁 IA 重構：單頁 10 tabs → `/settings` 索引頁四群組（個人／通知與提醒／整合與資料／管理）＋ 11 個子路由（`/settings/notifications` 為新增頁，其餘 10 個為既有面板搬遷）；`/settings/taxonomy` 與既有連結不動，既有面板功能零回歸
+- 新資料表 `notification_preferences`（`user_id`＋`type`＋`channel` unique；缺列＝預設）；Alembic 遷移 `0017`
+- 新 API：`GET /api/notifications/preferences`（展開 11 類型 × 5 管道完整矩陣＋`has_custom`＋各管道可用性）、`PUT`（批次更新；未知 type／channel → 422）、`DELETE`（重置為預設）
+- 只存「顯式覆寫」列：未存＝預設；`enabled == 預設` 時自動刪列；偏好計算唯一入口 `services/notification_prefs.py`（類型／管道／鎖定／預設／emit 映射全集中）
+- 預設值：全部開啟，唯二例外「即將到期」與「已逾期」的 Email／LINE／Telegram 預設關（保留站內與瀏覽器推播）；不可關類別 `group_invite`、`system` 由後端強制（PUT 關閉 → 422）
+- 行為整合：`emit()` 站內建立前查偏好（關 → 不建列）；`deliver_all(type=…)` 逐管道過濾；偏好查詢 fail-soft（出錯一律視為開啟，不影響觸發交易）
+- 未綁定判定：LINE＝`user_line_linked`、Telegram＝`user_telegram_linked`、Web Push＝訂閱數 > 0；未綁定欄位 disabled＋「前往綁定」引導至 `/settings/channels`
+- 新 UI：`/settings/notifications` 偏好矩陣 — 桌機表格式（類型×管道）／md 以下卡片式；樂觀切換＋失敗回滾 toast、鎖定列鎖頭＋tooltip、預設摘要條、重置 AlertDialog、skeleton／錯誤重試；tap target ≥44px
+- 新增 40 個 API 測試（520 → 560）；新增 40 個 web 測試（218 → 258，48 → 61 檔）；e2e 14 spec（新增 4 情境，含「關閉站內 low_stock → 門檻觸發不再產生通知」端到端整合）
+
 ## [2.0.0-alpha.22] — Phase 22：批次庫存＋到期管理
 
 - 新資料表 `item_batches`、`items.track_batches` 旗標；Alembic 遷移 `0016`
