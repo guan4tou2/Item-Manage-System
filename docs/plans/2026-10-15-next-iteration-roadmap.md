@@ -160,6 +160,7 @@ Phase 依賴圖（依 §四 總表）：
 | 物品表單追蹤切換（22） | 送出中按鈕 loading（既有） | 未開啟 → 數量欄可編輯；開啟未建批次 → 沿用數量引導文案 | 批次建立失敗 → toast＋導向詳情頁，不靜默 | 開啟鎖定＋「至詳情頁關閉」提示 | 送出後兩段呼叫（item → batch），失敗不留下半套 |
 | 掃碼（25） | 相機啟動中；外查中「查詢外部資料庫…」（≤3 秒） | 權限被拒 → 全頁空態＋「開啟權限」按鈕＋手動輸入保底；外查查無 → 「查無公開資料，已帶入條碼，請補名稱」 | 逾時/網路錯誤 → 「網路不穩，條碼已保留」＋重試按鈕（與查無區分） | 內查命中 → 單筆直接跳轉；多筆 → 候選列表（縮圖＋位置路徑） | — |
 | 通知偏好（23） | 群組卡 skeleton | 未設定過 → 頂部摘要條「目前使用預設值」＋三群組卡（物品提醒／借還與協作／系統與報表） | 儲存失敗回滾＋toast；不可關類別顯示鎖頭＋tooltip | 樂觀切換＋「偏好已更新」toast | 未綁定管道 → 該欄禁用＋「前往綁定」引導 |
+| 提醒排程（24） | 卡內 skeleton | 從未執行 → 警示「排程尚未執行過」＋cron 設定片段 | 卡內 compact 錯誤＋重試 | 上次執行時間＋成功 badge；門檻清單（唯讀） | 上次執行 failed → 紅 badge＋error 摘要；逾 26h → 停跑警示（其餘照常顯示） |
 | 位置樹（26） | 樹 skeleton | 空樹 → 建立第一層引導；搜尋無結果 → 「建立新節點？」 | 刪除 409 → dialog「此位置有 N 件物品」＋「先搬移」按鈕（直接開搬移對話框）；非法拖放即時灰化＋tooltip | 拖放/搬移樂觀更新＋toast | — |
 | 備份匯入（29） | 上傳/解析 progress；dry-run「比對中…」 | 空檔或格式錯誤 → 明確訊息 | 驗證失敗 → per-entity 錯誤列舉（前 5 筆） | 結果報告三態：全成功綠／部分成功橙＋失敗清單／全失敗紅 | 部分成功明確計數，不靜默 |
 | AI 草稿佇列（32/33） | 逐卡狀態：排隊中／辨識中 shimmer | 無草稿 → 「拍張照片開始」；全部處理完 → 完成態 | 失敗卡＋單卡重試；配額耗盡 → 全局 banner＋pending 保留 | 卡片可編輯 → 接受後移出；進度「N/M 完成」 | 混合狀態共存；批量條：全選／全部接受（附計數二次確認）／全部丟棄 |
@@ -341,7 +342,7 @@ Phase 依賴圖（依 §四 總表）：
 
 **範圍**
 - **機制（決策：外部 cron ＋ 冪等 job 端點）**
-  - 與 Phase 21 `process-retries` 模式一致：**定案通用端點** `POST /api/jobs/{job_name}/run`（job registry 登錄制；Phase 31 `report.monthly` 共用），回 `{ job, processed, emitted }`；未知 `job_name` → 404；**觸發權＝帳號管理員（admin）；非管理員 → 403**（比 `process-retries` 更嚴；cron 文件範例使用管理員 PAT）
+  - 與 Phase 21 `process-retries` 模式一致：**定案通用端點** `POST /api/jobs/{job_name}/run`（job registry 登錄制；Phase 31 `report.monthly` 共用），回 `{ job, status, processed, emitted }`；未知 `job_name` → 404；**觸發權＝帳號管理員（admin）；非管理員 → 403**（比 `process-retries` 更嚴；cron 文件範例使用管理員 PAT）
   - 認證：登入使用者（PAT）即可，語義同 `process-retries`（只處理已排程工作、不外洩 payload）
   - 文件補 cron 範例：crontab ／ systemd timer ／ GitHub Actions schedule
   - **冪等性**：同日重跑不重複發送（dedupe 記錄 `(batch_id, level, date)`）

@@ -45,12 +45,13 @@
 | 21 | Webhook 重試 | ✅ | exponential backoff (30s/2m/8m/30m)、manual retry、process-retries endpoint |
 | 22 | 批次庫存＋到期管理 | ✅ | 批次 CRUD／FEFO 消耗／到期篩選＋到期模式／儀表板到期行動卡 |
 | 23 | 通知偏好中心 | ✅ | 設定頁索引＋子路由（10 面板零回歸）、`notification_preferences` 表、偏好矩陣 API＋設定頁 |
+| 24 | 排程自動化＋到期提醒 | ✅ | 外部 cron ＋冪等 job 端點（admin）、`expiry-scan` 摘要提醒（冪等 dedupe）、`/settings/reminders` 停跑觀測、到期卡註記 |
 
 ## 測試規模
 
-- API 測試：560 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：258 passed（vitest + @testing-library/react + jsdom）
-- Playwright e2e：14 spec（登入／物品／批次到期／清單／通知／通知偏好／主題等關鍵流程）
+- API 測試：602 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
+- Web 測試：269 passed（vitest + @testing-library/react + jsdom）
+- Playwright e2e：15 spec（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）

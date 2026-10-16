@@ -6,6 +6,19 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.24] — Phase 24：排程自動化＋到期提醒
+
+- 新 job 機制（外部 cron ＋ 冪等端點；Phase 31 月報表重用）：job registry（`JobSpec`／`run_job`）＋ `POST /api/jobs/{job_name}/run`（**管理員**；匿名 401／非 admin 403／未知 job 404；管理員 PAT 可觸發）、`GET /api/jobs/{job_name}/status`（任何登入者；門檻＋上次執行＋`stale` 停跑判定）
+- 新資料表 `job_runs`（執行觀測；`result` 固定契約 `{processed, emitted, errors}`）與 `expiry_alerts`（冪等 dedupe：UNIQUE(`batch_id`,`level`,`sent_on`)＋savepoint 吸收並發衝突）；Alembic 遷移 `0018`
+- 首個 job `expiry-scan`：以 Asia/Taipei「今天」掃描批次到期——`d30`／`d7`／`d0` 各為首次跨入**一次性**提醒（上線初期既有批次一次補齊）、`expired` 過期後每日一則至過期 14 天止（站內保留）；同日重跑不重發、隔日只補差額
+- 摘要制通知：每用戶每日每類型最多一則（「N 件物品即將到期／已過期」＋最急品名與天數），deep link 直達到期檢視（`/items?sort=expiry_asc`、`/items?expiry=expired&sort=expiry_asc`）；尊重 Phase 23 通知偏好（`emit` 層過濾，Email／LINE／Telegram 預設維持關）
+- 失敗語義：逐用戶隔離（單一用戶失敗不影響他人）、部分成功保留、`status=failed` 可安全重跑補差額
+- 新 API 欄位：`GET /api/stats/expiry` 加 `reminded_today`（該 owner 今日有無掃描提醒；固定查詢數）
+- 新 UI：儀表板到期卡疊加「今天已彙總提醒」註記（Bell＋muted 小字，不改變排序與尺寸）；`/settings/reminders`「提醒排程」頁（群組「通知與提醒」第三頁）——目前門檻、上次執行（成功／失敗／執行中／從未）、停跑警示（從未執行或逾 26h）＋cron 片段＋PAT 與文件連結；loading／error 狀態契約完備
+- 文件：新增 [`docs/scheduling.md`](docs/scheduling.md)（三分鐘上手＋crontab／systemd timer／GitHub Actions 範例＋端點語義＋疑難排解）
+- 移除閒置依賴 `apscheduler`（含 `pytz`／`tzlocal` 連帶項；容器系統 tzdb 正常，`ZoneInfo` 驗證通過）
+- 新增 42 個 API 測試（560 → 602）；新增 11 個 web 測試（258 → 269，61 → 64 檔）；e2e 14 → 15 spec（新增 3 情境：掃描→摘要→deep link→註記主流程、權限矩陣、設定頁狀態）
+
 ## [2.0.0-alpha.23] — Phase 23：通知偏好中心＋設定頁 IA 重構
 
 - 設定頁 IA 重構：單頁 10 tabs → `/settings` 索引頁四群組（個人／通知與提醒／整合與資料／管理）＋ 11 個子路由（`/settings/notifications` 為新增頁，其餘 10 個為既有面板搬遷）；`/settings/taxonomy` 與既有連結不動，既有面板功能零回歸
