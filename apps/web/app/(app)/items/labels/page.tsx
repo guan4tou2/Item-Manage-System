@@ -128,6 +128,11 @@ export default function BulkItemLabelsPage() {
                 <div className="w-full truncate text-[0.6rem] text-neutral-600">
                   #{item.label.item_id.slice(0, 8)} · x{item.label.quantity}
                 </div>
+                {item.label.barcode ? (
+                  <div className="w-full truncate font-mono text-[0.6rem]">
+                    {item.label.barcode}
+                  </div>
+                ) : null}
               </div>
             )
           })}

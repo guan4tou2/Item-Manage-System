@@ -8488,6 +8488,17 @@
           "deep_link": {
             "type": "string",
             "title": "Deep Link"
+          },
+          "barcode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Barcode"
           }
         },
         "type": "object",

@@ -64,6 +64,11 @@ export default function ItemLabelPage() {
         <div className="w-full truncate text-[0.6rem] text-muted-foreground">
           #{data.item_id.slice(0, 8)} · x{data.quantity}
         </div>
+        {data.barcode ? (
+          <div className="w-full truncate font-mono text-[0.6rem]">
+            {data.barcode}
+          </div>
+        ) : null}
       </div>
     </section>
   )

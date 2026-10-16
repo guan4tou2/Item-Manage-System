@@ -2551,6 +2551,8 @@ export interface components {
             quantity: number;
             /** Deep Link */
             deep_link: string;
+            /** Barcode */
+            barcode?: string | null;
         };
         /** ItemListResponse */
         ItemListResponse: {

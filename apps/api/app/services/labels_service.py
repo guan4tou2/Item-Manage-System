@@ -55,4 +55,5 @@ async def get_item_label(
         "name": item.name,
         "quantity": int(item.quantity),
         "deep_link": _deep_link_for(item.id),
+        "barcode": item.barcode,
     }

@@ -86,6 +86,14 @@ async def test_label_endpoint_returns_metadata(client, auth):
     assert body["quantity"] == 3
     assert body["deep_link"].endswith(f"/items/{item['id']}")
     assert body["deep_link"].startswith("http")
+    assert body["barcode"] is None
+
+
+async def test_label_endpoint_includes_barcode(client, auth):
+    item = await _create_item(client, auth, barcode="471-0085-200016")
+    r = await client.get(f"/api/items/{item['id']}/label", headers=auth)
+    assert r.status_code == 200
+    assert r.json()["barcode"] == "4710085200016"
 
 
 async def test_label_uses_configured_public_url(client, auth, monkeypatch):

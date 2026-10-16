@@ -58,6 +58,7 @@ describe("BulkItemLabelsPage", () => {
             name: "Router",
             quantity: 2,
             deep_link: "https://example.test/items/item-1",
+            barcode: "4710085200016",
           },
           qrBlob: new Blob(["png"], { type: "image/png" }),
         },
@@ -70,6 +71,7 @@ describe("BulkItemLabelsPage", () => {
     renderPage()
 
     expect(await screen.findByText("Router")).toBeInTheDocument()
+    expect(screen.getByText("4710085200016")).toBeInTheDocument()
     expect(screen.getByText("1 label skipped")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Print" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Back to items" })).toHaveAttribute("href", "/items")
