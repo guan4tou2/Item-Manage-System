@@ -7,8 +7,7 @@ import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-type QrScannerModule = typeof import("qr-scanner").default
+import { createBarcodeEngine, type BarcodeEngine } from "@/lib/scan/barcode-engine"
 
 interface DecodedResult {
   payload: string
@@ -46,10 +45,15 @@ export function QrScannerView() {
   const t = useTranslations()
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement | null>(null)
-  const scannerRef = useRef<InstanceType<QrScannerModule> | null>(null)
+  const engineRef = useRef<BarcodeEngine | null>(null)
   const [status, setStatus] = useState<Status>("idle")
   const [lastResult, setLastResult] = useState<DecodedResult | null>(null)
   const [manualValue, setManualValue] = useState("")
+
+  const stopEngine = useCallback(() => {
+    engineRef.current?.stop()
+    engineRef.current = null
+  }, [])
 
   const handleDecoded = useCallback(
     (payload: string) => {
@@ -57,57 +61,46 @@ export function QrScannerView() {
       const id = extractItemIdFromPayload(payload)
       if (id) {
         // Stop scanning immediately so we don't double-navigate
-        scannerRef.current?.stop()
+        stopEngine()
         setStatus("idle")
         router.push(`/items/${id}` as never)
       }
     },
-    [router],
+    [router, stopEngine],
   )
 
   const start = useCallback(async () => {
-    if (!videoRef.current) return
+    const video = videoRef.current
+    if (!video) return
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus("unsupported")
+      return
+    }
+    stopEngine()
     setStatus("starting")
     try {
-      // Dynamic import so we never ship the WASM blob to first paint
-      const mod = await import("qr-scanner")
-      const QrScanner = mod.default
-      const hasCam = await QrScanner.hasCamera()
-      if (!hasCam) {
-        setStatus("unsupported")
-        return
-      }
-      const scanner = new QrScanner(
-        videoRef.current,
-        (result) => handleDecoded(result.data),
-        {
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          preferredCamera: "environment",
-        },
-      )
-      scannerRef.current = scanner
-      await scanner.start()
+      engineRef.current = await createBarcodeEngine(video, handleDecoded)
       setStatus("scanning")
     } catch (err: unknown) {
+      const name = (err as Error)?.name ?? ""
       const msg = (err as Error)?.message ?? ""
-      if (/permission|denied|notallowed/i.test(msg)) {
+      if (name === "NotAllowedError" || /permission|denied|notallowed/i.test(msg)) {
         setStatus("denied")
+      } else if (name === "NotFoundError" || name === "NotReadableError") {
+        setStatus("unsupported")
       } else {
         setStatus("error")
       }
     }
-  }, [handleDecoded])
+  }, [handleDecoded, stopEngine])
 
   useEffect(() => {
     // Auto-start on mount
     void start()
     return () => {
-      scannerRef.current?.stop()
-      scannerRef.current?.destroy()
-      scannerRef.current = null
+      stopEngine()
     }
-  }, [start])
+  }, [start, stopEngine])
 
   function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -131,6 +124,12 @@ export function QrScannerView() {
           playsInline
           muted
         />
+        {status === "scanning" ? (
+          <div
+            className="pointer-events-none absolute inset-8 rounded border-2 border-white/70"
+            aria-hidden
+          />
+        ) : null}
         {status !== "scanning" ? (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60 p-4 text-center text-sm text-white">
             {status === "starting" && t("scan.camera.starting")}

@@ -10,8 +10,8 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
 
-// qr-scanner touches navigator.mediaDevices at module scope, so keep it
-// out of the server bundle.
+// 掃描引擎（原生 BarcodeDetector／@zxing/browser）僅存在於瀏覽器環境，
+// 保持 client-only 動態載入以免進 server bundle。
 const QrScannerView = dynamic(
   () =>
     import("@/components/scan/qr-scanner-view").then((m) => ({

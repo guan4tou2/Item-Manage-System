@@ -172,11 +172,11 @@
 - Modify: `apps/web/package.json`（＋`@zxing/browser`；完成後 －`qr-scanner`）
 
 **TODO:**
-- [ ] `barcode-engine.ts`：`createBarcodeEngine(video, onDecode, opts?) -> Promise<{ stop(): void }>`——`"BarcodeDetector" in globalThis` → `getSupportedFormats()` 過濾〔qr_code, ean_13, ean_8, upc_a, upc_e, code_128, code_39, itf〕＋輪詢 detect；否則 ZXing `BrowserMultiFormatReader`（hints 定案 10）`decodeFromVideoElement`；停止＝cancel＋`stop()` 釋放 tracks
-- [ ] `barcode.ts`：`canonicalizeBarcode`（同 API 規則）＋`isBarcodeLike`（`^\d{8,14}$`／ISBN-10）
-- [ ] `qr-scanner-view.tsx`：`QrScanner` 模組換 `createBarcodeEngine`；`extractItemIdFromPayload` 保留；decode 分流掛點先維持既有行為（②③ 於 T2.3 接上）
-- [ ] 測試：engine 選擇（mock `BarcodeDetector` 存在/不存在→native/zxing 分支）、`stop` 呼叫、`getSupportedFormats` 過濾；canonicalize 邊界；QR 回歸——deep link/UUID 導頁、無效 payload 顯示、手動輸入名稱搜尋、權限錯誤狀態（改 mock 引擎）
-- [ ] `pnpm -F @ims/web remove qr-scanner`（測試綠後）；typecheck
+- [x] `barcode-engine.ts`：`createBarcodeEngine(video, onDecode, opts?) -> Promise<{ stop(): void }>`——`"BarcodeDetector" in globalThis` → `getSupportedFormats()` 過濾〔qr_code, ean_13, ean_8, upc_a, upc_e, code_128, code_39, itf〕＋輪詢 detect；否則 ZXing `BrowserMultiFormatReader`（hints 定案 10）`decodeFromVideoElement`；停止＝cancel＋`stop()` 釋放 tracks
+- [x] `barcode.ts`：`canonicalizeBarcode`（同 API 規則）＋`isBarcodeLike`（`^\d{8,14}$`／ISBN-10）
+- [x] `qr-scanner-view.tsx`：`QrScanner` 模組換 `createBarcodeEngine`；`extractItemIdFromPayload` 保留；decode 分流掛點先維持既有行為（②③ 於 T2.3 接上）
+- [x] 測試：engine 選擇（mock `BarcodeDetector` 存在/不存在→native/zxing 分支）、`stop` 呼叫、`getSupportedFormats` 過濾；canonicalize 邊界；QR 回歸——deep link/UUID 導頁、無效 payload 顯示、手動輸入名稱搜尋、權限錯誤狀態（改 mock 引擎）
+- [x] `pnpm -F @ims/web remove qr-scanner`（測試綠後）；typecheck
 
 **Commands:**
 - `pnpm -F @ims/web test -- src/lib/scan apps/web/components/scan`
