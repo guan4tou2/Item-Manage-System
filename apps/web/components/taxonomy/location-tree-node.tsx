@@ -85,9 +85,15 @@ export function TreeNodeRow({
       data-drop-invalid={dropInvalid || undefined}
       draggable={!isMobile && !editing}
       onDragStart={onDragStart}
-      onDragOver={onDragOver}
+      onDragOver={(event) => {
+        // 阻斷冒泡：列 hover 的合法性由本列決定，不讓容器（搬到最上層）介入
+        event.stopPropagation()
+        onDragOver(event)
+      }}
       onDrop={(event) => {
         event.preventDefault()
+        // 阻斷冒泡：不讓 drop 同時觸發容器的「搬到最上層」（否則兩次 PATCH 競態）
+        event.stopPropagation()
         onDrop()
       }}
       onDragEnd={onDragEnd}

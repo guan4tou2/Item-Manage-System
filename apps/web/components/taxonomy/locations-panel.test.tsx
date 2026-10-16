@@ -286,10 +286,31 @@ describe("LocationsPanel（樹管理）", () => {
     fireEvent.dragOver(screen.getByTestId("location-node-6"))
     fireEvent.drop(screen.getByTestId("location-node-6"))
 
+    // 僅一次移動：drop 不得冒泡到容器（否則會多送一次「搬到最上層」）
     await waitFor(() =>
       expect(move).toHaveBeenCalledWith({ id: 2, parentId: 6 }),
     )
+    expect(move).toHaveBeenCalledTimes(1)
     expect(living).toBeInTheDocument()
+  })
+
+  it("moves a node to the top level when dropped on the tree container", async () => {
+    const move = vi.fn().mockResolvedValue({})
+    hooks.move.mockReturnValue({ mutateAsync: move, isPending: false })
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(within(screen.getByTestId("location-node-1")).getByRole("button", { name: "Expand" }))
+
+    const kitchen = screen.getByTestId("location-node-2")
+
+    // 拖到容器空白（非任何列）＝移到最上層
+    fireEvent.dragStart(kitchen)
+    fireEvent.drop(screen.getByRole("tree"))
+
+    await waitFor(() =>
+      expect(move).toHaveBeenCalledWith({ id: 2, parentId: null }),
+    )
+    expect(move).toHaveBeenCalledTimes(1)
   })
 
   it("navigates with arrow keys and toggles with Enter", async () => {

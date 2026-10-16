@@ -93,6 +93,17 @@ describe("LocationSelect（桌機 cascading）", () => {
     )
   })
 
+  it("shows a drill-down placeholder on deeper levels until chosen", async () => {
+    const user = userEvent.setup()
+    render(<Controlled />, { wrapper: Provider })
+
+    await user.click(screen.getByLabelText("Location 1"))
+    await user.click(await screen.findByRole("option", { name: "1F" }))
+
+    // 第二層出現但尚未選 → 顯示「再往下選…」placeholder（非「(None)」）
+    expect(await screen.findByText("Drill down…")).toBeInTheDocument()
+  })
+
   it("clears the selection through the level-1 option when allowed", async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()

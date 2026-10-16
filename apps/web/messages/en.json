@@ -248,6 +248,7 @@
       "searchPlaceholder": "Search locations",
       "empty": "No matching location.",
       "stopHere": "Select this level only",
+      "drillDeeper": "Drill down…",
       "noNodes": "No locations yet — create them on the Locations page."
     },
     "delete": {

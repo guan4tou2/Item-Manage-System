@@ -168,11 +168,23 @@ export function LocationSelect({
       {columns.map(({ level, options }) => (
         <Select
           key={level}
-          value={levels[level] !== undefined ? String(levels[level]) : NONE}
+          value={
+            level === 0
+              ? levels[0] !== undefined
+                ? String(levels[0])
+                : NONE
+              : levels[level] !== undefined
+                ? String(levels[level])
+                : undefined
+          }
           onValueChange={(next) => choose(level, next)}
         >
           <SelectTrigger aria-label={`${label ?? t("items.form.location")} ${level + 1}`}>
-            <SelectValue />
+            <SelectValue
+              placeholder={
+                level === 0 ? undefined : t("locations.select.drillDeeper")
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={NONE}>

@@ -248,6 +248,7 @@
       "searchPlaceholder": "搜尋位置",
       "empty": "沒有符合的位置。",
       "stopHere": "僅選此層",
+      "drillDeeper": "再往下選…",
       "noNodes": "尚未建立位置，請先到「位置」頁建立。"
     },
     "delete": {
