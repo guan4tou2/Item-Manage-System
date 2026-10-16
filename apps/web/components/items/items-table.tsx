@@ -1,5 +1,6 @@
 "use client"
 
+import { truncatePath } from "@/lib/locations/tree"
 import { ChevronDown, ChevronRight, Minus } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -150,7 +151,11 @@ export function ItemsTable({
                   data-label={locationLabel}
                   data-testid="items-table-location-cell"
                 >
-                  {i.location ? [i.location.floor, i.location.room, i.location.zone].filter(Boolean).join(" / ") : "—"}
+                  {i.location ? (
+                    <span title={i.location.path}>{truncatePath(i.location.path)}</span>
+                  ) : (
+                    "—"
+                  )}
                 </TableCell>
                 <TableCell
                   className={`${mobileCellClass} text-right tabular-nums md:text-right`}

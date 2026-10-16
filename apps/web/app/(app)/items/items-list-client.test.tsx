@@ -31,8 +31,24 @@ vi.mock("@/lib/hooks/use-categories", () => ({
 vi.mock("@/lib/hooks/use-locations", () => ({
   useLocations: () => ({
     data: [
-      { id: 7, floor: "1F", room: "Storage", zone: "A" },
-      { id: 8, floor: "2F", room: "Lab", zone: null },
+      {
+        id: 7,
+        parent_id: null,
+        name: "1F",
+        kind: "floor",
+        sort_order: 0,
+        floor_plan_image_id: null,
+        path: "1F",
+      },
+      {
+        id: 8,
+        parent_id: null,
+        name: "2F",
+        kind: "floor",
+        sort_order: 1,
+        floor_plan_image_id: null,
+        path: "2F",
+      },
     ],
   }),
 }))

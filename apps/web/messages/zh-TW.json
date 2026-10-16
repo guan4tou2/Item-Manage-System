@@ -213,6 +213,69 @@
       "go": "前往"
     }
   },
+  "locations": {
+    "kind": {
+      "floor": "樓層",
+      "room": "房間",
+      "shelf": "櫃子",
+      "box": "箱",
+      "other": "其他"
+    },
+    "tree": {
+      "expand": "展開",
+      "collapse": "收合",
+      "itemCount": "{count} 件",
+      "invalidTarget": "不能移到自己或自己的子節點之下",
+      "moreActions": "{name} 的更多操作",
+      "addChild": "新增子節點",
+      "rename": "改名",
+      "moveTo": "搬移至…",
+      "delete": "刪除",
+      "addRoot": "新增最上層位置",
+      "newRootLabel": "新位置名稱",
+      "namePlaceholder": "例：1F、廚房、上櫃",
+      "searchPlaceholder": "搜尋位置（顯示完整路徑）",
+      "noSearchResult": "找不到符合的位置。",
+      "createFromSearch": "建立新節點「{name}」",
+      "dragHint": "提示：拖曳節點可搬移（不能移到自己的子節點之下）；雙擊改名。",
+      "loadFailed": "位置載入失敗。",
+      "renamed": "已將 {name} 改名。",
+      "created": "已建立 {name}。",
+      "moved": "已將 {name} 移至 {target}。",
+      "deleted": "已刪除 {name}。"
+    },
+    "select": {
+      "searchPlaceholder": "搜尋位置",
+      "empty": "沒有符合的位置。",
+      "stopHere": "僅選此層",
+      "noNodes": "尚未建立位置，請先到「位置」頁建立。"
+    },
+    "delete": {
+      "title": "刪除「{name}」",
+      "itemsBody": "此位置有 {count} 件物品。",
+      "childrenBody": "此位置有 {count} 個子節點。",
+      "confirm": "確定要刪除此位置？",
+      "moveFirst": "先搬移物品",
+      "targetLabel": "搬移目標",
+      "moveItems": "搬移 {count} 件物品",
+      "handleChildren": "先處理子節點",
+      "moved": "已搬移 {count} 件物品。"
+    },
+    "move": {
+      "title": "搬移「{name}」",
+      "searchPlaceholder": "搜尋目標位置",
+      "toRoot": "移到最上層",
+      "invalid": "不可選"
+    },
+    "errors": {
+      "duplicateName": "同一層已有「{name}」，請換個名稱。",
+      "renameFailed": "改名失敗。",
+      "createFailed": "建立位置失敗。",
+      "moveFailed": "搬移失敗。",
+      "deleteFailed": "刪除失敗。",
+      "notEmpty": "此位置仍有物品或子節點，請先處理。"
+    }
+  },
   "menu": {
     "profile": "個人設定",
     "language": "語言",
@@ -312,6 +375,9 @@
       "backToItems": "返回物品",
       "skipped": "已略過 {count} 張標籤",
       "notFound": "找不到可列印的標籤"
+    },
+    "filter": {
+      "onlyThisLevel": "僅此層"
     },
     "form": {
       "name": "名稱",

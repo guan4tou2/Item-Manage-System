@@ -213,6 +213,69 @@
       "go": "Go"
     }
   },
+  "locations": {
+    "kind": {
+      "floor": "Floor",
+      "room": "Room",
+      "shelf": "Shelf",
+      "box": "Box",
+      "other": "Other"
+    },
+    "tree": {
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "itemCount": "{count} item(s)",
+      "invalidTarget": "Cannot move under itself or its own descendants",
+      "moreActions": "More actions for {name}",
+      "addChild": "Add child",
+      "rename": "Rename",
+      "moveTo": "Move to…",
+      "delete": "Delete",
+      "addRoot": "Add top-level location",
+      "newRootLabel": "New location name",
+      "namePlaceholder": "e.g. 1F, Kitchen, Top shelf",
+      "searchPlaceholder": "Search locations (full paths shown)",
+      "noSearchResult": "No matching location.",
+      "createFromSearch": "Create new node “{name}”",
+      "dragHint": "Tip: drag a node to move it (not under its own descendants); double-click to rename.",
+      "loadFailed": "Failed to load locations.",
+      "renamed": "Renamed {name}.",
+      "created": "Created {name}.",
+      "moved": "Moved {name} under {target}.",
+      "deleted": "Deleted {name}."
+    },
+    "select": {
+      "searchPlaceholder": "Search locations",
+      "empty": "No matching location.",
+      "stopHere": "Select this level only",
+      "noNodes": "No locations yet — create them on the Locations page."
+    },
+    "delete": {
+      "title": "Delete “{name}”",
+      "itemsBody": "This location holds {count} item(s).",
+      "childrenBody": "It has {count} child node(s).",
+      "confirm": "Delete this location?",
+      "moveFirst": "Move items first",
+      "targetLabel": "Move target",
+      "moveItems": "Move {count} item(s)",
+      "handleChildren": "Handle child nodes first",
+      "moved": "Moved {count} item(s)."
+    },
+    "move": {
+      "title": "Move “{name}”",
+      "searchPlaceholder": "Search target location",
+      "toRoot": "Move to top level",
+      "invalid": "Unavailable"
+    },
+    "errors": {
+      "duplicateName": "“{name}” already exists on this level.",
+      "renameFailed": "Rename failed.",
+      "createFailed": "Could not create the location.",
+      "moveFailed": "Move failed.",
+      "deleteFailed": "Delete failed.",
+      "notEmpty": "This location still has items or child nodes."
+    }
+  },
   "menu": {
     "profile": "Profile",
     "language": "Language",
@@ -312,6 +375,9 @@
       "backToItems": "Back to items",
       "skipped": "{count} label skipped",
       "notFound": "No printable labels found"
+    },
+    "filter": {
+      "onlyThisLevel": "This level only"
     },
     "form": {
       "name": "Name",

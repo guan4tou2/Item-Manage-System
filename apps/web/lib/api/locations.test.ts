@@ -49,13 +49,14 @@ describe("locations api client", () => {
 
   it("creates a child node with parent_id", async () => {
     const fetchMock = mockFetch({})
-    await createLocation({ name: "廚房", parent_id: 1, kind: "room" }, "jwt")
+    await createLocation({ name: "廚房", parent_id: 1, kind: "room", sort_order: 0 }, "jwt")
     const init = fetchMock.mock.calls[0]?.[1]
     expect(init?.method).toBe("POST")
     expect(JSON.parse(String(init?.body))).toEqual({
       name: "廚房",
       parent_id: 1,
       kind: "room",
+      sort_order: 0,
     })
   })
 

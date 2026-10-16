@@ -62,7 +62,7 @@ export function CsvPanel() {
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
             {t("settings.csv.exportDescription")}
-            <code className="mx-1 rounded bg-muted px-1">id, name, description, quantity, min_quantity, category_name, location_floor/room/zone, warehouse_name, notes, is_favorite, created_at, updated_at</code>
+            <code className="mx-1 rounded bg-muted px-1">id, name, description, barcode, quantity, min_quantity, category_name, location_path, warehouse_name, tag_names, notes, is_favorite, created_at, updated_at</code>
           </p>
           <p>
             {t("settings.csv.importDescription")}

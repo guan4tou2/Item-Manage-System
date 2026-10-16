@@ -57,7 +57,15 @@ vi.mock("@/lib/hooks/use-items", () => ({
       created_at: "2026-06-19T00:00:00Z",
       updated_at: "2026-06-19T00:00:00Z",
       category: null,
-      location: null,
+      location: {
+        id: 4,
+        parent_id: 3,
+        name: "抽屜",
+        kind: null,
+        sort_order: 0,
+        floor_plan_image_id: null,
+        path: "1F / 廚房 / 上櫃 / 抽屜",
+      },
       tags: [
         { id: 1, name: "network" },
         { id: 2, name: "rack" },
@@ -154,4 +162,13 @@ describe("ItemDetailPage", () => {
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("4710085200016"))
   })
+
+  it("shows the location breadcrumb truncated in the middle", async () => {
+    renderPage()
+
+    const path = await screen.findByTestId("item-location-path")
+    expect(path).toHaveTextContent("…")
+    expect(path).toHaveAttribute("title", "1F / 廚房 / 上櫃 / 抽屜")
+  })
+
 })

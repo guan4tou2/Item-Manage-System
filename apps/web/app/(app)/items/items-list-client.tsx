@@ -42,8 +42,8 @@ function parseTagNames(value: string): string[] {
   return Array.from(seen)
 }
 
-function formatLocation(location: { floor?: string | null; room?: string | null; zone?: string | null }) {
-  return [location.floor, location.room, location.zone].filter(Boolean).join(" / ")
+function formatLocation(location: { path: string }) {
+  return location.path
 }
 
 function labelsHref(itemIds: string[]): Route {

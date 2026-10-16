@@ -57,7 +57,15 @@ const items: ItemRead[] = [
     created_at: "2026-06-23T00:00:00Z",
     updated_at: "2026-06-23T00:00:00Z",
     category: null,
-    location: null,
+    location: {
+      id: 2,
+      parent_id: 1,
+      name: "Kitchen",
+      kind: "room",
+      sort_order: 0,
+      floor_plan_image_id: null,
+      path: "1F / Kitchen",
+    },
     tags: [{ id: 1, name: "network" }],
   },
   {
@@ -204,4 +212,19 @@ describe("ItemsTable", () => {
     expect(await screen.findByText("5d left")).toBeInTheDocument()
     expect(screen.getByText("2 left")).toBeInTheDocument()
   })
+
+  it("renders the location path (middle-truncated with a full title)", () => {
+    const deep = [
+      {
+        ...items[0]!,
+        location: { ...items[0]!.location!, path: "1F / 廚房 / 上櫃 / 抽屜" },
+      },
+    ]
+    render(<ItemsTable items={deep} />, { wrapper: Provider })
+
+    const cell = screen.getAllByTestId("items-table-location-cell")[0]!
+    expect(cell).toHaveTextContent("1F / … / 抽屜")
+    expect(cell.querySelector("span")).toHaveAttribute("title", "1F / 廚房 / 上櫃 / 抽屜")
+  })
+
 })

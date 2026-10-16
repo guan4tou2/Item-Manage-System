@@ -46,3 +46,27 @@ describe("filtersToSearchParams", () => {
     expect(filtersToSearchParams({ tagIds: [] }).toString()).toBe("")
   })
 })
+
+describe("location scope", () => {
+  it("parses location_scope=exact from the URL", () => {
+    const parsed = filtersFromSearchParams(new URLSearchParams("location=7&location_scope=exact"))
+    expect(parsed.locationId).toBe(7)
+    expect(parsed.locationScope).toBe("exact")
+  })
+
+  it("defaults to subtree when location_scope is absent", () => {
+    const parsed = filtersFromSearchParams(new URLSearchParams("location=7"))
+    expect(parsed.locationScope).toBeUndefined()
+  })
+
+  it("serialises the exact scope and keeps subtree implicit", () => {
+    expect(
+      filtersToSearchParams({ locationId: 7, locationScope: "exact" }).toString(),
+    ).toBe("location=7&location_scope=exact")
+    expect(filtersToSearchParams({ locationId: 7 }).toString()).toBe("location=7")
+  })
+
+  it("drops the scope param when there is no location filter", () => {
+    expect(filtersToSearchParams({ locationScope: "exact" }).toString()).toBe("")
+  })
+})

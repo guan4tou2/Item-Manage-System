@@ -85,6 +85,6 @@ describe("use-locations", () => {
     result.current.mutate(5)
 
     await waitFor(() => expect(result.current.isError).toBe(true))
-    expect((result.current.error as { status: number }).status).toBe(409)
+    expect((result.current.error as unknown as { status: number }).status).toBe(409)
   })
 })

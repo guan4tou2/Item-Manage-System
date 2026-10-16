@@ -9,6 +9,8 @@ import { useForm, type Path } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { LocationSelect } from "@/components/locations/location-select"
+
 import { ImageUpload } from "./image-upload"
 import { TagMultiSelect } from "./tag-multi-select"
 import { Button } from "@/components/ui/button"
@@ -425,20 +427,15 @@ export function ItemForm({
 
         <div>
           <Label>{t("items.form.location")}</Label>
-          <Select
-            value={form.watch("location_id")?.toString() ?? "none"}
-            onValueChange={(v) => form.setValue("location_id", v === "none" ? null : Number(v))}
-          >
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{t("items.form.noneOption")}</SelectItem>
-              {locations.map((l) => (
-                <SelectItem key={l.id} value={String(l.id)}>
-                  {[l.floor, l.room, l.zone].filter(Boolean).join(" / ")}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <LocationSelect
+            value={form.watch("location_id") ?? null}
+            onChange={(id) =>
+              form.setValue("location_id", id, { shouldDirty: true, shouldTouch: true })
+            }
+            nodes={locations}
+            label={t("items.form.location")}
+            testId="item-location-select"
+          />
         </div>
       </div>
 

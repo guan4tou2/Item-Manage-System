@@ -30,6 +30,7 @@ import type { ItemRead } from "@/lib/api/items"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { useAccessToken } from "@/lib/auth/use-auth"
 import { useDeleteItem, useItem } from "@/lib/hooks/use-items"
+import { truncatePath } from "@/lib/locations/tree"
 import { BatchSection } from "@/components/items/batch-section"
 
 function templatePayloadFromItem(item: ItemRead, customValues: ItemCustomValueRead[]) {
@@ -214,7 +215,19 @@ export default function ItemDetailPage() {
         </div>
         <div>
           <dt className="text-sm text-muted-foreground">{t("items.form.location")}</dt>
-          <dd>{i.location ? [i.location.floor, i.location.room, i.location.zone].filter(Boolean).join(" / ") : "—"}</dd>
+          <dd>
+            {i.location ? (
+              <span
+                className="font-mono text-sm"
+                title={i.location.path}
+                data-testid="item-location-path"
+              >
+                {truncatePath(i.location.path)}
+              </span>
+            ) : (
+              "—"
+            )}
+          </dd>
         </div>
         <div className="sm:col-span-2">
           <dt className="text-sm text-muted-foreground">{t("items.form.tags")}</dt>

@@ -14,6 +14,8 @@ export function filtersFromSearchParams(params: URLSearchParams): ItemFilters {
     const n = Number(loc)
     if (!Number.isNaN(n)) f.locationId = n
   }
+  const scope = params.get("location_scope")
+  if (scope === "exact") f.locationScope = "exact"
   const tags = params.get("tags")
   if (tags) {
     f.tagIds = tags.split(",").filter(Boolean).map(Number).filter((n) => !Number.isNaN(n))
@@ -33,6 +35,9 @@ export function filtersToSearchParams(f: ItemFilters): URLSearchParams {
   if (f.q) p.set("q", f.q)
   if (f.categoryId != null) p.set("category", String(f.categoryId))
   if (f.locationId != null) p.set("location", String(f.locationId))
+  if (f.locationId != null && f.locationScope === "exact") {
+    p.set("location_scope", "exact")
+  }
   if (f.tagIds && f.tagIds.length > 0) p.set("tags", f.tagIds.join(","))
   if (f.expiry) p.set("expiry", f.expiry)
   if (f.sort) p.set("sort", f.sort)

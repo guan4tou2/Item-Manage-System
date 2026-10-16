@@ -14,6 +14,10 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
 
+vi.mock("@/lib/hooks/use-locations", () => ({
+  useLocations: () => ({ data: [], isLoading: false }),
+}))
+
 const lookupMocks = vi.hoisted(() => ({ use: vi.fn() }))
 vi.mock("@/lib/hooks/use-barcode-lookup", () => ({
   useBarcodeLookup: (code: string | null) => lookupMocks.use(code),

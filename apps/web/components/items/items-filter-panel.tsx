@@ -2,7 +2,9 @@
 
 import { useTranslations } from "next-intl"
 
+import { LocationSelect } from "@/components/locations/location-select"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ItemFilters } from "@/lib/api/items"
@@ -55,24 +57,33 @@ export function ItemsFilterPanel({ filters, onChange }: Props) {
         </Select>
       </div>
 
-      <div>
+      <div className="space-y-2">
         <Label>{t("items.form.location")}</Label>
-        <Select
-          value={filters.locationId?.toString() ?? "all"}
-          onValueChange={(v) =>
-            onChange({ ...filters, locationId: v === "all" ? undefined : Number(v), page: 1 })
+        <LocationSelect
+          value={filters.locationId ?? null}
+          onChange={(id) =>
+            onChange({ ...filters, locationId: id ?? undefined, page: 1 })
           }
-        >
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("items.form.noneOption")}</SelectItem>
-            {(locs.data ?? []).map((l) => (
-              <SelectItem key={l.id} value={String(l.id)}>
-                {[l.floor, l.room, l.zone].filter(Boolean).join(" / ")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          nodes={locs.data ?? []}
+          label={t("items.form.location")}
+          testId="filter-location-select"
+        />
+        {filters.locationId != null ? (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Checkbox
+              checked={filters.locationScope === "exact"}
+              onCheckedChange={(checked) =>
+                onChange({
+                  ...filters,
+                  locationScope: checked === true ? "exact" : undefined,
+                  page: 1,
+                })
+              }
+              aria-label={t("items.filter.onlyThisLevel")}
+            />
+            {t("items.filter.onlyThisLevel")}
+          </label>
+        ) : null}
       </div>
 
       <div>

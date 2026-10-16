@@ -23,6 +23,8 @@ export interface ItemFilters {
   q?: string
   categoryId?: number
   locationId?: number
+  /** 位置篩選範圍：預設 `subtree`（含子孫）；`exact`＝僅此層（「僅此層」toggle）。 */
+  locationScope?: "subtree" | "exact"
   tagIds?: number[]
   expiry?: "expired" | "expiring_soon"
   sort?: "expiry_asc"
@@ -35,6 +37,9 @@ function buildQuery(filters: ItemFilters): string {
   if (filters.q) params.set("q", filters.q)
   if (filters.categoryId != null) params.set("category_id", String(filters.categoryId))
   if (filters.locationId != null) params.set("location_id", String(filters.locationId))
+  if (filters.locationId != null && filters.locationScope === "exact") {
+    params.set("location_scope", "exact")
+  }
   if (filters.tagIds && filters.tagIds.length > 0) {
     for (const id of filters.tagIds) params.append("tag_ids", String(id))
   }
