@@ -618,6 +618,14 @@
       },
       "retry": "Retry"
     },
+    "notificationPreferences": {
+      "toast": {
+        "reset": "Reset to defaults",
+        "resetFailed": "Reset failed, please try again",
+        "updated": "Preferences updated",
+        "updateFailed": "Update failed, reverted"
+      }
+    },
     "profile": {
       "email": "Email",
       "username": "Username",

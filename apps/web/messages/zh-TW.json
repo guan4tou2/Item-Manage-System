@@ -618,6 +618,14 @@
       },
       "retry": "重試"
     },
+    "notificationPreferences": {
+      "toast": {
+        "reset": "已重置為預設",
+        "resetFailed": "重置失敗，請稍後再試",
+        "updated": "偏好已更新",
+        "updateFailed": "更新失敗，已回復原設定"
+      }
+    },
     "profile": {
       "email": "電子郵件",
       "username": "使用者名稱",
