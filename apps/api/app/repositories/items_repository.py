@@ -117,7 +117,13 @@ async def list_paginated(
 
     if q:
         like = f"%{q}%"
-        base = base.where(or_(Item.name.ilike(like), Item.description.ilike(like)))
+        base = base.where(
+            or_(
+                Item.name.ilike(like),
+                Item.description.ilike(like),
+                Item.barcode.ilike(like),
+            )
+        )
     if category_id is not None:
         base = base.where(Item.category_id == category_id)
     if location_id is not None:

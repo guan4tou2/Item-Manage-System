@@ -6753,6 +6753,54 @@
           }
         }
       }
+    },
+    "/api/barcodes/{code}": {
+      "get": {
+        "tags": [
+          "barcodes"
+        ],
+        "summary": "Lookup Barcode",
+        "description": "內查（owner 範圍、canonical 精確比對）；無命中才外查（含快取）。",
+        "operationId": "lookup_barcode_api_barcodes__code__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BarcodeLookupResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7113,6 +7161,139 @@
           "created_at"
         ],
         "title": "AuditLogRead"
+      },
+      "BarcodeExternal": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "suggested_category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Category Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "name",
+          "description"
+        ],
+        "title": "BarcodeExternal"
+      },
+      "BarcodeLocalMatch": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "image_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Id"
+          },
+          "location_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "quantity"
+        ],
+        "title": "BarcodeLocalMatch"
+      },
+      "BarcodeLookupResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "local_matches": {
+            "items": {
+              "$ref": "#/components/schemas/BarcodeLocalMatch"
+            },
+            "type": "array",
+            "title": "Local Matches"
+          },
+          "external": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BarcodeExternal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "external_status": {
+            "type": "string",
+            "title": "External Status"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "local_matches",
+          "external_status"
+        ],
+        "title": "BarcodeLookupResponse"
       },
       "BatchConsume": {
         "properties": {
@@ -8143,6 +8324,18 @@
             ],
             "title": "Description"
           },
+          "barcode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Barcode"
+          },
           "category_id": {
             "anyOf": [
               {
@@ -8358,6 +8551,17 @@
               }
             ],
             "title": "Description"
+          },
+          "barcode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Barcode"
           },
           "quantity": {
             "type": "integer",
@@ -8654,6 +8858,18 @@
               }
             ],
             "title": "Description"
+          },
+          "barcode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Barcode"
           },
           "category_id": {
             "anyOf": [

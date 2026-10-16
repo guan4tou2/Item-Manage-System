@@ -22,7 +22,12 @@ from app.schemas.item import (
     ItemRead,
     ItemUpdate,
 )
-from app.services import item_history_service, notifications_service, webhooks_service
+from app.services import (
+    barcode_service,
+    item_history_service,
+    notifications_service,
+    webhooks_service,
+)
 from app.services.visibility_service import visible_item_owner_ids
 
 
@@ -31,6 +36,7 @@ def _to_read(item: Item, *, soonest_expiry: date | None = None) -> ItemRead:
         "id": item.id,
         "name": item.name,
         "description": item.description,
+        "barcode": item.barcode,
         "quantity": item.quantity,
         "min_quantity": item.min_quantity,
         "track_batches": item.track_batches,
@@ -127,6 +133,7 @@ async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -
         owner_id=owner_id,
         name=body.name,
         description=body.description,
+        barcode=barcode_service.canonicalize(body.barcode) or None,
         category_id=body.category_id,
         location_id=body.location_id,
         warehouse_id=body.warehouse_id,
@@ -165,6 +172,8 @@ async def update_item(
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
     fields = body.model_dump(exclude_unset=True)
+    if "barcode" in fields:
+        fields["barcode"] = barcode_service.canonicalize(fields["barcode"]) or None
     if item.track_batches and "quantity" in fields:
         raise HTTPException(
             status_code=409,

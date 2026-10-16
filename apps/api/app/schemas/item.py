@@ -14,6 +14,7 @@ from app.schemas.tag import TagRead
 class ItemCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None
+    barcode: Optional[str] = Field(default=None, max_length=32)
     category_id: Optional[int] = None
     location_id: Optional[int] = None
     warehouse_id: Optional[int] = None
@@ -27,6 +28,7 @@ class ItemCreate(BaseModel):
 class ItemUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=200)
     description: Optional[str] = None
+    barcode: Optional[str] = Field(default=None, max_length=32)
     category_id: Optional[int] = None
     location_id: Optional[int] = None
     warehouse_id: Optional[int] = None
@@ -70,6 +72,7 @@ class ItemRead(BaseModel):
     id: UUID
     name: str
     description: Optional[str]
+    barcode: Optional[str] = None
     quantity: int
     min_quantity: Optional[int]
     track_batches: bool = False

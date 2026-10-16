@@ -1902,6 +1902,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/barcodes/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lookup Barcode
+         * @description 內查（owner 範圍、canonical 精確比對）；無命中才外查（含快取）。
+         */
+        get: operations["lookup_barcode_api_barcodes__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2042,6 +2062,50 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** BarcodeExternal */
+        BarcodeExternal: {
+            /** Source */
+            source: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string;
+            /** Image Url */
+            image_url?: string | null;
+            /** Suggested Category Id */
+            suggested_category_id?: number | null;
+        };
+        /** BarcodeLocalMatch */
+        BarcodeLocalMatch: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Image Id */
+            image_id?: string | null;
+            /** Location Path */
+            location_path?: string | null;
+        };
+        /** BarcodeLookupResponse */
+        BarcodeLookupResponse: {
+            /** Code */
+            code: string;
+            /** Local Matches */
+            local_matches: components["schemas"]["BarcodeLocalMatch"][];
+            external?: components["schemas"]["BarcodeExternal"] | null;
+            /** External Status */
+            external_status: string;
+            /**
+             * Cached
+             * @default false
+             */
+            cached: boolean;
         };
         /** BatchConsume */
         BatchConsume: {
@@ -2438,6 +2502,8 @@ export interface components {
             name: string;
             /** Description */
             description?: string | null;
+            /** Barcode */
+            barcode?: string | null;
             /** Category Id */
             category_id?: number | null;
             /** Location Id */
@@ -2508,6 +2574,8 @@ export interface components {
             name: string;
             /** Description */
             description: string | null;
+            /** Barcode */
+            barcode?: string | null;
             /** Quantity */
             quantity: number;
             /** Min Quantity */
@@ -2604,6 +2672,8 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+            /** Barcode */
+            barcode?: string | null;
             /** Category Id */
             category_id?: number | null;
             /** Location Id */
@@ -7993,6 +8063,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemLabel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lookup_barcode_api_barcodes__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BarcodeLookupResponse"];
                 };
             };
             /** @description Validation Error */

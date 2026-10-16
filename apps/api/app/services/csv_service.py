@@ -16,6 +16,7 @@ from app.models.item_batch import ItemBatch
 from app.models.location import Location
 from app.models.tag import Tag
 from app.models.warehouse import Warehouse
+from app.services import barcode_service
 
 
 # Separator used in the pipe-delimited tag_names column ("kitchen|sharp|red").
@@ -26,6 +27,7 @@ EXPORT_COLUMNS = [
     "id",
     "name",
     "description",
+    "barcode",
     "quantity",
     "min_quantity",
     "category_name",
@@ -44,6 +46,7 @@ EXPORT_COLUMNS = [
 # Optional columns recognized by the importer.
 IMPORT_OPTIONAL = {
     "description",
+    "barcode",
     "quantity",
     "min_quantity",
     "notes",
@@ -124,6 +127,7 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
             "id": str(item.id),
             "name": item.name,
             "description": item.description or "",
+            "barcode": item.barcode or "",
             "quantity": item.quantity,
             "min_quantity": item.min_quantity if item.min_quantity is not None else "",
             "category_name": item.category.name if item.category else "",
@@ -341,6 +345,10 @@ async def import_csv(
             owner_id=owner_id,
             name=name,
             description=(row.get("description") or "").strip() or None,
+            barcode=barcode_service.canonicalize(
+                (row.get("barcode") or "").strip()
+            )
+            or None,
             quantity=qty,
             min_quantity=min_qty,
             category_id=category_id,

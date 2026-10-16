@@ -32,7 +32,9 @@ async def test_export_empty(client, auth):
     assert "filename=" in r.headers.get("content-disposition", "")
     body = r.text
     # header row only
-    assert body.splitlines()[0].startswith("id,name,description,quantity,min_quantity")
+    assert body.splitlines()[0].startswith(
+        "id,name,description,barcode,quantity,min_quantity"
+    )
 
 
 async def test_export_includes_items_with_taxonomy(client, auth):
@@ -79,6 +81,18 @@ async def test_export_requires_auth(client):
     assert r.status_code == 401
 
 
+async def test_export_includes_barcode(client, auth):
+    await client.post(
+        "/api/items", headers=auth, json={"name": "牛奶", "barcode": "4710085200016"}
+    )
+    r = await client.get("/api/items/export.csv", headers=auth)
+    lines = r.text.strip().splitlines()
+    header = lines[0].split(",")
+    row = lines[1].split(",")
+    idx = {name: i for i, name in enumerate(header)}
+    assert row[idx["barcode"]] == "4710085200016"
+
+
 # ---- import: basic -----------------------------------------------------
 
 
@@ -95,6 +109,28 @@ async def test_import_minimum_columns(client, auth):
     listed = (await client.get("/api/items", headers=auth)).json()
     names = {i["name"] for i in listed["items"]}
     assert {"wrench", "screwdriver"} <= names
+
+
+async def test_import_barcode_canonicalizes_and_roundtrips(client, auth):
+    csv_bytes = _csv(["name,barcode", "牛奶,471-0085-200016"])
+    files = {"file": ("items.csv", csv_bytes, "text/csv")}
+    r = await client.post("/api/items/bulk-import", headers=auth, files=files)
+    assert r.status_code == 200
+    assert r.json()["created_count"] == 1
+
+    listed = (await client.get("/api/items", headers=auth)).json()
+    assert listed["items"][0]["barcode"] == "4710085200016"
+
+    # round-trip：匯出再匯入不丟 barcode
+    exported = (await client.get("/api/items/export.csv", headers=auth)).text
+    files2 = {"file": ("items.csv", exported.encode("utf-8"), "text/csv")}
+    r2 = await client.post("/api/items/bulk-import", headers=auth, files=files2)
+    assert r2.json()["created_count"] == 1
+    listed2 = (await client.get("/api/items", headers=auth)).json()
+    assert sorted(i["barcode"] for i in listed2["items"]) == [
+        "4710085200016",
+        "4710085200016",
+    ]
 
 
 async def test_import_auto_creates_taxonomy(client, auth):

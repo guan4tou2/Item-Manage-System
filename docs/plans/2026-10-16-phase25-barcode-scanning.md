@@ -147,11 +147,11 @@
 - Regenerate: `packages/api-types/openapi.json`＋`gen:types`
 
 **TODO:**
-- [ ] `ItemCreate.barcode`／`ItemUpdate.barcode`：`Optional[str] = Field(None, max_length=32)`；`ItemRead.barcode: Optional[str]`
-- [ ] `create_item`：`barcode=canonicalize(body.barcode) or None`；`update_item`：`"barcode" in model_fields_set` 才動，`None`＝清除，否則 canonicalize
-- [ ] repository `q`：`or_(name, description, Item.barcode.ilike(like))`
-- [ ] CSV：`EXPORT_COLUMNS` 於 `description` 後插 `barcode`（列建構取值或空）；`IMPORT_OPTIONAL += "barcode"`（匯入前 canonicalize）
-- [ ] 測試：建立帶 barcode（含連字號輸入→canonical 儲存）；更新改值／`null` 清除；未送欄位不變；q 以完整條碼命中；CSV 匯出欄位順序＋值、匯入回填、round-trip；api-types 重生成零 diff
+- [x] `ItemCreate.barcode`／`ItemUpdate.barcode`：`Optional[str] = Field(None, max_length=32)`；`ItemRead.barcode: Optional[str]`
+- [x] `create_item`：`barcode=canonicalize(body.barcode) or None`；`update_item`：`"barcode" in model_fields_set` 才動，`None`＝清除，否則 canonicalize
+- [x] repository `q`：`or_(name, description, Item.barcode.ilike(like))`
+- [x] CSV：`EXPORT_COLUMNS` 於 `description` 後插 `barcode`（列建構取值或空）；`IMPORT_OPTIONAL += "barcode"`（匯入前 canonicalize）
+- [x] 測試：建立帶 barcode（含連字號輸入→canonical 儲存）；更新改值／`null` 清除；未送欄位不變；q 以完整條碼命中；CSV 匯出欄位順序＋值、匯入回填、round-trip；api-types 重生成零 diff
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_items_barcode.py`
