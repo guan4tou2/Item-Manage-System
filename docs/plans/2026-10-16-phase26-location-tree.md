@@ -163,9 +163,9 @@
 - Test: `apps/web/lib/api/locations.test.ts`、`apps/web/lib/hooks/use-locations.test.tsx`
 
 **TODO:**
-- [ ] api：`listLocations`（平坦＋path）、`getLocationTree`、`getLocationPath`、`createLocation`（parent_id）、`updateLocation`、`moveLocation(id, parent_id)`、`reorderLocations(parent_id, ids)`、`deleteLocation`；型別取自 `@ims/api-types`
-- [ ] hooks：`useLocationTree`、`useMoveLocation`、`useReorderLocations`、`useLocationPath`；`useDeleteLocation` 失敗時讀取 409 結構化 detail（保留 `ApiError` 供對話框判斷）；invalidate `["locations"]`／`["items"]`／`["stats"]`
-- [ ] 測試：請求路徑／body 正確；409 detail 透傳；invalidate 範圍
+- [x] api：`listLocations`（平坦＋path）、`getLocationTree`、`getLocationPath`、`createLocation`（parent_id）、`updateLocation`、`moveLocation(id, parent_id)`、`reorderLocations(parent_id, ids)`、`deleteLocation`；型別取自 `@ims/api-types`
+- [x] hooks：`useLocationTree`、`useMoveLocation`、`useReorderLocations`（未用 `useLocationPath`：詳情改用 `ItemRead.location.path`）；統一 invalidate `["locations"]`／`["items"]`／`["stats"]`
+- [x] 測試：請求路徑／body 正確（含 move 的 `parent_id: null`）；409 detail 透傳；invalidate 範圍（12 例）
 
 **Commands:**
 - `pnpm -F @ims/web test -- lib/api/locations lib/hooks/use-locations`
@@ -180,13 +180,13 @@
 - Test: `apps/web/components/taxonomy/locations-panel.test.tsx`
 
 **TODO:**
-- [ ] 樹渲染：`role="tree"`／`treeitem`＋`aria-expanded`／`aria-level`；展開收合；skeleton（LOADING）；空樹 → 「建立第一層」單一輸入框引導（EMPTY）；搜尋框（過濾；無結果 → 「建立新節點？」按鈕，以搜尋字串建立於根或選取節點下）
-- [ ] 操作：新增子節點（行內輸入）、改名（F2／雙擊→行內輸入）、刪除（開啟對話框）、`kind` 選擇（預設鍵＋自由文字）
-- [ ] 桌面拖放（HTML5 DnD）：拖曳節點到新 parent（含「放到 root」區）；**非法目標（自身／自身子孫）即時灰化＋tooltip**；drop → 樂觀更新＋toast，失敗回滾（§5.4）
-- [ ] 刪除對話框：以 `item_count`／`children_count` 顯示「此位置有 N 件物品」／「此位置有 N 個子節點」；按鈕「先搬移物品」（開搬移對話框：目標＝樹狀選擇器；送出＝`items?location_id=&location_scope=exact` 取 id → `PATCH /api/items/bulk`）與「先處理子節點」（展開並聚焦第一個子節點）；伺服器 409 亦顯示同一對話框（結構化 detail）
-- [ ] 鍵盤（§5.7）：↑↓ 移焦、→ 展開／首子、← 收合／父節點、Enter 選取、F2 改名；roving tabindex；Tap target ≥44px；icon-only `aria-label`；`aria-live` 播報樂觀結果
-- [ ] i18n zh-TW／en：樹頁（add child／rename／move／kind 選項／刪除對話框／搜尋／空狀態／skeleton／錯誤訊息）
-- [ ] 測試：展開收合；改名；新增子節點；刪除對話框計數與兩顆按鈕；拖放成功（drop → hook 呼叫）／非法拖放灰化（`aria-disabled` 或 class）；鍵盤導覽；搜尋無結果→建立；空樹引導；樂觀失敗回滾＋toast
+- [x] 樹渲染：`role="tree"`／`treeitem`＋`aria-expanded`／`aria-level`；展開收合；skeleton（LOADING）；空樹 → 「建立第一層」單一輸入框引導（EMPTY）；搜尋框（過濾；無結果 → 「建立新節點？」按鈕，以搜尋字串建立於根）
+- [x] 操作：新增子節點（行內輸入）、改名（F2／雙擊→行內輸入）、刪除（開啟對話框）、`kind` 顯示（預設鍵 i18n／自由文字原樣；編輯沿用 API `kind` 欄位，UI 以 preset＋自由文字呈現）
+- [x] 桌面拖放（HTML5 DnD）：拖曳節點到新 parent（含「拖到樹容器空白＝移到最上層」）；**非法目標（自身／自身子孫）即時灰化＋tooltip**；drop → 樂觀更新＋toast＋`aria-live` 播報，失敗回滾（§5.4）
+- [x] 刪除對話框：以 `item_count`／子節點數顯示「此位置有 N 件物品」／「此位置有 N 個子節點」；按鈕「先搬移物品」（目標＝樹狀選擇器；送出＝`items?location_id=&location_scope=exact` 取 id → `PATCH /api/items/bulk`）與「先處理子節點」（展開並聚焦第一個子節點）；伺服器 409 仍擋下時 toast 提示（結構化 detail）
+- [x] 鍵盤（§5.7）：↑↓ 移焦、→ 展開／首子、← 收合／父節點、Enter 切換、F2 改名；roving tabindex（列 `min-h-11`＝44px）；icon-only `aria-label`；`aria-live` 播報樂觀結果
+- [x] i18n zh-TW／en：`locations.*` 群組（tree／select／delete／move／errors／kind）＋ `items.filter.onlyThisLevel`（逐鍵插入，未重排整檔）
+- [x] 測試：展開收合；改名；新增子節點；刪除對話框計數與兩顆按鈕／確認禁用；拖放成功（drop → hook 呼叫）／非法拖放灰化＋tooltip；鍵盤導覽；搜尋無結果→建立；空樹引導；skeleton／錯誤重試（11 例）
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/taxonomy`
@@ -199,9 +199,9 @@
 - Modify: i18n 兩檔
 
 **TODO:**
-- [ ] 行動（`md` 以下）：節點列右側「⋯」按鈕（`aria-label`）→ `Sheet`：選項「搬移至…」「改名」「刪除」；「搬移至…」→ 扁平清單搜尋（顯示**完整路徑**）＋「移到最上層」選項；排除自身／子孫（標示為不可選）
-- [ ] 桌面（`md` 以上）不顯示「⋯」搬移（拖放為主），但保留改名／刪除於「⋯」選單（一致性）
-- [ ] 測試：行動寬度顯示「⋯」；選單→sheet；搜尋過濾；自身／子孫不可選；選取後呼叫 `useMoveLocation`；桌面寬度不顯示搬移選項
+- [x] 行動（`md` 以下）：節點列右側「⋯」按鈕（`aria-label`）→ 選單：選項「新增子節點」「改名」「搬移至…」「刪除」；「搬移至…」→ `LocationMoveSheet`＝扁平清單搜尋（顯示**完整路徑**）＋「移到最上層」；自身／子孫標示不可選（disabled＋「不可選」）
+- [x] 桌面（`md` 以上）「⋯」選單不含搬移（拖放為主），保留改名／刪除（一致性）
+- [x] 測試：sheet 搜尋過濾／自身與子孫 disabled／toRoot／確認帶目標 id（3 例）；panel 測試以 `useIsMobile: false` 驗桌面分支
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/taxonomy`
@@ -214,11 +214,11 @@
 - Modify: i18n 兩檔
 
 **TODO:**
-- [ ] 元件介面：`value: number | null`、`onChange`、`allowNone`、`label`（供 a11y）；資料源 `useLocations()`（平坦＋path）
-- [ ] 桌機：**cascading** 多層 `Select`（第 N 層選項＝所選節點的子節點；最後一層可選「僅此節點」）；顯示所選完整路徑
-- [ ] 行動：`Button` 開 `Sheet` → 扁平搜尋清單（完整路徑、可捲動）tap 回填；「未指定」選項
-- [ ] 整合：物品表單（`location_id`）、篩選面板、批次搬移目標、刪除對話框搬移目標（同一元件四處）
-- [ ] 測試：cascading 逐層選取後 `onChange` 值正確；行動 sheet 搜尋與回填；`allowNone`；鍵盤可選（select 與按鈕皆可 Tab／Enter）
+- [x] 元件介面：`value: number | null`、`onChange`、`allowNone`、`label`（a11y）、可注入 `nodes`（否則走 `useLocations()`）
+- [x] 桌機：**cascading** 多層 `Select`（第 N 層＝所選節點的子節點；可續開下一層或選「僅選此層」停在當前節點）；顯示所選完整路徑；由外部 value 還原層級
+- [x] 行動：`Button`（顯示當前路徑）開 `Sheet` → 扁平搜尋清單（完整路徑、可捲動）tap 回填；「未指定」選項
+- [x] 整合：物品表單、篩選面板、刪除對話框搬移目標（批次搬移清單沿用既有原生 select，顯示樹路徑）
+- [x] 測試：cascading 三層逐層選取／外部 value 還原／清除為 None；行動 sheet 搜尋回填與 trigger 路徑（5 例）
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/locations components/items`
@@ -235,12 +235,12 @@
 - Test: 上述元件的既有測試檔補案
 
 **TODO:**
-- [ ] 詳情：`item.location.path` 以 `/` 分隔顯示為麵包屑；層數 > 3 時中間截斷（「1F / … / 抽屜」，附全路徑 `title`）
-- [ ] 列表：位置欄顯示完整路徑（截斷 + `title`）
-- [ ] 篩選：`locationScope: "subtree" | "exact"`（預設 `subtree`），toggle 標籤「僅此層」；URL 參數 `location_scope`；清除篩選時一併重置
-- [ ] CSV 面板文案：`location_path`（保留一句「舊檔的三欄格式仍可匯入」）
-- [ ] i18n：`items.filter.onlyThisLevel`／`items.detail.pathTruncated`（如需）／`taxonomy.locations.*` 樹字串
-- [ ] 測試：詳情長路徑截斷；列表路徑；篩選 toggle 產生正確查詢參數（`location_scope=exact`）；CSV 文案
+- [x] 詳情：`item.location.path` 以 `/` 分隔顯示；層數 > 3 時中間截斷（「1F / … / 抽屜」，附全路徑 `title`、`data-testid="item-location-path"`、mono）
+- [x] 列表：位置欄顯示樹路徑（截斷 + `title`）
+- [x] 篩選：`locationScope: "subtree" | "exact"`（預設 `subtree`＝不輸出參數），checkbox 標籤「僅此層」；URL 參數 `location_scope`；清除位置篩選時同步重置
+- [x] CSV 面板文案：`location_path`（欄位清單同步含 barcode／tag_names）
+- [x] i18n：`items.filter.onlyThisLevel`（zh-TW／en）
+- [x] 測試：filters scope 讀寫 4 例；詳情長路徑截斷＋title；列表路徑截斷＋title；全套 **374 passed（79 檔）**
 
 **Commands:**
 - `pnpm -F @ims/web test`；`pnpm -F @ims/web typecheck`
@@ -256,14 +256,15 @@
 - Modify: `apps/web/tests/navigation.spec.ts`／`statistics.spec.ts`（若受位置改動影響）
 
 **TODO:**
-- [ ] ① 建立樹：`/locations` → 建立「1F」→ 在其下建立「廚房」→ 再建立「上櫃」（以 UI 操作）；展開收合斷言
-- [ ] ② 改名：F2／行內編輯 → 名稱更新；重新載入後仍在
-- [ ] ③ 桌面拖放：將「上櫃」拖到另一節點；非法目標（拖到自身子孫）→ 目標灰化（`aria-disabled`）且 drop 不生效
-- [ ] ④ 刪除限制：對有物品的節點按刪除 → 對話框顯示「此位置有 N 件物品」→「先搬移物品」把物品移到別處 → 再刪除成功
-- [ ] ⑤ 物品表單樹狀選擇器：桌機 cascading 三層選取 → 儲存 → 詳情顯示麵包屑路徑（含截斷）
-- [ ] ⑥ 篩選語義：父節點篩選預設含子孫（種 2 件分屬父／子）→ 開「僅此層」→ 只剩直接屬於父節點的 1 件
-- [ ] ⑦ 行動搬移（390 寬）：`⋯` → 搬移至 → 搜尋（顯示完整路徑）→ 選取 → 節點換父；`test.use({ viewport })`
-- [ ] 註記：遷移本身不在 e2e（屬一次性任務；以 fixture 單元測試＋dev 庫真實驗證覆蓋）
+- [x] ① 建立樹：`/locations` → 建立「1F」→ 在其下建立「廚房」→ 再建立「上櫃」（以 UI 操作）；展開收合斷言
+- [x] ② 改名：F2／行內編輯 → 名稱更新；重新載入後仍在
+- [x] ③ 桌面拖放：合法搬移（`上櫃` → `2F`，API 路徑驗證）；非法目標（1F → 自身子孫）→ `data-drop-invalid` 灰化且 drop 不生效（Playwright 以合成 `dragstart`／`dragover`／`drop` 事件驅動；`dragTo` 不觸發 HTML5 DnD）
+- [x] ④ 刪除限制：對有 2 件物品的節點按刪除 → 對話框顯示「此位置有 2 件物品。」→「先搬移物品」→ 再刪除成功；物品確實換到 2F（API 驗證）
+- [x] ⑤ 物品表單樹狀選擇器：桌機 cascading 三層選取 → 儲存 → 詳情顯示麵包屑路徑（含 `title` 全路徑）
+- [x] ⑥ 篩選語義：父節點篩選預設含子孫（種 2 件分屬父／子）→ 開「僅此層」→ 只剩直接屬於父節點的 1 件
+- [x] ⑦ 行動搬移（390 寬）：`⋯` → 搬移至 → 搜尋 → 選取 → 節點換父（API 路徑驗證）
+- [x] ⑧ 真實遷移驗證：`phase26_demo` 的樹（1F／廚房／上櫃／冰箱／2F／書房／3F）在 UI 正確呈現，`上櫃` 顯示「2 件」
+- [x] 註記：遷移本身不在 e2e（屬一次性任務；以 fixture 單元測試＋dev 庫真實驗證覆蓋）；全套 e2e **53 passed（17 spec）**
 
 **Commands:**
 - `ENABLE_DEV_ROUTES=1 docker compose up -d --build api web && docker compose up -d nginx && pnpm exec playwright test tests/locations-tree.spec.ts`
