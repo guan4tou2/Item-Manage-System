@@ -28,23 +28,33 @@ async def emit(
 ) -> Notification | None:
     """Create a notification. Swallows errors and returns None to avoid
     breaking the triggering transaction. Also best-effort delivers via
-    external channels (email/LINE/Telegram/WebPush) if configured."""
-    try:
-        notif = await repo.create(
-            session,
-            user_id=user_id,
-            type=type,
-            title=title,
-            body=body,
-            link=link,
-        )
-    except Exception:
-        logger.warning(
-            "notification emit failed",
-            exc_info=True,
-            extra={"type": type, "user_id": str(user_id)},
-        )
-        return None
+    external channels (email/LINE/Telegram/WebPush) if configured.
+
+    Preference-aware: `in_app` disabled → no in-app row (returns None);
+    external channels are filtered per-channel inside `deliver_all`.
+    Preference lookup failures are fail-soft (treated as enabled)."""
+    from app.services import notification_prefs
+
+    notif: Notification | None = None
+    if await notification_prefs.is_enabled(
+        session, user_id, type=type, channel="in_app"
+    ):
+        try:
+            notif = await repo.create(
+                session,
+                user_id=user_id,
+                type=type,
+                title=title,
+                body=body,
+                link=link,
+            )
+        except Exception:
+            logger.warning(
+                "notification emit failed",
+                exc_info=True,
+                extra={"type": type, "user_id": str(user_id)},
+            )
+            return None
 
     # Fan out to external channels (fail-soft)
     try:
@@ -55,6 +65,7 @@ async def emit(
             title=title,
             body=body or "",
             link=link,
+            type=type,
         )
     except Exception:
         logger.warning("external delivery failed", exc_info=True)

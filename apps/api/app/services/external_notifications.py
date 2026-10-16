@@ -128,8 +128,15 @@ async def deliver_all(
     title: str,
     body: str,
     link: Optional[str],
+    type: str,
 ) -> dict[str, bool]:
-    """Attempt delivery across all channels the user has linked."""
+    """Attempt delivery across all channels the user has linked.
+
+    Each external channel is filtered through the user's notification
+    preferences for `(type, channel)`; locked types always deliver and
+    preference lookup failures are fail-soft (deliver)."""
+    from app.services.notification_prefs import is_enabled
+
     user = await session.get(User, user_id)
     if user is None:
         return {}
@@ -137,28 +144,28 @@ async def deliver_all(
     results: dict[str, bool] = {}
 
     # Email
-    if user.email:
+    if user.email and await is_enabled(session, user_id, type=type, channel="email"):
         results["email"] = await deliver_email(user.email, title, body)
 
     # LINE
     line_link = (await session.execute(
         select(LineUserLink).where(LineUserLink.user_id == user_id)
     )).scalar_one_or_none()
-    if line_link:
+    if line_link and await is_enabled(session, user_id, type=type, channel="line"):
         results["line"] = await deliver_line(line_link.line_user_id, f"{title}\n{body}")
 
     # Telegram
     tg_link = (await session.execute(
         select(TelegramUserLink).where(TelegramUserLink.user_id == user_id)
     )).scalar_one_or_none()
-    if tg_link:
+    if tg_link and await is_enabled(session, user_id, type=type, channel="telegram"):
         results["telegram"] = await deliver_telegram(tg_link.chat_id, f"{title}\n{body}")
 
     # Web Push
     subs = (await session.execute(
         select(WebPushSubscription).where(WebPushSubscription.user_id == user_id)
     )).scalars().all()
-    if subs:
+    if subs and await is_enabled(session, user_id, type=type, channel="web_push"):
         results["web_push"] = any(deliver_web_push(s, title, body, link) for s in subs)
 
     return results
