@@ -228,11 +228,11 @@
 - Test: `page.test.tsx`／詳情測試擴充
 
 **TODO:**
-- [ ] `itemFormSchema += barcode: z.string().max(32).optional()`；欄位（Input＋「查詢」小按鈕 aria-label）置於 description 附近；送出不變（payload 帶 barcode）
-- [ ] `?barcode=` 帶入：new 頁讀 `searchParams`；form 以 `useBarcodeLookup` hydrate——只填空欄（name／description／category 依定案 8）＋來源標註（徽章，hover/文字「來源：…」）；`local_matches>0` → 「已有 {count} 件同條碼物品」＋連結（不做外部 prefill）；查詢中狀態文案
-- [ ] 手動「查詢」按鈕：canonicalize 欄位值 → lookup → 同 hydrate 語義（只填空欄；自身欄位寫回 canonical）
-- [ ] 詳情：`item.barcode` 存在時 `<dt>`「條碼」／`<dd>` monospace＋複製按鈕（`navigator.clipboard`＋toast「已複製」）；e2e 友善（按鈕 `aria-label`）
-- [ ] 測試：prefill 只填空欄（name 已填→不覆蓋）；local 命中→提示不 prefill；來源標註渲染；分類建議唯一命中才帶入；查詢按鈕路徑；詳情列顯隱＋複製 mock
+- [x] `itemFormSchema += barcode: z.string().max(32).optional()`；欄位（Input＋「查詢」小按鈕 aria-label）置於 description 附近；送出不變（payload 帶 barcode）
+- [x] `?barcode=` 帶入：new 頁讀 `searchParams`；form 以 `useBarcodeLookup` hydrate——只填空欄（name／description／category 依定案 8）＋來源標註（徽章，hover/文字「來源：…」）；`local_matches>0` → 「已有 {count} 件同條碼物品」＋連結（不做外部 prefill）；查詢中狀態文案
+- [x] 手動「查詢」按鈕：canonicalize 欄位值 → lookup → 同 hydrate 語義（只填空欄；自身欄位寫回 canonical）
+- [x] 詳情：`item.barcode` 存在時 `<dt>`「條碼」／`<dd>` monospace＋複製按鈕（`navigator.clipboard`＋toast「已複製」）；e2e 友善（按鈕 `aria-label`）
+- [x] 測試：prefill 只填空欄（name 已填→不覆蓋）；local 命中→提示不 prefill；來源標註渲染；分類建議唯一命中才帶入；查詢按鈕路徑；詳情列顯隱＋複製 mock
 
 **Commands:**
 - `pnpm -F @ims/web test -- src/components/items src/app/.../items`

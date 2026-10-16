@@ -2,8 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { CheckCircle2, RotateCcw, Sparkles } from "lucide-react"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useForm, type Path } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -23,12 +24,15 @@ import type { CategoryTreeNode } from "@/lib/api/categories"
 import type { CustomFieldRead, ItemTemplateRead } from "@/lib/api/customization"
 import type { LocationRead } from "@/lib/api/locations"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { useBarcodeLookup } from "@/lib/hooks/use-barcode-lookup"
+import { canonicalizeBarcode, isBarcodeLike } from "@/lib/scan/barcode"
 
 const customValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
 
 export const itemFormSchema = z.object({
   name: z.string().min(1, "nameRequired").max(200, "nameMax"),
   description: z.string().optional(),
+  barcode: z.string().max(32, "barcodeMax").optional(),
   category_id: z.number().nullable(),
   location_id: z.number().nullable(),
   quantity: z.preprocess(
@@ -58,6 +62,8 @@ interface Props {
   trackBatches?: boolean
   trackBatchesLocked?: boolean
   onTrackBatchesChange?: (value: boolean) => void
+  /** 由 /scan 流程帶入的條碼（`?barcode=`）：自動查詢並只填空白欄位。 */
+  barcodePrefill?: string | null
 }
 
 interface AppliedField {
@@ -91,6 +97,7 @@ export function ItemForm({
   defaultValues, onSubmit, onCancel, submitting,
   categories, locations, tagSuggestions, customFields = [], itemTemplates = [],
   trackBatches = false, trackBatchesLocked = false, onTrackBatchesChange,
+  barcodePrefill = null,
 }: Props) {
   const t = useTranslations()
   const token = useAccessToken()
@@ -102,6 +109,64 @@ export function ItemForm({
     defaultValues,
   })
   const flatCats = flattenCategories(categories)
+
+  const [lookupCode, setLookupCode] = useState<string | null>(null)
+  const [prefillSource, setPrefillSource] = useState<string | null>(null)
+  const [localMatches, setLocalMatches] = useState<{
+    count: number
+    code: string
+  } | null>(null)
+  const lookup = useBarcodeLookup(lookupCode)
+  const prefillApplied = useRef(false)
+
+  // `?barcode=` 帶入：填欄位並查詢（server 快取命中即時）
+  useEffect(() => {
+    if (prefillApplied.current) return
+    if (!barcodePrefill) return
+    const canonical = canonicalizeBarcode(barcodePrefill)
+    if (!canonical) return
+    prefillApplied.current = true
+    if (!form.getValues("barcode")) {
+      form.setValue("barcode", canonical, { shouldDirty: true })
+    }
+    setLookupCode(canonical)
+  }, [barcodePrefill, form])
+
+  // 外查結果只填空白欄位（不覆蓋已輸入）；內查命中則提示既有物品
+  useEffect(() => {
+    const data = lookup.data
+    if (!data) return
+    if (data.local_matches.length > 0) {
+      setLocalMatches({ count: data.local_matches.length, code: data.code })
+      return
+    }
+    setLocalMatches(null)
+    if (data.external_status !== "ok" || !data.external) return
+    if (!form.getValues("name")) {
+      form.setValue("name", data.external.name, { shouldDirty: true })
+    }
+    if (!form.getValues("description") && data.external.description) {
+      form.setValue("description", data.external.description, { shouldDirty: true })
+    }
+    if (form.getValues("category_id") === null && data.external.suggested_category_id != null) {
+      form.setValue("category_id", data.external.suggested_category_id, {
+        shouldDirty: true,
+      })
+    }
+    setPrefillSource(data.external.source)
+  }, [lookup.data, form])
+
+  const runBarcodeLookup = () => {
+    const canonical = canonicalizeBarcode(form.getValues("barcode") ?? "")
+    if (!isBarcodeLike(canonical)) {
+      toast.error(t("items.form.barcodeInvalid"))
+      return
+    }
+    form.setValue("barcode", canonical, { shouldDirty: true })
+    setPrefillSource(null)
+    setLocalMatches(null)
+    setLookupCode(canonical)
+  }
 
   const runAiSuggest = async () => {
     const imageId = form.getValues("image_id")
@@ -277,6 +342,69 @@ export function ItemForm({
         <Label htmlFor="description">{t("items.form.description")}</Label>
         <Textarea id="description" rows={3} {...form.register("description")} />
       </div>
+
+      <div>
+        <Label htmlFor="barcode">{t("items.form.barcode")}</Label>
+        <div className="flex gap-2">
+          <Input
+            id="barcode"
+            inputMode="numeric"
+            className="flex-1 font-mono"
+            {...form.register("barcode")}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={runBarcodeLookup}
+            disabled={lookup.isFetching}
+            aria-label={t("items.form.barcodeLookupAria")}
+          >
+            {lookup.isFetching
+              ? t("items.form.barcodeLookingUp")
+              : t("items.form.barcodeLookup")}
+          </Button>
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("items.form.barcodeHint")}
+        </p>
+        {form.formState.errors.barcode && (
+          <p role="alert" className="mt-1 text-sm text-destructive">
+            {t(`items.form.validation.${form.formState.errors.barcode.message}`)}
+          </p>
+        )}
+        {prefillSource ? (
+          <p
+            data-testid="barcode-prefill-source"
+            role="status"
+            className="mt-1 text-xs text-muted-foreground"
+          >
+            {t("items.form.barcodePrefilled", {
+              source:
+                prefillSource === "openfoodfacts"
+                  ? t("scan.external.sourceNames.openfoodfacts")
+                  : prefillSource === "openlibrary"
+                    ? t("scan.external.sourceNames.openlibrary")
+                    : prefillSource,
+            })}
+          </p>
+        ) : null}
+      </div>
+
+      {localMatches ? (
+        <div
+          data-testid="barcode-local-notice"
+          role="status"
+          className="rounded-md border bg-muted/30 px-3 py-2 text-sm"
+        >
+          {t("items.form.barcodeLocalMatch", { count: localMatches.count })}{" "}
+          <Link
+            href={`/items?q=${encodeURIComponent(localMatches.code)}` as never}
+            className="underline"
+          >
+            {t("items.form.barcodeLocalMatchLink")}
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3">
         <div>

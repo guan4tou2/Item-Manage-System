@@ -1,7 +1,7 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ListPlus } from "lucide-react"
+import { ListPlus, Copy } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -103,6 +103,15 @@ export default function ItemDetailPage() {
     }
   }
 
+  async function copyBarcode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code)
+      toast.success(t("items.detail.barcodeCopied"))
+    } catch {
+      toast.error(t("items.detail.barcodeCopyFailed"))
+    }
+  }
+
   if (item.isLoading) {
     return (
       <section className="space-y-6 p-6">
@@ -177,6 +186,24 @@ export default function ItemDetailPage() {
           <dt className="text-sm text-muted-foreground">{t("items.form.description")}</dt>
           <dd>{i.description || "—"}</dd>
         </div>
+        {i.barcode ? (
+          <div>
+            <dt className="text-sm text-muted-foreground">{t("items.form.barcode")}</dt>
+            <dd className="flex items-center gap-1">
+              <span className="font-mono">{i.barcode}</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-7 px-2"
+                aria-label={t("items.detail.copyBarcode")}
+                onClick={() => void copyBarcode(i.barcode as string)}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </dd>
+          </div>
+        ) : null}
         <div>
           <dt className="text-sm text-muted-foreground">{t("items.form.quantity")}</dt>
           <dd className="tabular-nums">{i.quantity}</dd>

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
-import { describe, it, expect, vi } from "vitest"
+import { beforeEach, describe, it, expect, vi } from "vitest"
 
 import enMessages from "@/messages/en.json"
 
@@ -9,6 +9,24 @@ import { ItemForm, itemFormSchema, type ItemFormValues } from "./item-form"
 vi.mock("@/lib/auth/use-auth", () => ({
   useAccessToken: () => null,
 }))
+
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: vi.fn() },
+}))
+
+const lookupMocks = vi.hoisted(() => ({ use: vi.fn() }))
+vi.mock("@/lib/hooks/use-barcode-lookup", () => ({
+  useBarcodeLookup: (code: string | null) => lookupMocks.use(code),
+}))
+
+function idleLookup() {
+  return { data: undefined, isFetching: false, isError: false, refetch: vi.fn() }
+}
+
+beforeEach(() => {
+  lookupMocks.use.mockReset()
+  lookupMocks.use.mockReturnValue(idleLookup())
+})
 
 describe("itemFormSchema", () => {
   const ok = {
@@ -39,6 +57,13 @@ describe("itemFormSchema", () => {
     const r = itemFormSchema.safeParse({ ...ok, name: "a".repeat(201) })
     expect(r.success).toBe(false)
     if (!r.success) expect(r.error.issues[0]?.message).toBe("nameMax")
+  })
+
+  it("accepts a barcode and rejects one over 32 chars", () => {
+    expect(itemFormSchema.safeParse({ ...ok, barcode: "4710085200016" }).success).toBe(true)
+    const r = itemFormSchema.safeParse({ ...ok, barcode: "9".repeat(33) })
+    expect(r.success).toBe(false)
+    if (!r.success) expect(r.error.issues[0]?.message).toBe("barcodeMax")
   })
 
   it("reports nameRequired for empty name", () => {
@@ -340,5 +365,147 @@ describe("ItemForm batch tracking", () => {
     fireEvent.click(screen.getByLabelText("Track batches"))
 
     expect(onChange).toHaveBeenCalledWith(true)
+  })
+})
+
+describe("ItemForm barcode", () => {
+  const defaults: ItemFormValues = {
+    name: "",
+    description: "",
+    barcode: "",
+    category_id: null,
+    location_id: null,
+    quantity: 1,
+    notes: "",
+    image_id: null,
+    tag_names: [],
+    custom_values: {},
+  }
+
+  function renderBarcodeForm(
+    overrides: Partial<ItemFormValues> = {},
+    barcodePrefill: string | null = null,
+  ) {
+    const onSubmit = vi.fn()
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <ItemForm
+          defaultValues={{ ...defaults, ...overrides }}
+          onSubmit={onSubmit}
+          onCancel={() => undefined}
+          submitting={false}
+          categories={[]}
+          locations={[]}
+          tagSuggestions={[]}
+          barcodePrefill={barcodePrefill}
+        />
+      </NextIntlClientProvider>,
+    )
+    return { onSubmit }
+  }
+
+  const externalHit = {
+    code: "4710085200016",
+    local_matches: [],
+    external: {
+      source: "openfoodfacts",
+      name: "Fresh milk",
+      description: "Brand, Dairy, 936ml",
+      image_url: null,
+      suggested_category_id: 7,
+    },
+    external_status: "ok",
+    cached: false,
+  }
+
+  it("renders the barcode field with a lookup button", () => {
+    renderBarcodeForm()
+
+    expect(screen.getByLabelText("Barcode")).toBeInTheDocument()
+    expect(
+      screen.getByRole("button", { name: "Look up external data by barcode" }),
+    ).toBeInTheDocument()
+  })
+
+  it("looks up the canonicalized barcode typed into the field", async () => {
+    renderBarcodeForm()
+
+    fireEvent.change(screen.getByLabelText("Barcode"), {
+      target: { value: "978-0-306-40615-7" },
+    })
+    fireEvent.click(
+      screen.getByRole("button", { name: "Look up external data by barcode" }),
+    )
+
+    await waitFor(() =>
+      expect(lookupMocks.use).toHaveBeenLastCalledWith("9780306406157"),
+    )
+    expect(screen.getByLabelText("Barcode")).toHaveValue("9780306406157")
+  })
+
+  it("rejects a non-barcode value without calling the API", async () => {
+    const { toast } = await import("sonner")
+    renderBarcodeForm()
+
+    fireEvent.change(screen.getByLabelText("Barcode"), {
+      target: { value: "hello" },
+    })
+    fireEvent.click(
+      screen.getByRole("button", { name: "Look up external data by barcode" }),
+    )
+
+    expect(toast.error).toHaveBeenCalled()
+    expect(lookupMocks.use).not.toHaveBeenCalledWith("hello")
+  })
+
+  it("prefills empty name, description, and category from an external hit", async () => {
+    lookupMocks.use.mockReturnValue({ ...idleLookup(), data: externalHit })
+
+    renderBarcodeForm({}, "4710085200016")
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Name")).toHaveValue("Fresh milk"),
+    )
+    expect(screen.getByLabelText("Description")).toHaveValue("Brand, Dairy, 936ml")
+    expect(lookupMocks.use).toHaveBeenLastCalledWith("4710085200016")
+    expect(screen.getByTestId("barcode-prefill-source")).toHaveTextContent(
+      "Name and description filled from Open Food Facts",
+    )
+  })
+
+  it("never overwrites fields the user already filled", async () => {
+    lookupMocks.use.mockReturnValue({ ...idleLookup(), data: externalHit })
+
+    renderBarcodeForm({ name: "My own name" }, "4710085200016")
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Description")).toHaveValue(
+        "Brand, Dairy, 936ml",
+      ),
+    )
+    expect(screen.getByLabelText("Name")).toHaveValue("My own name")
+  })
+
+  it("shows a notice instead of prefilling when items already share the barcode", async () => {
+    lookupMocks.use.mockReturnValue({
+      ...idleLookup(),
+      data: {
+        code: "4710085200016",
+        local_matches: [
+          { id: "item-1", name: "Milk", quantity: 1, image_id: null, location_path: null },
+        ],
+        external: null,
+        external_status: "skipped",
+        cached: false,
+      },
+    })
+
+    renderBarcodeForm({}, "4710085200016")
+
+    expect(await screen.findByTestId("barcode-local-notice")).toHaveTextContent(
+      "1 item(s) already share this barcode.",
+    )
+    expect(screen.getByLabelText("Name")).toHaveValue("")
+    expect(screen.queryByTestId("barcode-prefill-source")).toBeNull()
   })
 })

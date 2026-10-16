@@ -315,6 +315,15 @@
     "form": {
       "name": "Name",
       "description": "Description",
+      "barcode": "Barcode",
+      "barcodeHint": "Type it in, or let the scan flow fill it — spaces and hyphens are stripped automatically.",
+      "barcodeLookup": "Look up",
+      "barcodeLookupAria": "Look up external data by barcode",
+      "barcodeLookingUp": "Looking up…",
+      "barcodeInvalid": "Enter a valid barcode (8–14 digits or an ISBN)",
+      "barcodePrefilled": "Name and description filled from {source}",
+      "barcodeLocalMatch": "{count} item(s) already share this barcode.",
+      "barcodeLocalMatchLink": "View them",
       "category": "Category",
       "location": "Location",
       "quantity": "Quantity",
@@ -350,6 +359,7 @@
       "validation": {
         "nameRequired": "Name is required",
         "nameMax": "Name must be 200 characters or fewer",
+        "barcodeMax": "Barcode must be 32 characters or fewer",
         "quantityRequired": "Quantity is required",
         "quantityInteger": "Quantity must be a whole number",
         "quantityMin": "Quantity cannot be negative"
@@ -363,6 +373,9 @@
       "deleted": "Deleted",
       "notFound": "Item not found",
       "printLabel": "Print label",
+      "copyBarcode": "Copy barcode",
+      "barcodeCopied": "Barcode copied",
+      "barcodeCopyFailed": "Copy failed",
       "backToItem": "Back to item",
       "print": "Print",
       "addFavorite": "Add to favorites",

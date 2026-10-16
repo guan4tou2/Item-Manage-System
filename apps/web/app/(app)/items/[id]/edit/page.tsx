@@ -81,6 +81,7 @@ export default function EditItemPage() {
   const defaults: ItemFormValues = {
     name: item.data.name,
     description: item.data.description ?? "",
+    barcode: item.data.barcode ?? "",
     category_id: item.data.category?.id ?? null,
     location_id: item.data.location?.id ?? null,
     quantity: item.data.quantity,
@@ -109,6 +110,7 @@ export default function EditItemPage() {
       await update.mutateAsync({
         name: values.name,
         description: values.description || null,
+        barcode: values.barcode || null,
         category_id: values.category_id,
         location_id: values.location_id,
         // tracked 物品不得改 quantity（API 409）；追蹤中一律略過

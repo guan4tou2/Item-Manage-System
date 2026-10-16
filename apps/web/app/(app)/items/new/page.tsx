@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -26,6 +26,7 @@ import { useTags } from "@/lib/hooks/use-tags"
 const empty: ItemFormValues = {
   name: "",
   description: "",
+  barcode: "",
   category_id: null,
   location_id: null,
   quantity: 1,
@@ -38,6 +39,8 @@ const empty: ItemFormValues = {
 export default function NewItemPage() {
   const t = useTranslations()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const barcodePrefill = searchParams.get("barcode")
   const token = useAccessToken()
   const [saving, setSaving] = useState(false)
   const [trackBatches, setTrackBatches] = useState(false)
@@ -62,6 +65,7 @@ export default function NewItemPage() {
       const created = await create.mutateAsync({
         name: values.name,
         description: values.description || undefined,
+        barcode: values.barcode || undefined,
         category_id: values.category_id ?? undefined,
         location_id: values.location_id ?? undefined,
         quantity: values.quantity,
@@ -120,6 +124,7 @@ export default function NewItemPage() {
         itemTemplates={itemTemplates.data ?? []}
         trackBatches={trackBatches}
         onTrackBatchesChange={setTrackBatches}
+        barcodePrefill={barcodePrefill}
       />
     </section>
   )

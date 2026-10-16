@@ -315,6 +315,15 @@
     "form": {
       "name": "名稱",
       "description": "描述",
+      "barcode": "條碼",
+      "barcodeHint": "可手動輸入，或由掃碼流程帶入；連字號與空白會自動去除。",
+      "barcodeLookup": "查詢",
+      "barcodeLookupAria": "以條碼查詢外部資料",
+      "barcodeLookingUp": "查詢中…",
+      "barcodeInvalid": "請輸入有效的條碼（8–14 位數字或 ISBN）",
+      "barcodePrefilled": "已由 {source} 帶入名稱與描述",
+      "barcodeLocalMatch": "系統已有 {count} 件同條碼的物品。",
+      "barcodeLocalMatchLink": "查看這些物品",
       "category": "分類",
       "location": "位置",
       "quantity": "數量",
@@ -350,6 +359,7 @@
       "validation": {
         "nameRequired": "請輸入名稱",
         "nameMax": "名稱不得超過 200 字元",
+        "barcodeMax": "條碼不得超過 32 字元",
         "quantityRequired": "請輸入數量",
         "quantityInteger": "數量必須為整數",
         "quantityMin": "數量不可小於 0"
@@ -363,6 +373,9 @@
       "deleted": "已刪除",
       "notFound": "找不到此物品",
       "printLabel": "列印標籤",
+      "copyBarcode": "複製條碼",
+      "barcodeCopied": "已複製條碼",
+      "barcodeCopyFailed": "複製失敗",
       "backToItem": "返回物品",
       "print": "列印",
       "addFavorite": "加入最愛",

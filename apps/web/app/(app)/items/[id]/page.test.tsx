@@ -45,6 +45,7 @@ vi.mock("@/lib/hooks/use-items", () => ({
       id: "item-1",
       name: "Network switch",
       description: "Rack switch",
+      barcode: "4710085200016",
       quantity: 2,
       min_quantity: null,
       notes: "Keep warranty card",
@@ -137,5 +138,20 @@ describe("ItemDetailPage", () => {
         "jwt",
       )
     })
+  })
+
+  it("copies the barcode to the clipboard", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    })
+
+    renderPage()
+
+    expect(await screen.findByText("4710085200016")).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Copy barcode" }))
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("4710085200016"))
   })
 })
