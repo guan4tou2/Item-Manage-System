@@ -68,10 +68,10 @@
 - Test: `apps/api/tests/test_location_model_smoke.py`
 
 **TODO:**
-- [ ] Model：`parent_id Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("locations.id", ondelete="RESTRICT"), nullable=True)`、`name Mapped[str]`（String(50), nullable=False）、`kind Mapped[Optional[str]]`（String(20)）；移除 `floor`／`room`／`zone`；`__table_args__` 加 `Index("ix_locations_owner_parent_sort", "owner_id", "parent_id", "sort_order")`＋兩個 partial unique（root／非 root，比照 `categories`）；`children`／`parent` 關係（`remote_side`）
-- [ ] Migration `0020`（`down_revision="0019"`）順序：add `parent_id`／`name`（nullable）／`kind` → **呼叫 `location_tree_migration.migrate_flat(bind)` 做資料遷移** → `ALTER COLUMN name SET NOT NULL` → drop `floor`／`room`／`zone` → create indexes／unique（比照 `categories` partial index 語法）＋FK；downgrade 為「不可逆」——明確 raise（破壞性遷移；比照專案對不可逆遷移的處理，或重建三欄並回填 best-effort：**決定 raise RuntimeError("irreversible")**）
-- [ ] smoke：建 root／child／grandchild；同 parent 同名 → unique 違反；跨 parent 同名允許；刪除有子節點的 parent → FK RESTRICT（SQLite 需 `PRAGMA foreign_keys=ON`，比照 Phase 24 smoke）
-- [ ] 真實 PG 驗證：遷移前備份已存 → `docker compose cp`／起新堆疊 → `alembic current`＝`0020`＋遷移報告 log
+- [x] Model：`parent_id Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("locations.id", ondelete="RESTRICT"), nullable=True)`、`name Mapped[str]`（String(50), nullable=False）、`kind Mapped[Optional[str]]`（String(20)）；移除 `floor`／`room`／`zone`；`__table_args__` 加 `Index("ix_locations_owner_parent_sort", "owner_id", "parent_id", "sort_order")`＋兩個 partial unique（root／非 root，比照 `categories`）；`children`／`parent` 關係（`remote_side`；`children`／`items` 皆 `passive_deletes=True`，讓 DB 層 RESTRICT／SET NULL 真正生效而非 ORM 先置 NULL）
+- [x] Migration `0020`（`down_revision="0019"`）順序：add `parent_id`／`name`（nullable）／`kind` → **放寬 `floor` NOT NULL**（遷移期間新列不填舊欄；實作時發現的必要步驟）→ **呼叫 `location_tree_migration.migrate_flat(bind)` 做資料遷移**（並以 `preview_paths` 寫入 log）→ `ALTER COLUMN name SET NOT NULL` → drop `floor`／`room`／`zone` → create indexes／unique（比照 `categories` partial index 語法）＋FK；downgrade raise（不可逆）
+- [x] smoke：建 root／child／grandchild；同 parent 同名 → unique 違反；跨 parent 同名允許；刪除有子節點的 parent → FK RESTRICT（SQLite 需 `PRAGMA foreign_keys=ON`，比照 Phase 24 smoke）
+- [x] 真實 PG 驗證：遷移前備份已存 → 起新堆疊 → `alembic current`＝`0020`＋遷移報告 log
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_location_model_smoke.py`
@@ -84,12 +84,12 @@
 - Test: `apps/api/tests/test_location_tree_migration.py`
 
 **TODO:**
-- [ ] `MigrationReport`（dataclass：`source_rows`／`created_nodes`／`merged_rows`／`orphan_nodes`／`unassigned_items`）＋`as_dict()`
-- [ ] `analyze_flat(conn) -> MigrationReport`：**唯讀**；讀舊列（`id, owner_id, floor, room, zone`）→ 計算 canonical 節點計畫與 `merged_rows`／`orphan_nodes`／`unassigned_items`（不寫入）
-- [ ] `migrate_flat(conn) -> MigrationReport`：Core DML——逐 owner 建立／重用節點（同 owner＋同 parent＋同名 → 重用；深度 1→`kind='floor'`、2→`'room'`、≥3→`'other'`，`sort_order` 以首次出現序 0..N）；`UPDATE items SET location_id=<最深節點> WHERE location_id IN (舊列 ids)`；刪除舊列；回傳報告（PG／SQLite 通用，僅用 INSERT/SELECT/UPDATE/DELETE）
-- [ ] 邊界：`floor` 為空字串（舊 schema 不允許，但仍防禦）、`room`／`zone` 為 NULL、同 owner 內完全相同組合重複列（合併）、舊列無物品（仍建節點並計入 `orphan_nodes`）、物品 `location_id IS NULL`（計入 `unassigned_items`）
-- [ ] `location_migration_dry_run.py`：async engine ＋ `run_sync(analyze_flat)`；印 JSON 報告（含計畫樹摘要）；**不寫入**（測試以「跑完後 DB 無變化」驗證）
-- [ ] 測試（fixture：以 raw SQL 建「舊＋新欄並存」的 `locations` 表、`items` 表，塞入平面資料）：平坦 3 層 → 樹形狀正確；兩列同 `floor/room` 不同 `zone` → 共用中間節點；兩列完全同組合 → 合併＋物品重新指向（`merged_rows=1`）；空列（無物品）→ 節點存在且 `orphan_nodes` 計數；`analyze_flat` 與 `migrate_flat` 報告一致；遷移後**無孤兒**（每件有 location_id 的物品指向存在節點）
+- [x] `MigrationReport`（dataclass：`source_rows`／`created_nodes`／`merged_rows`／`orphan_nodes`／`unassigned_items`）＋`as_dict()`
+- [x] `analyze_flat(conn) -> MigrationReport`：**唯讀**；讀舊列（`id, owner_id, floor, room, zone`）→ 計算 canonical 節點計畫與 `merged_rows`／`orphan_nodes`／`unassigned_items`（不寫入）
+- [x] `migrate_flat(conn) -> MigrationReport`：Core DML——逐 owner 建立／重用節點（同 owner＋同 parent＋同名 → 重用；深度 1→`kind='floor'`、2→`'room'`、≥3→`'other'`，`sort_order` 以首次出現序 0..N）；`UPDATE items SET location_id=<最深節點> WHERE location_id IN (舊列 ids)`；刪除舊列；回傳報告（PG／SQLite 通用，僅用 INSERT/SELECT/UPDATE/DELETE）
+- [x] 邊界：`floor` 為空字串（舊 schema 不允許，但仍防禦）、`room`／`zone` 為 NULL、同 owner 內完全相同組合重複列（合併）、舊列無物品（仍建節點並計入 `orphan_nodes`）、物品 `location_id IS NULL`（計入 `unassigned_items`）
+- [x] `location_migration_dry_run.py`：async engine ＋ `run_sync(analyze_flat)`；印 JSON 報告（含 `preview_paths` 計畫樹）；**不寫入**（以「跑完後 DB 無變化」驗證）；已對 dev 庫實跑（報告：`source_rows=5`／`created_nodes=7`／`merged_rows=1`／`orphan_nodes=1`／`unassigned_items=216`）
+- [x] 測試（fixture：以 raw SQL 建「舊＋新欄並存」的 `locations` 表、`items` 表，塞入平面資料）：平坦 3 層 → 樹形狀正確；兩列同 `floor/room` 不同 `zone` → 共用中間節點；兩列完全同組合 → 合併＋物品重新指向（`merged_rows=1`）；空列（無物品）→ 節點存在且 `orphan_nodes` 計數；`analyze_flat` 與 `migrate_flat` 報告一致；遷移後**無孤兒**（每件有 location_id 的物品指向存在節點）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_location_tree_migration.py`
