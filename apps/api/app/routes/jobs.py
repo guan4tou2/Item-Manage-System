@@ -13,7 +13,13 @@ from app.auth.dependencies import get_current_admin, get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.repositories import job_runs_repository
-from app.schemas.jobs import JobRunInfo, JobRunResult, JobStatus, JobThresholds
+from app.schemas.jobs import (
+    JobResultPayload,
+    JobRunInfo,
+    JobRunResult,
+    JobStatus,
+    JobThresholds,
+)
 from app.services import expiry_scan, jobs_service  # noqa: F401 — import 觸發 job 註冊
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -60,7 +66,7 @@ async def job_status(
                 status=last.status,
                 started_at=last.started_at,
                 finished_at=last.finished_at,
-                result=last.result,
+                result=JobResultPayload(**last.result) if last.result else None,
             )
             if last is not None
             else None

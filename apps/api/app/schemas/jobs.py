@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -23,11 +22,19 @@ class JobThresholds(BaseModel):
     expired_stop_days: int | None = None
 
 
+class JobResultPayload(BaseModel):
+    """`job_runs.result` 的固定形狀（所有 job 遵循 `JobResult` 契約）。"""
+
+    processed: int = 0
+    emitted: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
 class JobRunInfo(BaseModel):
     status: str
     started_at: datetime
     finished_at: datetime | None = None
-    result: dict[str, Any] | None = None
+    result: JobResultPayload | None = None
 
 
 class JobStatus(BaseModel):

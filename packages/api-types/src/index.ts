@@ -2643,6 +2643,24 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * JobResultPayload
+         * @description `job_runs.result` 的固定形狀（所有 job 遵循 `JobResult` 契約）。
+         */
+        JobResultPayload: {
+            /**
+             * Processed
+             * @default 0
+             */
+            processed: number;
+            /**
+             * Emitted
+             * @default 0
+             */
+            emitted: number;
+            /** Errors */
+            errors?: string[];
+        };
         /** JobRunInfo */
         JobRunInfo: {
             /** Status */
@@ -2654,8 +2672,7 @@ export interface components {
             started_at: string;
             /** Finished At */
             finished_at?: string | null;
-            /** Result */
-            result?: Record<string, never> | null;
+            result?: components["schemas"]["JobResultPayload"] | null;
         };
         /**
          * JobRunResult
