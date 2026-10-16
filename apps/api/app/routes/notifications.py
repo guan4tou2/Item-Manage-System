@@ -14,6 +14,11 @@ from app.schemas.notification import (
     NotificationRead,
     UnreadCountResponse,
 )
+from app.schemas.notification_preferences import (
+    NotificationPreferencesResponse,
+    NotificationPreferencesUpdateRequest,
+)
+from app.services import notification_prefs as prefs_svc
 from app.services import notifications_service as svc
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
@@ -38,6 +43,43 @@ async def unread_count(
     session: AsyncSession = Depends(get_db),
 ) -> UnreadCountResponse:
     return await svc.get_unread_count(session, user.id)
+
+
+# 偏好路由必須先於 DELETE /{notification_id} 宣告（"preferences" 會被
+# UUID 路徑參數攔截而回 422）。
+@router.get("/preferences", response_model=NotificationPreferencesResponse)
+async def get_preferences(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> NotificationPreferencesResponse:
+    return NotificationPreferencesResponse.model_validate(
+        await prefs_svc.get_snapshot(session, user.id)
+    )
+
+
+@router.put("/preferences", response_model=NotificationPreferencesResponse)
+async def update_preferences(
+    payload: NotificationPreferencesUpdateRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> NotificationPreferencesResponse:
+    try:
+        snapshot = await prefs_svc.apply_updates(
+            session, user.id, [u.model_dump() for u in payload.updates]
+        )
+    except prefs_svc.PreferenceUpdateError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return NotificationPreferencesResponse.model_validate(snapshot)
+
+
+@router.delete("/preferences", response_model=NotificationPreferencesResponse)
+async def reset_preferences(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> NotificationPreferencesResponse:
+    return NotificationPreferencesResponse.model_validate(
+        await prefs_svc.reset(session, user.id)
+    )
 
 
 @router.patch("/{notification_id}/read", response_model=NotificationRead)

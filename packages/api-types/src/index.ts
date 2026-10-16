@@ -813,6 +813,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/notifications/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Preferences */
+        get: operations["get_preferences_api_notifications_preferences_get"];
+        /** Update Preferences */
+        put: operations["update_preferences_api_notifications_preferences_put"];
+        post?: never;
+        /** Reset Preferences */
+        delete: operations["reset_preferences_api_notifications_preferences_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/notifications/{notification_id}/read": {
         parameters: {
             query?: never;
@@ -2923,6 +2942,48 @@ export interface components {
             total: number;
             /** Unread Count */
             unread_count: number;
+        };
+        /** NotificationPreferenceType */
+        NotificationPreferenceType: {
+            /** Key */
+            key: string;
+            /** Group */
+            group: string;
+            /** Locked */
+            locked: boolean;
+        };
+        /** NotificationPreferenceUpdate */
+        NotificationPreferenceUpdate: {
+            /** Type */
+            type: string;
+            /** Channel */
+            channel: string;
+            /** Enabled */
+            enabled: boolean;
+        };
+        /** NotificationPreferencesResponse */
+        NotificationPreferencesResponse: {
+            /** Types */
+            types: components["schemas"]["NotificationPreferenceType"][];
+            /** Channels */
+            channels: string[];
+            /** Matrix */
+            matrix: {
+                [key: string]: {
+                    [key: string]: boolean;
+                };
+            };
+            /** Has Custom */
+            has_custom: boolean;
+            /** Channel Availability */
+            channel_availability: {
+                [key: string]: boolean;
+            };
+        };
+        /** NotificationPreferencesUpdateRequest */
+        NotificationPreferencesUpdateRequest: {
+            /** Updates */
+            updates?: components["schemas"]["NotificationPreferenceUpdate"][];
         };
         /** NotificationRead */
         NotificationRead: {
@@ -5241,6 +5302,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UnreadCountResponse"];
+                };
+            };
+        };
+    };
+    get_preferences_api_notifications_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferencesResponse"];
+                };
+            };
+        };
+    };
+    update_preferences_api_notifications_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationPreferencesUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferencesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_preferences_api_notifications_preferences_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferencesResponse"];
                 };
             };
         };
