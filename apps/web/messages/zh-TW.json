@@ -167,23 +167,48 @@
     }
   },
   "scan": {
-    "instruction": "將物品標籤對準相機。掃到由本系統產生的 QR 會自動跳轉到該物品頁面。",
+    "instruction": "將物品標籤對準相機。掃到由本系統產生的 QR 會自動跳轉到該物品頁面；掃到條碼會先查詢系統內的物品，查無再查公開資料庫。",
     "camera": {
       "starting": "啟動相機中…",
       "idle": "準備啟動相機",
       "denied": "相機權限被拒絕。請在瀏覽器設定中允許此網站使用相機，然後重新載入此頁面。",
       "unsupported": "找不到可用的相機。請改用手動輸入。",
       "error": "相機初始化失敗。請檢查瀏覽器相容性。",
-      "restart": "重新啟動相機"
+      "restart": "重新啟動相機",
+      "grantPermission": "開啟權限"
+    },
+    "lookup": {
+      "loading": "查詢外部資料庫…",
+      "error": "查詢失敗，請再試一次。",
+      "retry": "重試"
+    },
+    "candidates": {
+      "title": "找到 {count} 件",
+      "noLocation": "未設定位置",
+      "quantity": "數量 {count}"
+    },
+    "external": {
+      "source": "來源：{source}",
+      "sourceNames": {
+        "openfoodfacts": "Open Food Facts",
+        "openlibrary": "Open Library"
+      },
+      "bringToNew": "帶入新增",
+      "notFound": "查無公開資料，已帶入條碼，請補名稱。",
+      "createWithBarcode": "以條碼新增",
+      "unavailable": "網路不穩，條碼已保留。",
+      "stillCreate": "仍要新增",
+      "unsupported": "此條碼沒有對應的公開資料庫。"
     },
     "result": {
       "label": "最近解碼結果：",
       "found": "✓ 偵測到物品 ID，已跳轉",
+      "barcode": "✓ 偵測到條碼 {code}",
       "notFound": "無法從內容判斷物品 ID，請檢查 QR 是否由本系統產生。"
     },
     "manual": {
-      "label": "手動輸入（物品 ID、網址或關鍵字）",
-      "placeholder": "例：a1b2c3d4-… 或 https://…",
+      "label": "手動輸入（物品 ID、網址、條碼或關鍵字）",
+      "placeholder": "例：a1b2c3d4-…、4710085200016 或 https://…",
       "go": "前往"
     }
   },

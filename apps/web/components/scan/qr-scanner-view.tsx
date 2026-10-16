@@ -7,7 +7,12 @@ import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useBarcodeLookup } from "@/lib/hooks/use-barcode-lookup"
+import { canonicalizeBarcode, isBarcodeLike } from "@/lib/scan/barcode"
 import { createBarcodeEngine, type BarcodeEngine } from "@/lib/scan/barcode-engine"
+
+import { BarcodeCandidates } from "./barcode-candidates"
+import { BarcodeExternalCard } from "./barcode-external-card"
 
 interface DecodedResult {
   payload: string
@@ -49,11 +54,23 @@ export function QrScannerView() {
   const [status, setStatus] = useState<Status>("idle")
   const [lastResult, setLastResult] = useState<DecodedResult | null>(null)
   const [manualValue, setManualValue] = useState("")
+  const [lookupCode, setLookupCode] = useState<string | null>(null)
+  const lookup = useBarcodeLookup(lookupCode)
 
   const stopEngine = useCallback(() => {
     engineRef.current?.stop()
     engineRef.current = null
   }, [])
+
+  /** 條碼候選 → 內查／外查流程（掃描與手動輸入共用）。 */
+  const startLookup = useCallback(
+    (raw: string) => {
+      stopEngine()
+      setStatus("idle")
+      setLookupCode(canonicalizeBarcode(raw))
+    },
+    [stopEngine],
+  )
 
   const handleDecoded = useCallback(
     (payload: string) => {
@@ -64,10 +81,22 @@ export function QrScannerView() {
         stopEngine()
         setStatus("idle")
         router.push(`/items/${id}` as never)
+        return
+      }
+      if (isBarcodeLike(payload)) {
+        startLookup(payload)
       }
     },
-    [router, stopEngine],
+    [router, startLookup, stopEngine],
   )
+
+  // 內查單筆命中 → 直接跳物品頁（§5.4）
+  useEffect(() => {
+    const matches = lookup.data?.local_matches
+    if (matches?.length === 1 && matches[0]) {
+      router.push(`/items/${matches[0].id}` as never)
+    }
+  }, [lookup.data, router])
 
   const start = useCallback(async () => {
     const video = videoRef.current
@@ -104,16 +133,22 @@ export function QrScannerView() {
 
   function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const id = extractItemIdFromPayload(manualValue)
+    const value = manualValue.trim()
+    if (!value) return
+    const id = extractItemIdFromPayload(value)
     if (id) {
       router.push(`/items/${id}` as never)
       return
     }
-    // not a URL or bare UUID — treat as plain name search
-    if (manualValue.trim()) {
-      router.push(`/items?q=${encodeURIComponent(manualValue.trim())}` as never)
+    if (isBarcodeLike(value)) {
+      startLookup(value)
+      return
     }
+    // not a URL, UUID, or barcode — treat as plain name search
+    router.push(`/items?q=${encodeURIComponent(value)}` as never)
   }
+
+  const matches = lookup.data?.local_matches ?? []
 
   return (
     <div className="space-y-4">
@@ -141,12 +176,40 @@ export function QrScannerView() {
         ) : null}
       </div>
 
+      {lookupCode && lookup.isFetching ? (
+        <div data-testid="barcode-lookup-loading" className="rounded border p-3 text-sm">
+          {t("scan.lookup.loading")}
+        </div>
+      ) : null}
+
+      {lookupCode && lookup.isError && !lookup.isFetching ? (
+        <div data-testid="barcode-lookup-error" className="space-y-3 rounded border p-3">
+          <p className="text-sm">{t("scan.lookup.error")}</p>
+          <Button onClick={() => void lookup.refetch()}>{t("scan.lookup.retry")}</Button>
+        </div>
+      ) : null}
+
+      {matches.length > 1 ? <BarcodeCandidates matches={matches} /> : null}
+
+      {lookupCode && lookup.data && matches.length === 0 ? (
+        <BarcodeExternalCard
+          result={lookup.data}
+          onRetry={() => void lookup.refetch()}
+        />
+      ) : null}
+
       {lastResult ? (
         <div className="rounded border bg-muted/30 p-3 text-xs">
           <div className="text-muted-foreground">{t("scan.result.label")}</div>
           <code className="block break-all font-mono">{lastResult.payload}</code>
           {extractItemIdFromPayload(lastResult.payload) ? (
             <div className="mt-1 text-green-700">{t("scan.result.found")}</div>
+          ) : isBarcodeLike(lastResult.payload) ? (
+            <div className="mt-1 text-green-700">
+              {t("scan.result.barcode", {
+                code: canonicalizeBarcode(lastResult.payload),
+              })}
+            </div>
           ) : (
             <div className="mt-1 text-muted-foreground">
               {t("scan.result.notFound")}
@@ -173,7 +236,11 @@ export function QrScannerView() {
 
       {status !== "scanning" ? (
         <Button variant="outline" onClick={() => void start()} disabled={status === "starting"}>
-          {status === "starting" ? t("scan.camera.starting") : t("scan.camera.restart")}
+          {status === "starting"
+            ? t("scan.camera.starting")
+            : status === "denied"
+              ? t("scan.camera.grantPermission")
+              : t("scan.camera.restart")}
         </Button>
       ) : null}
     </div>

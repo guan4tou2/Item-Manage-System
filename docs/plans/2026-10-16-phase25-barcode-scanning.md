@@ -207,12 +207,12 @@
 - Test: `qr-scanner-view.test.ts` 擴充
 
 **TODO:**
-- [ ] 分流：decode／手輸 → `canonicalizeBarcode` 後 `isBarcodeLike` → `useBarcodeLookup`；1 筆 → `router.push(/items/{id})`；多筆／零筆 → 面板呈現
-- [ ] `barcode-candidates.tsx`：標題「找到 {count} 件」；列＝縮圖（`imageUrl(image_id)`，無圖→佔位 icon）／名稱／`location_path`／數量；點擊 → 物品頁（鍵盤可達、`aria`）
-- [ ] `barcode-external-card.tsx`：`ok` → 來源徽章（Open Food Facts／Open Library）＋name／description＋封面縮圖＋「帶入新增」→ `/items/new?barcode=…`；`not_found` → 「查無公開資料，已帶入條碼，請補名稱」＋「以條碼新增」；`unavailable` → 「網路不穩，條碼已保留」＋「重試」（重打 query）＋「仍要新增」；`unsupported` → 直接「以條碼新增」；查詢中 → 「查詢外部資料庫…」＋spinner
-- [ ] 權限被拒：全頁空態區塊＋「開啟權限」（重新 `start()`）＋手動輸入保底（不遮擋）
-- [ ] i18n zh-TW／en 同步；既有 QR 文案不動
-- [ ] 測試：單筆 push；多筆候選渲染（縮圖/路徑/數量/退化無圖）；三態卡文案與按鈕；重試觸發 refetch；非條碼 → 名稱搜尋回歸
+- [x] 分流：decode／手輸 → `canonicalizeBarcode` 後 `isBarcodeLike` → `useBarcodeLookup`；1 筆 → `router.push(/items/{id})`；多筆／零筆 → 面板呈現
+- [x] `barcode-candidates.tsx`：標題「找到 {count} 件」；列＝縮圖（`imageUrl(image_id)`，無圖→佔位 icon）／名稱／`location_path`／數量；點擊 → 物品頁（鍵盤可達、`aria`）
+- [x] `barcode-external-card.tsx`：`ok` → 來源徽章（Open Food Facts／Open Library）＋name／description＋封面縮圖＋「帶入新增」→ `/items/new?barcode=…`；`not_found` → 「查無公開資料，已帶入條碼，請補名稱」＋「以條碼新增」；`unavailable` → 「網路不穩，條碼已保留」＋「重試」（重打 query）＋「仍要新增」；`unsupported` → 直接「以條碼新增」；查詢中 → 「查詢外部資料庫…」＋spinner
+- [x] 權限被拒：相機區塊空態＋「開啟權限」按鈕（重新 `start()`）＋手動輸入保底（不遮擋）
+- [x] i18n zh-TW／en 同步；既有 QR 文案不動
+- [x] 測試：單筆 push；多筆候選渲染（縮圖/路徑/數量/退化無圖）；三態卡文案與按鈕；重試觸發 refetch；非條碼 → 名稱搜尋回歸
 
 **Commands:**
 - `pnpm -F @ims/web test -- src/components/scan`
