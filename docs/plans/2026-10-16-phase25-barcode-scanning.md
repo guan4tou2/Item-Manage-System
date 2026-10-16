@@ -102,13 +102,13 @@
 - Test: `apps/api/tests/test_barcode_service.py`
 
 **TODO:**
-- [ ] 常數：`CACHE_TTL_DAYS = 30`、`EXTERNAL_TIMEOUT_SECONDS = 3.0`、`API_BASE` 兩 provider URL
-- [ ] `canonicalize(raw) -> str`（定案 1）；checksum：`_ean_checksum_ok`（EAN-8/13、UPC-A 12 位）、`_isbn10_checksum_ok`（mod 11，X=10）
-- [ ] `classify(code) -> "isbn" | "ean" | "other"`（定案 2）
-- [ ] `ExternalResult` dataclass（`source`／`name`／`description`／`image_url`）；`BarcodeProvider` protocol；`OpenFoodFactsProvider`／`OpenLibraryProvider`（定案 7）；`PROVIDERS` registry＋`provider_for(code)`
-- [ ] `async lookup_external(session, code) -> ExternalLookup`（dataclass：`external`／`status`／`cached`）：classify → 無 provider → `unsupported`；快取列存在且 `fetched_at >= now - 30d` → 回 `payload`（None → `not_found`）；否則 fetch → 命中/查無寫快取（savepoint 吸收 IntegrityError 改 UPDATE）→ `unavailable` 不寫
-- [ ] `async suggest_category_id(session, owner_id, categories_text) -> int | None`（定案 5：葉分類字面比對、唯一命中）
-- [ ] 測試：
+- [x] 常數：`CACHE_TTL_DAYS = 30`、`EXTERNAL_TIMEOUT_SECONDS = 3.0`、`API_BASE` 兩 provider URL
+- [x] `canonicalize(raw) -> str`（定案 1）；checksum：`_ean_checksum_ok`（EAN-8/13、UPC-A 12 位）、`_isbn10_checksum_ok`（mod 11，X=10）
+- [x] `classify(code) -> "isbn" | "ean" | "other"`（定案 2）
+- [x] `ExternalResult` dataclass（`source`／`name`／`description`／`image_url`）；`BarcodeProvider` protocol；`OpenFoodFactsProvider`／`OpenLibraryProvider`（定案 7）；`PROVIDERS` registry＋`provider_for(code)`
+- [x] `async lookup_external(session, code) -> ExternalLookup`（dataclass：`external`／`status`／`cached`）：classify → 無 provider → `unsupported`；快取列存在且 `fetched_at >= now - 30d` → 回 `payload`（None → `not_found`）；否則 fetch → 命中/查無寫快取（savepoint 吸收 IntegrityError 改 UPDATE）→ `unavailable` 不寫
+- [x] `async suggest_category_id(session, owner_id, categories_text) -> int | None`（定案 5：葉分類字面比對、唯一命中）
+- [x] 測試：
   - canonicalize：去空白連字號底線；`978-0-306-40615-7`→13 位；ISBN-10 `X` 大寫；英數 SKU 原樣；空字串
   - classify：ISBN-10 有效/無效、978/979→isbn、EAN-13/8、UPC-A、checksum 壞→other
   - provider（monkeypatch httpx `AsyncClient` 或 transport mock）：OFF 命中映射（name/description/image）；`status:0`/404→None；非 JSON→`unavailable`；timeout→`unavailable`；OL 命中（作者串接）／空物件→None；OL ISBN-10
