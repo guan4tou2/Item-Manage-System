@@ -587,17 +587,36 @@
   "settings": {
     "subtitle": "Manage account access, preferences, integrations, and data movement from one operational workspace.",
     "title": "Settings",
-    "tabs": {
-      "profile": "Profile",
-      "password": "Password",
-      "preferences": "Preferences",
-      "tokens": "API Tokens",
-      "customization": "Customization",
-      "channels": "Notifications",
-      "webhooks": "Webhooks",
-      "data": "Import / Export",
-      "admin": "Admin",
-      "audit": "Audit Log"
+    "adminOnly": {
+      "back": "Back to settings",
+      "error": "Could not verify your permissions. Please try again.",
+      "loading": "Loading…",
+      "prompt": "This page is available to administrators only.",
+      "retry": "Retry"
+    },
+    "index": {
+      "groups": {
+        "admin": { "description": "Member accounts and audit log", "title": "Administration" },
+        "integrations": { "description": "Webhooks, API tokens, import/export, and taxonomy", "title": "Integrations & data" },
+        "notifications": { "description": "Notification channels and per-type preferences", "title": "Notifications & reminders" },
+        "personal": { "description": "Account details, password, and personal preferences", "title": "Personal" }
+      },
+      "loadError": "Could not load settings. Please try again.",
+      "loading": "Loading settings…",
+      "pages": {
+        "audit": { "description": "Recorded system activity", "title": "Audit log" },
+        "channels": { "description": "Link Email, LINE, Telegram, and browser push", "title": "Notification channels" },
+        "customization": { "description": "Item types, custom fields, and templates", "title": "Customization" },
+        "data": { "description": "Bulk import and export items as CSV", "title": "Import / Export" },
+        "members": { "description": "Activate, deactivate accounts, and roles", "title": "Members" },
+        "password": { "description": "Change your login password", "title": "Password" },
+        "preferences": { "description": "Language and theme", "title": "Preferences" },
+        "profile": { "description": "Display name and email", "title": "Profile" },
+        "taxonomy": { "description": "Organize the item taxonomy", "title": "Categories / Locations / Tags" },
+        "tokens": { "description": "Tokens for scripts and mobile apps", "title": "API Tokens" },
+        "webhooks": { "description": "Push events to external systems", "title": "Webhooks" }
+      },
+      "retry": "Retry"
     },
     "profile": {
       "email": "Email",

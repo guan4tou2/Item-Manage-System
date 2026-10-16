@@ -587,17 +587,36 @@
   "settings": {
     "subtitle": "集中管理帳號存取、偏好設定、整合與資料匯出入。",
     "title": "設定",
-    "tabs": {
-      "profile": "個人資料",
-      "password": "密碼",
-      "preferences": "偏好",
-      "tokens": "API Tokens",
-      "customization": "自訂結構",
-      "channels": "通知管道",
-      "webhooks": "Webhooks",
-      "data": "資料匯出入",
-      "admin": "管理員",
-      "audit": "稽核日誌"
+    "adminOnly": {
+      "back": "返回設定",
+      "error": "無法確認您的權限，請重試。",
+      "loading": "載入中…",
+      "prompt": "此頁僅限管理員檢視。",
+      "retry": "重試"
+    },
+    "index": {
+      "groups": {
+        "admin": { "description": "成員帳號與稽核記錄", "title": "管理" },
+        "integrations": { "description": "Webhook、API 權杖、匯入匯出與分類結構", "title": "整合與資料" },
+        "notifications": { "description": "通知管道與各類型通知偏好", "title": "通知與提醒" },
+        "personal": { "description": "帳號資料、密碼與個人偏好", "title": "個人" }
+      },
+      "loadError": "無法載入設定，請稍後重試。",
+      "loading": "載入設定中…",
+      "pages": {
+        "audit": { "description": "系統操作歷程", "title": "稽核記錄" },
+        "channels": { "description": "連結 Email、LINE、Telegram 與瀏覽器推播", "title": "通知管道" },
+        "customization": { "description": "物品類型、自訂欄位與模板", "title": "自訂結構" },
+        "data": { "description": "以 CSV 批次匯入與匯出物品", "title": "資料匯出入" },
+        "members": { "description": "啟用、停用帳號與權限", "title": "成員管理" },
+        "password": { "description": "變更登入密碼", "title": "密碼" },
+        "preferences": { "description": "語言與主題", "title": "偏好" },
+        "profile": { "description": "顯示名稱與電子郵件", "title": "個人資料" },
+        "taxonomy": { "description": "整理物品的分類結構", "title": "分類／位置／標籤" },
+        "tokens": { "description": "供程式與行動 App 存取的權杖", "title": "API Tokens" },
+        "webhooks": { "description": "將事件推送到外部系統", "title": "Webhooks" }
+      },
+      "retry": "重試"
     },
     "profile": {
       "email": "電子郵件",
