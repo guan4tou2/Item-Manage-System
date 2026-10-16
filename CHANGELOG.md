@@ -6,6 +6,22 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.25] — Phase 25：條碼掃描（內查＋外查）
+
+- 新欄位與資料表：`items.barcode`（varchar 32、`(owner_id, barcode)` 索引、**不設唯一**——同條碼可分開建檔多件）與 `barcode_lookups` 外部查詢快取（`code` unique／`source`／`payload` JSONB 可空＝負快取／`fetched_at`）；Alembic 遷移 `0019`
+- 新 API `GET /api/barcodes/{code}`（任何登入者；空／>64 字 422）：先 canonicalize（去空白／連字號／底線；數字 8–14 位或 ISBN-10 收斂），owner 範圍精確內查；命中即回候選（`external_status=skipped`，**不呼叫外部**）；查無才外查
+- 外查 provider 抽象：EAN-13／EAN-8／UPC-A（checksum 驗證）→ Open Food Facts；ISBN-10 與 978/979 書碼 → Open Library；httpx timeout 3 秒、fail-soft（逾時／網路／非 JSON／5xx → `unavailable`，不寫快取、不 500）；404／`status: 0` → `not_found`
+- 快取：正負結果皆存（負快取避免家庭物品重複打 API），TTL 30 天；並發以 savepoint 吸收 unique 衝突
+- 外部結果 → 新增表單 prefill：名稱、描述（品牌／分類／容量；書：作者／出版／出版社）＋分類建議（與使用者葉分類名稱字面比對、唯一命中才帶入）＋來源標註；**只填空欄位**，不覆蓋已輸入
+- 物品整合：表單 `barcode` 欄位（手輸或掃碼帶入；「查詢」按鈕）＋`?barcode=` 帶入（快取命中即時）；詳情頁 monospace 顯示＋複製；列表 `q` 併入條碼比對；CSV 匯出新增 `barcode` 欄（description 後）、匯入可選欄並套正規化（round-trip 不丟欄位）
+- `/scan` 掃描引擎置換：原生 `BarcodeDetector`（可用時快路徑，依 `getSupportedFormats` 取交集）→ `@zxing/browser` 多格式 fallback（QR、EAN-13/8、UPC-A/E、Code128/39、ITF＋TRY_HARDER）；既有 QR 流程零回歸（deep link／裸 UUID 導頁、非條碼輸入維持名稱搜尋）
+- 掃碼流程 UI：內查單筆直接跳轉、多筆候選列表（縮圖／名稱／位置路徑／數量）；外查三態與查無區分（`ok` 來源標註＋帶入新增；`not_found`「查無公開資料，已帶入條碼，請補名稱」；`unavailable`「網路不穩，條碼已保留」＋重試）；權限被拒→「開啟權限」＋手動輸入保底
+- 行動版掃描 FAB（§5.7）：僅 `md` 以下顯示、避底部安全區、`aria-label`；`/scan` 頁自身不顯示；桌面既有 nav 入口保留
+- 標籤列印加印條碼數字（stretch；`ItemLabel.barcode`，單張與批量標籤頁）
+- 依賴：新增 `@zxing/browser`＋`@zxing/library`；移除 `qr-scanner`
+- 新增 42 個 API 測試（602 → 644）；新增 55 個 web 測試（269 → 324，64 → 72 檔）；e2e 15 → 16 spec（新增 7 情境：內查單筆／多筆候選、非條碼回歸、表單 prefill、建立＋詳情＋搜尋、行動 FAB、桌面無 FAB）
+- 註：e2e 不依賴外部網路（外查三態由 API provider mock 與元件測試覆蓋）
+
 ## [2.0.0-alpha.24] — Phase 24：排程自動化＋到期提醒
 
 - 新 job 機制（外部 cron ＋ 冪等端點；Phase 31 月報表重用）：job registry（`JobSpec`／`run_job`）＋ `POST /api/jobs/{job_name}/run`（**管理員**；匿名 401／非 admin 403／未知 job 404；管理員 PAT 可觸發）、`GET /api/jobs/{job_name}/status`（任何登入者；門檻＋上次執行＋`stale` 停跑判定）

@@ -262,14 +262,14 @@
 - Create: `apps/web/tests/scan.spec.ts`
 
 **TODO:**
-- [ ] 前置：register（既有 helper 模式）；API 建 2 件同 barcode（"4710085200014"）＋1 件另一 barcode（"4710085200021"）＋1 件無 barcode
-- [ ] ① 內查單筆：`/scan` 手輸 → 送出 → URL `/items/{id}`
-- [ ] ② 內查多筆：手輸共用 barcode → 候選列表（兩名稱＋總數）→ 點列 → 物品頁
-- [ ] ③ 非條碼輸入回歸：手輸名稱 → `/items?q=…`
-- [ ] ④ 表單 prefill（local 命中）：`/items/new?barcode=…` → barcode 欄已帶入＋「已有 1 件同條碼物品」提示
-- [ ] ⑤ 建立→詳情：表單手輸 barcode 建檔 → 詳情顯示條碼；列表 `q=barcode` 命中
-- [ ] ⑥ FAB：`test.use({ viewport: { width: 390, height: 844 } })` → 可見、點擊到 `/scan`；桌面 viewport → 隱藏
-- [ ] 註記：外部三態不在 e2e（網路非決定性）——provider mock 於 T1.2／hook mock 於 T2.3 覆蓋
+- [x] 前置：register（既有 helper 模式）；API 建 2 件同 barcode（"4710085200014"）＋1 件另一 barcode（"4710085200021"）＋1 件無 barcode
+- [x] ① 內查單筆：`/scan` 手輸 → 送出 → URL `/items/{id}`
+- [x] ② 內查多筆：手輸共用 barcode → 候選列表（兩名稱＋總數）→ 點列 → 物品頁
+- [x] ③ 非條碼輸入回歸：手輸名稱 → `/items?q=…`
+- [x] ④ 表單 prefill（local 命中）：`/items/new?barcode=…` → barcode 欄已帶入＋「已有 1 件同條碼物品」提示
+- [x] ⑤ 建立→詳情：表單手輸 barcode 建檔 → 詳情顯示條碼；列表 `q=barcode` 命中
+- [x] ⑥ FAB：`test.use({ viewport: { width: 390, height: 844 } })` → 可見、點擊到 `/scan`；桌面 viewport → 隱藏
+- [x] 註記：外部三態不在 e2e（網路非決定性）——provider mock 於 T1.2／hook mock 於 T2.3 覆蓋
 
 **Commands:**
 - `ENABLE_DEV_ROUTES=1 docker compose up -d --build api web && pnpm exec playwright test tests/scan.spec.ts`
@@ -281,10 +281,10 @@
 - Modify: `CHANGELOG.md`（`[2.0.0-alpha.25]`）、`docs/v2-roadmap.md`（Phase 列＋測試規模）、本計畫（勾選＋Final Verification）
 
 **TODO:**
-- [ ] 標籤頁：`item.barcode` 存在時 QR 下方 monospace 數字文字（列印樣式）；無 barcode 不變（零回歸）
-- [ ] CHANGELOG alpha.25（比照 alpha.24 格式）：barcode 欄位／lookup API／快取／`/scan` 擴充／FAB／CSV
-- [ ] v2-roadmap：Phase 25 狀態＋測試規模更新
-- [ ] 本計畫：全任務勾選＋Final Verification 段（實測數字＋環境註記：`ENABLE_DEV_ROUTES=1`、e2e 不依賴外部網路、admin 階梯沿用）
+- [x] 標籤頁：`item.barcode` 存在時 QR 下方 monospace 數字文字（列印樣式）；無 barcode 不變（零回歸）
+- [x] CHANGELOG alpha.25（比照 alpha.24 格式）：barcode 欄位／lookup API／快取／`/scan` 擴充／FAB／CSV
+- [x] v2-roadmap：Phase 25 狀態＋測試規模更新
+- [x] 本計畫：全任務勾選＋Final Verification 段（實測數字＋環境註記：`ENABLE_DEV_ROUTES=1`、e2e 不依賴外部網路、admin 階梯沿用）
 
 **Commands:**
 - `pnpm -F @ims/web test -- label`
@@ -325,13 +325,20 @@
 
 ---
 
-## Final Verification（收尾時填實測）
+## Final Verification（2026-10-16 實測）
 
-- [ ] API：`cd apps/api && uv run --extra test pytest -q` 全綠
-- [ ] Web：`pnpm -F @ims/web test` 全綠＋`pnpm -F @ims/web typecheck` 0 error
-- [ ] api-types 重生成零 diff
-- [ ] e2e：`pnpm exec playwright test` 全綠（環境註記：`ENABLE_DEV_ROUTES=1`；外部三態不在 e2e）
-- [ ] 視覺走查：/scan 三態＋候選、表單 prefill 標註、FAB（390 寬＋深色）
-- [ ] 環境註記回填（比照 Phase 24）
+- [x] API：`cd apps/api && uv run --extra test pytest -q` → **644 passed**（Phase 24 為 602，本 phase +42）
+- [x] Web：`pnpm -F @ims/web test` → **324 passed（72 檔）**（Phase 24 為 269／64 檔，+55）；`pnpm -F @ims/web typecheck` → 0 error
+- [x] api-types 重生成零 diff：`export_openapi.py` ＋ `pnpm --filter @ims/api-types gen:types`（僅新增 barcode 欄位／`/api/barcodes/{code}`／`ItemLabel.barcode`）
+- [x] e2e：`pnpm exec playwright test` → 16 spec／**45 passed**（含 `scan.spec.ts` 7 情境）；先前一次執行曾出現 `collaboration.spec.ts` flaky，單跑綠（既有平行 flaky，非回歸）
+- [x] 真實 PG 遷移：`docker compose cp` ＋ `alembic upgrade head` → `alembic current`＝**0019 (head)**
+- [x] 視覺走查（7 張，暫存 `phase25-visual/`）：掃碼候選列表＋相機不可用態、表單 `?barcode=` 同條碼提示、詳情條碼列、深色模式 `/scan`、行動 390 寬 FAB、行動掃描頁、標籤加印條碼數字 — 全數通過（對比、層級、可讀性正常）
+- [x] 環境註記回填（見下）
 
-> 環境註記（實作時補）：e2e 用 `ENABLE_DEV_ROUTES=1 docker compose up -d --build api web`；`items-crud`／`collaboration` 平行偶發 flaky 屬既有現象；外部 provider 依賴真實網路（僅 API 測試以 mock 覆蓋決定性）。
+### 環境註記（收尾慣例）
+
+- e2e 需 `ENABLE_DEV_ROUTES=1 docker compose up -d --build api web` **＋ `docker compose up -d nginx`**（入口在 nginx:80；只起 `api web` 會 `ECONNREFUSED`）
+- e2e 不依賴外部網路：Open Food Facts／Open Library 三態由 API provider mock 與 web hook mock 覆蓋
+- `collaboration.spec.ts`／`items-crud.spec.ts` 平行偶發 flaky（單跑綠，非回歸）
+- e2e 資料庫為長期沿用 PG（`e2e_jobs_admin` 等前置沿用 Phase 24 階梯）；本 phase 無新增 admin-gated 情境
+- worktree `.env` 需含 `ENABLE_DEV_ROUTES=1`；`@zxing/browser`／`@zxing/library` 為新依賴，`pnpm install` 後方可 typecheck／測試
