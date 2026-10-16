@@ -47,12 +47,13 @@
 | 23 | 通知偏好中心 | ✅ | 設定頁索引＋子路由（10 面板零回歸）、`notification_preferences` 表、偏好矩陣 API＋設定頁 |
 | 24 | 排程自動化＋到期提醒 | ✅ | 外部 cron ＋冪等 job 端點（admin）、`expiry-scan` 摘要提醒（冪等 dedupe）、`/settings/reminders` 停跑觀測、到期卡註記 |
 | 25 | 條碼掃描（內查＋外查） | ✅ | `items.barcode`＋`barcode_lookups`（TTL 30 天）、provider 抽象（Open Food Facts／Open Library）、`/scan` 多格式引擎（QR＋1D）、表單 prefill、行動 FAB |
+| 26 | 多層位置樹重建 | ✅ | `locations` 樹化（parent_id／kind／同層同名唯一）、migration 0020＋一次性遷移（保證無孤兒＋報告／dry-run）、樹 API（tree／path／move／reorder／刪除 409）、`location_scope` 預設含子孫、樹管理頁（拖放／鍵盤／行動搬移）、樹狀選擇器、CSV `location_path`、backup v2 |
 
 ## 測試規模
 
-- API 測試：644 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：324 passed（vitest + @testing-library/react + jsdom）
-- Playwright e2e：16 spec（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／主題等關鍵流程）
+- API 測試：691 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
+- Web 測試：376 passed（vitest + @testing-library/react + jsdom）
+- Playwright e2e：17 spec（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／位置樹／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）

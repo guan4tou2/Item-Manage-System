@@ -6,6 +6,20 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.26] — Phase 26：多層位置樹重建
+
+- **破壞性 schema 重構**：`locations` 由平面三欄（floor/room/zone）改為**任意深度樹**——`parent_id`（self-FK, RESTRICT）、`name`、`kind`（`floor|room|shelf|box|other` 或自由文字）、`sort_order`（同 parent 內）、`floor_plan_image_id` 保留；同 parent 同名唯一（partial unique ×2）；`(owner_id, parent_id, sort_order)` 索引。Alembic 遷移 `0020`（**不可逆**，downgrade 明確 raise）
+- **一次性資料遷移**（`location_tree_migration`）：舊列 → canonical 節點鏈（深度 1→`floor`、2→`room`、≥3→`other`），物品**重新指向**最深節點後刪除舊列（**保證無孤兒**）；同 owner 同組合重複列合併；`analyze_flat()` 唯讀 dry-run（`scripts/location_migration_dry_run.py`）與 `migrate_flat()` 同報告：`{source_rows, created_nodes, merged_rows, orphan_nodes, unassigned_items}`。dev 庫實測：`5 / 7 / 1 / 1 / 216`，遷移後 0 件懸空 `location_id`
+- **樹 API**：`GET /api/locations`（走訪序＋完整 `path`）、`GET /api/locations/tree`（巢狀＋直接物品數 `item_count`）、`GET /api/locations/{id}/path`（麵包屑 `nodes`）、`POST`（`parent_id`／`kind`）、`PATCH`（改名／kind／排序／floor plan，帶 `parent_id` 即**搬移**）、`POST /reorder`（**parent 範圍**、需完整子集合）、`DELETE`
+- **守衛**：搬到自身或子孫 → 422 `{code:"cycle"}`；同 parent 同名 → 409 `{code:"duplicate_name"}`；**有物品或有子節點一律禁止刪除**（409 結構化 detail `{code, items, children}`，無遞移刪除）；parent 非本人所有 → 404
+- **含子孫查詢**：`GET /api/items?location_id=&location_scope=subtree|exact`（**預設含子孫**，recursive CTE 取子孫集合；「僅此層」＝`exact`）
+- **消費端整合**：`ItemRead.location` 帶完整樹路徑（依物品 owner 批次計算，共享可見物品亦正確；列表／詳情／掃碼候選一致）；統計 `by-location` label＝樹路徑；CSV 匯出改 `location_path`（舊三欄檔仍可匯入，逐層建／重用節點）；備份 `format_version` 1 → 2（locations 改樹欄位）；`warehouse` 維持獨立軸
+- **新 UI**：`/locations` 樹管理頁（展開收合、行內改名（F2／雙擊）、新增子節點、搜尋（無結果→建立節點）、空樹引導、skeleton／錯誤重試）——**桌面拖放**（HTML5 DnD；非法目標即時灰化＋tooltip；拖到容器空白＝移到最上層，**drop 停止冒泡**兩者互斥不重複送出）與**行動版**「⋯ → 搬移至」（bottom sheet＋扁平搜尋顯示完整路徑）；**鍵盤操作**（↑↓ 移焦、→ 展開／首子、← 收合／父節點、Enter 切換、F2 改名；roving tabindex）；`role="tree"`＋`aria-expanded/level/selected`、樂觀更新＋`aria-live` 播報
+- **樹狀選擇器**（共用）：桌機**cascading** 逐層下拉（可停在任一層）／行動 **bottom sheet＋扁平搜尋**（完整路徑）；整合物品表單、篩選面板、刪除對話框「先搬移物品」
+- **路徑呈現**：物品詳情麵包屑（>3 層中間截斷「1F / … / 抽屜」＋`title` 全路徑）、列表位置欄與批次搬移清單顯示樹路徑、篩選面板「僅此層」toggle
+- **安全網**：遷移前強制全庫備份（`pg_dump`）＋dry-run 審查（roadmap §六要求）
+- 新增 47 個 API 測試（644 → 691）；新增 52 個 web 測試（324 → 376，72 → 79 檔）；e2e 16 → 17 spec（新增 8 情境：建樹／改名／拖放（含非法目標灰化）／刪除限制→先搬移／表單 cascading→詳情麵包屑／篩選含子孫＋僅此層／行動搬移／真實遷移資料在 UI 呈現）
+
 ## [2.0.0-alpha.25] — Phase 25：條碼掃描（內查＋外查）
 
 - 新欄位與資料表：`items.barcode`（varchar 32、`(owner_id, barcode)` 索引、**不設唯一**——同條碼可分開建檔多件）與 `barcode_lookups` 外部查詢快取（`code` unique／`source`／`payload` JSONB 可空＝負快取／`fetched_at`）；Alembic 遷移 `0019`

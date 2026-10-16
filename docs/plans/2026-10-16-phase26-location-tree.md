@@ -276,10 +276,11 @@
 - 可能新增：`docs/locations.md`（樹語義與遷移說明；若內容足以獨立成篇）
 
 **TODO:**
-- [ ] CHANGELOG alpha.26：樹化 schema／CTE／樹 API／樹管理頁與拖放／行動搬移／樹狀選擇器／篩選 scope／CSV `location_path`／backup v2／遷移報告與 dry-run／刪除限制與防循環
-- [ ] v2-roadmap：Phase 26 ✅＋測試規模更新
-- [ ] 本計畫：全任務勾選＋Final Verification（實測數字、遷移報告摘要、環境註記）
-- [ ] 記錄遷移實測：`source_rows`／`created_nodes`／`merged_rows`／`orphan_nodes`／`unassigned_items` 與備份檔位置
+- [x] CHANGELOG alpha.26：樹化 schema／CTE／樹 API／樹管理頁與拖放／行動搬移／樹狀選擇器／篩選 scope／CSV `location_path`／backup v2／遷移報告與 dry-run／刪除限制與防循環
+- [x] v2-roadmap：Phase 26 ✅＋測試規模更新
+- [x] 本計畫：全任務勾選＋Final Verification（實測數字、遷移報告摘要、環境註記）
+- [x] 記錄遷移實測：`source_rows=5`／`created_nodes=7`／`merged_rows=1`／`orphan_nodes=1`／`unassigned_items=216`；備份檔 `/private/var/folders/cl/nt00k_qn5wb85gzhd5dsm4kh0000gn/T/opencode/phase26-pre-migration.sql`（485,117 bytes）
+- [x] 收尾修正（視覺走查發現）：① cascading 選擇器未選層顯示「再往下選…」placeholder（location-select＋i18n＋截圖 `11-select-placeholder.png`）② **drop 停止冒泡**——列上拖放原本會多送一次容器層「搬到最上層」PATCH（競態可把節點搬錯）；unit 補 `toHaveBeenCalledTimes(1)`／容器層 drop／placeholder 測試（web 374 → 376）
 
 **Commands:**
 - `pnpm exec playwright test`（全套）
@@ -323,12 +324,18 @@
 
 ## Final Verification（收尾時填實測）
 
-- [ ] **遷移前備份存檔**（舊版堆疊 `GET /api/backup/export`；記錄檔名與大小）
-- [ ] dry-run 報告審查（計畫樹與計數符合預期）
-- [ ] API：`cd apps/api && uv run --extra test pytest -q` 全綠
-- [ ] Web：`pnpm -F @ims/web test` 全綠＋`pnpm -F @ims/web typecheck` 0 error
-- [ ] api-types 重生成零 diff
-- [ ] 真實 PG：`alembic current`＝`0020`＋遷移報告（source_rows／created_nodes／merged_rows／orphan_nodes／unassigned_items）
-- [ ] 遷移後資料完整性：`items.location_id` 全部指向存在節點（無孤兒查詢 + 報告數字）
-- [ ] e2e：`pnpm exec playwright test` 全綠（環境註記：`ENABLE_DEV_ROUTES=1`＋`docker compose up -d nginx`）
-- [ ] 視覺走查：樹頁（展開／拖放灰化／刪除對話框）、樹狀選擇器（桌機 cascading／行動 sheet）、詳情麵包屑截斷、深色模式、390 寬
+- [x] **遷移前備份存檔**：`/private/var/folders/cl/nt00k_qn5wb85gzhd5dsm4kh0000gn/T/opencode/phase26-pre-migration.sql`（485,117 bytes；pg_dump 全庫，2026-10-16 16:55，舊版堆疊執行）
+- [x] dry-run 報告審查：`source_rows=5`／`created_nodes=7`／`merged_rows=1`／`orphan_nodes=1`／`unassigned_items=216`——計畫樹＝`1F>廚房>上櫃`、`1F>廚房>冰箱`（共用 1F／廚房）、`2F>書房`、`3F`（=7 節點）；重複列（1F/廚房/上櫃）合併 1；`3F` 無物品＝孤兒節點 1；種子 4 件物品全指向最深節點
+- [x] API：`uv run --extra test pytest -q` → **691 passed**（1081 warnings；收尾於高負載機器重跑 549s）
+- [x] Web：`pnpm -F @ims/web test` → **376 passed（79 檔）**＋`typecheck` exit 0（0 error）
+- [x] api-types 重生成零 diff（`scripts/export_openapi.py` → openapi.json 與 `gen:types` 皆零 diff）
+- [x] 真實 PG：`alembic current`＝`0020 (head)`；遷移報告與 dry-run 一致（`5/7/1/1/216`，容器啟動時 `alembic upgrade head` 執行）
+- [x] 遷移後資料完整性：孤兒查詢（`items.location_id` 指向不存在節點）＝ **0**；現況 125 節點、30 件物品有位置、`unassigned_items=216` 允許（NULL）
+- [x] e2e：`pnpm exec playwright test` → **53 passed**（收尾修正後重跑；環境註記：`ENABLE_DEV_ROUTES=1`＋`docker compose up -d nginx`；機器負載高（load ~10–24）時 default workers 偶發 flake，逐一重跑全數通過，最終以 `--workers=2` 取得全綠）
+- [x] 視覺走查：`phase26-visual/`（01 樹展開／02 拖放非法灰化／03 刪除對話框／04 cascading／05 麵包屑截斷／06 深色模式／07 390 寬樹／08 行動搬移 sheet／09 篩選含子孫／10 僅此層）＋收尾補拍 11（cascading placeholder）
+
+### 收尾環境註記（2026-10-16）
+
+- 遷移採「強制備份 → dry-run → alembic 0020」；遷移當下容器 log 已寫入報告，備份與 dry-run 輸出留存於 opencode 暫存目錄
+- dev 庫實跑 e2e 於**真實遷移後資料**上（含 spec 內唯讀斷言「真實遷移後的位置樹在 UI 正確呈現」）
+- 收尾二項修正（cascading placeholder／drop 停止冒泡）以 RED→GREEN 驗證：拔除修正時新測試失敗、裝回後全綠
