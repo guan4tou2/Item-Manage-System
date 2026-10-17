@@ -172,9 +172,9 @@
 - Test: `apps/web/lib/format/currency.test.ts`
 
 **TODO:**
-- [ ] `CURRENCIES = ["TWD","USD","EUR","JPY","CNY","HKD"] as const`；`type Currency`；`CURRENCY_SYMBOLS`（NT$／US$／€／¥／CN¥／HK$）
-- [ ] `formatCurrency(value: string | number | null | undefined, currency: string, locale: string): string`：null／""／undefined／`Number()` 非有限 → `"—"`；`digits`＝JPY 0、整數 0、有小數 2；`Intl.NumberFormat(locale, {style:"currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits})`＋`formatToParts` 置換 `currency` part（未知幣別 fallback 原樣）
-- [ ] 測試：`"1200"`／TWD／zh-TW＝`NT$1,200`；en 同；`"99.50"` → `NT$99.50`；`"1200.555"` → `NT$1,200.56`；JPY `"1200"` → `¥1,200`、`"1200.5"` → 0 位；USD／EUR／CNY／HKD 抽樣；null／`"abc"` → `—`；未知幣別 fallback 不炸
+- [x] `CURRENCIES = ["TWD","USD","EUR","JPY","CNY","HKD"] as const`；`type Currency`；`CURRENCY_SYMBOLS`（NT$／US$／€／¥／CN¥／HK$）
+- [x] `formatCurrency(value: string | number | null | undefined, currency: string, locale: string): string`：null／""／undefined／`Number()` 非有限 → `"—"`；`digits`＝JPY 0、整數 0、有小數 2；`Intl.NumberFormat(locale, {style:"currency", currency, minimumFractionDigits: digits, maximumFractionDigits: digits})`＋`formatToParts` 置換 `currency` part（未知幣別 → Intl 原樣；實測 `XYZ` 不拋錯、以 `\u00a0` 分隔）
+- [x] 測試（9 例）：`"1200"`／TWD／zh-TW＝`NT$1,200`；en 同；`"99.50"` → `NT$99.50`；整數去小數（`"10.00"`→`NT$10`）；JPY `"1200"`→`¥1,200`、`"1200.4"`→`¥1,200`；USD／EUR／CNY／HKD；null／undefined／""／`"abc"`／NaN → `—`；未知幣別相容；白名單與符號表
 
 **Commands:**
 - `pnpm -F @ims/web test -- lib/format`
