@@ -266,9 +266,9 @@
 - Modify: `apps/web/components/settings/csv-panel.tsx`（欄位清單加 `cost`／`currency`＋說明）
 
 **TODO:**
-- [ ] keys（逐鍵插入、不重排整檔）：`items.form.cost`／`costHint`／`validation.costInvalid`；`settings.preferences.currency`；`currency.TWD|USD|EUR|JPY|CNY|HKD`；`stats.value.*`（title／sectionTitle／byCategory／byLocation／noLocation／pricedLine／unpricedLine／zeroTotal／error／retry）；`dashboard.value.*`（title／unpricedNote／emptyNote／viewStats／goFill）；`csv-fields`（依 csv-panel 現行 key 結構加 cost／currency 說明）
-- [ ] csv-panel：欄位說明與後端 `EXPORT_COLUMNS` 一致（cost 2 位小數字串；currency＝帳號幣別）
-- [ ] 測試：既有 `csv-panel.test.tsx` 補文案斷言；`pnpm -F @ims/web test` 全套（79+ 檔）
+- [x] keys（逐鍵插入、不重排整檔）：`items.form.cost`／`costHint`／`validation.costInvalid`；`settings.preferences.currency`／`currencyHint`；`currency.TWD|USD|EUR|JPY|CNY|HKD`；`stats.value.*`（sectionTitle／pricedLine／unpricedLine／unpricedNote／zeroTotal／byCategory／byLocation／noLocation／tooltip／error／retry）；`dashboard.value.*`（title／unpricedNote／emptyNote／viewStats／goFill／loadFailed／retry）；`settings.csv.importDescription` 補 cost／currency；locale 鍵集合比對零差異
+- [x] csv-panel：欄位說明與後端 `EXPORT_COLUMNS` 一致（`min_quantity` 後 `cost, currency`；cost 2 位小數字串、currency＝帳號幣別；import 說明同步）
+- [x] 測試：`csv-panel.test.tsx` 補文案斷言（欄位清單＋cost/currency 說明）；`pnpm -F @ims/web test` 全套（87 檔／416 例）＋typecheck
 
 **Commands:**
 - `pnpm -F @ims/web test`；`pnpm -F @ims/web typecheck`

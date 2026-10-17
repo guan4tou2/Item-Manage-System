@@ -81,4 +81,16 @@ describe("CsvPanel", () => {
     // toast 由 next-intl 內插 count 後以單一引數呼叫。
     expect(vi.mocked(toast.success)).toHaveBeenCalledTimes(1)
   })
+
+  it("documents the cost and currency columns (matches EXPORT_COLUMNS)", () => {
+    renderPanel()
+
+    // 欄位清單：min_quantity 後緊接 cost、currency
+    expect(screen.getByText(/id, name, description, barcode/)).toHaveTextContent(
+      "quantity, min_quantity, cost, currency, category_name",
+    )
+    // 匯入說明需提及 cost（最多 2 位小數）與 currency（帳號幣別）
+    expect(screen.getByText(/cost \(up to 2 decimals\)/)).toBeInTheDocument()
+    expect(screen.getByText(/currency \(must match your account currency\)/)).toBeInTheDocument()
+  })
 })

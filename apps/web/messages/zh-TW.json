@@ -1062,7 +1062,7 @@
     "csv": {
       "title": "批次匯入 / 匯出",
       "exportDescription": "匯出 CSV 包含所有未刪除的物品；欄位：",
-      "importDescription": "匯入支援 name（必填）、quantity、min_quantity、description、notes、category_name、location_floor/room/zone、warehouse_name。分類 / 位置 / 倉庫若不存在會自動建立。",
+      "importDescription": "匯入支援 name（必填）、quantity、min_quantity、cost（最多 2 位小數）、currency（須符合帳號幣別）、description、notes、category_name、location_floor/room/zone、warehouse_name。分類 / 位置 / 倉庫若不存在會自動建立。",
       "exporting": "匯出中…",
       "downloadCsv": "下載 CSV",
       "importing": "匯入中…",

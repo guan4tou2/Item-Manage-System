@@ -1062,7 +1062,7 @@
     "csv": {
       "title": "Bulk Import / Export",
       "exportDescription": "Exported CSV contains all non-deleted items; columns: ",
-      "importDescription": "Import supports name (required), quantity, min_quantity, description, notes, category_name, location_floor/room/zone, warehouse_name. Categories / locations / warehouses are auto-created if missing.",
+      "importDescription": "Import supports name (required), quantity, min_quantity, cost (up to 2 decimals), currency (must match your account currency), description, notes, category_name, location_floor/room/zone, warehouse_name. Categories / locations / warehouses are auto-created if missing.",
       "exporting": "Exporting…",
       "downloadCsv": "Download CSV",
       "importing": "Importing…",
