@@ -1121,6 +1121,63 @@
           "done": "備份已開始下載",
           "failed": "匯出失敗"
         }
+      },
+      "import": {
+        "title": "匯入備份",
+        "description": "上傳先前匯出的 JSON 備份。",
+        "selectFile": "選擇備份檔",
+        "empty": "選擇備份檔後會先顯示預覽，確認後才會寫入。",
+        "analyzing": "解析與比對中…",
+        "modeLabel": "匯入模式",
+        "modeCreateOnly": "只新增（保留現有資料）",
+        "modeReplace": "取代全部（先清空再匯入）",
+        "confirm": "確認匯入",
+        "emptySummary": "備份中沒有可匯入的資料。",
+        "hardError": "無法讀取備份檔",
+        "errorsTitle": "列級錯誤",
+        "errorRow": "{entity} #{index}：{message}",
+        "moreErrors": "…還有 {count} 筆",
+        "warningsTitle": "提醒",
+        "reconciliationTitle": "批次對帳不一致",
+        "reconciliationRow": "「{name}」數量 {quantity}，未耗盡批次合計 {batch_total}"
+      },
+      "summary": {
+        "title": "匯入預覽",
+        "entity": "實體",
+        "existing": "現有",
+        "after": "匯入後",
+        "created": "建立",
+        "reused": "沿用",
+        "renamed": "加後綴",
+        "skipped": "略過",
+        "errors": "錯誤",
+        "replaceNote": "「匯入後」為取代後的預期筆數。"
+      },
+      "replace": {
+        "warning": "將刪除 {count} 筆現有資料，且無法復原。",
+        "downloadFirst": "先下載備份",
+        "confirmLabel": "輸入 REPLACE 以確認"
+      },
+      "entities": {
+        "items": "物品",
+        "categories": "分類",
+        "locations": "位置",
+        "tags": "標籤",
+        "warehouses": "倉庫",
+        "item_types": "物品類型",
+        "custom_fields": "自訂欄位",
+        "item_templates": "物品模板",
+        "item_custom_values": "自訂欄位值",
+        "item_batches": "批次",
+        "loans": "借出",
+        "quantity_logs": "數量歷程",
+        "item_versions": "版本",
+        "lists": "清單",
+        "stocktakes": "盤點",
+        "webhooks": "Webhooks",
+        "notification_preferences": "通知偏好",
+        "groups_owned": "群組",
+        "preferences": "偏好設定"
       }
     },
     "bootstrap": {

@@ -1121,6 +1121,63 @@
           "done": "Backup download started",
           "failed": "Export failed"
         }
+      },
+      "import": {
+        "title": "Import backup",
+        "description": "Upload a previously exported JSON backup.",
+        "selectFile": "Select backup file",
+        "empty": "Nothing is written until you pick a backup file and confirm the preview.",
+        "analyzing": "Parsing and comparing…",
+        "modeLabel": "Import mode",
+        "modeCreateOnly": "Add only (keep existing data)",
+        "modeReplace": "Replace all (wipe first)",
+        "confirm": "Confirm import",
+        "emptySummary": "Nothing to import from this backup.",
+        "hardError": "Could not read the backup file",
+        "errorsTitle": "Row errors",
+        "errorRow": "{entity} #{index}: {message}",
+        "moreErrors": "…and {count} more",
+        "warningsTitle": "Warnings",
+        "reconciliationTitle": "Batch reconciliation mismatch",
+        "reconciliationRow": "\"{name}\" quantity {quantity} vs. {batch_total} in open batches"
+      },
+      "summary": {
+        "title": "Import preview",
+        "entity": "Entity",
+        "existing": "Existing",
+        "after": "After import",
+        "created": "Created",
+        "reused": "Reused",
+        "renamed": "Renamed",
+        "skipped": "Skipped",
+        "errors": "Errors",
+        "replaceNote": "\"After import\" is the expected count after replacement."
+      },
+      "replace": {
+        "warning": "This will delete {count} existing rows and cannot be undone.",
+        "downloadFirst": "Download backup first",
+        "confirmLabel": "Type REPLACE to confirm"
+      },
+      "entities": {
+        "items": "Items",
+        "categories": "Categories",
+        "locations": "Locations",
+        "tags": "Tags",
+        "warehouses": "Warehouses",
+        "item_types": "Item types",
+        "custom_fields": "Custom fields",
+        "item_templates": "Item templates",
+        "item_custom_values": "Custom field values",
+        "item_batches": "Batches",
+        "loans": "Loans",
+        "quantity_logs": "Quantity logs",
+        "item_versions": "Versions",
+        "lists": "Lists",
+        "stocktakes": "Stocktakes",
+        "webhooks": "Webhooks",
+        "notification_preferences": "Notification preferences",
+        "groups_owned": "Groups",
+        "preferences": "Preferences"
       }
     },
     "bootstrap": {

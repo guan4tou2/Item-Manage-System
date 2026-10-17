@@ -187,12 +187,12 @@
 - Modify: `apps/web/components/settings/backup-panel.tsx`、`backup-panel.test.tsx`
 
 **TODO:**
-- [ ] RED：
+- [x] RED：
   - 選檔（`userEvent.upload`）→ 自動呼叫 `importBackup(file, {mode:"create_only", dryRun:true})`；摘要表渲染 per-entity（entity 中文名／現有／匯入後＝existing+created+renamed／建立／沿用／加後綴／略過／錯誤）；**切模式**（replace）→ 以 `mode:"replace"` 重跑 dry-run
   - errors 前 5 筆＋「還有 N 筆」；`warnings` 列表；`reconciliation` 區塊（橙）；replace：紅警示「將刪除 N 筆」＋「先下載備份」按鈕觸發 `downloadBackup`；確認字串輸入（placeholder `REPLACE`）——不符 → 「確認匯入」disabled，相符 → enabled
   - 硬錯誤（400 `detail`）→ 卡內 inline 明確訊息（`getApiErrorDetail`）；loading：解析中／比對中（`aria-busy`）
-- [ ] GREEN：`BackupPanel` 導入卡 state（`file`／`mode`／`dryRunResult`／`confirmText`／`busy`）；`useMutation` 或直接 async；replace 摘要之「匯入後」＝`created+renamed`；i18n `settings.backup.import.*`／`summary.*`／`replace.*`／`errors.*`（實作時定稿鍵名）
-- [ ] 無檔案空態：引導文案「選擇備份檔後會先顯示預覽，確認後才會寫入」
+- [x] GREEN：`BackupPanel` 導入卡 state（`file`／`mode`／`dryRunResult`／`confirmText`／`busy`）；`useMutation` 或直接 async；replace 摘要之「匯入後」＝`created+renamed`；i18n `settings.backup.import.*`／`summary.*`／`replace.*`／`errors.*`（實作時定稿鍵名）
+- [x] 無檔案空態：引導文案「選擇備份檔後會先顯示預覽，確認後才會寫入」
 
 **Commands:**
 - 同 T2.2
