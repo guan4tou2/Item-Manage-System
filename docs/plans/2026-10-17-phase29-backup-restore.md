@@ -147,9 +147,9 @@
 - Modify: `packages/api-types/openapi.json`、`packages/api-types/src/index.ts`
 
 **TODO:**
-- [ ] `cd apps/api && uv run python scripts/export_openapi.py > ../../packages/api-types/openapi.json`＋`pnpm --filter @ims/api-types gen:types`
-- [ ] 確認生成：`BackupImportResult`／`BackupImportEntitySummary`／`BackupImportError`；`POST /api/backup/import` multipart
-- [ ] Commit（獨立 `chore(api-types)`）
+- [x] `cd apps/api && uv run python scripts/export_openapi.py > ../../packages/api-types/openapi.json`＋`pnpm --filter @ims/api-types gen:types`
+- [x] 確認生成：`BackupImportResult`／`BackupImportEntitySummary`／`BackupImportError`；`POST /api/backup/import` multipart
+- [x] Commit（獨立 `chore(api-types)`）
 
 ---
 

@@ -6362,6 +6362,53 @@
         ]
       }
     },
+    "/api/backup/import": {
+      "post": {
+        "tags": [
+          "backup"
+        ],
+        "summary": "Import Data",
+        "description": "從 JSON 備份還原（multipart）。`dry_run=true` 只回摘要、零寫入。",
+        "operationId": "import_data_api_backup_import_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_data_api_backup_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/webhooks": {
       "get": {
         "tags": [
@@ -7379,6 +7426,198 @@
         ],
         "title": "AuditLogRead"
       },
+      "BackupImportEntitySummary": {
+        "properties": {
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "existing": {
+            "type": "integer",
+            "title": "Existing",
+            "default": 0
+          },
+          "imported": {
+            "type": "integer",
+            "title": "Imported",
+            "default": 0
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "reused": {
+            "type": "integer",
+            "title": "Reused",
+            "default": 0
+          },
+          "renamed": {
+            "type": "integer",
+            "title": "Renamed",
+            "default": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped",
+            "default": 0
+          },
+          "errors": {
+            "type": "integer",
+            "title": "Errors",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity"
+        ],
+        "title": "BackupImportEntitySummary",
+        "description": "單一實體的匯入摘要；`imported = created + reused + renamed + skipped + errors`。"
+      },
+      "BackupImportError": {
+        "properties": {
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity",
+          "index",
+          "message"
+        ],
+        "title": "BackupImportError"
+      },
+      "BackupImportResult": {
+        "properties": {
+          "format_version": {
+            "type": "integer",
+            "title": "Format Version"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "create_only",
+              "replace"
+            ],
+            "title": "Mode"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "partial",
+              "error"
+            ],
+            "title": "Status"
+          },
+          "deleted_total": {
+            "type": "integer",
+            "title": "Deleted Total",
+            "default": 0
+          },
+          "entities": {
+            "items": {
+              "$ref": "#/components/schemas/BackupImportEntitySummary"
+            },
+            "type": "array",
+            "title": "Entities",
+            "default": []
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/BackupImportError"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          },
+          "errors_total": {
+            "type": "integer",
+            "title": "Errors Total",
+            "default": 0
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings",
+            "default": []
+          },
+          "reconciliation": {
+            "items": {
+              "$ref": "#/components/schemas/BackupReconciliationItem"
+            },
+            "type": "array",
+            "title": "Reconciliation",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "format_version",
+          "mode",
+          "dry_run",
+          "status"
+        ],
+        "title": "BackupImportResult"
+      },
+      "BackupReconciliationItem": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "batch_total": {
+            "type": "integer",
+            "title": "Batch Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "name",
+          "quantity",
+          "batch_total"
+        ],
+        "title": "BackupReconciliationItem",
+        "description": "批次對帳不一致：`quantity` 應等於未耗盡批次總和。"
+      },
       "BarcodeExternal": {
         "properties": {
           "source": {
@@ -7771,6 +8010,45 @@
           "file"
         ],
         "title": "Body_bulk_import_items_api_items_bulk_import_post"
+      },
+      "Body_import_data_api_backup_import_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "create_only",
+              "replace"
+            ],
+            "title": "Mode",
+            "default": "create_only"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "confirm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirm"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_data_api_backup_import_post"
       },
       "Body_upload_image_api_images_post": {
         "properties": {

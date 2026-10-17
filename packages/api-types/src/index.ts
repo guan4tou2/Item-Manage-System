@@ -1798,6 +1798,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/backup/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Data
+         * @description 從 JSON 備份還原（multipart）。`dry_run=true` 只回摘要、零寫入。
+         */
+        post: operations["import_data_api_backup_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/webhooks": {
         parameters: {
             query?: never;
@@ -2140,6 +2160,124 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * BackupImportEntitySummary
+         * @description 單一實體的匯入摘要；`imported = created + reused + renamed + skipped + errors`。
+         */
+        BackupImportEntitySummary: {
+            /** Entity */
+            entity: string;
+            /**
+             * Existing
+             * @default 0
+             */
+            existing: number;
+            /**
+             * Imported
+             * @default 0
+             */
+            imported: number;
+            /**
+             * Created
+             * @default 0
+             */
+            created: number;
+            /**
+             * Reused
+             * @default 0
+             */
+            reused: number;
+            /**
+             * Renamed
+             * @default 0
+             */
+            renamed: number;
+            /**
+             * Skipped
+             * @default 0
+             */
+            skipped: number;
+            /**
+             * Errors
+             * @default 0
+             */
+            errors: number;
+        };
+        /** BackupImportError */
+        BackupImportError: {
+            /** Entity */
+            entity: string;
+            /** Index */
+            index: number;
+            /** Name */
+            name?: string | null;
+            /** Message */
+            message: string;
+        };
+        /** BackupImportResult */
+        BackupImportResult: {
+            /** Format Version */
+            format_version: number;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "create_only" | "replace";
+            /** Dry Run */
+            dry_run: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "partial" | "error";
+            /**
+             * Deleted Total
+             * @default 0
+             */
+            deleted_total: number;
+            /**
+             * Entities
+             * @default []
+             */
+            entities: components["schemas"]["BackupImportEntitySummary"][];
+            /**
+             * Errors
+             * @default []
+             */
+            errors: components["schemas"]["BackupImportError"][];
+            /**
+             * Errors Total
+             * @default 0
+             */
+            errors_total: number;
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
+            /**
+             * Reconciliation
+             * @default []
+             */
+            reconciliation: components["schemas"]["BackupReconciliationItem"][];
+        };
+        /**
+         * BackupReconciliationItem
+         * @description 批次對帳不一致：`quantity` 應等於未耗盡批次總和。
+         */
+        BackupReconciliationItem: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number;
+            /** Batch Total */
+            batch_total: number;
+        };
         /** BarcodeExternal */
         BarcodeExternal: {
             /** Source */
@@ -2271,6 +2409,27 @@ export interface components {
              * Format: binary
              */
             file: string;
+        };
+        /** Body_import_data_api_backup_import_post */
+        Body_import_data_api_backup_import_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
+            /**
+             * Mode
+             * @default create_only
+             * @enum {string}
+             */
+            mode: "create_only" | "replace";
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+            /** Confirm */
+            confirm?: string | null;
         };
         /** Body_upload_image_api_images_post */
         Body_upload_image_api_images_post: {
@@ -8023,6 +8182,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    import_data_api_backup_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_data_api_backup_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
