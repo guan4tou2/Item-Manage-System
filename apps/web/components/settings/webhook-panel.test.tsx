@@ -285,6 +285,16 @@ describe('WebhookPanel', () => {
     expect(screen.queryByTestId('deliveries-stats')).not.toBeInTheDocument()
   })
 
+  it('shows a small skeleton while the overview loads', async () => {
+    vi.mocked(api.getWebhookDeliveryStats).mockReturnValue(new Promise(() => {}))
+
+    renderPanel()
+
+    await screen.findByTestId('deliveries-table')
+    expect(screen.getByTestId('deliveries-stats-loading')).toBeInTheDocument()
+    expect(screen.queryByTestId('deliveries-stats')).not.toBeInTheDocument()
+  })
+
   it('shows an error with retry when the webhook list fails', async () => {
     vi.mocked(api.listWebhooks).mockRejectedValue(new Error('boom'))
 

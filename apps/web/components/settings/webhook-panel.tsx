@@ -634,6 +634,11 @@ export function WebhookPanel() {
               date: formatDate(deliveryStats.last_success_at),
             })}
           </p>
+        ) : selectedWebhook && statsQuery.isLoading ? (
+          <Skeleton
+            className="mt-2 h-4 w-72"
+            data-testid="deliveries-stats-loading"
+          />
         ) : null}
 
         {selectedWebhook ? (
