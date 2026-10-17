@@ -9,6 +9,7 @@ import { LowStockCard } from "@/components/dashboard/low-stock-card"
 import { QuickLinks } from "@/components/dashboard/quick-links"
 import { RecentItemsCard } from "@/components/dashboard/recent-items-card"
 import { StatCard } from "@/components/dashboard/stat-card"
+import { ValueCard } from "@/components/dashboard/value-card"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,6 +23,7 @@ import {
   useLowStock,
   useOverview,
   useRecent,
+  useStatsValue,
 } from "@/lib/hooks/use-stats"
 
 export default function DashboardPage() {
@@ -32,6 +34,7 @@ export default function DashboardPage() {
   const activeLoans = useActiveLoans(5)
   const activity = useActivity(10)
   const expiry = useExpiryStats(30)
+  const value = useStatsValue()
 
   return (
     <section className="space-y-6 p-6">
@@ -100,6 +103,12 @@ export default function DashboardPage() {
         <ActiveLoansCard
           loans={activeLoans.data ?? []}
           loading={activeLoans.isLoading}
+        />
+        <ValueCard
+          stats={value.data}
+          loading={value.isLoading}
+          error={value.isError}
+          onRetry={() => void value.refetch()}
         />
       </div>
 

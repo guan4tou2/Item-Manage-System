@@ -252,9 +252,9 @@
 - Modify: i18n 兩檔（見 T2.7）
 
 **TODO:**
-- [ ] `ValueCard`（比照 ExpiryCard 卡面）：CardTitle `dashboard.value.title`；金額大字（`formatCurrency`）；註記「未填成本 {unpriced}/{total}」；footer link「查看統計 →」（`/statistics`，`data-testid="value-card-link"`）；loading skeleton；錯誤態 compact；全無成本（`priced_items === 0`）→ `NT$0`＋註記改引導文案＋連結 `/items`
-- [ ] 版面：掛在行動卡 grid（Expiry／LowStock／ActiveLoans）**最後一張**（DOM 序第 4；md 兩欄＝第 2 列右格）——§5.1「估值卡不得插在行動卡之前」
-- [ ] 測試：渲染金額與註記；連結 href；loading skeleton；無成本文案；**DOM 序**（ValueCard 在 ActiveLoansCard 之後）
+- [x] `ValueCard`（比照 ExpiryCard 卡面）：CardTitle `dashboard.value.title`；金額大字 `formatCurrency`（`data-testid="value-card-amount"`）；註記「未填成本 {unpriced}／{total} 件」（`unpricedNote`）；footer link（`data-testid="value-card-link"`）→ 有成本＝「查看統計 →」`/statistics`；`priced_items === 0` → `NT$0`＋`emptyNote` 引導文案＋連結 `/items`（`goFill`）；loading skeleton（`value-card-skeleton`）；錯誤態 compact（`loadFailed`＋`retry`）
+- [x] 版面：掛在行動卡 grid（Expiry／LowStock／ActiveLoans）**最後一張**（DOM 序第 4；md 兩欄＝第 2 列右格）——§5.1「估值卡不得插在行動卡之前」
+- [x] 測試：渲染金額與註記；連結 href（`/statistics` ↔ `/items`）；loading skeleton；無成本文案；錯誤＋retry；**page.test DOM 序**（value-card 在 expiry-card 與 ActiveLoans 卡之後）＋typecheck（19 例綠）
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/dashboard`

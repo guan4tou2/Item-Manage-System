@@ -20,6 +20,21 @@ vi.mock("@/lib/hooks/use-stats", () => ({
   useLowStock: () => ({ data: [], isLoading: false }),
   useActiveLoans: () => ({ data: [], isLoading: false }),
   useActivity: () => ({ data: [], isLoading: false }),
+  useStatsValue: () => ({
+    data: {
+      currency: "TWD",
+      total_value: "1200.00",
+      priced_items: 1,
+      unpriced_items: 0,
+      total_items: 1,
+      by_category: [],
+      by_location: [],
+      by_warehouse: [],
+    },
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
   useExpiryStats: () => ({
     data: {
       expired_count: 2,
@@ -46,5 +61,26 @@ describe("DashboardPage action cards", () => {
     expect(
       expiry.compareDocumentPosition(lowStock) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy()
+  })
+
+  it("places the value card after the action cards (§5.1)", () => {
+    render(
+      <NextIntlClientProvider locale="en" messages={enMessages}>
+        <DashboardPage />
+      </NextIntlClientProvider>,
+    )
+
+    const valueCard = screen.getByTestId("value-card")
+    expect(
+      screen
+        .getByTestId("expiry-card")
+        .compareDocumentPosition(valueCard) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(
+      screen
+        .getByText(enMessages.dashboard.activeLoans.empty)
+        .compareDocumentPosition(valueCard) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    expect(screen.getByTestId("value-card-link")).toHaveAttribute("href", "/statistics")
   })
 })

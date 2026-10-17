@@ -64,6 +64,15 @@
       "loanInfo": "借給 {borrower} · 預計 {date}",
       "overdue": "已逾期"
     },
+    "value": {
+      "title": "庫存估值",
+      "unpricedNote": "未填成本 {unpriced}／{total} 件",
+      "emptyNote": "還沒有任何成本——為物品補上成本即可追蹤庫存價值",
+      "viewStats": "查看統計",
+      "goFill": "前往補成本",
+      "loadFailed": "無法載入庫存估值。",
+      "retry": "重試"
+    },
     "recent": {
       "title": "最近物品",
       "viewAll": "查看全部",

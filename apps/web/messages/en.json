@@ -64,6 +64,15 @@
       "loanInfo": "Lent to {borrower} · due {date}",
       "overdue": "Overdue"
     },
+    "value": {
+      "title": "Inventory value",
+      "unpricedNote": "No cost yet for {unpriced} of {total} items",
+      "emptyNote": "No costs recorded yet — add a cost to an item to track value",
+      "viewStats": "View statistics",
+      "goFill": "Add costs",
+      "loadFailed": "Could not load the inventory value.",
+      "retry": "Retry"
+    },
     "recent": {
       "title": "Recent items",
       "viewAll": "View all",
