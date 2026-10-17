@@ -18,6 +18,13 @@ vi.mock("@/lib/hooks/use-locations", () => ({
   useLocations: () => ({ data: [], isLoading: false }),
 }))
 
+vi.mock("@/lib/preferences/use-preferences", () => ({
+  usePreferences: () => ({
+    data: { theme: "system", language: "zh-TW", currency: "TWD" },
+  }),
+  useUpdatePreferences: () => ({ mutateAsync: vi.fn() }),
+}))
+
 const lookupMocks = vi.hoisted(() => ({ use: vi.fn() }))
 vi.mock("@/lib/hooks/use-barcode-lookup", () => ({
   useBarcodeLookup: (code: string | null) => lookupMocks.use(code),
@@ -511,5 +518,74 @@ describe("ItemForm barcode", () => {
     )
     expect(screen.getByLabelText("Name")).toHaveValue("")
     expect(screen.queryByTestId("barcode-prefill-source")).toBeNull()
+  })
+})
+
+describe("itemFormSchema cost", () => {
+  const ok = {
+    name: "thing", description: "", category_id: null, location_id: null,
+    quantity: 1, notes: "", tag_names: [], custom_values: {},
+  }
+
+  it("accepts empty, integer, and 2-decimal costs", () => {
+    expect(itemFormSchema.safeParse({ ...ok, cost: "" }).success).toBe(true)
+    expect(itemFormSchema.safeParse({ ...ok, cost: "1200" }).success).toBe(true)
+    expect(itemFormSchema.safeParse({ ...ok, cost: "1200.50" }).success).toBe(true)
+  })
+
+  it("rejects more than two decimals, negatives, and non-numeric input", () => {
+    for (const cost of ["1.234", "-1", "abc", "12345678901", "1."]) {
+      const r = itemFormSchema.safeParse({ ...ok, cost })
+      expect(r.success).toBe(false)
+      if (!r.success) expect(r.error.issues[0]?.message).toBe("costInvalid")
+    }
+  })
+})
+
+describe("ItemForm cost field", () => {
+  const defaults: ItemFormValues = {
+    name: "thing",
+    description: "",
+    cost: "",
+    category_id: null,
+    location_id: null,
+    quantity: 1,
+    notes: "",
+    image_id: null,
+    tag_names: [],
+    custom_values: {},
+  }
+
+  it("renders the cost input with the account currency hint", () => {
+    renderItemForm(defaults)
+
+    expect(screen.getByLabelText("Cost")).toBeInTheDocument()
+    expect(screen.getByText(/NT\$/)).toBeInTheDocument()
+  })
+
+  it("submits the typed cost as a string", async () => {
+    const { onSubmit } = renderItemForm(defaults)
+
+    fireEvent.change(screen.getByLabelText("Cost"), { target: { value: "1200.50" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ cost: "1200.50" }),
+        expect.anything(),
+      )
+    })
+  })
+
+  it("blocks submission with an inline error for too many decimals", async () => {
+    const { onSubmit } = renderItemForm(defaults)
+
+    fireEvent.change(screen.getByLabelText("Cost"), { target: { value: "1.234" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Cost must be a number with up to 2 decimals",
+    )
+    expect(onSubmit).not.toHaveBeenCalled()
   })
 })

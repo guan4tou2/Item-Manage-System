@@ -403,6 +403,8 @@
       "category": "分類",
       "location": "位置",
       "quantity": "數量",
+      "cost": "成本",
+      "costHint": "以 {symbol} 計價，幣別可於設定更改",
       "notes": "備註",
       "tags": "標籤",
       "tagsPlaceholder": "輸入後按 Enter 新增",
@@ -438,7 +440,8 @@
         "barcodeMax": "條碼不得超過 32 字元",
         "quantityRequired": "請輸入數量",
         "quantityInteger": "數量必須為整數",
-        "quantityMin": "數量不可小於 0"
+        "quantityMin": "數量不可小於 0",
+        "costInvalid": "成本需為數字，最多 2 位小數（例：12.30）"
       }
     },
     "detail": {

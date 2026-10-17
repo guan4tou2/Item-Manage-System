@@ -26,7 +26,9 @@ import type { CategoryTreeNode } from "@/lib/api/categories"
 import type { CustomFieldRead, ItemTemplateRead } from "@/lib/api/customization"
 import type { LocationRead } from "@/lib/api/locations"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { CURRENCY_SYMBOLS, type Currency } from "@/lib/format/currency"
 import { useBarcodeLookup } from "@/lib/hooks/use-barcode-lookup"
+import { usePreferences } from "@/lib/preferences/use-preferences"
 import { canonicalizeBarcode, isBarcodeLike } from "@/lib/scan/barcode"
 
 const customValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
@@ -35,6 +37,11 @@ export const itemFormSchema = z.object({
   name: z.string().min(1, "nameRequired").max(200, "nameMax"),
   description: z.string().optional(),
   barcode: z.string().max(32, "barcodeMax").optional(),
+  cost: z
+    .string()
+    .trim()
+    .regex(/^(?:\d{1,10}(?:\.\d{1,2})?)?$/, "costInvalid")
+    .optional(),
   category_id: z.number().nullable(),
   location_id: z.number().nullable(),
   quantity: z.preprocess(
@@ -103,6 +110,9 @@ export function ItemForm({
 }: Props) {
   const t = useTranslations()
   const token = useAccessToken()
+  const prefs = usePreferences()
+  const currency = prefs.data?.currency ?? "TWD"
+  const currencySymbol = CURRENCY_SYMBOLS[currency as Currency] ?? currency
   const [aiBusy, setAiBusy] = useState(false)
   const [appliedTemplate, setAppliedTemplate] = useState<AppliedTemplateState | null>(null)
   const templateButtonRefs = useRef(new Map<number, HTMLButtonElement | null>())
@@ -485,6 +495,24 @@ export function ItemForm({
           )}
         </div>
       )}
+
+      <div>
+        <Label htmlFor="cost">{t("items.form.cost")}</Label>
+        <Input
+          id="cost"
+          inputMode="decimal"
+          placeholder="0.00"
+          {...form.register("cost")}
+        />
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("items.form.costHint", { symbol: currencySymbol })}
+        </p>
+        {form.formState.errors.cost && (
+          <p role="alert" className="mt-1 text-sm text-destructive">
+            {t(`items.form.validation.${form.formState.errors.cost.message}`)}
+          </p>
+        )}
+      </div>
 
       <div>
         <Label>{t("items.form.tags")}</Label>

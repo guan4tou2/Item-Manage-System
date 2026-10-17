@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ListPlus, Copy } from "lucide-react"
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog"
@@ -30,7 +30,9 @@ import type { ItemRead } from "@/lib/api/items"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { useAccessToken } from "@/lib/auth/use-auth"
 import { useDeleteItem, useItem } from "@/lib/hooks/use-items"
+import { formatCurrency } from "@/lib/format/currency"
 import { truncatePath } from "@/lib/locations/tree"
+import { usePreferences } from "@/lib/preferences/use-preferences"
 import { BatchSection } from "@/components/items/batch-section"
 
 function templatePayloadFromItem(item: ItemRead, customValues: ItemCustomValueRead[]) {
@@ -64,6 +66,9 @@ export default function ItemDetailPage() {
   const item = useItem(id)
   const del = useDeleteItem()
   const token = useAccessToken()
+  const locale = useLocale()
+  const prefs = usePreferences()
+  const currency = prefs.data?.currency ?? "TWD"
   const currentUserId = useAuthStore((s) => s.user?.id ?? "")
   const isOwner = item.data?.owner_id === currentUserId
   const customFields = useQuery({
@@ -208,6 +213,16 @@ export default function ItemDetailPage() {
         <div>
           <dt className="text-sm text-muted-foreground">{t("items.form.quantity")}</dt>
           <dd className="tabular-nums">{i.quantity}</dd>
+        </div>
+        <div>
+          <dt className="text-sm text-muted-foreground">{t("items.form.cost")}</dt>
+          <dd className="tabular-nums" data-testid="item-cost">
+            {prefs.isPending ? (
+              <Skeleton className="h-4 w-20" />
+            ) : (
+              formatCurrency(i.cost, currency, locale)
+            )}
+          </dd>
         </div>
         <div>
           <dt className="text-sm text-muted-foreground">{t("items.form.category")}</dt>

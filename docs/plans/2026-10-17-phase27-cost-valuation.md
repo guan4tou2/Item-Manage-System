@@ -202,11 +202,11 @@
 - Test: `apps/web/components/items/item-form.test.tsx`（補案）
 
 **TODO:**
-- [ ] zod 加 `cost: z.string().trim().regex(/^(?:\d{1,10}(?:\.\d{1,2})?)?$/, "costInvalid").optional()`（空字串＝未填，通過）
-- [ ] 欄位：`<Input id="cost" inputMode="decimal" placeholder="0.00" {...register("cost")} />`＋Label `items.form.cost`＋helper `items.form.costHint`（含當前幣別符號，例：「以 NT$ 計價；幣別可於設定更改」）；編輯模式 `defaultValue = item?.cost ?? ""`
-- [ ] payload：送出時 `cost: raw.trim() === "" ? null : raw.trim()`（create／update 一致；update 空＝清空）
-- [ ] 詳情：`dl` 屬性區加「成本」列（Label 沿用 `items.form.cost`）＝`formatCurrency(item.cost, currency, locale)`；null → `—`；`data-testid="item-cost"`；`usePreferences()` 載入中 → `<Skeleton>`（不閃爍）
-- [ ] 測試：輸入 `1200.50` → 送出 `cost:"1200.50"`；空 → `null`；`1.234`／`-1`／`abc` → 行內錯誤且不送出（RED→GREEN）；編輯模式預填；helper 文案含 `NT$`（預設偏好）
+- [x] zod 加 `cost: z.string().trim().regex(/^(?:\d{1,10}(?:\.\d{1,2})?)?$/, "costInvalid").optional()`（空字串＝未填，通過）
+- [x] 欄位：`<Input id="cost" inputMode="decimal" placeholder="0.00" {...form.register("cost")} />`＋Label `items.form.cost`＋helper `items.form.costHint`（`{symbol}` 由 `usePreferences()` 幣別→`CURRENCY_SYMBOLS` 帶入，例：以 NT\$ 計價）；編輯模式 `defaultValue = item?.cost ?? ""`（edit page defaults）
+- [x] payload：`lib/items/cost.ts` 的 `itemCostPayload`（trim；空→null）——new／edit 兩頁共用（create 送出 null＝不設；update null＝清空）
+- [x] 詳情：`dl` 屬性區加「成本」列＝`formatCurrency(item.cost, currency, locale)`；null → `—`；`data-testid="item-cost"`；`usePreferences()` 載入中 → `<Skeleton>`（不閃爍）
+- [x] 測試：schema（空／整數／2 位通過；`1.234`／`-1`／`abc`／11 位／`1.` → `costInvalid`）；表單渲染（Cost 欄＋NT\$ hint）；送出帶 `"1200.50"`；行內錯誤不送出；`itemCostPayload` 5 例（71 例全綠＋typecheck）
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/items`

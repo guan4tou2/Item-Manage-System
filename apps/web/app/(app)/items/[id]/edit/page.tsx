@@ -28,6 +28,7 @@ import { useCategories } from "@/lib/hooks/use-categories"
 import { useItem, useUpdateItem } from "@/lib/hooks/use-items"
 import { useLocations } from "@/lib/hooks/use-locations"
 import { useTags } from "@/lib/hooks/use-tags"
+import { itemCostPayload } from "@/lib/items/cost"
 
 export default function EditItemPage() {
   const t = useTranslations()
@@ -82,6 +83,7 @@ export default function EditItemPage() {
     name: item.data.name,
     description: item.data.description ?? "",
     barcode: item.data.barcode ?? "",
+    cost: item.data.cost ?? "",
     category_id: item.data.category?.id ?? null,
     location_id: item.data.location?.id ?? null,
     quantity: item.data.quantity,
@@ -111,6 +113,7 @@ export default function EditItemPage() {
         name: values.name,
         description: values.description || null,
         barcode: values.barcode || null,
+        cost: itemCostPayload(values.cost),
         category_id: values.category_id,
         location_id: values.location_id,
         // tracked 物品不得改 quantity（API 409）；追蹤中一律略過

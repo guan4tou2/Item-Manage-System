@@ -403,6 +403,8 @@
       "category": "Category",
       "location": "Location",
       "quantity": "Quantity",
+      "cost": "Cost",
+      "costHint": "Priced in {symbol}; change the currency in Settings.",
       "notes": "Notes",
       "tags": "Tags",
       "tagsPlaceholder": "Type and press Enter",
@@ -438,7 +440,8 @@
         "barcodeMax": "Barcode must be 32 characters or fewer",
         "quantityRequired": "Quantity is required",
         "quantityInteger": "Quantity must be a whole number",
-        "quantityMin": "Quantity cannot be negative"
+        "quantityMin": "Quantity cannot be negative",
+        "costInvalid": "Cost must be a number with up to 2 decimals (e.g. 12.30)"
       }
     },
     "detail": {

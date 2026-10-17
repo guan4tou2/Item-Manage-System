@@ -22,11 +22,13 @@ import { useCategories } from "@/lib/hooks/use-categories"
 import { useCreateItem } from "@/lib/hooks/use-items"
 import { useLocations } from "@/lib/hooks/use-locations"
 import { useTags } from "@/lib/hooks/use-tags"
+import { itemCostPayload } from "@/lib/items/cost"
 
 const empty: ItemFormValues = {
   name: "",
   description: "",
   barcode: "",
+  cost: "",
   category_id: null,
   location_id: null,
   quantity: 1,
@@ -66,6 +68,7 @@ export default function NewItemPage() {
         name: values.name,
         description: values.description || undefined,
         barcode: values.barcode || undefined,
+        cost: itemCostPayload(values.cost),
         category_id: values.category_id ?? undefined,
         location_id: values.location_id ?? undefined,
         quantity: values.quantity,
