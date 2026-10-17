@@ -6,6 +6,14 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.28] — Phase 28：Webhook 管理 UI
+
+- **API**：`GET /api/webhooks/{id}/deliveries` 新增 `offset` 分頁與 `status`（`success`＝2xx；`failed`＝非 2xx 含網路失敗 `status_code=null`；`pending`＝`next_retry_at` 非空，為 failed 子集）、`event` 篩選；新增 `GET /api/webhooks/{id}/deliveries/stats`（`total`／`succeeded`／`failed`／`pending`／`last_success_at`，獨立於列表篩選、不隨篩選變）
+- **Web ＞ 設定 ＞ webhooks**：deliveries 改雙版型——桌機 `<Table>`（時間／事件／狀態／嘗試／下次重試／操作）＋行動卡片（`md` 斷點切換）；狀態篩選 chips（全部／成功／失敗／待重試；`aria-pressed`、tap target ≥44px）；「載入更多」infinite 分頁（PAGE_SIZE 20、回傳數＝limit 才續頁）；response excerpt 列內展開／收合；概覽（成功率整數％＋最近成功時間，`total=0` 或查詢失敗時不顯示）
+- **錯誤態**：deliveries／webhooks 清單查詢失敗皆為卡內錯誤＋重試；deliveries 載入改 Skeleton
+- 新增 11 個 API 測試（739 → 750）；新增 13 個 web 測試（416 → 429，87 檔）；e2e 18 → 19 spec（57 → 59；新增 deliveries 桌面主流程與行動卡片／空態）
+- **無 migration、無破壞性 schema 變更**（alembic 維持 0021）；api-types 重生成（deliveries 查詢參數＋`WebhookDeliveryStats`）
+
 ## [2.0.0-alpha.27] — Phase 27：成本與庫存估值
 
 - **DB**：`items.cost` `Numeric(12,2)` nullable（單價；`ck_items_cost_nonneg`）；Alembic `0021_item_cost`；null＝未填成本（估值以 0 計）

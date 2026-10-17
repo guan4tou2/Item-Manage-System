@@ -55,9 +55,9 @@
 - Create: `apps/api/tests/test_webhook_deliveries_query.py`
 
 **TODO:**
-- [ ] RED：新測試檔（`auth` fixture 複製 `test_webhooks.py` 範式；`db_session` 直插 `WebhookDelivery` 列——可控 `status_code`／`next_retry_at`／`created_at`／`event`）：`status=success` 僅 2xx；`status=failed` 含 `null`＋非 2xx；`status=pending` 僅 `next_retry_at` 非 null；`event=item.created`；`offset`（3 列 limit=2 → 第 1 頁 2 筆、offset=2 → 1 筆；`created_at desc` 序）；組合（status＋offset）；非法 `status=weird` → 422；跨 owner → 404
-- [ ] GREEN：service `list_deliveries(session, owner_id, webhook_id, *, limit=50, offset=0, status=None, event=None)`——`status`：`WebhookDelivery.status_code.between(200, 299)`／`or_(status_code.is_(None), ~between)`／`next_retry_at.is_not(None)`；`event` 精確比對；`.offset(offset)`；route 加 `offset: int = Query(0, ge=0)`、`status: Literal["success","failed","pending"] | None = Query(None)`、`event: str | None = Query(None, max_length=60)`
-- [ ] `limit` default 50／`ge=1, le=500` 維持（相容）
+- [x] RED：新測試檔（`auth` fixture 複製 `test_webhooks.py` 範式；`db_session` 直插 `WebhookDelivery` 列——可控 `status_code`／`next_retry_at`／`created_at`／`event`）：`status=success` 僅 2xx；`status=failed` 含 `null`＋非 2xx；`status=pending` 僅 `next_retry_at` 非 null；`event=item.created`；`offset`（3 列 limit=2 → 第 1 頁 2 筆、offset=2 → 1 筆；`created_at desc` 序）；組合（status＋offset）；非法 `status=weird` → 422；跨 owner → 404
+- [x] GREEN：service `list_deliveries(session, owner_id, webhook_id, *, limit=50, offset=0, status=None, event=None)`——`status`：`WebhookDelivery.status_code.between(200, 299)`／`or_(status_code.is_(None), ~between)`／`next_retry_at.is_not(None)`；`event` 精確比對；`.offset(offset)`；route 加 `offset: int = Query(0, ge=0)`、`status: Literal["success","failed","pending"] | None = Query(None)`、`event: str | None = Query(None, max_length=60)`
+- [x] `limit` default 50／`ge=1, le=500` 維持（相容）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_webhook_deliveries_query.py tests/test_webhooks.py tests/test_webhook_retry.py`
@@ -69,9 +69,9 @@
 - Test: `apps/api/tests/test_webhook_deliveries_query.py`（同檔續寫）
 
 **TODO:**
-- [ ] RED：直插 4 列（2 成功（不同 `created_at`）／1 失敗（`status_code=500`）／1 pending（`status_code=null`＋`next_retry_at`））→ `{total:4, succeeded:2, failed:2, pending:1, last_success_at:較新的成功列 created_at}`；全空 → `{total:0, succeeded:0, failed:0, pending:0, last_success_at:null}`；跨 owner → 404
-- [ ] GREEN：schema `WebhookDeliveryStats{total:int, succeeded:int, failed:int, pending:int, last_success_at:datetime|None}`；service `delivery_stats(session, owner_id, webhook_id)`——`_ensure_owned`＋counts 聚合（`func.count`＋`case()` 或分開 `select(func.count())` 條件查詢）＋`select(func.max(created_at)).where(2xx)`；route `@router.get("/{webhook_id}/deliveries/stats")`
-- [ ] 路由無歧義：`/deliveries/stats`（3 段）vs `/deliveries/{delivery_id}/retry`（4 段）
+- [x] RED：直插 4 列（2 成功（不同 `created_at`）／1 失敗（`status_code=500`）／1 pending（`status_code=null`＋`next_retry_at`））→ `{total:4, succeeded:2, failed:2, pending:1, last_success_at:較新的成功列 created_at}`；全空 → `{total:0, succeeded:0, failed:0, pending:0, last_success_at:null}`；跨 owner → 404
+- [x] GREEN：schema `WebhookDeliveryStats{total:int, succeeded:int, failed:int, pending:int, last_success_at:datetime|None}`；service `delivery_stats(session, owner_id, webhook_id)`——`_ensure_owned`＋counts 聚合（`func.count`＋`case()` 或分開 `select(func.count())` 條件查詢）＋`select(func.max(created_at)).where(2xx)`；route `@router.get("/{webhook_id}/deliveries/stats")`
+- [x] 路由無歧義：`/deliveries/stats`（3 段）vs `/deliveries/{delivery_id}/retry`（4 段）
 
 **Commands:**
 - 同 T1.1
@@ -82,9 +82,9 @@
 - Modify: `packages/api-types/openapi.json`、`packages/api-types/src/index.ts`
 
 **TODO:**
-- [ ] `cd apps/api && uv run python scripts/export_openapi.py > ../../packages/api-types/openapi.json`＋`pnpm --filter @ims/api-types gen:types`
-- [ ] 確認生成：`WebhookDeliveryStats`；deliveries `GET` 參數新增 `offset`／`status`／`event`
-- [ ] Commit（比照 Phase 27 慣例，獨立 `chore(api-types)` commit）
+- [x] `cd apps/api && uv run python scripts/export_openapi.py > ../../packages/api-types/openapi.json`＋`pnpm --filter @ims/api-types gen:types`
+- [x] 確認生成：`WebhookDeliveryStats`；deliveries `GET` 參數新增 `offset`／`status`／`event`
+- [x] Commit（比照 Phase 27 慣例，獨立 `chore(api-types)` commit）
 
 ---
 
@@ -96,8 +96,8 @@
 - Modify: `apps/web/lib/api/webhooks.ts`、`apps/web/lib/api/webhooks.test.ts`
 
 **TODO:**
-- [ ] RED：client 測試——`listWebhookDeliveries(id, { limit, offset, status, event }, token)` query 字串僅帶有值參數（順序無關斷言）；`getWebhookDeliveryStats(id, token)` 打 `/webhooks/{id}/deliveries/stats`；回傳型別 `WebhookDeliveryStats`
-- [ ] GREEN：`WebhookDeliveryParams { limit?, offset?, status?: 'success'|'failed'|'pending', event? }`；`WebhookDeliveryStats { total, succeeded, failed, pending, last_success_at: string|null }`；既有呼叫端（面板）暫不動（T2.2/T2.3 一起改）
+- [x] RED：client 測試——`listWebhookDeliveries(id, { limit, offset, status, event }, token)` query 字串僅帶有值參數（順序無關斷言）；`getWebhookDeliveryStats(id, token)` 打 `/webhooks/{id}/deliveries/stats`；回傳型別 `WebhookDeliveryStats`
+- [x] GREEN：`WebhookDeliveryParams { limit?, offset?, status?: 'success'|'failed'|'pending', event? }`；`WebhookDeliveryStats { total, succeeded, failed, pending, last_success_at: string|null }`；既有呼叫端（面板）暫不動（T2.2/T2.3 一起改）
 
 **Commands:**
 - `cd apps/web && pnpm test -- lib/api/webhooks`
@@ -108,9 +108,9 @@
 - Modify: `apps/web/components/settings/webhook-panel.tsx`、`webhook-panel.test.tsx`
 
 **TODO:**
-- [ ] RED：表格渲染——欄頭（時間／事件／狀態／嘗試／下次重試）＋列內容（`第 1 次`、日期、事件 label）；`deliveries-table` 與 `deliveries-cards` 兩容器皆存在（CSS 響應式切換，jsdom 驗 DOM）；excerpt：「顯示回應內容」點擊 → `delivery-excerpt` 出現、「收合」→ 消失；deliveries `isError` → `role="alert"`＋「重試」→ `refetch` spy
-- [ ] GREEN：桌機 `<Table data-testid="deliveries-table" className="hidden md:block">`（欄：時間／事件／狀態／嘗試／下次重試／操作）＋行動卡（`md:hidden`、`data-testid="deliveries-cards"`）；`DeliveryStatus`（既有 icon＋文字）／attempt／nextRetry 共用小元件；excerpt `useState` toggle；deliveries error 分支
-- [ ] 表格與卡片渲染同一份資料（單一 map，兩處輸出）
+- [x] RED：表格渲染——欄頭（時間／事件／狀態／嘗試／下次重試）＋列內容（`第 1 次`、日期、事件 label）；`deliveries-table` 與 `deliveries-cards` 兩容器皆存在（CSS 響應式切換，jsdom 驗 DOM）；excerpt：「顯示回應內容」點擊 → `delivery-excerpt` 出現、「收合」→ 消失；deliveries `isError` → `role="alert"`＋「重試」→ `refetch` spy
+- [x] GREEN：桌機 `<Table data-testid="deliveries-table" className="hidden md:block">`（欄：時間／事件／狀態／嘗試／下次重試／操作）＋行動卡（`md:hidden`、`data-testid="deliveries-cards"`）；`DeliveryStatus`（既有 icon＋文字）／attempt／nextRetry 共用小元件；excerpt `useState` toggle；deliveries error 分支
+- [x] 表格與卡片渲染同一份資料（單一 map，兩處輸出）
 
 **Commands:**
 - `cd apps/web && pnpm test -- components/settings/webhook-panel`
@@ -121,9 +121,9 @@
 - Modify: `apps/web/components/settings/webhook-panel.tsx`、`webhook-panel.test.tsx`
 
 **TODO:**
-- [ ] RED：篩選 chips（全部／成功／失敗／待重試）——點「成功」→ `listWebhookDeliveries` 收到 `status:"success"`；「載入更多」在首頁 = PAGE_SIZE 時可見、點擊 → 收到 `offset:20`（`mockResolvedValueOnce` 兩頁）；有篩選 0 筆 →「沒有符合的 delivery」＋「清除篩選」點擊回全部；無篩選 0 筆 → 既有空態文案
-- [ ] GREEN：`useInfiniteQuery`（`queryKey: ["webhooks", id, "deliveries", { status }]`、PAGE_SIZE=20、`getNextPageParam` 末頁滿頁判斷）；filter state `"all"|"success"|"failed"|"pending"`；chips 用既有 `Button` variant 切換（`aria-pressed`，≥44px）
-- [ ] 既有測試 mock（`listWebhookDeliveries` 回陣列）改為 `mockResolvedValue([...])` 相容；分頁案例用序列 mock
+- [x] RED：篩選 chips（全部／成功／失敗／待重試）——點「成功」→ `listWebhookDeliveries` 收到 `status:"success"`；「載入更多」在首頁 = PAGE_SIZE 時可見、點擊 → 收到 `offset:20`（`mockResolvedValueOnce` 兩頁）；有篩選 0 筆 →「沒有符合的 delivery」＋「清除篩選」點擊回全部；無篩選 0 筆 → 既有空態文案
+- [x] GREEN：`useInfiniteQuery`（`queryKey: ["webhooks", id, "deliveries", { status }]`、PAGE_SIZE=20、`getNextPageParam` 末頁滿頁判斷）；filter state `"all"|"success"|"failed"|"pending"`；chips 用既有 `Button` variant 切換（`aria-pressed`，≥44px）
+- [x] 既有測試 mock（`listWebhookDeliveries` 回陣列）改為 `mockResolvedValue([...])` 相容；分頁案例用序列 mock
 
 **Commands:**
 - 同 T2.2
@@ -134,8 +134,8 @@
 - Modify: `apps/web/components/settings/webhook-panel.tsx`、`apps/web/messages/zh-TW.json`、`apps/web/messages/en.json`、`webhook-panel.test.tsx`
 
 **TODO:**
-- [ ] RED：stats 渲染——「成功率 50%（成功 1／總 2）」「最近成功：{date}」；`total=0` → 統計列不顯示；stats `isError` → 統計列不顯示（列表正常）；webhooks list `isError` → compact 錯誤＋「重試」；重試 delivery 後 stats 被 invalidate（spy）＋列表更新（既有斷言保留）
-- [ ] GREEN：`useQuery(["webhooks", id, "deliveries", "stats"])`；`onSuccess`／invalidate 掛載；成功率 `Math.round`；i18n 逐鍵插入兩檔：
+- [x] RED：stats 渲染——「成功率 50%（成功 1／總 2）」「最近成功：{date}」；`total=0` → 統計列不顯示；stats `isError` → 統計列不顯示（列表正常）；webhooks list `isError` → compact 錯誤＋「重試」；重試 delivery 後 stats 被 invalidate（spy）＋列表更新（既有斷言保留）
+- [x] GREEN：`useQuery(["webhooks", id, "deliveries", "stats"])`；`onSuccess`／invalidate 掛載；成功率 `Math.round`；i18n 逐鍵插入兩檔：
   - `settings.webhooks.filter.all/success/failed/pending`（全部／成功／失敗／待重試）
   - `filterEmptyTitle`（沒有符合的 delivery）／`clearFilter`（清除篩選）
   - `loadMore`（載入更多）／`loadingMore`（載入中…）
@@ -143,7 +143,7 @@
   - `stats.successRate`（成功率 {pct}%（成功 {succeeded}／總 {total}））／`stats.lastSuccess`（最近成功：{date}）
   - `table.time/event/status/attempt/nextRetry/actions`（時間／事件／狀態／嘗試／下次重試／操作）
   - `loadFailed`（無法載入 delivery 紀錄。）／`retryLoad`（重試）；`listLoadFailed`（無法載入 webhook 清單。）
-- [ ] locale 鍵集比對零差異（python flat-set 檢查）
+- [x] locale 鍵集比對零差異（python flat-set 檢查）
 
 **Commands:**
 - `cd apps/web && pnpm test -- components/settings/webhook-panel && pnpm typecheck`
@@ -158,9 +158,9 @@
 - Create: `apps/web/tests/webhooks.spec.ts`
 
 **TODO:**
-- [ ] ① 桌面主流程：register → login UI → API 建 webhook（`url: http://127.0.0.1:9/hook`、`events: ["item.created"]`）→ API 建物品（同步 dispatch 失敗）→ `/settings/webhooks`：deliveries 列「第 1 次」＋網路錯誤狀態＋「已排程重試」；概覽「成功率 0%（成功 0／總 1）」；篩選「成功」→「沒有符合的 delivery」＋清除篩選；「顯示回應內容」→ excerpt 出現；「立即重試」→「第 2 次」出現＋概覽總數 2
-- [ ] ② 行動 390＋空態：新用戶 `/settings/webhooks` →「尚無 webhook」空態；建 webhook＋觸發失敗列後：390 寬 `deliveries-table` 隱藏、`deliveries-cards` 可見（Playwright `toBeHidden`／`toBeVisible`）
-- [ ] 全套 e2e 回歸（57＋新增；`--workers=2`）
+- [x] ① 桌面主流程：register → login UI → API 建 webhook（`url: http://127.0.0.1:9/hook`、`events: ["item.created"]`）→ API 建物品（同步 dispatch 失敗）→ `/settings/webhooks`：deliveries 列「第 1 次」＋網路錯誤狀態＋「已排程重試」；概覽「成功率 0%（成功 0／總 1）」；篩選「成功」→「沒有符合的 delivery」＋清除篩選；「顯示回應內容」→ excerpt 出現；「立即重試」→「第 2 次」出現＋概覽總數 2
+- [x] ② 行動 390＋空態：新用戶 `/settings/webhooks` →「尚無 webhook」空態；建 webhook＋觸發失敗列後：390 寬 `deliveries-table` 隱藏、`deliveries-cards` 可見（Playwright `toBeHidden`／`toBeVisible`）
+- [x] 全套 e2e 回歸（57＋新增；`--workers=2`）
 
 **Commands:**
 - `ENABLE_DEV_ROUTES=1 docker compose up -d --build api web && docker compose up -d nginx && cd apps/web && pnpm exec playwright test --workers=2`
@@ -171,10 +171,10 @@
 - Modify: `CHANGELOG.md`（`[2.0.0-alpha.28]`）、`docs/v2-roadmap.md`（Phase 28 ✅＋測試規模）、本計畫（勾選＋Final Verification）
 
 **TODO:**
-- [ ] CHANGELOG alpha.28：deliveries 篩選（`status`／`event`）／分頁（`offset`）／stats 端點（成功率、最近成功時間）／Web 桌機表格＋行動卡片／狀態篩選＋載入更多／excerpt 展開／概覽／查詢錯誤態
-- [ ] v2-roadmap：Phase 28 row ✅＋測試規模更新
-- [ ] 本計畫：全任務勾選＋Final Verification（實測數字、環境註記）
-- [ ] 收尾視覺走查：桌機（表格＋篩選＋展開＋概覽）／行動 390（卡片）／空態／錯誤態截圖
+- [x] CHANGELOG alpha.28：deliveries 篩選（`status`／`event`）／分頁（`offset`）／stats 端點（成功率、最近成功時間）／Web 桌機表格＋行動卡片／狀態篩選＋載入更多／excerpt 展開／概覽／查詢錯誤態
+- [x] v2-roadmap：Phase 28 row ✅＋測試規模更新
+- [x] 本計畫：全任務勾選＋Final Verification（實測數字、環境註記）
+- [x] 收尾視覺走查：桌機（表格＋篩選＋展開＋概覽）／行動 390（卡片）／空態／錯誤態截圖
 
 **Commands:**
 - `cd apps/web && pnpm exec playwright test --workers=2`
@@ -219,12 +219,15 @@
 
 ## Final Verification（收尾時填實測）
 
-- [ ] API：`uv run --extra test pytest -q` → __ passed
-- [ ] Web：`pnpm test` → __ passed（__ 檔）＋`typecheck` 0 error
-- [ ] api-types 重生成零 diff
-- [ ] e2e：__ passed（含 `webhooks.spec.ts` 2 情境）
-- [ ] 視覺走查：桌機（表格／篩選／excerpt 展開／概覽）＋行動 390（卡片）＋空態＋列表錯誤態
+- [x] API：`uv run --extra test pytest -q` → 750 passed
+- [x] Web：`pnpm test` → 430 passed（87 檔）＋`typecheck` 0 error
+- [x] api-types 重生成零 diff
+- [x] e2e：59 passed（含 `webhooks.spec.ts` 2 情境；`--workers=2`；於全部程式碼變更後重跑）
+- [x] 視覺走查：桌機（表格／excerpt 展開／篩選空態／列表錯誤態）＋行動 390（卡片）＋空態；6 張截圖以一次性 Playwright script 對 `ims-v2` stack 產出並人工檢視
 
 ### 收尾環境註記（2026-10-17 起填）
 
-- （待補）
+- worktree 首次使用需先 `pnpm install`（node_modules 不存在；api-types `gen:types`／vitest／e2e 皆依賴）
+- `packages/api-types/src/` 雖列於 `.gitignore`，其中 `index.ts` 為 tracked 生成檔 → 與 `openapi.json` 一併提交（比照 Phase 27 `a1341e6`）
+- e2e／視覺走查跑在 worktree 自身 `ims-v2` stack（`ENABLE_DEV_ROUTES=1`、nginx port 80）；本 phase 無 migration（alembic 維持 0021）
+- macOS `TMPDIR` 實際為 `/var/folders/cl/nt00k_qn5wb85gzhd5dsm4kh0000gn/T/`（env 建議的 `.../T/opencode` 路徑不存在，`mkdir` EACCES）；截圖改用 `mktemp -d`

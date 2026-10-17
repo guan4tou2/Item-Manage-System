@@ -49,12 +49,13 @@
 | 25 | 條碼掃描（內查＋外查） | ✅ | `items.barcode`＋`barcode_lookups`（TTL 30 天）、provider 抽象（Open Food Facts／Open Library）、`/scan` 多格式引擎（QR＋1D）、表單 prefill、行動 FAB |
 | 26 | 多層位置樹重建 | ✅ | `locations` 樹化（parent_id／kind／同層同名唯一）、migration 0020＋一次性遷移（保證無孤兒＋報告／dry-run）、樹 API（tree／path／move／reorder／刪除 409）、`location_scope` 預設含子孫、樹管理頁（拖放／鍵盤／行動搬移）、樹狀選擇器、CSV `location_path`、backup v2 |
 | 27 | 成本與庫存估值 | ✅ | `items.cost`（Decimal 12,2 nullable）＋migration 0021、帳號層級 `currency` 偏好（六幣別、無匯率換算）、`GET /api/stats/value`（總值＋分類/位置/倉庫分布＋未填比例）、統計頁估值區塊（摘要＋兩圖）、儀表板估值卡（行動卡群組之後）、`formatCurrency`（TWD→`NT$` 雙語）、CSV `cost`／`currency`、backup `format_version` 3 |
+| 28 | Webhook 管理 UI | ✅ | deliveries 篩選（`status`／`event`）＋`offset` 分頁＋統計端點（成功率、最近成功）；面板桌機表格／行動卡片、篩選、載入更多、excerpt 展開、概覽與查詢錯誤態；無 migration |
 
 ## 測試規模
 
-- API 測試：739 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：416 passed（87 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：18 spec／57 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／位置樹／估值／主題等關鍵流程）
+- API 測試：750 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
+- Web 測試：429 passed（87 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：19 spec／59 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／位置樹／估值／webhook 管理／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）
