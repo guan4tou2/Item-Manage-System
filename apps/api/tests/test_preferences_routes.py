@@ -30,7 +30,7 @@ class TestGetPreferences:
             "/api/users/me/preferences", headers=auth_headers
         )
         assert resp.status_code == 200
-        assert resp.json() == {"theme": "system", "language": "zh-TW"}
+        assert resp.json() == {"theme": "system", "language": "zh-TW", "currency": "TWD"}
 
 
 class TestPutPreferences:
@@ -101,5 +101,22 @@ class TestPutPreferences:
             "/api/users/me/preferences",
             headers=auth_headers,
             json={"language": "fr"},
+        )
+        assert resp.status_code == 422
+
+    async def test_updates_currency(self, client, auth_headers):
+        resp = await client.put(
+            "/api/users/me/preferences",
+            headers=auth_headers,
+            json={"currency": "JPY"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["currency"] == "JPY"
+
+    async def test_invalid_currency_422(self, client, auth_headers):
+        resp = await client.put(
+            "/api/users/me/preferences",
+            headers=auth_headers,
+            json={"currency": "BTC"},
         )
         assert resp.status_code == 422

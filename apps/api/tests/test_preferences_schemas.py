@@ -61,3 +61,28 @@ class TestPreferencesUpdate:
     def test_rejects_invalid_language(self):
         with pytest.raises(ValidationError):
             PreferencesUpdate(language="de")
+
+
+class TestCurrency:
+    def test_default_currency_is_twd(self):
+        prefs = PreferencesRead()
+        assert prefs.currency == "TWD"
+
+    def test_accepts_valid_currency(self):
+        prefs = PreferencesRead(currency="JPY")
+        assert prefs.currency == "JPY"
+
+    def test_rejects_invalid_currency(self):
+        with pytest.raises(ValidationError):
+            PreferencesRead(currency="BTC")
+
+    def test_update_currency_optional(self):
+        assert PreferencesUpdate().currency is None
+
+    def test_update_accepts_valid_currency(self):
+        update = PreferencesUpdate(currency="USD")
+        assert update.model_dump(exclude_none=True) == {"currency": "USD"}
+
+    def test_update_rejects_invalid_currency(self):
+        with pytest.raises(ValidationError):
+            PreferencesUpdate(currency="gold")

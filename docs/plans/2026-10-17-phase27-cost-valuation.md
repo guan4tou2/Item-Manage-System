@@ -94,8 +94,8 @@
 - Test: `apps/api/tests/test_preferences_schemas.py`、`apps/api/tests/test_preferences_routes.py`、`apps/api/tests/test_preferences_service.py`
 
 **TODO:**
-- [ ] `Currency = Literal["TWD", "USD", "EUR", "JPY", "CNY", "HKD"]`；`PreferencesRead.currency: Currency = "TWD"`；`PreferencesUpdate.currency: Currency | None = None`（service 既有 `exclude_none=True` merge 不動）
-- [ ] 測試：未設定過 → 讀回 `"TWD"`（含舊帳號 preferences 無此鍵）；PUT `{"currency":"JPY"}` → 200＋持久；非法 `"BTC"` → 422；與 `theme` 並存 merge 不互蓋（回歸）
+- [x] `Currency = Literal["TWD", "USD", "EUR", "JPY", "CNY", "HKD"]`；`PreferencesRead.currency: Currency = "TWD"`；`PreferencesUpdate.currency: Currency | None = None`（service 既有 `exclude_none=True` merge 不動）
+- [x] 測試：未設定過 → 讀回 `"TWD"`（含舊帳號 preferences 無此鍵）；PUT `{"currency":"JPY"}` → 200＋持久；非法 `"BTC"` → 422；與 `theme` 並存 merge 不互蓋（回歸）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_preferences_schemas.py tests/test_preferences_routes.py tests/test_preferences_service.py`

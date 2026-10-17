@@ -66,3 +66,29 @@ class TestUpdatePreferences:
             update=PreferencesUpdate(),
         )
         assert result.theme == "dark"
+
+
+class TestCurrency:
+    async def test_defaults_to_twd_when_unset(self, db_session, user):
+        prefs = await get_preferences(db_session, user_id=user.id)
+        assert prefs.currency == "TWD"
+
+    async def test_sets_currency(self, db_session, user):
+        result = await update_preferences(
+            db_session,
+            user_id=user.id,
+            update=PreferencesUpdate(currency="EUR"),
+        )
+        assert result.currency == "EUR"
+
+    async def test_currency_does_not_clobber_other_prefs(self, db_session, user):
+        user.preferences = {"theme": "dark", "language": "en"}
+        await db_session.flush()
+        result = await update_preferences(
+            db_session,
+            user_id=user.id,
+            update=PreferencesUpdate(currency="JPY"),
+        )
+        assert result.currency == "JPY"
+        assert result.theme == "dark"
+        assert result.language == "en"
