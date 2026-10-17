@@ -1152,7 +1152,8 @@
         "renamed": "加後綴",
         "skipped": "略過",
         "errors": "錯誤",
-        "replaceNote": "「匯入後」為取代後的預期筆數。"
+        "replaceNote": "「匯入後」為取代後的預期筆數。",
+        "mobileFlow": "現有 {existing} → 匯入後 {after}"
       },
       "replace": {
         "warning": "將刪除 {count} 筆現有資料，且無法復原。",

@@ -186,6 +186,24 @@ describe("BackupPanel import card", () => {
     ).toEqual([t.entities.categories, "0", "1", "1", "0", "0", "0", "0"])
   })
 
+  it("mirrors the summary as cards for small screens（§5.7 寬表格卡片化）", async () => {
+    vi.mocked(api.importBackup).mockResolvedValue(dryRunResult)
+    const { container } = renderPanel()
+
+    await userEvent.upload(fileInput(container), backupFile())
+    await screen.findByText(t.summary.title)
+
+    const cards = within(screen.getByTestId("backup-summary-cards"))
+    const itemsCard = cards.getByText(t.entities.items).closest("li") as HTMLElement
+    expect(itemsCard).not.toBeNull()
+    // 現有 3 → 匯入後 5；建立 2
+    expect(itemsCard).toHaveTextContent(
+      t.summary.mobileFlow.replace("{existing}", "3").replace("{after}", "5"),
+    )
+    expect(within(itemsCard).getByText(t.summary.created)).toBeInTheDocument()
+    expect(within(itemsCard).getByText("2")).toBeInTheDocument()
+  })
+
   it("re-runs the dry-run with mode=replace when the mode is switched", async () => {
     vi.mocked(api.importBackup)
       .mockResolvedValueOnce(dryRunResult)

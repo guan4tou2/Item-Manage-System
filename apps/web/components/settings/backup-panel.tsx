@@ -223,7 +223,7 @@ export function BackupPanel() {
               ref={fileRef}
               type="file"
               accept=".json,application/json"
-              className="hidden"
+              className="sr-only"
               onChange={(e) => {
                 const picked = e.target.files?.[0]
                 if (picked) void handlePick(picked)
@@ -282,7 +282,7 @@ export function BackupPanel() {
                   {t("settings.backup.import.emptySummary")}
                 </p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="hidden overflow-x-auto md:block">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -333,13 +333,62 @@ export function BackupPanel() {
                       ))}
                     </TableBody>
                   </Table>
-                  {mode === "replace" ? (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {t("settings.backup.summary.replaceNote")}
-                    </p>
-                  ) : null}
                 </div>
               )}
+
+              {dryRunResult.entities.length > 0 ? (
+                <ul data-testid="backup-summary-cards" className="space-y-2 md:hidden">
+                  {dryRunResult.entities.map((row) => (
+                    <li key={row.entity} className="rounded border p-3 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium">{entityLabel(row.entity)}</span>
+                        <span className="text-muted-foreground">
+                          {t("settings.backup.summary.mobileFlow", {
+                            existing: row.existing,
+                            after: afterImport(row),
+                          })}
+                        </span>
+                      </div>
+                      <dl className="mt-2 grid grid-cols-3 gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between gap-1">
+                          <dt>{t("settings.backup.summary.created")}</dt>
+                          <dd className="font-medium text-foreground">{row.created}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                          <dt>{t("settings.backup.summary.reused")}</dt>
+                          <dd className="font-medium text-foreground">{row.reused}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                          <dt>{t("settings.backup.summary.renamed")}</dt>
+                          <dd className="font-medium text-foreground">{row.renamed}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                          <dt>{t("settings.backup.summary.skipped")}</dt>
+                          <dd className="font-medium text-foreground">{row.skipped}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                          <dt>{t("settings.backup.summary.errors")}</dt>
+                          <dd
+                            className={
+                              row.errors > 0
+                                ? "font-medium text-destructive"
+                                : "font-medium text-foreground"
+                            }
+                          >
+                            {row.errors}
+                          </dd>
+                        </div>
+                      </dl>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+
+              {dryRunResult.entities.length > 0 && mode === "replace" ? (
+                <p className="text-xs text-muted-foreground">
+                  {t("settings.backup.summary.replaceNote")}
+                </p>
+              ) : null}
 
               {dryRunResult.warnings.length > 0 ? (
                 <div className="space-y-1 text-sm">

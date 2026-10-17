@@ -1152,7 +1152,8 @@
         "renamed": "Renamed",
         "skipped": "Skipped",
         "errors": "Errors",
-        "replaceNote": "\"After import\" is the expected count after replacement."
+        "replaceNote": "\"After import\" is the expected count after replacement.",
+        "mobileFlow": "Existing {existing} → after {after}"
       },
       "replace": {
         "warning": "This will delete {count} existing rows and cannot be undone.",
