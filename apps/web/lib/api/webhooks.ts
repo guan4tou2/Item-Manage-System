@@ -48,6 +48,23 @@ export interface ProcessRetriesResult {
   remaining: number
 }
 
+export type WebhookDeliveryStatus = 'success' | 'failed' | 'pending'
+
+export interface WebhookDeliveryParams {
+  limit?: number
+  offset?: number
+  status?: WebhookDeliveryStatus
+  event?: string
+}
+
+export interface WebhookDeliveryStats {
+  total: number
+  succeeded: number
+  failed: number
+  pending: number
+  last_success_at: string | null
+}
+
 export async function listWebhooks(token: string | null): Promise<WebhookRead[]> {
   return (await apiFetch('/webhooks', { accessToken: token })).json()
 }
@@ -85,14 +102,26 @@ export async function deleteWebhook(id: string, token: string | null): Promise<v
 
 export async function listWebhookDeliveries(
   webhookId: string,
-  params: { limit?: number },
+  params: WebhookDeliveryParams,
   token: string | null,
 ): Promise<WebhookDeliveryRead[]> {
   const q = new URLSearchParams()
   if (params.limit !== undefined) q.set('limit', String(params.limit))
+  if (params.offset !== undefined) q.set('offset', String(params.offset))
+  if (params.status !== undefined) q.set('status', params.status)
+  if (params.event !== undefined) q.set('event', params.event)
   const suffix = q.size ? `?${q}` : ''
   return (
     await apiFetch(`/webhooks/${webhookId}/deliveries${suffix}`, { accessToken: token })
+  ).json()
+}
+
+export async function getWebhookDeliveryStats(
+  webhookId: string,
+  token: string | null,
+): Promise<WebhookDeliveryStats> {
+  return (
+    await apiFetch(`/webhooks/${webhookId}/deliveries/stats`, { accessToken: token })
   ).json()
 }
 

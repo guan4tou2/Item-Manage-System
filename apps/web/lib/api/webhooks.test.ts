@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createWebhook,
   deleteWebhook,
+  getWebhookDeliveryStats,
   listWebhookDeliveries,
   listWebhooks,
   processDueWebhookRetries,
@@ -92,6 +93,52 @@ describe('webhooks api client', () => {
 
     expect(global.fetch).toHaveBeenCalledWith(
       '/api/webhooks/wh_1/deliveries?limit=25',
+      expect.objectContaining({ credentials: 'include' }),
+    )
+  })
+
+  it('passes status, event and offset filters when listing deliveries', async () => {
+    mockJson([])
+
+    await listWebhookDeliveries(
+      'wh_1',
+      { limit: 20, offset: 40, status: 'failed', event: 'item.created' },
+      'jwt',
+    )
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/webhooks/wh_1/deliveries?limit=20&offset=40&status=failed&event=item.created',
+      expect.objectContaining({ credentials: 'include' }),
+    )
+  })
+
+  it('omits unset delivery query params', async () => {
+    mockJson([])
+
+    await listWebhookDeliveries('wh_1', { status: 'success' }, 'jwt')
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/webhooks/wh_1/deliveries?status=success',
+      expect.objectContaining({ credentials: 'include' }),
+    )
+  })
+
+  it('fetches delivery stats for a webhook', async () => {
+    mockJson({
+      total: 4,
+      succeeded: 2,
+      failed: 2,
+      pending: 1,
+      last_success_at: '2026-06-19T03:10:00Z',
+    })
+
+    const stats = await getWebhookDeliveryStats('wh_1', 'jwt')
+
+    expect(stats.total).toBe(4)
+    expect(stats.succeeded).toBe(2)
+    expect(stats.pending).toBe(1)
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/webhooks/wh_1/deliveries/stats',
       expect.objectContaining({ credentials: 'include' }),
     )
   })
