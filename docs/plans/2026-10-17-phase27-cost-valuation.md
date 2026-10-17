@@ -284,12 +284,12 @@
 - Modify: `apps/web/tests/statistics.spec.ts`（空態「尚無資料」5 → 7）
 
 **TODO:**
-- [ ] ① 估值主流程：新用戶 register → API 建 2 件（`cost=1200.50` qty 2；另一件無成本 qty 1）→ `/statistics`：`value-summary` 顯示 `NT$2,401`（整數無小數）＋「未填 1/2」；兩張價值圖可見；`value-summary` 為頁面最前區塊
-- [ ] ② 幣別連動：`/settings/preferences` 切 `JPY` → `/statistics` 前綴變 `¥`（載入後）＋重整後持久
-- [ ] ③ 物品流程：UI 表單填 `99.50` 建立 → 詳情 `item-cost` 顯示 `NT$99.50`；表單 `1.234` → 行內錯誤不送出
-- [ ] ④ 儀表板：`ValueCard` 金額可見＋連結至 `/statistics`；DOM 序在 `ActiveLoansCard` 之後（locator 順序斷言）
-- [ ] ⑤ 統計空態：新用戶 `/statistics` →「尚無資料」恰 **7** 張（原 5＋價值 2）；`statistics.spec.ts` 更新
-- [ ] 全套 e2e 回歸（53+4；新增 spec 4 情境）
+- [x] ① 估值主流程：新用戶 register → API 建 2 件（`cost=1200.50` qty 2；無成本 qty 1）→ `/statistics`：`value-summary`＝`NT$2,401`＋「已填成本 1／2 件」＋「未填成本 1 件（50%）」；兩張價值圖可見；`value-summary` 在趨勢圖之前（`elementHandle`＋`compareDocumentPosition`）
+- [x] ② 幣別連動：`/settings/preferences` 切 `JPY` → `/statistics` 前綴變 `¥1,200`（JPY 0 位）＋重整後持久
+- [x] ③ 物品流程：UI 表單填 `99.50` 建立 → 詳情 `item-cost`＝`NT$99.50`；表單 `1.234` → 行內錯誤且留在 `/items/new`
+- [x] ④ 儀表板：`value-card-amount`＝`NT$3,500`；連結（`value-card-link`）點擊進 `/statistics`；DOM 序在 `expiry-card` 與借出卡之後
+- [x] ⑤ 統計空態：新用戶 `/statistics` →「尚無資料」恰 **7** 張（原 5＋價值 2）；`statistics.spec.ts` 更新＋加「庫存估值」heading 斷言
+- [x] 全套 e2e 回歸：**57 passed**（18 spec；53 既有＋4 新增；`--workers=2`）
 
 **Commands:**
 - `ENABLE_DEV_ROUTES=1 docker compose up -d --build api web && docker compose up -d nginx && pnpm exec playwright test`
@@ -300,10 +300,10 @@
 - Modify: `CHANGELOG.md`（`[2.0.0-alpha.27]`）、`docs/v2-roadmap.md`（Phase 27 ✅＋測試規模；§5.6 註記實作位置）、本計畫（勾選＋Final Verification）
 
 **TODO:**
-- [ ] CHANGELOG alpha.27：`items.cost`／migration 0021／`currency` 偏好／`GET /api/stats/value`（總值＋分布＋未填比例）／統計頁估值區塊／儀表板估值卡（行動卡後）／CSV `cost`／`currency`／backup `format_version 3`＋`_serialize` Decimal 修正（修 lists 匯出潛在 500）／`formatCurrency`（TWD→NT$ 雙語）
-- [ ] v2-roadmap：Phase 27 ✅＋測試規模更新；§5.6「金額與日期格式（Phase 27 建立）」補實作位置 `apps/web/lib/format/currency.ts`
-- [ ] 本計畫：全任務勾選＋Final Verification（實測數字、環境註記）
-- [ ] 收尾視覺走查：估值摘要（淺／深色）／價值兩圖／未填比例／表單成本（含錯誤態）／詳情顯示／設定幣別預覽／儀表板卡位置／行動 390 版
+- [x] CHANGELOG alpha.27：`items.cost`／migration 0021／`currency` 偏好／`GET /api/stats/value`（總值＋分布＋未填比例）／統計頁估值區塊／儀表板估值卡（行動卡後）／CSV `cost`／`currency`／backup `format_version 3`＋`_serialize` Decimal 修正（修 lists 匯出潛在 500）／`formatCurrency`（TWD→NT$ 雙語）
+- [x] v2-roadmap：Phase 27 ✅（table row）＋測試規模更新（739／416（87 檔）／18 spec 57 情境）；§5.6「金額與日期格式（Phase 27 建立）」補實作位置 `apps/web/lib/format/currency.ts`——**原 Files 行誤記**，§5.6 實際位於 `docs/plans/2026-10-15-next-iteration-roadmap.md`，已改至該檔註記
+- [x] 本計畫：全任務勾選＋Final Verification（實測數字、環境註記）
+- [x] 收尾視覺走查：9 張截圖存 `/private/var/folders/cl/nt00k_qn5wb85gzhd5dsm4kh0000gn/T/opencode/phase27-visual/`（statistics 淺／深色＋行動 390、item-detail-cost、item-form-cost-error、settings-currency、dashboard-value-card＋深色＋行動 390）——淺／深對比與間距正常、NT$ 格式正確、未填比例可見、儀表板估值卡在行動卡之後、行動版無溢出（首輪截圖遇 recharts 進場動畫中段，已加 `waitForTimeout(1800)` 重拍）
 
 **Commands:**
 - `pnpm exec playwright test`（全套）
@@ -326,7 +326,7 @@
 |---|---|---|---|---|---|
 | 統計頁估值區塊（27） | 卡內 skeleton | 無任何成本 → 總值 `NT$0`＋「為物品補上成本」引導；兩圖 `EmptyChart` | 卡內 compact 錯誤＋重試（不整頁壞） | 金額＋未填比例＋兩圖分布 | 部分未填 → 比例註記並明示「未填以 0 計」 |
 | 儀表板估值卡（27） | 小卡 skeleton | 無成本 → `NT$0`＋「前往填寫成本」連結 | 隨卡片 compact 錯誤態 | 金額＋未填註記＋deep link `/statistics` | 同左（比例註記） |
-| 物品表單成本欄（27） | 沿用表單載入 | 未填＝空欄（可選欄位，無強制） | 行內驗證（`1.234`／`-1`／非數字）；伺服器 422 → 欄位錯誤顯示 | 送出後詳情格式化顯示（`item-cost`） | 幣別註記隨偏好（唯讀） |
+| 物品表單成本欄（27） | 沿用表單載入 | 未填＝空欄（可選欄位，無強制） | 行內驗證（`1.234`／`-1`／非數字；**實測修正**：伺服器錯誤沿用既有 `saveFailed` toast——客戶端 zod（≥0／≤2 位小數／≤10 位整數）已完整鏡射伺服器限制，UI 無法觸發成本 422） | 送出後詳情格式化顯示（`item-cost`） | 幣別註記隨偏好（唯讀） |
 | 幣別設定（27） | 偏好載入 skeleton（沿用） | — | 儲存失敗 toast＋回滾（既有模式） | 成功 toast＋預覽即時更新 | 偏好更新後統計自動重抓（invalidate `["stats"]`） |
 
 ### 驗收對照（roadmap §六 Phase 27）
@@ -348,13 +348,16 @@
 
 ## Final Verification（收尾時填實測）
 
-- [ ] API：`uv run --extra test pytest -q` → __ passed
-- [ ] Web：`pnpm -F @ims/web test` → __ passed（__ 檔）＋`typecheck` 0 error
-- [ ] api-types 重生成零 diff
-- [ ] 真實 PG：`alembic current`＝`0021 (head)`；以 dev 庫實測 `GET /api/stats/value`（金額、比例、幣別）＋設定頁切幣別→統計頁前綴即時變
-- [ ] e2e：__ passed（含 `valuation.spec.ts` 4 情境；統計空態 7）
-- [ ] 視覺走查：`phase27-visual/`（估值摘要淺／深色、價值兩圖、未填比例、表單成本＋錯誤態、詳情顯示、設定幣別預覽、儀表板卡位置、行動 390）
+- [x] API：`uv run --extra test pytest -q` → **739 passed**（1:53）
+- [x] Web：`pnpm -F @ims/web test` → **416 passed（87 檔）**＋`typecheck` 0 error
+- [x] api-types 重生成零 diff（`export_openapi.py`＋`gen:types` 後 `git status` 乾淨）
+- [x] 真實 PG：`alembic current`＝`0021 (head)`（dev 庫）；`GET /api/stats/value` 金額／比例／幣別實測＝e2e 情境①（真 PG 新用戶），設定頁切幣別→統計頁前綴即時變＋重整持久＝情境②
+- [x] e2e：**57 passed**（18 spec；含 `valuation.spec.ts` 4 情境；統計空態 7）
+- [x] 視覺走查：9 張截圖（估值摘要淺／深色＋行動 390、價值兩圖、未填比例、表單成本＋錯誤態、詳情顯示、設定幣別預覽、儀表板卡位置淺／深／行動）——淺／深對比與間距正常、`NT$` 格式正確、估值卡在行動卡之後、行動版無溢出；recharts 進場動畫需 settle 後再拍（見環境註記）
 
 ### 收尾環境註記（2026-10-17 起填）
 
-- （待補）
+- worktree 無 `.env`（gitignored；compose `env_file: .env`），執行 `docker compose` 前需自主 repo 複製
+- e2e 指令：`ENABLE_DEV_ROUTES=1 docker compose up -d --build api web && docker compose up -d nginx`；高負載用 `--workers=2`（`collaboration.spec.ts` 已知間歇性）
+- 視覺截圖（temp，未進版控）：`/private/var/folders/cl/nt00k_qn5wb85gzhd5dsm4kh0000gn/T/opencode/phase27-visual/`；recharts Pie/Bar 進場動畫 ~1.5s，需 `waitForTimeout(1800)` 再拍否則只有軸／legend
+- dev 庫既有物品 `cost` 全為 null（遷移 0021 只加欄位），估值 e2e 以新註冊用戶自建資料為準

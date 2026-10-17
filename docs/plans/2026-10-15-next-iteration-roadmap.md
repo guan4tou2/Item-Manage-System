@@ -215,6 +215,7 @@ Phase 依賴圖（依 §四 總表）：
 **金額與日期格式（Phase 27 建立）**
 
 - 金額：`Intl.NumberFormat(locale, { style: 'currency', currency })`；TWD 於 zh-TW／en 均顯示 `NT$` 前綴（`NT$1,200`）
+  - 實作位置：`apps/web/lib/format/currency.ts`（`formatCurrency`＋`CURRENCY_SYMBOLS`；整數 0 位、有小數 2 位、JPY 0 位；未知幣別 fallback Intl 原樣）
 - 日期：ISO 儲存；顯示用 locale 短格式；報表與排程時區固定 `Asia/Taipei`
 
 ### 5.7 響應式與無障礙契約

@@ -6,6 +6,20 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.27] — Phase 27：成本與庫存估值
+
+- **DB**：`items.cost` `Numeric(12,2)` nullable（單價；`ck_items_cost_nonneg`）；Alembic `0021_item_cost`；null＝未填成本（估值以 0 計）
+- **帳號層級幣別**：`users.preferences.currency`（白名單 TWD／USD／EUR／JPY／CNY／HKD，預設 TWD，**不做匯率換算**）；`GET/PUT /api/users/me/preferences` 帶 `currency`
+- **`GET /api/stats/value`**：`{currency, total_value, priced_items, unpriced_items, total_items, by_category[], by_location[], by_warehouse[]}`；`value`＝`Σ(cost × quantity)`（`quantize(0.01)` `ROUND_HALF_UP`）；bucket 含 `count`；`location.label`＝樹路徑；已刪除排除；**金額一律 JSON 字串**（`"12.30"`）
+- **Web 金額格式**：`apps/web/lib/format/currency.ts`（`formatCurrency`＋`CURRENCY_SYMBOLS`）——TWD 於 zh-TW／en 均 `NT$` 前綴；整數 0 位、有小數 2 位、JPY 0 位（§5.6）
+- **物品**：表單成本欄（客戶端驗證：數字 ≥0、最多 2 位小數；空＝清除；錯誤態行內顯示）＋詳情頁成本顯示
+- **設定 ＞ 偏好**：幣別選擇＋即時預覽；儲存後統計／估值即時更新
+- **統計頁**：置頂「庫存估值」區塊——摘要（總值、已填／未填比例、「未填成本以 `NT$0` 計入」說明；全無成本引導文案）＋依分類 Pie＋依位置橫向 Bar（0 值桶排除、長路徑截斷＋tooltip 全路徑）；載入失敗卡內重試
+- **儀表板**：庫存估值卡（金額＋未填註記＋「查看統計」連結；全無成本引導補成本）——**排在行動卡群組之後**（§5.1）
+- **CSV**：匯出 `min_quantity` 後新增 `cost`／`currency`；匯入驗證（`cost` ≥0 最多 2 位小數、`currency` 須符合帳號幣別，不符為列級錯誤）
+- **備份**：`format_version` 2 → 3（含 `cost`／`currency`）；`_serialize` 補 `Decimal → str`（同時修 `lists.budget`／`price` 有值時匯出 500 的潛在 bug）
+- 新增 48 個 API 測試（691 → 739）；新增 40 個 web 測試（376 → 416，79 → 87 檔）；e2e 17 → 18 spec（新增 4 情境：估值摘要／幣別切換／表單成本驗證／儀表板卡序；統計空態 5 → 7）
+
 ## [2.0.0-alpha.26] — Phase 26：多層位置樹重建
 
 - **破壞性 schema 重構**：`locations` 由平面三欄（floor/room/zone）改為**任意深度樹**——`parent_id`（self-FK, RESTRICT）、`name`、`kind`（`floor|room|shelf|box|other` 或自由文字）、`sort_order`（同 parent 內）、`floor_plan_image_id` 保留；同 parent 同名唯一（partial unique ×2）；`(owner_id, parent_id, sort_order)` 索引。Alembic 遷移 `0020`（**不可逆**，downgrade 明確 raise）
