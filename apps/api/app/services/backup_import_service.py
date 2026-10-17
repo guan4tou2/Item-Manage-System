@@ -14,7 +14,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Literal, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import delete, func, or_, select
+from sqlalchemy import delete, func, insert, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.category import Category
@@ -39,6 +39,7 @@ from app.schemas.backup import (
     BackupReconciliationItem,
 )
 from app.schemas.preferences import currency_from_raw
+from app.services import audit_service
 from app.services.backup_service import FORMAT_VERSION
 
 #: 上傳大小上限（nginx `client_max_body_size 32m` 之下）
@@ -1162,12 +1163,12 @@ async def build_plan(
         ctx.summaries["quantity_logs"].created += 1
         ctx.records["quantity_logs"].append({**log, "user_id": user_id})
 
-    for version in pending_versions:
-        user_id = version["user_id"]
+    for version_rec in pending_versions:
+        user_id = version_rec["user_id"]
         if user_id is not None and user_id not in existing_user_ids:
             user_id = None
         ctx.summaries["item_versions"].created += 1
-        ctx.records["item_versions"].append({**version, "user_id": user_id})
+        ctx.records["item_versions"].append({**version_rec, "user_id": user_id})
 
     # ---- lists ----
     for index, raw in enumerate(lists["lists"]):
@@ -1191,7 +1192,7 @@ async def build_plan(
                     {
                         "position": _int_(entry, "position", default=0, min_value=0),
                         "name": _str_(entry, "name", required=True, max_len=200),
-                        "quantity": _int_(entry, "quantity", min_value=0),
+                        "quantity": _int_(entry, "quantity", min_value=1),
                         "note": _str_(entry, "note"),
                         "price": _decimal_(entry, "price"),
                         "link": _str_(entry, "link", max_len=500),
@@ -1433,3 +1434,342 @@ def to_result(plan: Plan, *, dry_run: bool) -> BackupImportResult:
         reconciliation=[BackupReconciliationItem(**row) for row in plan.reconciliation],
     )
 
+# ---------------------------------------------------------------------------
+# apply（T1.3 create_only／T1.4 replace 共用）
+# ---------------------------------------------------------------------------
+
+
+def _resolve_ref(ref: Optional[tuple[str, int]], id_by_src: dict[int, int]) -> Optional[int]:
+    if ref is None:
+        return None
+    kind, value = ref
+    return value if kind == "existing" else id_by_src.get(value)
+
+
+async def _insert_hierarchy(
+    session: AsyncSession, owner_id: UUID, records: list[dict[str, Any]], model: Any
+) -> dict[int, int]:
+    """依依賴序（父先於子）建立 categories／locations；回傳 src id → 新 id。"""
+    id_by_src: dict[int, int] = {}
+    for rec in records:
+        parent_ref = rec["parent"]
+        parent_id: Optional[int]
+        if parent_ref is None:
+            parent_id = None
+        elif parent_ref[0] == "existing":
+            parent_id = parent_ref[1]
+        else:
+            parent_id = id_by_src.get(parent_ref[1])
+        kwargs: dict[str, Any] = {
+            "owner_id": owner_id,
+            "name": rec["name"],
+            "parent_id": parent_id,
+        }
+        for key in ("kind", "sort_order"):
+            if key in rec:
+                kwargs[key] = rec[key]
+        row = model(**kwargs)
+        session.add(row)
+        await session.flush()
+        id_by_src[rec["src_id"]] = row.id
+    return id_by_src
+
+
+async def _insert_catalogs(
+    session: AsyncSession, owner_id: UUID, plan: Plan
+) -> tuple[dict[int, int], dict[str, int], dict[str, int]]:
+    """建立 item_types／custom_fields／item_templates／tags／warehouses。
+
+    回傳 (custom_field src→id、tag name→id、warehouse name→id)。create_only 時
+    tags／warehouses 的既有名稱沿用 `plan.existing_name_ids`；replace 已清空，
+    一律用本檔建立的列。
+    """
+    records = plan.records
+    for rec in records["item_types"]:
+        session.add(ItemType(owner_id=owner_id, name=rec["name"], icon=rec["icon"]))
+    cf_id_by_src: dict[int, int] = {}
+    for rec in records["custom_fields"]:
+        cf_row = CustomField(owner_id=owner_id, name=rec["name"], field_type=rec["field_type"])
+        session.add(cf_row)
+        await session.flush()
+        cf_id_by_src[rec["src_id"]] = cf_row.id
+    for rec in records["item_templates"]:
+        session.add(
+            ItemTemplate(owner_id=owner_id, name=rec["name"], payload=rec["payload"])
+        )
+
+    reuse = plan.mode == "create_only"
+    tag_id_by_name: dict[str, int] = dict(plan.existing_name_ids.get("tags", {})) if reuse else {}
+    for rec in records["tags"]:
+        tag_row = Tag(owner_id=owner_id, name=rec["name"])
+        session.add(tag_row)
+        await session.flush()
+        tag_id_by_name[rec["name"]] = tag_row.id
+    warehouse_id_by_name: dict[str, int] = (
+        dict(plan.existing_name_ids.get("warehouses", {})) if reuse else {}
+    )
+    for rec in records["warehouses"]:
+        wh_row = Warehouse(
+            owner_id=owner_id, name=rec["name"], description=rec.get("description")
+        )
+        session.add(wh_row)
+        await session.flush()
+        warehouse_id_by_name[rec["name"]] = wh_row.id
+    return cf_id_by_src, tag_id_by_name, warehouse_id_by_name
+
+
+async def _insert_items(
+    session: AsyncSession,
+    owner_id: UUID,
+    plan: Plan,
+    category_id_by_src: dict[int, int],
+    location_id_by_src: dict[int, int],
+    warehouse_id_by_name: dict[str, int],
+    tag_id_by_name: dict[str, int],
+) -> dict[str, UUID]:
+    item_id_by_src: dict[str, UUID] = {}
+    for rec in plan.records["items"]:
+        warehouse_name = rec["warehouse_name"]
+        row = Item(
+            id=rec["new_id"],
+            owner_id=owner_id,
+            name=rec["name"],
+            description=rec["description"],
+            barcode=rec["barcode"],
+            category_id=_resolve_ref(rec["category_ref"], category_id_by_src),
+            location_id=_resolve_ref(rec["location_ref"], location_id_by_src),
+            warehouse_id=warehouse_id_by_name.get(warehouse_name) if warehouse_name else None,
+            quantity=rec["quantity"],
+            min_quantity=rec["min_quantity"],
+            cost=rec["cost"],
+            track_batches=rec["track_batches"],
+            notes=rec["notes"],
+            is_favorite=rec["is_favorite"],
+            image_id=None,
+            created_at=rec["created_at"],
+            updated_at=rec["updated_at"],
+        )
+        session.add(row)
+        item_id_by_src[rec["src_id"]] = rec["new_id"]
+    await session.flush()
+    for rec in plan.records["items"]:
+        for tag_name in rec["tag_names"]:
+            tag_id = tag_id_by_name.get(tag_name)
+            if tag_id is None:
+                continue
+            await session.execute(
+                insert(item_tags).values(item_id=rec["new_id"], tag_id=tag_id)
+            )
+    return item_id_by_src
+
+
+async def _insert_item_children(
+    session: AsyncSession,
+    plan: Plan,
+    item_id_by_src: dict[str, UUID],
+    cf_id_by_src: dict[int, int],
+) -> None:
+    records = plan.records
+    for rec in records["item_custom_values"]:
+        session.add(
+            ItemCustomValue(
+                item_id=item_id_by_src[rec["item_src"]],
+                custom_field_id=cf_id_by_src[rec["field_src"]],
+                value=rec["value"],
+            )
+        )
+    for rec in records["item_batches"]:
+        session.add(
+            ItemBatch(
+                item_id=item_id_by_src[rec["item_src"]],
+                quantity=rec["quantity"],
+                expiry_date=rec["expiry_date"],
+                received_at=rec["received_at"],
+                note=rec["note"],
+                is_depleted=rec["is_depleted"],
+                created_at=rec["created_at"],
+            )
+        )
+    for rec in records["loans"]:
+        borrower_user_id = rec["borrower_user_id"]
+        session.add(
+            ItemLoan(
+                item_id=item_id_by_src[rec["item_src"]],
+                borrower_user_id=UUID(borrower_user_id) if borrower_user_id else None,
+                borrower_label=rec["borrower_label"],
+                lent_at=rec["lent_at"],
+                expected_return=rec["expected_return"],
+                returned_at=rec["returned_at"],
+                notes=rec["notes"],
+            )
+        )
+    for rec in records["quantity_logs"]:
+        user_id = rec["user_id"]
+        session.add(
+            QuantityLog(
+                item_id=item_id_by_src[rec["item_src"]],
+                user_id=UUID(user_id) if user_id else None,
+                old_quantity=rec["old_quantity"],
+                new_quantity=rec["new_quantity"],
+                reason=rec["reason"],
+                created_at=rec["created_at"],
+            )
+        )
+    for rec in records["item_versions"]:
+        user_id = rec["user_id"]
+        session.add(
+            ItemVersion(
+                item_id=item_id_by_src[rec["item_src"]],
+                user_id=UUID(user_id) if user_id else None,
+                snapshot=rec["snapshot"],
+                created_at=rec["created_at"],
+            )
+        )
+    await session.flush()
+
+
+async def _insert_lists(session: AsyncSession, owner_id: UUID, plan: Plan) -> None:
+    for rec in plan.records["lists"]:
+        lst_row = UserList(
+            owner_id=owner_id,
+            kind=rec["kind"],
+            title=rec["title"],
+            description=rec["description"],
+            start_date=rec["start_date"],
+            end_date=rec["end_date"],
+            budget=rec["budget"],
+            created_at=rec["created_at"],
+            updated_at=rec["updated_at"],
+        )
+        session.add(lst_row)
+        await session.flush()
+        for entry in rec["entries"]:
+            session.add(
+                ListEntry(
+                    list_id=lst_row.id,
+                    position=entry["position"],
+                    name=entry["name"],
+                    quantity=entry["quantity"],
+                    note=entry["note"],
+                    price=entry["price"],
+                    link=entry["link"],
+                    is_done=entry["is_done"],
+                    created_at=entry["created_at"],
+                )
+            )
+    await session.flush()
+
+
+async def _insert_stocktakes(
+    session: AsyncSession, owner_id: UUID, plan: Plan, item_id_by_src: dict[str, UUID]
+) -> None:
+    for rec in plan.records["stocktakes"]:
+        st_row = Stocktake(
+            owner_id=owner_id,
+            name=rec["name"],
+            status=rec["status"],
+            started_at=rec["started_at"],
+            completed_at=rec["completed_at"],
+        )
+        session.add(st_row)
+        await session.flush()
+        for scan in rec["items"]:
+            session.add(
+                StocktakeItem(
+                    stocktake_id=st_row.id,
+                    item_id=item_id_by_src[scan["item_src"]],
+                    expected_quantity=scan["expected_quantity"],
+                    actual_quantity=scan["actual_quantity"],
+                    note=scan["note"],
+                    scanned_at=scan["scanned_at"],
+                )
+            )
+    await session.flush()
+
+
+async def _insert_webhooks(session: AsyncSession, owner_id: UUID, plan: Plan) -> None:
+    for rec in plan.records["webhooks"]:
+        session.add(
+            Webhook(
+                owner_id=owner_id,
+                name=rec["name"],
+                url=rec["url"],
+                secret=rec["secret"],
+                events=rec["events"],
+                is_active=False,
+            )
+        )
+    await session.flush()
+
+
+async def _insert_preferences(session: AsyncSession, owner_id: UUID, plan: Plan) -> None:
+    for rec in plan.records["notification_preferences"]:
+        session.add(
+            NotificationPreference(
+                user_id=owner_id,
+                type=rec["type"],
+                channel=rec["channel"],
+                enabled=rec["enabled"],
+            )
+        )
+    for rec in plan.records["groups_owned"]:
+        session.add(Group(owner_id=owner_id, name=rec["name"]))
+    if plan.records["preferences"]:
+        user = (await session.execute(select(User).where(User.id == owner_id))).scalar_one()
+        prefs = dict(user.preferences or {})
+        prefs["currency"] = plan.records["preferences"][0]["currency"]
+        user.preferences = prefs
+    await session.flush()
+
+
+async def apply_plan(session: AsyncSession, owner_id: UUID, plan: Plan) -> int:
+    """依 plan 寫入（單一交易）；回傳 replace 的實際刪除列數。
+
+    任何例外 → `rollback()` 後重新拋出（route 轉 500）；`backup.import` 稽核
+    於 commit 之後寫入（稽核服務自帶 commit）。
+    """
+    try:
+        if plan.mode == "replace":
+            plan.deleted_total = await wipe_owner_data(session, owner_id)
+        category_id_by_src = await _insert_hierarchy(
+            session, owner_id, plan.records["categories"], Category
+        )
+        location_id_by_src = await _insert_hierarchy(
+            session, owner_id, plan.records["locations"], Location
+        )
+        cf_id_by_src, tag_id_by_name, wh_id_by_name = await _insert_catalogs(
+            session, owner_id, plan
+        )
+        item_id_by_src = await _insert_items(
+            session,
+            owner_id,
+            plan,
+            category_id_by_src,
+            location_id_by_src,
+            wh_id_by_name,
+            tag_id_by_name,
+        )
+        await _insert_item_children(session, plan, item_id_by_src, cf_id_by_src)
+        await _insert_lists(session, owner_id, plan)
+        await _insert_stocktakes(session, owner_id, plan, item_id_by_src)
+        await _insert_webhooks(session, owner_id, plan)
+        await _insert_preferences(session, owner_id, plan)
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise
+    await audit_service.log(
+        session,
+        user_id=owner_id,
+        action="backup.import",
+        resource_type="backup",
+        resource_id=None,
+        meta={
+            "mode": plan.mode,
+            "format_version": plan.format_version,
+            "created": {key: plan.summaries[key].created for key in ENTITY_KEYS},
+            "deleted_total": plan.deleted_total,
+            "errors_total": len(plan.errors),
+        },
+    )
+    return plan.deleted_total

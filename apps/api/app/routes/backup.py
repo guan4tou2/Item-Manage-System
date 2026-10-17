@@ -60,4 +60,9 @@ async def import_data(
         raise HTTPException(status_code=400, detail=exc.detail) from exc
     if dry_run:
         return backup_import_service.to_result(plan, dry_run=True)
-    raise HTTPException(status_code=501, detail="非 dry-run 匯入尚未實作")
+    if mode == "replace" and plan.errors:
+        # replace 全有全無：任何列錯誤即中止（零寫入、deleted_total 歸零）
+        plan.deleted_total = 0
+        return backup_import_service.to_result(plan, dry_run=False)
+    await backup_import_service.apply_plan(session, user.id, plan)
+    return backup_import_service.to_result(plan, dry_run=False)

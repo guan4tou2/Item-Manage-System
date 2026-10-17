@@ -107,16 +107,16 @@
 - Test: `apps/api/tests/test_backup_import.py`（續寫）
 
 **TODO:**
-- [ ] RED：
+- [x] RED：
   - **round-trip 等價**：帳號 A 全量資料（分類樹／位置樹／標籤／倉庫／自訂欄位＋值／2 物品（barcode／cost／track_batches）／2 批次（1 耗盡）／借出（借用人 B）／2 調量歷程／1 版本／清單＋2 列／盤點／webhook／通知偏好／currency=USD）× export → 空帳號 C **replace 匯入** → 重匯出後 A/C 資料等價（ids／owner 正規化、逐實體業務欄位比對；currency 相同）；另 **create_only 匯入** 空帳號 → 除 `preferences.currency`（skipped＋warning）外等價
-  - **名稱匹配**：C 已有分類「食物」／標籤「x」／倉庫「家」→ create_only 匯入同名備份 → 不重複建立（`reused` 計數）且物品正確掛上既有列；**後綴**：同檔含兩個同 scope 同名分類（人工併檔）→ 第 2 個 `name (2)`＋`renamed=1`
-  - 引用不存在：item 的 `category_id` 指未知 → null＋warning；batch 指未知 item → 列錯誤（`skipped`）
-  - webhooks 匯入後 `is_active=false`（備份中為 true）；`groups_owned` 建立但 `members` 不還原（warning）；loan `borrower_user_id` 不存在 → null＋label 補值
-  - **partial**：1 列壞（items 空 name）＋其餘有效 → `status="partial"`、`errors_total=1`、有效列已匯入、`errors[0].name` 可讀
-  - **對帳**：備份內 `quantity != Σ 未耗盡批次` 的物品 → `reconciliation` 1 筆（dry-run 與實際匯入皆回）
-  - 稽核：非 dry-run 成功匯入後 `audit_logs` 有 `backup.import`（`resource_id=None`、meta 計數）；dry-run **不寫**稽核
-- [ ] GREEN：`apply_create_only(session, user_id, plan)`——依 plan 建立（先 taxonomy → items → 子表 → lists／stocktakes／webhooks／prefs）；`reused` 沿用既有列；`renamed` 後綴；`webhooks.is_active=False`；`notification_preferences` 既有 (type,channel) → `skipped`；currency → skipped＋warning；`await session.commit()`；完成後 `audit_service.log(...)`（T1.2 契約 12）
-- [ ] 交易邊界：service 內單一 `commit`；例外 → `rollback()` 後 raise
+  - [x] **名稱匹配**：C 已有分類「食物」／標籤「x」／倉庫「家」→ create_only 匯入同名備份 → 不重複建立（`reused` 計數）且物品正確掛上既有列；**後綴**：同檔含兩個同 scope 同名分類（人工併檔）→ 第 2 個 `name (2)`＋`renamed=1`
+  - [x] 引用不存在：item 的 `category_id` 指未知 → null＋warning；batch 指未知 item → 列錯誤（`skipped`）
+  - [x] webhooks 匯入後 `is_active=false`（備份中為 true）；`groups_owned` 建立但 `members` 不還原（warning）；loan `borrower_user_id` 不存在 → null＋label 補值
+  - [x] **partial**：1 列壞（items 空 name）＋其餘有效 → `status="partial"`、`errors_total=1`、有效列已匯入、`errors[0].name` 可讀
+  - [x] **對帳**：備份內 `quantity != Σ 未耗盡批次` 的物品 → `reconciliation` 1 筆（dry-run 與實際匯入皆回）
+  - [x] 稽核：非 dry-run 成功匯入後 `audit_logs` 有 `backup.import`（`resource_id=None`、meta 計數）；dry-run **不寫**稽核
+- [x] GREEN：`apply_create_only(session, user_id, plan)`——依 plan 建立（先 taxonomy → items → 子表 → lists／stocktakes／webhooks／prefs）；`reused` 沿用既有列；`renamed` 後綴；`webhooks.is_active=False`；`notification_preferences` 既有 (type,channel) → `skipped`；currency → skipped＋warning；`await session.commit()`；完成後 `audit_service.log(...)`（T1.2 契約 12）
+- [x] 交易邊界：service 內單一 `commit`；例外 → `rollback()` 後 raise
 
 **Commands:**
 - 同 T1.2
