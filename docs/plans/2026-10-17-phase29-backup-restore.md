@@ -174,9 +174,9 @@
 - Modify: `apps/web/components/settings/settings-nav.ts`、`apps/web/messages/zh-TW.json`、`apps/web/messages/en.json`
 
 **TODO:**
-- [ ] RED：nav 有 `backup`（`/settings/backup`，integrations 第 4 位）；面板渲染「匯出備份」卡；點「下載備份」→ `downloadBackup` 被呼叫（token 取自 `useAccessToken`）→ 成功 toast；失敗 → 錯誤 toast
-- [ ] GREEN：頁面 `SettingsPageShell`（`settings.index.pages.backup.title/description`）；面板匯出卡（說明＋按鈕＋loading「準備中…」）；i18n `settings.backup.export.*`／`settings.index.pages.backup.*` 逐鍵插入兩檔
-- [ ] 行動版：卡片堆疊、按鈕 ≥44px
+- [x] RED：nav 有 `backup`（`/settings/backup`，integrations 第 4 位）；面板渲染「匯出備份」卡；點「下載備份」→ `downloadBackup` 被呼叫（token 取自 `useAccessToken`）→ 成功 toast；失敗 → 錯誤 toast
+- [x] GREEN：頁面 `SettingsPageShell`（`settings.index.pages.backup.title/description`）；面板匯出卡（說明＋按鈕＋loading「準備中…」）；i18n `settings.backup.export.*`／`settings.index.pages.backup.*` 逐鍵插入兩檔
+- [x] 行動版：卡片堆疊、按鈕 ≥44px（`max-sm:min-h-11`）
 
 **Commands:**
 - `cd apps/web && pnpm test -- components/settings/backup-panel`

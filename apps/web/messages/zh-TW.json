@@ -745,6 +745,7 @@
       "loading": "載入設定中…",
       "pages": {
         "audit": { "description": "系統操作歷程", "title": "稽核記錄" },
+        "backup": { "description": "匯出與還原完整資料", "title": "備份" },
         "channels": { "description": "連結 Email、LINE、Telegram 與瀏覽器推播", "title": "通知管道" },
         "customization": { "description": "物品類型、自訂欄位與模板", "title": "自訂結構" },
         "data": { "description": "以 CSV 批次匯入與匯出物品", "title": "資料匯出入" },
@@ -1108,6 +1109,18 @@
         "failed": "失敗：",
         "errorRow": "第 {row} 列：{reason}",
         "moreErrors": "…還有 {count} 筆錯誤"
+      }
+    },
+    "backup": {
+      "export": {
+        "title": "匯出備份",
+        "description": "下載完整備份（JSON），包含物品、分類／位置／標籤／倉庫、自訂結構、清單、盤點、Webhook 與偏好設定；不含稽核記錄與 API 權杖。",
+        "download": "下載備份",
+        "preparing": "準備中…",
+        "toast": {
+          "done": "備份已開始下載",
+          "failed": "匯出失敗"
+        }
       }
     },
     "bootstrap": {

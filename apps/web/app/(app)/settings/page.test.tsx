@@ -78,6 +78,19 @@ describe("SettingsPage", () => {
     ).toHaveAttribute("href", "/settings/notifications")
   })
 
+  it("lists the backup page between tokens and data in the integrations group", () => {
+    renderPage()
+
+    const links = screen.getAllByRole("link")
+    const indexOf = (title: string) =>
+      links.findIndex((el) => el.textContent?.includes(title))
+    const backup = indexOf(t.index.pages.backup.title)
+    expect(backup).toBeGreaterThan(-1)
+    expect(indexOf(t.index.pages.tokens.title)).toBeLessThan(backup)
+    expect(backup).toBeLessThan(indexOf(t.index.pages.data.title))
+    expect(links[backup]).toHaveAttribute("href", "/settings/backup")
+  })
+
   it("hides the admin group and shows bootstrap guidance for non-admins", () => {
     renderPage()
 

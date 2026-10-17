@@ -36,6 +36,7 @@ export const SETTINGS_GROUPS: readonly SettingsGroupDef[] = [
     pages: [
       { id: "webhooks", href: "/settings/webhooks" as Route },
       { id: "tokens", href: "/settings/tokens" as Route },
+      { id: "backup", href: "/settings/backup" as Route },
       { id: "data", href: "/settings/data" as Route },
       { id: "customization", href: "/settings/customization" as Route },
       { id: "taxonomy", href: "/settings/taxonomy" as Route },

@@ -745,6 +745,7 @@
       "loading": "Loading settings…",
       "pages": {
         "audit": { "description": "Recorded system activity", "title": "Audit log" },
+        "backup": { "description": "Export and restore your data", "title": "Backup" },
         "channels": { "description": "Link Email, LINE, Telegram, and browser push", "title": "Notification channels" },
         "customization": { "description": "Item types, custom fields, and templates", "title": "Customization" },
         "data": { "description": "Bulk import and export items as CSV", "title": "Import / Export" },
@@ -1108,6 +1109,18 @@
         "failed": "Failed: ",
         "errorRow": "Row {row}: {reason}",
         "moreErrors": "…and {count} more errors"
+      }
+    },
+    "backup": {
+      "export": {
+        "title": "Export backup",
+        "description": "Download a complete backup (JSON) covering items, categories/locations/tags/warehouses, customization, lists, stocktakes, webhooks, and preferences. Audit logs and API tokens are never included.",
+        "download": "Download backup",
+        "preparing": "Preparing…",
+        "toast": {
+          "done": "Backup download started",
+          "failed": "Export failed"
+        }
       }
     },
     "bootstrap": {
