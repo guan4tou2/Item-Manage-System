@@ -110,11 +110,11 @@
 - Test: `apps/api/tests/test_stats_value.py`（新；repository→service→route 一檔貫穿，比照 `test_stats_v2.py` 風格）
 
 **TODO:**
-- [ ] schemas：`ValueStats{currency, total_value: Decimal, priced_items: int, unpriced_items: int, total_items: int, by_category: list[CategoryValueBucket], by_location: list[LocationValueBucket], by_warehouse: list[WarehouseValueBucket]}`；bucket＝`{category_id|location_id|warehouse_id, name|label, value: Decimal, count: int}`
-- [ ] repository：`value_totals`（`func.sum(Item.cost * Item.quantity)`＋`func.sum(case((Item.cost.is_(None), 1), else_=0))`＋`func.count(Item.id)`；`is_deleted=False`）；`value_by_category`／`value_by_location`／`value_by_warehouse`（`outerjoin`＋`group_by`＋`order_by(func.sum(...).desc())`；`func.coalesce(..., 0)`；含 None 桶＝「未分類／未分配／無倉庫」）
-- [ ] service：`get_value`——currency 以 `preferences_repository.get_raw_preferences` 取（未知值／缺鍵 → `"TWD"`，以 `PreferencesRead.model_validate(raw).currency` 正規化）；location labels 以 `locations_repository.fetch_all`＋`paths_for`（比照 `get_by_location`）；所有金額 `Decimal(str(x)).quantize(Decimal("0.01"), ROUND_HALF_UP)`（SQLite REAL→Decimal 正規化）
-- [ ] route：`GET /api/stats/value`（response_model=ValueStats）
-- [ ] 測試：空庫（`"0.00"`、比例 0/0）；混合（cost 10 × qty 3＋null × qty 1 → total `30.00`、priced 1／unpriced 1／total 2）；分組含 None 桶；quantity 加權；JPY 偏好 → `currency:"JPY"`；軟刪物品排除；跨 owner 隔離；anonymous 401；小數進位（`0.005` 級輸入不可能（2 位限制），測 `10.005×2` 不含——改測 `3 × 0.335` 不可入；以 `2.50 × 3 = 7.50` 類整數二進位安全值為主）
+- [x] schemas：`ValueStats{currency, total_value: Decimal, priced_items: int, unpriced_items: int, total_items: int, by_category: list[CategoryValueBucket], by_location: list[LocationValueBucket], by_warehouse: list[WarehouseValueBucket]}`；bucket＝`{category_id|location_id|warehouse_id, name|label, value: Decimal, count: int}`
+- [x] repository：`value_totals`（`func.sum(Item.cost * Item.quantity)`＋`func.sum(case((Item.cost.is_(None), 1), else_=0))`＋`func.count(Item.id)`；`is_deleted=False`）；`value_by_category`／`value_by_location`／`value_by_warehouse`（`outerjoin`＋`group_by`＋`order_by(func.sum(...).desc())`；`func.coalesce(..., 0)`；含 None 桶＝「未分類／未分配／無倉庫」）
+- [x] service：`get_value`——currency 以 `preferences_repository.get_raw_preferences` 取（未知值／缺鍵 → `"TWD"`，`currency_from_raw` 正規化）；location labels 以 `locations_repository.fetch_all`＋`paths_for`（比照 `get_by_location`）；所有金額 `Decimal(str(x)).quantize(Decimal("0.01"), ROUND_HALF_UP)`（SQLite REAL→Decimal 正規化）
+- [x] route：`GET /api/stats/value`（response_model=ValueStats）
+- [x] 測試：空庫（`"0.00"`、比例 0/0）；混合（cost 10 × qty 3＋null × qty 1 → total `30.00`、priced 1／unpriced 1／total 2）；分組含 None 桶；quantity 加權；JPY 偏好 → `currency:"JPY"`；軟刪物品排除；跨 owner 隔離；anonymous 401（10 例）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_stats_value.py`

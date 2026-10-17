@@ -477,3 +477,107 @@ async def expiry(
             for r in rows
         ],
     }
+
+
+# ---------- 庫存估值（Phase 27） -----------------------------------------
+
+def _value_expr():
+    """Σ(cost × quantity)；cost null 以 0 計。"""
+    return func.coalesce(func.sum(Item.cost * Item.quantity), 0)
+
+
+async def value_totals(session: AsyncSession, owner_id: UUID) -> dict:
+    stmt = (
+        select(
+            _value_expr().label("total_value"),
+            func.count(Item.id).label("total_items"),
+            func.coalesce(
+                func.sum(case((Item.cost.is_(None), 1), else_=0)), 0
+            ).label("unpriced_items"),
+        )
+        .select_from(Item)
+        .where(Item.owner_id == owner_id, Item.is_deleted.is_(False))
+    )
+    row = (await session.execute(stmt)).one()
+    total_items = int(row.total_items)
+    unpriced_items = int(row.unpriced_items)
+    return {
+        "total_value": row.total_value,
+        "total_items": total_items,
+        "unpriced_items": unpriced_items,
+        "priced_items": total_items - unpriced_items,
+    }
+
+
+async def value_by_category(session: AsyncSession, owner_id: UUID) -> list[dict]:
+    cat = aliased(Category)
+    stmt = (
+        select(
+            Item.category_id,
+            cat.name,
+            _value_expr().label("value"),
+            func.count(Item.id).label("count"),
+        )
+        .select_from(Item)
+        .outerjoin(cat, cat.id == Item.category_id)
+        .where(Item.owner_id == owner_id, Item.is_deleted.is_(False))
+        .group_by(Item.category_id, cat.name)
+        .order_by(_value_expr().desc())
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {
+            "category_id": r.category_id,
+            "name": r.name,
+            "value": r.value,
+            "count": int(r.count),
+        }
+        for r in rows
+    ]
+
+
+async def value_by_location(session: AsyncSession, owner_id: UUID) -> list[dict]:
+    """各位置節點的估值（label 由 service 以樹路徑組裝）。"""
+    stmt = (
+        select(
+            Item.location_id,
+            _value_expr().label("value"),
+            func.count(Item.id).label("count"),
+        )
+        .select_from(Item)
+        .where(Item.owner_id == owner_id, Item.is_deleted.is_(False))
+        .group_by(Item.location_id)
+        .order_by(_value_expr().desc())
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {"location_id": r.location_id, "value": r.value, "count": int(r.count)}
+        for r in rows
+    ]
+
+
+async def value_by_warehouse(session: AsyncSession, owner_id: UUID) -> list[dict]:
+    wh = aliased(Warehouse)
+    stmt = (
+        select(
+            Item.warehouse_id,
+            wh.name,
+            _value_expr().label("value"),
+            func.count(Item.id).label("count"),
+        )
+        .select_from(Item)
+        .outerjoin(wh, wh.id == Item.warehouse_id)
+        .where(Item.owner_id == owner_id, Item.is_deleted.is_(False))
+        .group_by(Item.warehouse_id, wh.name)
+        .order_by(_value_expr().desc())
+    )
+    rows = (await session.execute(stmt)).all()
+    return [
+        {
+            "warehouse_id": r.warehouse_id,
+            "name": r.name,
+            "value": r.value,
+            "count": int(r.count),
+        }
+        for r in rows
+    ]

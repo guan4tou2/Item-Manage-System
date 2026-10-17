@@ -17,6 +17,7 @@ from app.schemas.stats import (
     OverviewStats,
     TagBucket,
     TrendPoint,
+    ValueStats,
     WarehouseBucket,
 )
 from app.services import stats_service
@@ -30,6 +31,14 @@ async def overview(
     session: AsyncSession = Depends(get_db),
 ) -> OverviewStats:
     return await stats_service.get_overview(session, user.id)
+
+
+@router.get("/value", response_model=ValueStats)
+async def value(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> ValueStats:
+    return await stats_service.get_value(session, user.id)
 
 
 @router.get("/by-category", response_model=list[CategoryBucket])

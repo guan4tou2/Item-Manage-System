@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
+
+from app.schemas.preferences import Currency
 
 
 class OverviewStats(BaseModel):
@@ -87,3 +90,37 @@ class ActivityEntry(BaseModel):
     item_id: UUID | None = None
     item_name: str | None = None
     summary: str
+
+
+class CategoryValueBucket(BaseModel):
+    category_id: int | None
+    name: str | None
+    value: Decimal
+    count: int
+
+
+class LocationValueBucket(BaseModel):
+    location_id: int | None
+    label: str | None
+    value: Decimal
+    count: int
+
+
+class WarehouseValueBucket(BaseModel):
+    warehouse_id: int | None
+    name: str | None
+    value: Decimal
+    count: int
+
+
+class ValueStats(BaseModel):
+    """庫存估值（cost null 以 0 計；unpriced_items 另計）。"""
+
+    currency: Currency
+    total_value: Decimal
+    priced_items: int
+    unpriced_items: int
+    total_items: int
+    by_category: list[CategoryValueBucket]
+    by_location: list[LocationValueBucket]
+    by_warehouse: list[WarehouseValueBucket]
