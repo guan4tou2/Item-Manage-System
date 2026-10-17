@@ -32,6 +32,7 @@ import {
   updateWebhook,
   type ProcessRetriesResult,
   type WebhookDeliveryRead,
+  type WebhookDeliveryStatus,
   type WebhookEvent,
   type WebhookRead,
 } from '@/lib/api/webhooks'
@@ -41,6 +42,15 @@ import { cn } from '@/lib/utils'
 const DEFAULT_EVENTS: WebhookEvent[] = ['item.created', 'item.updated']
 
 const DELIVERY_PAGE_SIZE = 20
+
+type DeliveryFilter = 'all' | WebhookDeliveryStatus
+
+const DELIVERY_FILTERS: { value: DeliveryFilter; labelKey: string }[] = [
+  { value: 'all', labelKey: 'settings.webhooks.filter.all' },
+  { value: 'success', labelKey: 'settings.webhooks.filter.success' },
+  { value: 'failed', labelKey: 'settings.webhooks.filter.failed' },
+  { value: 'pending', labelKey: 'settings.webhooks.filter.pending' },
+]
 
 function isSuccess(status: number | null) {
   return status !== null && status >= 200 && status < 300
@@ -258,6 +268,7 @@ export function WebhookPanel() {
   const [secret, setSecret] = useState('')
   const [events, setEvents] = useState<WebhookEvent[]>(DEFAULT_EVENTS)
   const [processResult, setProcessResult] = useState<ProcessRetriesResult | null>(null)
+  const [deliveryFilter, setDeliveryFilter] = useState<DeliveryFilter>('all')
 
   const webhooksQuery = useQuery({
     queryKey: ['webhooks'],
@@ -278,12 +289,20 @@ export function WebhookPanel() {
     }
   }, [selectedId, webhooks])
 
+  useEffect(() => {
+    setDeliveryFilter('all')
+  }, [selectedId])
+
   const deliveriesQuery = useInfiniteQuery({
-    queryKey: ['webhooks', selectedId, 'deliveries'],
+    queryKey: ['webhooks', selectedId, 'deliveries', deliveryFilter],
     queryFn: ({ pageParam }) =>
       listWebhookDeliveries(
         selectedId!,
-        { limit: DELIVERY_PAGE_SIZE, offset: pageParam },
+        {
+          limit: DELIVERY_PAGE_SIZE,
+          offset: pageParam,
+          ...(deliveryFilter !== 'all' ? { status: deliveryFilter } : {}),
+        },
         token,
       ),
     initialPageParam: 0,
@@ -580,6 +599,24 @@ export function WebhookPanel() {
           ) : null}
         </div>
 
+        {selectedWebhook ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {DELIVERY_FILTERS.map(({ value, labelKey }) => (
+              <Button
+                key={value}
+                type="button"
+                size="sm"
+                variant={deliveryFilter === value ? 'default' : 'outline'}
+                className="min-h-11"
+                aria-pressed={deliveryFilter === value}
+                onClick={() => setDeliveryFilter(value)}
+              >
+                {t(labelKey)}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+
         <div className="mt-4 space-y-3">
           {!selectedWebhook ? (
             <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
@@ -606,12 +643,29 @@ export function WebhookPanel() {
               <Skeleton className="h-11 w-full" />
             </div>
           ) : deliveries.length === 0 ? (
-            <div className="rounded-md border border-dashed p-4">
-              <p className="font-medium">{t('settings.webhooks.noDeliveriesTitle')}</p>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {t('settings.webhooks.noDeliveriesBody')}
-              </p>
-            </div>
+            deliveryFilter !== 'all' ? (
+              <div className="rounded-md border border-dashed p-4">
+                <p className="font-medium">{t('settings.webhooks.filterEmptyTitle')}</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {t('settings.webhooks.filterEmptyBody')}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => setDeliveryFilter('all')}
+                >
+                  {t('settings.webhooks.clearFilter')}
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-md border border-dashed p-4">
+                <p className="font-medium">{t('settings.webhooks.noDeliveriesTitle')}</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  {t('settings.webhooks.noDeliveriesBody')}
+                </p>
+              </div>
+            )
           ) : (
             <>
               <div data-testid="deliveries-table" className="hidden md:block">
@@ -650,6 +704,19 @@ export function WebhookPanel() {
                   />
                 ))}
               </div>
+              {deliveriesQuery.hasNextPage ? (
+                <div className="mt-3 flex justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => deliveriesQuery.fetchNextPage()}
+                    disabled={deliveriesQuery.isFetchingNextPage}
+                  >
+                    {deliveriesQuery.isFetchingNextPage
+                      ? t('settings.webhooks.loadingMore')
+                      : t('settings.webhooks.loadMore')}
+                  </Button>
+                </div>
+              ) : null}
             </>
           )}
         </div>

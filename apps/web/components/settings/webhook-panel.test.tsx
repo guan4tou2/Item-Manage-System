@@ -149,6 +149,68 @@ describe('WebhookPanel', () => {
     expect(within(cards).getByText('Retry scheduled')).toBeInTheDocument()
   })
 
+  it('filters deliveries by status', async () => {
+    renderPanel()
+
+    await screen.findByTestId('deliveries-table')
+    fireEvent.click(screen.getByRole('button', { name: 'Failed' }))
+
+    await waitFor(() => {
+      expect(api.listWebhookDeliveries).toHaveBeenLastCalledWith(
+        'wh_1',
+        { limit: 20, offset: 0, status: 'failed' },
+        'jwt',
+      )
+    })
+  })
+
+  it('shows the filter empty state and clears the filter', async () => {
+    renderPanel()
+
+    await screen.findByTestId('deliveries-table')
+    vi.mocked(api.listWebhookDeliveries).mockResolvedValue([])
+    fireEvent.click(screen.getByRole('button', { name: 'Succeeded' }))
+
+    expect(await screen.findByText('No matching deliveries')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filter' }))
+
+    await waitFor(() => {
+      expect(api.listWebhookDeliveries).toHaveBeenLastCalledWith(
+        'wh_1',
+        { limit: 20, offset: 0 },
+        'jwt',
+      )
+    })
+    expect(await screen.findByText('No deliveries yet')).toBeInTheDocument()
+  })
+
+  it('loads the next page of deliveries on demand', async () => {
+    const firstPage = Array.from({ length: 20 }, (_, index) => ({
+      ...failedDelivery,
+      id: `del_${index}`,
+    }))
+    const secondPage = [{ ...failedDelivery, id: 'del_extra' }]
+    vi.mocked(api.listWebhookDeliveries)
+      .mockResolvedValueOnce(firstPage)
+      .mockResolvedValueOnce(secondPage)
+
+    renderPanel()
+
+    await screen.findByTestId('deliveries-table')
+    fireEvent.click(screen.getByRole('button', { name: 'Load more' }))
+
+    await waitFor(() => {
+      expect(api.listWebhookDeliveries).toHaveBeenLastCalledWith(
+        'wh_1',
+        { limit: 20, offset: 20 },
+        'jwt',
+      )
+    })
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Load more' })).not.toBeInTheDocument()
+    })
+  })
+
   it('expands the response excerpt on demand', async () => {
     renderPanel()
 
@@ -189,6 +251,54 @@ describe('WebhookPanel', () => {
       expect(screen.getByTestId('deliveries-table')).toBeInTheDocument()
     })
     expect(api.listWebhookDeliveries).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows delivery success rate and last success in the overview', async () => {
+    vi.mocked(api.getWebhookDeliveryStats).mockResolvedValue({
+      total: 2,
+      succeeded: 1,
+      failed: 1,
+      pending: 0,
+      last_success_at: '2026-06-19T03:09:00Z',
+    })
+
+    renderPanel()
+
+    const stats = await screen.findByTestId('deliveries-stats')
+    expect(stats).toHaveTextContent('Success rate 50% (1 of 2)')
+    expect(stats).toHaveTextContent('Last success:')
+  })
+
+  it('hides the overview when there are no deliveries', async () => {
+    renderPanel()
+
+    await screen.findByTestId('deliveries-table')
+    expect(screen.queryByTestId('deliveries-stats')).not.toBeInTheDocument()
+  })
+
+  it('keeps delivery history when the overview fails to load', async () => {
+    vi.mocked(api.getWebhookDeliveryStats).mockRejectedValue(new Error('boom'))
+
+    renderPanel()
+
+    expect(await screen.findByTestId('deliveries-table')).toBeInTheDocument()
+    expect(screen.queryByTestId('deliveries-stats')).not.toBeInTheDocument()
+  })
+
+  it('shows an error with retry when the webhook list fails', async () => {
+    vi.mocked(api.listWebhooks).mockRejectedValue(new Error('boom'))
+
+    renderPanel()
+
+    expect(await screen.findByText('Could not load webhooks.')).toBeInTheDocument()
+
+    vi.mocked(api.listWebhooks).mockResolvedValue([webhook])
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    await waitFor(() => {
+      expect(api.listWebhooks).toHaveBeenCalledTimes(2)
+    })
+    expect(await screen.findByText('Inventory sync')).toBeInTheDocument()
   })
 
   it('processes due retries and reports aggregate results', async () => {
