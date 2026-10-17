@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal, Optional
 from uuid import UUID
 
@@ -11,6 +12,8 @@ from app.schemas.location import LocationRead
 from app.schemas.tag import TagRead
 
 
+COST_FIELD = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+
 class ItemCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None
@@ -20,6 +23,7 @@ class ItemCreate(BaseModel):
     warehouse_id: Optional[int] = None
     quantity: int = Field(default=1, ge=0)
     min_quantity: Optional[int] = Field(default=None, ge=0)
+    cost: Optional[Decimal] = COST_FIELD
     notes: Optional[str] = None
     image_id: Optional[UUID] = None
     tag_names: list[str] = Field(default_factory=list)
@@ -34,6 +38,7 @@ class ItemUpdate(BaseModel):
     warehouse_id: Optional[int] = None
     quantity: Optional[int] = Field(default=None, ge=0)
     min_quantity: Optional[int] = Field(default=None, ge=0)
+    cost: Optional[Decimal] = COST_FIELD
     notes: Optional[str] = None
     image_id: Optional[UUID] = None
     tag_names: Optional[list[str]] = None
@@ -75,6 +80,7 @@ class ItemRead(BaseModel):
     barcode: Optional[str] = None
     quantity: int
     min_quantity: Optional[int]
+    cost: Optional[Decimal] = None
     track_batches: bool = False
     soonest_expiry: Optional[date] = None
     notes: Optional[str]

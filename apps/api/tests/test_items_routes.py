@@ -328,3 +328,54 @@ class TestItemBulkDelete:
         assert resp.status_code == 404
         still_there = await client.get(f"/api/items/{own['id']}", headers=auth_headers)
         assert still_there.status_code == 200
+
+
+class TestItemCost:
+    async def test_create_with_cost_returns_decimal_string(self, client, auth_headers):
+        resp = await client.post(
+            "/api/items", headers=auth_headers, json={"name": "x", "cost": "12.30"}
+        )
+        assert resp.status_code == 201
+        assert resp.json()["cost"] == "12.30"
+
+    async def test_create_default_cost_null(self, client, auth_headers):
+        resp = await client.post("/api/items", headers=auth_headers, json={"name": "x"})
+        assert resp.status_code == 201
+        assert resp.json()["cost"] is None
+
+    async def test_create_negative_cost_422(self, client, auth_headers):
+        resp = await client.post(
+            "/api/items", headers=auth_headers, json={"name": "x", "cost": "-1"}
+        )
+        assert resp.status_code == 422
+
+    async def test_create_three_decimals_422(self, client, auth_headers):
+        resp = await client.post(
+            "/api/items", headers=auth_headers, json={"name": "x", "cost": "1.234"}
+        )
+        assert resp.status_code == 422
+
+    async def test_patch_cost_and_clear(self, client, auth_headers):
+        created = (await client.post(
+            "/api/items", headers=auth_headers, json={"name": "x"}
+        )).json()
+        patched = await client.patch(
+            f"/api/items/{created['id']}", headers=auth_headers, json={"cost": "99.50"}
+        )
+        assert patched.status_code == 200
+        assert patched.json()["cost"] == "99.50"
+
+        cleared = await client.patch(
+            f"/api/items/{created['id']}", headers=auth_headers, json={"cost": None}
+        )
+        assert cleared.status_code == 200
+        assert cleared.json()["cost"] is None
+
+    async def test_patch_without_cost_keeps_value(self, client, auth_headers):
+        created = (await client.post(
+            "/api/items", headers=auth_headers, json={"name": "x", "cost": "5.00"}
+        )).json()
+        patched = await client.patch(
+            f"/api/items/{created['id']}", headers=auth_headers, json={"name": "y"}
+        )
+        assert patched.json()["cost"] == "5.00"

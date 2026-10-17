@@ -79,10 +79,10 @@
 - Test: `apps/api/tests/test_items_service.py`、`apps/api/tests/test_items_routes.py`、`apps/api/tests/test_item_history.py`
 
 **TODO:**
-- [ ] `ItemCreate.cost: Optional[Decimal] = Field(default=None, ge=0, max_digits=12, decimal_places=2)`；`ItemUpdate.cost` 同（顯式 `null`＝清空，`model_dump(exclude_unset=True)` 已保留）；`ItemRead.cost: Optional[Decimal]`
-- [ ] `create_item`：`cost=body.cost`；`update_item`：隨 `fields` 迴圈 `setattr`（無需特例）；`_to_read`：`"cost": item.cost`
-- [ ] `pre_snapshot` 加 `"cost": str(item.cost) if item.cost is not None else None`（`ItemVersion.snapshot` 為 JSON——Decimal 不可直入）
-- [ ] 測試：create `"12.30"` → response JSON 字串 `"12.30"`；未帶／null → `null`；`-1` → 422；`"1.234"` → 422；11 位整數 → 422（max_digits 12 含 2 位小數＝整數上限 10 位）；update 設值；update `cost: null` 清空；PATCH 未帶 cost → 不變更；snapshot 含 cost 字串；`extra="forbid"` 不受影響（回歸）
+- [x] `ItemCreate.cost: Optional[Decimal] = Field(default=None, ge=0, max_digits=12, decimal_places=2)`；`ItemUpdate.cost` 同（顯式 `null`＝清空，`model_dump(exclude_unset=True)` 已保留）；`ItemRead.cost: Optional[Decimal]`
+- [x] `create_item`：`cost=body.cost`；`update_item`：隨 `fields` 迴圈 `setattr`（無需特例）；`_to_read`：`"cost": item.cost`
+- [x] `pre_snapshot` 加 `"cost": str(item.cost) if item.cost is not None else None`（`ItemVersion.snapshot` 為 JSON——Decimal 不可直入）
+- [x] 測試：create `"12.30"` → response JSON 字串 `"12.30"`；未帶／null → `null`；`-1` → 422；`"1.234"` → 422；11 位整數 → 422（max_digits 12 含 2 位小數＝整數上限 10 位）；update 設值；update `cost: null` 清空；PATCH 未帶 cost → 不變更；snapshot 含 cost 字串；`extra="forbid"` 不受影響（回歸）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_items_service.py tests/test_items_routes.py tests/test_item_history.py`

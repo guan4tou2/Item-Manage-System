@@ -1,5 +1,9 @@
+import json
+from decimal import Decimal
+
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.models import Tag, User
@@ -189,3 +193,70 @@ async def test_bulk_delete_cross_owner_fails_before_mutating(db_session, two_use
     assert e.value.status_code == 404
     still_there = await items_service.get_item(db_session, owner.id, owned.id)
     assert still_there.id == owned.id
+
+
+# ---------- cost（Phase 27） ----------
+
+
+async def test_create_item_with_cost_stores_decimal(db_session, two_users):
+    u = two_users[0]
+    result = await items_service.create_item(
+        db_session, u.id, ItemCreate(name="咖啡豆", cost=Decimal("12.30"))
+    )
+    assert result.cost == Decimal("12.30")
+
+
+async def test_create_item_cost_serializes_as_json_string(db_session, two_users):
+    u = two_users[0]
+    result = await items_service.create_item(
+        db_session, u.id, ItemCreate(name="咖啡豆", cost=Decimal("12.30"))
+    )
+    assert json.loads(result.model_dump_json())["cost"] == "12.30"
+
+
+async def test_create_item_cost_defaults_none(db_session, two_users):
+    u = two_users[0]
+    result = await items_service.create_item(db_session, u.id, ItemCreate(name="濾紙"))
+    assert result.cost is None
+
+
+def test_item_create_negative_cost_raises_validation():
+    with pytest.raises(ValidationError):
+        ItemCreate(name="x", cost=Decimal("-0.01"))
+
+
+def test_item_create_three_decimals_raises_validation():
+    with pytest.raises(ValidationError):
+        ItemCreate(name="x", cost=Decimal("1.234"))
+
+
+def test_item_create_eleven_digit_cost_raises_validation():
+    with pytest.raises(ValidationError):
+        ItemCreate(name="x", cost=Decimal("12345678901"))
+
+
+async def test_update_item_cost_set_and_clear(db_session, two_users):
+    u = two_users[0]
+    created = await items_service.create_item(
+        db_session, u.id, ItemCreate(name="x", cost=Decimal("5.00"))
+    )
+    updated = await items_service.update_item(
+        db_session, u.id, created.id, ItemUpdate(cost=Decimal("9.99"))
+    )
+    assert updated.cost == Decimal("9.99")
+
+    cleared = await items_service.update_item(
+        db_session, u.id, created.id, ItemUpdate(cost=None)
+    )
+    assert cleared.cost is None
+
+
+async def test_update_item_without_cost_keeps_value(db_session, two_users):
+    u = two_users[0]
+    created = await items_service.create_item(
+        db_session, u.id, ItemCreate(name="x", cost=Decimal("5.00"))
+    )
+    updated = await items_service.update_item(
+        db_session, u.id, created.id, ItemUpdate(name="renamed")
+    )
+    assert updated.cost == Decimal("5.00")

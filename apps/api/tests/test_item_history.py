@@ -31,3 +31,12 @@ async def test_no_log_when_quantity_unchanged(client, auth):
     await client.patch(f"/api/items/{item['id']}", headers=auth, json={"name": "rename"})
     logs = (await client.get(f"/api/items/{item['id']}/quantity-logs", headers=auth)).json()
     assert len(logs) == 0
+
+
+async def test_version_snapshot_includes_cost(client, auth):
+    item = (await client.post(
+        "/api/items", headers=auth, json={"name": "x", "cost": "12.30"}
+    )).json()
+    await client.patch(f"/api/items/{item['id']}", headers=auth, json={"name": "after"})
+    versions = (await client.get(f"/api/items/{item['id']}/versions", headers=auth)).json()
+    assert versions[0]["snapshot"]["cost"] == "12.30"
