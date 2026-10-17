@@ -36,6 +36,8 @@ export function useUpdatePreferences() {
     },
     onSuccess: (data) => {
       qc.setQueryData(KEY, data)
+      // 幣別影響 stats value 的顯示（currency），更新後重抓
+      qc.invalidateQueries({ queryKey: ["stats"] })
     },
   })
 }

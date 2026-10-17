@@ -187,9 +187,9 @@
 - Test: `apps/web/components/settings/preferences-form.test.tsx`
 
 **TODO:**
-- [ ] 幣別 `Select`（label `settings.preferences.currency`；選項 `currency.TWD`…；值＝API `currency`；變更→`mutateAsync({currency})`＋既有 toast）；下方 muted 即時預覽 `formatCurrency(1200, currency, locale)`（`useLocale()`）
-- [ ] `useUpdatePreferences.onSuccess`：保留 `setQueryData`，追加 `qc.invalidateQueries({ queryKey: ["stats"] })`
-- [ ] 測試：渲染目前值（預設 TWD）；變更 → mutation body 帶 `currency`；預覽隨值更新；偏好 shape 回歸（theme／language 不動）；invalidate stats 呼叫
+- [x] 幣別 `Select`（label `settings.preferences.currency`；選項 `currency.TWD`…；值＝API `currency`；變更→`mutateAsync({currency})`＋既有 toast）；下方 muted 即時預覽 `formatCurrency(1200, currency, locale)`（`useLocale()`；`data-testid="currency-preview"`）＋`currencyHint`
+- [x] `useUpdatePreferences.onSuccess`：保留 `setQueryData`，追加 `qc.invalidateQueries({ queryKey: ["stats"] })`
+- [x] 測試：渲染目前值（預設 TWD）；變更 → mutation body 帶 `currency`；預覽 `NT$1,200`；hook 測試（invalidate stats＋cache 更新）；settings 全套回歸（13 檔／49 例）
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/settings`

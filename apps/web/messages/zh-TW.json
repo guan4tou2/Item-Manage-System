@@ -288,6 +288,14 @@
     "light": "淺色",
     "dark": "深色"
   },
+  "currency": {
+    "TWD": "新台幣（TWD）",
+    "USD": "美元（USD）",
+    "EUR": "歐元（EUR）",
+    "JPY": "日圓（JPY）",
+    "CNY": "人民幣（CNY）",
+    "HKD": "港幣（HKD）"
+  },
   "locale": {
     "zh-TW": "繁體中文",
     "en": "English"
@@ -819,6 +827,8 @@
     "preferences": {
       "theme": "主題",
       "language": "語言",
+      "currency": "幣別",
+      "currencyHint": "成本與庫存估值顯示的幣別，不做匯率換算",
       "saved": "偏好已儲存"
     },
     "admin": {

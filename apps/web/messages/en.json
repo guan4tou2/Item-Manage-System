@@ -288,6 +288,14 @@
     "light": "Light",
     "dark": "Dark"
   },
+  "currency": {
+    "TWD": "New Taiwan Dollar (TWD)",
+    "USD": "US Dollar (USD)",
+    "EUR": "Euro (EUR)",
+    "JPY": "Japanese Yen (JPY)",
+    "CNY": "Chinese Yuan (CNY)",
+    "HKD": "Hong Kong Dollar (HKD)"
+  },
   "locale": {
     "zh-TW": "繁體中文",
     "en": "English"
@@ -819,6 +827,8 @@
     "preferences": {
       "theme": "Theme",
       "language": "Language",
+      "currency": "Currency",
+      "currencyHint": "Currency used for item costs and inventory value; no FX conversion",
       "saved": "Preferences saved"
     },
     "admin": {
