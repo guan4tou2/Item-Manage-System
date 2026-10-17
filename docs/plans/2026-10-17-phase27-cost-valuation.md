@@ -154,8 +154,8 @@
 - Regenerate: `packages/api-types/openapi.json`、`packages/api-types/src/*`
 
 **TODO:**
-- [ ] `cd apps/api && uv run python scripts/export_openapi.py > ../../packages/api-types/openapi.json`（檔案路徑以 Phase 26 實測為準）＋ `pnpm --filter @ims/api-types gen:types`
-- [ ] diff 確認：`ItemRead.cost: string | null`、`ItemCreate/ItemUpdate.cost?: string | null`、`PreferencesRead.currency`／`PreferencesUpdate.currency`、`ValueStats`／三個 Bucket
+- [x] `cd apps/api && uv run python scripts/export_openapi.py > ../../packages/api-types/openapi.json`＋ `pnpm --filter @ims/api-types gen:types`
+- [x] diff 確認：`ItemRead.cost: string | null`（請求端 `number | string | null`）、`PreferencesRead.currency`／`PreferencesUpdate.currency`、`ValueStats`／三個 Bucket
 - 註：Web 需要 cost 型別（T2.3）；若 Phase 1 未完成的 Task 阻塞 Web，可提前重生成（以最終一次零 diff 為準）
 
 **Commands:**

@@ -652,6 +652,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/stats/value": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Value */
+        get: operations["value_api_stats_value_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/stats/by-category": {
         parameters: {
             query?: never;
@@ -2308,6 +2325,17 @@ export interface components {
             /** Parent Id */
             parent_id?: number | null;
         };
+        /** CategoryValueBucket */
+        CategoryValueBucket: {
+            /** Category Id */
+            category_id: number | null;
+            /** Name */
+            name: string | null;
+            /** Value */
+            value: string;
+            /** Count */
+            count: number;
+        };
         /** ChannelStatus */
         ChannelStatus: {
             /** Email Configured */
@@ -2560,6 +2588,8 @@ export interface components {
             quantity: number;
             /** Min Quantity */
             min_quantity?: number | null;
+            /** Cost */
+            cost?: number | string | null;
             /** Notes */
             notes?: string | null;
             /** Image Id */
@@ -2625,6 +2655,8 @@ export interface components {
             quantity: number;
             /** Min Quantity */
             min_quantity: number | null;
+            /** Cost */
+            cost?: string | null;
             /**
              * Track Batches
              * @default false
@@ -2729,6 +2761,8 @@ export interface components {
             quantity?: number | null;
             /** Min Quantity */
             min_quantity?: number | null;
+            /** Cost */
+            cost?: number | string | null;
             /** Notes */
             notes?: string | null;
             /** Image Id */
@@ -3172,6 +3206,17 @@ export interface components {
             /** Floor Plan Image Id */
             floor_plan_image_id?: string | null;
         };
+        /** LocationValueBucket */
+        LocationValueBucket: {
+            /** Location Id */
+            location_id: number | null;
+            /** Label */
+            label: string | null;
+            /** Value */
+            value: string;
+            /** Count */
+            count: number;
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Username */
@@ -3328,6 +3373,12 @@ export interface components {
              * @enum {string}
              */
             language: "zh-TW" | "en";
+            /**
+             * Currency
+             * @default TWD
+             * @enum {string}
+             */
+            currency: "TWD" | "USD" | "EUR" | "JPY" | "CNY" | "HKD";
         } & {
             [key: string]: unknown;
         };
@@ -3337,6 +3388,8 @@ export interface components {
             theme?: ("system" | "light" | "dark") | null;
             /** Language */
             language?: ("zh-TW" | "en") | null;
+            /** Currency */
+            currency?: ("TWD" | "USD" | "EUR" | "JPY" | "CNY" | "HKD") | null;
         } & {
             [key: string]: unknown;
         };
@@ -3674,6 +3727,31 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /**
+         * ValueStats
+         * @description 庫存估值（cost null 以 0 計；unpriced_items 另計）。
+         */
+        ValueStats: {
+            /**
+             * Currency
+             * @enum {string}
+             */
+            currency: "TWD" | "USD" | "EUR" | "JPY" | "CNY" | "HKD";
+            /** Total Value */
+            total_value: string;
+            /** Priced Items */
+            priced_items: number;
+            /** Unpriced Items */
+            unpriced_items: number;
+            /** Total Items */
+            total_items: number;
+            /** By Category */
+            by_category: components["schemas"]["CategoryValueBucket"][];
+            /** By Location */
+            by_location: components["schemas"]["LocationValueBucket"][];
+            /** By Warehouse */
+            by_warehouse: components["schemas"]["WarehouseValueBucket"][];
+        };
         /** VapidPublicKey */
         VapidPublicKey: {
             /** Public Key */
@@ -3720,6 +3798,17 @@ export interface components {
             name?: string | null;
             /** Description */
             description?: string | null;
+        };
+        /** WarehouseValueBucket */
+        WarehouseValueBucket: {
+            /** Warehouse Id */
+            warehouse_id: number | null;
+            /** Name */
+            name: string | null;
+            /** Value */
+            value: string;
+            /** Count */
+            count: number;
         };
         /** WebPushSubscriptionCreate */
         WebPushSubscriptionCreate: {
@@ -5290,6 +5379,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OverviewStats"];
+                };
+            };
+        };
+    };
+    value_api_stats_value_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValueStats"];
                 };
             };
         };

@@ -2309,6 +2309,32 @@
         ]
       }
     },
+    "/api/stats/value": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "summary": "Value",
+        "operationId": "value_api_stats_value_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValueStats"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/stats/by-category": {
       "get": {
         "tags": [
@@ -7869,6 +7895,48 @@
         "type": "object",
         "title": "CategoryUpdate"
       },
+      "CategoryValueBucket": {
+        "properties": {
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category_id",
+          "name",
+          "value",
+          "count"
+        ],
+        "title": "CategoryValueBucket"
+      },
       "ChannelStatus": {
         "properties": {
           "email_configured": {
@@ -8481,6 +8549,21 @@
             ],
             "title": "Min Quantity"
           },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
+          },
           "notes": {
             "anyOf": [
               {
@@ -8682,6 +8765,17 @@
               }
             ],
             "title": "Min Quantity"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
           },
           "track_batches": {
             "type": "boolean",
@@ -9032,6 +9126,21 @@
               }
             ],
             "title": "Min Quantity"
+          },
+          "cost": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost"
           },
           "notes": {
             "anyOf": [
@@ -10482,6 +10591,48 @@
         "type": "object",
         "title": "LocationUpdate"
       },
+      "LocationValueBucket": {
+        "properties": {
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_id",
+          "label",
+          "value",
+          "count"
+        ],
+        "title": "LocationValueBucket"
+      },
       "LoginRequest": {
         "properties": {
           "username": {
@@ -10841,6 +10992,19 @@
             ],
             "title": "Language",
             "default": "zh-TW"
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "TWD",
+              "USD",
+              "EUR",
+              "JPY",
+              "CNY",
+              "HKD"
+            ],
+            "title": "Currency",
+            "default": "TWD"
           }
         },
         "additionalProperties": true,
@@ -10879,6 +11043,25 @@
               }
             ],
             "title": "Language"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "TWD",
+                  "USD",
+                  "EUR",
+                  "JPY",
+                  "CNY",
+                  "HKD"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
           }
         },
         "additionalProperties": true,
@@ -11666,6 +11849,72 @@
         ],
         "title": "ValidationError"
       },
+      "ValueStats": {
+        "properties": {
+          "currency": {
+            "type": "string",
+            "enum": [
+              "TWD",
+              "USD",
+              "EUR",
+              "JPY",
+              "CNY",
+              "HKD"
+            ],
+            "title": "Currency"
+          },
+          "total_value": {
+            "type": "string",
+            "title": "Total Value"
+          },
+          "priced_items": {
+            "type": "integer",
+            "title": "Priced Items"
+          },
+          "unpriced_items": {
+            "type": "integer",
+            "title": "Unpriced Items"
+          },
+          "total_items": {
+            "type": "integer",
+            "title": "Total Items"
+          },
+          "by_category": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryValueBucket"
+            },
+            "type": "array",
+            "title": "By Category"
+          },
+          "by_location": {
+            "items": {
+              "$ref": "#/components/schemas/LocationValueBucket"
+            },
+            "type": "array",
+            "title": "By Location"
+          },
+          "by_warehouse": {
+            "items": {
+              "$ref": "#/components/schemas/WarehouseValueBucket"
+            },
+            "type": "array",
+            "title": "By Warehouse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "currency",
+          "total_value",
+          "priced_items",
+          "unpriced_items",
+          "total_items",
+          "by_category",
+          "by_location",
+          "by_warehouse"
+        ],
+        "title": "ValueStats",
+        "description": "庫存估值（cost null 以 0 計；unpriced_items 另計）。"
+      },
       "VapidPublicKey": {
         "properties": {
           "public_key": {
@@ -11813,6 +12062,48 @@
         "additionalProperties": false,
         "type": "object",
         "title": "WarehouseUpdate"
+      },
+      "WarehouseValueBucket": {
+        "properties": {
+          "warehouse_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warehouse Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "warehouse_id",
+          "name",
+          "value",
+          "count"
+        ],
+        "title": "WarehouseValueBucket"
       },
       "WebPushSubscriptionCreate": {
         "properties": {
