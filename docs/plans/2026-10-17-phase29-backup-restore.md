@@ -223,10 +223,10 @@
 - Create: `apps/web/tests/backup.spec.ts`
 
 **TODO:**
-- [ ] ① 桌面 round-trip：register A → API 建分類／標籤／2 物品（1 含 cost／barcode）→ `request.get("/api/backup/export")` 取 JSON（登入 token）→ `/settings/backup`：按「下載備份」→ `page.waitForEvent("download")` 檔名 `ims-backup-*.json`；register B → login → 上傳該 JSON → 摘要「現有 0 → 匯入後 2」「建立 2」→「確認匯入」→ 綠報告 → `/items` 見 2 件（含標籤）
-- [ ] ② replace：帳號 C 建 1 物品 → 上傳 A 備份 → 選「取代」→ 摘要顯示「將刪除」>0 → 確認字串輸入 `WRONG` → 按鈕 disabled；改 `REPLACE` → 匯入 → `/items` 僅 A 的 2 件（C 原 1 件消失）
-- [ ] ③ 錯誤態：上傳 `{ invalid json`（`setInputFiles` buffer）→ inline「這不是有效的 JSON 檔」（或 API detail）；空物件 `{}` → `format_version` 錯誤訊息
-- [ ] 全套 e2e 回歸（61＋；`--workers=2`）
+- [x] ① 桌面 round-trip：register A → API 建分類／標籤／2 物品（1 含 cost／barcode）→ `request.get("/api/backup/export")` 取 JSON（登入 token）→ `/settings/backup`：按「下載備份」→ `page.waitForEvent("download")` 檔名 `ims-backup-*.json`；register B → login → 上傳該 JSON → 摘要「現有 0 → 匯入後 2」「建立 2」→「確認匯入」→ 綠報告 → `/items` 見 2 件（含標籤）
+- [x] ② replace：帳號 C 建 1 物品 → 上傳 A 備份 → 選「取代」→ 摘要顯示「將刪除」>0 → 確認字串輸入 `WRONG` → 按鈕 disabled；改 `REPLACE` → 匯入 → `/items` 僅 A 的 2 件（C 原 1 件消失）
+- [x] ③ 錯誤態：上傳 `{ invalid json`（`setInputFiles` buffer）→ inline「這不是有效的 JSON 檔」（或 API detail）；空物件 `{}` → `format_version` 錯誤訊息
+- [x] 全套 e2e 回歸（62 passed；`--workers=2`）
 
 **Commands:**
 - `ENABLE_DEV_ROUTES=1 docker compose up -d --build api web && docker compose up -d nginx && cd apps/web && pnpm exec playwright test --workers=2`
