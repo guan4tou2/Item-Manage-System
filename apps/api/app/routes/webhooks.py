@@ -1,4 +1,5 @@
 from __future__ import annotations
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Response, status
@@ -11,6 +12,7 @@ from app.schemas.webhook import (
     ProcessRetriesResult,
     WebhookCreate,
     WebhookDeliveryRead,
+    WebhookDeliveryStats,
     WebhookRead,
     WebhookUpdate,
 )
@@ -60,11 +62,34 @@ async def delete_webhook(
 async def list_deliveries(
     webhook_id: UUID,
     limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    status_filter: Literal["success", "failed", "pending"] | None = Query(
+        default=None, alias="status"
+    ),
+    event: str | None = Query(default=None, max_length=60),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ):
-    rows = await svc.list_deliveries(session, user.id, webhook_id, limit)
+    rows = await svc.list_deliveries(
+        session,
+        user.id,
+        webhook_id,
+        limit=limit,
+        offset=offset,
+        status=status_filter,
+        event=event,
+    )
     return [WebhookDeliveryRead.model_validate(r) for r in rows]
+
+
+@router.get("/{webhook_id}/deliveries/stats", response_model=WebhookDeliveryStats)
+async def delivery_stats(
+    webhook_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    result = await svc.delivery_stats(session, user.id, webhook_id)
+    return WebhookDeliveryStats(**result)
 
 
 @router.post(

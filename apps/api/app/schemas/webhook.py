@@ -50,6 +50,14 @@ class WebhookDeliveryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class WebhookDeliveryStats(BaseModel):
+    total: int
+    succeeded: int
+    failed: int
+    pending: int
+    last_success_at: Optional[datetime] = None
+
+
 class ProcessRetriesResult(BaseModel):
     processed: int  # deliveries we tried to re-send in this call
     succeeded: int  # of those, how many got a 2xx response

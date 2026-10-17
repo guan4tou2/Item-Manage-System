@@ -10,7 +10,7 @@ from uuid import UUID
 import httpx
 from fastapi import HTTPException
 from sqlalchemy import delete as sa_delete
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import _utcnow
@@ -99,16 +99,89 @@ async def delete_webhook(
 
 
 async def list_deliveries(
-    session: AsyncSession, owner_id: UUID, webhook_id: UUID, limit: int = 50
+    session: AsyncSession,
+    owner_id: UUID,
+    webhook_id: UUID,
+    *,
+    limit: int = 50,
+    offset: int = 0,
+    status: str | None = None,
+    event: str | None = None,
 ) -> list[WebhookDelivery]:
+    """Delivery attempt rows, newest first.
+
+    `status` filter semantics: "success" = 2xx; "failed" = anything that is
+    not a 2xx (network failures have status_code NULL); "pending" = a retry
+    is still scheduled (next_retry_at set) — a subset of "failed".
+    """
     await _ensure_owned(session, owner_id, webhook_id)
+    stmt = select(WebhookDelivery).where(WebhookDelivery.webhook_id == webhook_id)
+    if status == "success":
+        stmt = stmt.where(WebhookDelivery.status_code.between(200, 299))
+    elif status == "failed":
+        stmt = stmt.where(
+            or_(
+                WebhookDelivery.status_code.is_(None),
+                WebhookDelivery.status_code < 200,
+                WebhookDelivery.status_code > 299,
+            )
+        )
+    elif status == "pending":
+        stmt = stmt.where(WebhookDelivery.next_retry_at.is_not(None))
+    if event is not None:
+        stmt = stmt.where(WebhookDelivery.event == event)
     stmt = (
-        select(WebhookDelivery)
-        .where(WebhookDelivery.webhook_id == webhook_id)
-        .order_by(WebhookDelivery.created_at.desc())
-        .limit(limit)
+        stmt.order_by(WebhookDelivery.created_at.desc()).offset(offset).limit(limit)
     )
     return list((await session.execute(stmt)).scalars().all())
+
+
+def _not_success_condition():
+    return or_(
+        WebhookDelivery.status_code.is_(None),
+        WebhookDelivery.status_code < 200,
+        WebhookDelivery.status_code > 299,
+    )
+
+
+async def delivery_stats(
+    session: AsyncSession, owner_id: UUID, webhook_id: UUID
+) -> dict[str, Any]:
+    """Aggregate attempt rows for one webhook: totals plus the most recent
+    success time. Counts are over every attempt row (a manual or automatic
+    retry adds a new row), independent of any list filter."""
+
+    def _count(*conditions):
+        return select(func.count()).select_from(WebhookDelivery).where(
+            WebhookDelivery.webhook_id == webhook_id, *conditions
+        )
+
+    await _ensure_owned(session, owner_id, webhook_id)
+    total = (await session.execute(_count())).scalar_one()
+    succeeded = (
+        await session.execute(
+            _count(WebhookDelivery.status_code.between(200, 299))
+        )
+    ).scalar_one()
+    failed = (await session.execute(_count(_not_success_condition()))).scalar_one()
+    pending = (
+        await session.execute(_count(WebhookDelivery.next_retry_at.is_not(None)))
+    ).scalar_one()
+    last_success_at = (
+        await session.execute(
+            select(func.max(WebhookDelivery.created_at)).where(
+                WebhookDelivery.webhook_id == webhook_id,
+                WebhookDelivery.status_code.between(200, 299),
+            )
+        )
+    ).scalar_one()
+    return {
+        "total": total,
+        "succeeded": succeeded,
+        "failed": failed,
+        "pending": pending,
+        "last_success_at": last_success_at,
+    }
 
 
 # ---- delivery primitive -------------------------------------------------
