@@ -25,6 +25,7 @@ import {
   WEBHOOK_EVENTS,
   createWebhook,
   deleteWebhook,
+  getWebhookDeliveryStats,
   listWebhookDeliveries,
   listWebhooks,
   processDueWebhookRetries,
@@ -318,6 +319,14 @@ export function WebhookPanel() {
     [deliveriesQuery.data],
   )
 
+  const statsQuery = useQuery({
+    queryKey: ['webhooks', selectedId, 'deliveries', 'stats'],
+    queryFn: () => getWebhookDeliveryStats(selectedId!, token),
+    enabled: token !== null && selectedId !== null,
+  })
+
+  const deliveryStats = statsQuery.data
+
   const create = useMutation({
     mutationFn: () =>
       createWebhook(
@@ -504,6 +513,20 @@ export function WebhookPanel() {
           <div className="mt-4 space-y-3">
             {webhooksQuery.isLoading ? (
               <p className="text-muted-foreground text-sm">{t('settings.webhooks.loading')}</p>
+            ) : webhooksQuery.isError ? (
+              <Alert variant="destructive">
+                <AlertTitle>{t('settings.webhooks.listLoadFailed')}</AlertTitle>
+                <AlertDescription>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => webhooksQuery.refetch()}
+                  >
+                    {t('settings.webhooks.retryLoad')}
+                  </Button>
+                </AlertDescription>
+              </Alert>
             ) : webhooks.length === 0 ? (
               <div className="rounded-md border border-dashed p-4">
                 <p className="font-medium">{t('settings.webhooks.emptyTitle')}</p>
@@ -598,6 +621,20 @@ export function WebhookPanel() {
             </p>
           ) : null}
         </div>
+
+        {selectedWebhook && deliveryStats && deliveryStats.total > 0 ? (
+          <p className="text-muted-foreground mt-2 text-sm" data-testid="deliveries-stats">
+            {t('settings.webhooks.stats.successRate', {
+              pct: Math.round((deliveryStats.succeeded / deliveryStats.total) * 100),
+              succeeded: deliveryStats.succeeded,
+              total: deliveryStats.total,
+            })}
+            {' · '}
+            {t('settings.webhooks.stats.lastSuccess', {
+              date: formatDate(deliveryStats.last_success_at),
+            })}
+          </p>
+        ) : null}
 
         {selectedWebhook ? (
           <div className="mt-4 flex flex-wrap gap-2">
