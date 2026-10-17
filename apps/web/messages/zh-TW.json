@@ -999,6 +999,7 @@
       "active": "啟用中",
       "allEvents": "所有物品事件",
       "attempt": "第 {attempt} 次",
+      "clearFilter": "清除篩選",
       "create": "建立 webhook",
       "createDescription": "將物品建立、更新、刪除事件送到其他系統，可選擇 HMAC 簽章。",
       "createFailed": "無法建立 webhook",
@@ -1020,11 +1021,25 @@
         }
       },
       "eventsTitle": "事件",
+      "excerptHide": "收合回應內容",
+      "excerptShow": "顯示回應內容",
+      "filter": {
+        "all": "全部",
+        "success": "成功",
+        "failed": "失敗",
+        "pending": "待重試"
+      },
+      "filterEmptyBody": "試試其他篩選條件。",
+      "filterEmptyTitle": "沒有符合的 delivery",
       "healthy": "正常",
       "inactive": "已停用",
       "lastFired": "上次觸發：{date}",
+      "listLoadFailed": "無法載入 webhook 清單。",
+      "loadFailed": "無法載入 delivery 紀錄。",
+      "loadMore": "載入更多",
       "loading": "讀取 webhook 中…",
       "loadingDeliveries": "讀取 delivery 紀錄中…",
+      "loadingMore": "載入中…",
       "nameLabel": "Webhook 名稱",
       "namePlaceholder": "庫存同步",
       "needsAttention": "需處理",
@@ -1036,6 +1051,7 @@
       "processedSummary": "已處理 {processed} 筆重試，{succeeded} 筆成功，{remaining} 筆仍待處理。",
       "processedTitle": "重試處理完成",
       "processing": "處理中…",
+      "retryLoad": "重試",
       "retryNow": "立即重試",
       "retryScheduled": "已排程重試",
       "retrying": "重試中…",
@@ -1043,10 +1059,22 @@
       "secretLabel": "簽章密鑰",
       "secretPlaceholder": "選填密鑰",
       "selectWebhook": "選取已設定 endpoint 來查看最近嘗試。",
+      "stats": {
+        "successRate": "成功率 {pct}%（成功 {succeeded}／總 {total}）",
+        "lastSuccess": "最近成功：{date}"
+      },
       "status": {
         "failed": "HTTP {status}",
         "network": "網路錯誤",
         "success": "HTTP {status}"
+      },
+      "table": {
+        "time": "時間",
+        "event": "事件",
+        "status": "狀態",
+        "attempt": "嘗試",
+        "nextRetry": "下次重試",
+        "actions": "操作"
       },
       "toggleActive": "切換 {name}",
       "tryAgain": "請檢查 endpoint URL 後再試一次。",

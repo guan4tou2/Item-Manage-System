@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Activity, CheckCircle2, Clock3, PlugZap, RefreshCcw, Trash2, XCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
@@ -11,7 +11,16 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import {
   WEBHOOK_EVENTS,
   createWebhook,
@@ -30,6 +39,8 @@ import { useAccessToken } from '@/lib/auth/use-auth'
 import { cn } from '@/lib/utils'
 
 const DEFAULT_EVENTS: WebhookEvent[] = ['item.created', 'item.updated']
+
+const DELIVERY_PAGE_SIZE = 20
 
 function isSuccess(status: number | null) {
   return status !== null && status >= 200 && status < 300
@@ -102,6 +113,141 @@ function DeliveryStatus({ delivery }: { delivery: WebhookDeliveryRead }) {
   )
 }
 
+function RetryButton({
+  retryPending,
+  onClick,
+}: {
+  retryPending: boolean
+  onClick: () => void
+}) {
+  const t = useTranslations()
+  return (
+    <Button variant="outline" size="sm" onClick={onClick} disabled={retryPending}>
+      <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+      {retryPending ? t('settings.webhooks.retrying') : t('settings.webhooks.retryNow')}
+    </Button>
+  )
+}
+
+function ExcerptButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  const t = useTranslations()
+  return (
+    <Button variant="ghost" size="sm" aria-expanded={open} onClick={onToggle}>
+      {open ? t('settings.webhooks.excerptHide') : t('settings.webhooks.excerptShow')}
+    </Button>
+  )
+}
+
+function DeliveryTableRow({
+  delivery,
+  retryPending,
+  onRetry,
+}: {
+  delivery: WebhookDeliveryRead
+  retryPending: boolean
+  onRetry: () => void
+}) {
+  const t = useTranslations()
+  const [showExcerpt, setShowExcerpt] = useState(false)
+
+  return (
+    <>
+      <TableRow>
+        <TableCell className="text-muted-foreground whitespace-nowrap text-sm">
+          {formatDate(delivery.created_at)}
+        </TableCell>
+        <TableCell className="text-sm font-medium">{eventLabel(t, delivery.event)}</TableCell>
+        <TableCell>
+          <DeliveryStatus delivery={delivery} />
+        </TableCell>
+        <TableCell>
+          <Badge variant="outline">
+            {t('settings.webhooks.attempt', { attempt: delivery.attempt })}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-muted-foreground whitespace-nowrap text-sm">
+          {delivery.next_retry_at ? formatDate(delivery.next_retry_at) : '—'}
+        </TableCell>
+        <TableCell>
+          <div className="flex justify-end gap-2">
+            {delivery.response_excerpt ? (
+              <ExcerptButton
+                open={showExcerpt}
+                onToggle={() => setShowExcerpt((open) => !open)}
+              />
+            ) : null}
+            {isRetryable(delivery) ? (
+              <RetryButton retryPending={retryPending} onClick={onRetry} />
+            ) : null}
+          </div>
+        </TableCell>
+      </TableRow>
+      {showExcerpt && delivery.response_excerpt ? (
+        <TableRow className="hover:bg-transparent">
+          <TableCell colSpan={6} className="pt-0">
+            <pre
+              data-testid="delivery-excerpt"
+              className="bg-muted text-muted-foreground max-h-24 overflow-auto whitespace-pre-wrap rounded-md p-3 text-xs"
+            >
+              {delivery.response_excerpt}
+            </pre>
+          </TableCell>
+        </TableRow>
+      ) : null}
+    </>
+  )
+}
+
+function DeliveryCard({
+  delivery,
+  retryPending,
+  onRetry,
+}: {
+  delivery: WebhookDeliveryRead
+  retryPending: boolean
+  onRetry: () => void
+}) {
+  const t = useTranslations()
+  const [showExcerpt, setShowExcerpt] = useState(false)
+
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <DeliveryStatus delivery={delivery} />
+        <Badge variant="outline">
+          {t('settings.webhooks.attempt', { attempt: delivery.attempt })}
+        </Badge>
+        {delivery.next_retry_at ? (
+          <Badge variant="secondary">{t('settings.webhooks.retryScheduled')}</Badge>
+        ) : null}
+      </div>
+      <p className="mt-2 text-sm font-medium">{eventLabel(t, delivery.event)}</p>
+      <p className="text-muted-foreground mt-1 text-xs">
+        {t('settings.webhooks.createdAt', { date: formatDate(delivery.created_at) })}
+        {delivery.next_retry_at
+          ? ` · ${t('settings.webhooks.nextRetryAt', { date: formatDate(delivery.next_retry_at) })}`
+          : ''}
+      </p>
+      {showExcerpt && delivery.response_excerpt ? (
+        <pre
+          data-testid="delivery-excerpt"
+          className="bg-muted text-muted-foreground mt-3 max-h-24 overflow-auto whitespace-pre-wrap rounded-md p-3 text-xs"
+        >
+          {delivery.response_excerpt}
+        </pre>
+      ) : null}
+      <div className="mt-3 flex flex-wrap gap-2">
+        {delivery.response_excerpt ? (
+          <ExcerptButton open={showExcerpt} onToggle={() => setShowExcerpt((open) => !open)} />
+        ) : null}
+        {isRetryable(delivery) ? (
+          <RetryButton retryPending={retryPending} onClick={onRetry} />
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 export function WebhookPanel() {
   const t = useTranslations()
   const token = useAccessToken()
@@ -132,11 +278,26 @@ export function WebhookPanel() {
     }
   }, [selectedId, webhooks])
 
-  const deliveriesQuery = useQuery({
+  const deliveriesQuery = useInfiniteQuery({
     queryKey: ['webhooks', selectedId, 'deliveries'],
-    queryFn: () => listWebhookDeliveries(selectedId!, { limit: 50 }, token),
+    queryFn: ({ pageParam }) =>
+      listWebhookDeliveries(
+        selectedId!,
+        { limit: DELIVERY_PAGE_SIZE, offset: pageParam },
+        token,
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.length === DELIVERY_PAGE_SIZE
+        ? pages.length * DELIVERY_PAGE_SIZE
+        : undefined,
     enabled: token !== null && selectedId !== null,
   })
+
+  const deliveries = useMemo(
+    () => deliveriesQuery.data?.pages.flat() ?? [],
+    [deliveriesQuery.data],
+  )
 
   const create = useMutation({
     mutationFn: () =>
@@ -424,11 +585,27 @@ export function WebhookPanel() {
             <div className="text-muted-foreground rounded-md border border-dashed p-4 text-sm">
               {t('settings.webhooks.noSelection')}
             </div>
+          ) : deliveriesQuery.isError ? (
+            <Alert variant="destructive">
+              <AlertTitle>{t('settings.webhooks.loadFailed')}</AlertTitle>
+              <AlertDescription>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => deliveriesQuery.refetch()}
+                >
+                  {t('settings.webhooks.retryLoad')}
+                </Button>
+              </AlertDescription>
+            </Alert>
           ) : deliveriesQuery.isLoading ? (
-            <p className="text-muted-foreground text-sm">
-              {t('settings.webhooks.loadingDeliveries')}
-            </p>
-          ) : (deliveriesQuery.data ?? []).length === 0 ? (
+            <div className="space-y-2">
+              <Skeleton className="h-11 w-full" />
+              <Skeleton className="h-11 w-full" />
+              <Skeleton className="h-11 w-full" />
+            </div>
+          ) : deliveries.length === 0 ? (
             <div className="rounded-md border border-dashed p-4">
               <p className="font-medium">{t('settings.webhooks.noDeliveriesTitle')}</p>
               <p className="text-muted-foreground mt-1 text-sm">
@@ -436,48 +613,44 @@ export function WebhookPanel() {
               </p>
             </div>
           ) : (
-            deliveriesQuery.data?.map((delivery) => (
-              <div key={delivery.id} className="rounded-lg border p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <DeliveryStatus delivery={delivery} />
-                      <Badge variant="outline">
-                        {t('settings.webhooks.attempt', { attempt: delivery.attempt })}
-                      </Badge>
-                      {delivery.next_retry_at ? (
-                        <Badge variant="secondary">{t('settings.webhooks.retryScheduled')}</Badge>
-                      ) : null}
-                    </div>
-                    <p className="mt-2 text-sm font-medium">{eventLabel(t, delivery.event)}</p>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      {t('settings.webhooks.createdAt', { date: formatDate(delivery.created_at) })}
-                      {delivery.next_retry_at
-                        ? ` · ${t('settings.webhooks.nextRetryAt', { date: formatDate(delivery.next_retry_at) })}`
-                        : ''}
-                    </p>
-                    {delivery.response_excerpt ? (
-                      <pre className="bg-muted text-muted-foreground mt-3 max-h-24 overflow-auto whitespace-pre-wrap rounded-md p-3 text-xs">
-                        {delivery.response_excerpt}
-                      </pre>
-                    ) : null}
-                  </div>
-                  {isRetryable(delivery) ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => retry.mutate(delivery)}
-                      disabled={retry.isPending}
-                    >
-                      <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-                      {retry.isPending
-                        ? t('settings.webhooks.retrying')
-                        : t('settings.webhooks.retryNow')}
-                    </Button>
-                  ) : null}
-                </div>
+            <>
+              <div data-testid="deliveries-table" className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('settings.webhooks.table.time')}</TableHead>
+                      <TableHead>{t('settings.webhooks.table.event')}</TableHead>
+                      <TableHead>{t('settings.webhooks.table.status')}</TableHead>
+                      <TableHead>{t('settings.webhooks.table.attempt')}</TableHead>
+                      <TableHead>{t('settings.webhooks.table.nextRetry')}</TableHead>
+                      <TableHead className="text-right">
+                        {t('settings.webhooks.table.actions')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {deliveries.map((delivery) => (
+                      <DeliveryTableRow
+                        key={delivery.id}
+                        delivery={delivery}
+                        retryPending={retry.isPending}
+                        onRetry={() => retry.mutate(delivery)}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-            ))
+              <div data-testid="deliveries-cards" className="space-y-3 md:hidden">
+                {deliveries.map((delivery) => (
+                  <DeliveryCard
+                    key={delivery.id}
+                    delivery={delivery}
+                    retryPending={retry.isPending}
+                    onRetry={() => retry.mutate(delivery)}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
       </section>

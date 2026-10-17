@@ -999,6 +999,7 @@
       "active": "Active",
       "allEvents": "All item events",
       "attempt": "Attempt {attempt}",
+      "clearFilter": "Clear filter",
       "create": "Create webhook",
       "createDescription": "Send item lifecycle changes to another system with an optional HMAC signature.",
       "createFailed": "Could not create webhook",
@@ -1020,11 +1021,25 @@
         }
       },
       "eventsTitle": "Events",
+      "excerptHide": "Hide response",
+      "excerptShow": "Show response",
+      "filter": {
+        "all": "All",
+        "success": "Succeeded",
+        "failed": "Failed",
+        "pending": "Pending retry"
+      },
+      "filterEmptyBody": "Try a different filter.",
+      "filterEmptyTitle": "No matching deliveries",
       "healthy": "Healthy",
       "inactive": "Inactive",
       "lastFired": "Last fired: {date}",
+      "listLoadFailed": "Could not load webhooks.",
+      "loadFailed": "Could not load delivery history.",
+      "loadMore": "Load more",
       "loading": "Loading webhooks…",
       "loadingDeliveries": "Loading delivery history…",
+      "loadingMore": "Loading…",
       "nameLabel": "Webhook name",
       "namePlaceholder": "Inventory sync",
       "needsAttention": "Needs attention",
@@ -1036,6 +1051,7 @@
       "processedSummary": "Processed {processed} retries, {succeeded} succeeded, {remaining} remaining.",
       "processedTitle": "Retry processing complete",
       "processing": "Processing…",
+      "retryLoad": "Try again",
       "retryNow": "Retry now",
       "retryScheduled": "Retry scheduled",
       "retrying": "Retrying…",
@@ -1043,10 +1059,22 @@
       "secretLabel": "Signing secret",
       "secretPlaceholder": "Optional secret",
       "selectWebhook": "Select a configured endpoint to inspect recent attempts.",
+      "stats": {
+        "successRate": "Success rate {pct}% ({succeeded} of {total})",
+        "lastSuccess": "Last success: {date}"
+      },
       "status": {
         "failed": "HTTP {status}",
         "network": "Network error",
         "success": "HTTP {status}"
+      },
+      "table": {
+        "time": "Time",
+        "event": "Event",
+        "status": "Status",
+        "attempt": "Attempt",
+        "nextRetry": "Next retry",
+        "actions": "Actions"
       },
       "toggleActive": "Toggle {name}",
       "tryAgain": "Check the endpoint URL and try again.",
