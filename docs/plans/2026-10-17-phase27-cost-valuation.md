@@ -218,8 +218,8 @@
 - Test: `apps/web/lib/hooks/use-stats.test.tsx`（若無既有檔則隨 T2.5 元件測試覆蓋）
 
 **TODO:**
-- [ ] `export type ValueStats = paths["/api/stats/value"]["get"]["responses"]["200"]["content"]["application/json"]`；bucket 元素型別另 export
-- [ ] `getValue(accessToken)`；`useStatsValue()`（queryKey `["stats","value"]`，staleTime 同 `STALE_TIME`）
+- [x] `export type ValueStats = paths["/api/stats/value"]["get"]["responses"]["200"]["content"]["application/json"]`；bucket 元素型別另 export（`CategoryValueBucket`／`LocationValueBucket`／`WarehouseValueBucket`）
+- [x] `getValue(accessToken)`；`useStatsValue()`（queryKey `["stats","value"]`，staleTime 同 `STALE_TIME`）——glue，typecheck＋T2.5 元件測試覆蓋
 
 **Commands:**
 - `pnpm -F @ims/web test -- lib/api lib/hooks`
