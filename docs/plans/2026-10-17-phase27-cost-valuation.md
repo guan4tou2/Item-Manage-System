@@ -141,9 +141,9 @@
 - Test: `apps/api/tests/test_backup.py`
 
 **TODO:**
-- [ ] `_serialize`：`if isinstance(value, Decimal): return str(value)`——**RED 先行**：先加「清單含 `price`／`budget` 的 export」測試（現況 `JSONResponse` `json.dumps(Decimal)` → 500，若實測行為不同以實測為準並記錄）
-- [ ] items include 加 `"cost"`；`format_version` 2 → 3
-- [ ] 測試：`format_version == 3`；items `cost`=`"12.30"`／null；帶價清單 export 200＋值為字串；既有 backup 測試回歸
+- [x] `_serialize`：`if isinstance(value, Decimal): return str(value)`——**RED 先行**：先加「清單含 `price`／`budget` 的 export」測試（現況 `JSONResponse` `json.dumps(Decimal)` → 500（實測 TypeError），修後 200＋字串值）
+- [x] items include 加 `"cost"`；`format_version` 2 → 3
+- [x] 測試：`format_version == 3`；items `cost`=`\"12.30\"`／null；帶價清單 export 200＋值為字串；既有 backup 測試回歸（7 例）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_backup.py`

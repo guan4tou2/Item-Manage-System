@@ -13,7 +13,7 @@ async def test_export_empty(client, auth):
     r = await client.get("/api/backup/export", headers=auth)
     assert r.status_code == 200
     body = r.json()
-    assert body["format_version"] == 2
+    assert body["format_version"] == 3
     assert body["items"] == []
     assert body["categories"] == []
     assert "Content-Disposition" in r.headers
@@ -57,7 +57,7 @@ async def test_export_includes_tree_locations(client, auth):
 
     body = (await client.get("/api/backup/export", headers=auth)).json()
 
-    assert body["format_version"] == 2
+    assert body["format_version"] == 3
     by_id = {loc["id"]: loc for loc in body["locations"]}
     assert by_id[floor["id"]]["parent_id"] is None
     assert by_id[room["id"]]["parent_id"] == floor["id"]
@@ -66,3 +66,30 @@ async def test_export_includes_tree_locations(client, auth):
     assert "sort_order" in by_id[room["id"]]
     # 舊三欄不再輸出
     assert "floor" not in by_id[room["id"]]
+
+
+async def test_export_items_include_cost(client, auth):
+    await client.post("/api/items", headers=auth, json={"name": "有價", "cost": "12.30"})
+    await client.post("/api/items", headers=auth, json={"name": "無價"})
+    body = (await client.get("/api/backup/export", headers=auth)).json()
+    by_name = {i["name"]: i for i in body["items"]}
+    assert by_name["有價"]["cost"] == "12.30"
+    assert by_name["無價"]["cost"] is None
+
+
+async def test_export_with_priced_list_does_not_crash(client, auth):
+    lst = (
+        await client.post(
+            "/api/lists", headers=auth, json={"kind": "generic", "title": "t", "budget": "500.00"}
+        )
+    ).json()
+    await client.post(
+        f"/api/lists/{lst['id']}/entries",
+        headers=auth,
+        json={"name": "a", "price": "99.50"},
+    )
+    r = await client.get("/api/backup/export", headers=auth)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["lists"][0]["budget"] == "500.00"
+    assert body["lists"][0]["entries"][0]["price"] == "99.50"

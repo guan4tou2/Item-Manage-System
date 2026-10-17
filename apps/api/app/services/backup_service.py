@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -19,6 +20,10 @@ from app.models.warehouse import Warehouse
 
 def _serialize(value: Any) -> Any:
     if isinstance(value, UUID):
+        return str(value)
+    if isinstance(value, Decimal):
+        # JSONResponse uses json.dumps: Decimal is not serializable.
+        # Keep exact 2-dp strings (DB Numeric(12,2) scale) stable for backup.
         return str(value)
     if isinstance(value, datetime):
         return value.isoformat()
@@ -44,6 +49,7 @@ async def export_full(session: AsyncSession, owner_id: UUID) -> dict[str, Any]:
         {
             **_row_to_dict(
                 i, ["id", "name", "description", "quantity", "min_quantity",
+                     "cost",
                      "notes", "is_favorite", "category_id", "location_id",
                      "warehouse_id", "image_id", "created_at", "updated_at"],
             ),
@@ -107,7 +113,7 @@ async def export_full(session: AsyncSession, owner_id: UUID) -> dict[str, Any]:
     ]
 
     return {
-        "format_version": 2,
+        "format_version": 3,
         "exported_at": datetime.utcnow().isoformat() + "Z",
         "owner_id": str(owner_id),
         "items": items_data,
