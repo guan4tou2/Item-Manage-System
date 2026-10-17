@@ -161,8 +161,8 @@
 - Create: `apps/web/lib/api/backup.ts`、`apps/web/lib/api/backup.test.ts`
 
 **TODO:**
-- [ ] RED：`global.fetch` mock 範式——`downloadBackup(token)` 打 `/backup/export` 回 Blob 觸發下載（`URL.createObjectURL` spy；檔名可注入 `mockFileName`）；`importBackup(file, {mode, dryRun, confirm}, token)` FormData 帶 `file`／`mode`／`dry_run`／`confirm`（confirm 僅 replace 非 dry-run）；回傳型別 `BackupImportResult`（自 `paths["/api/backup/import"]`）
-- [ ] GREEN：`BackupImportResult` type alias；`downloadBackup` 仿 `downloadItemsCsv`（`Content-Disposition` 檔名 fallback `ims-backup.json`）；`importBackup` 仿 `importItemsCsv`
+- [x] RED：`global.fetch` mock 範式——`downloadBackup(token)` 打 `/backup/export` 回 Blob 觸發下載（`URL.createObjectURL` spy；檔名自 `Content-Disposition`、缺失 fallback `ims-backup.json`）；`importBackup(file, {mode, dryRun, confirm}, token)` FormData 帶 `file`／`mode`／`dry_run`／`confirm`（confirm 僅 replace 非 dry-run）；回傳型別 `BackupImportResult`（自 `paths["/api/backup/import"]`）
+- [x] GREEN：`BackupImportResult` type alias；`downloadBackup` 仿 `downloadItemsCsv`（`Content-Disposition` 檔名 fallback `ims-backup.json`）；`importBackup` 仿 `importItemsCsv`
 
 **Commands:**
 - `cd apps/web && pnpm test -- lib/api/backup`
