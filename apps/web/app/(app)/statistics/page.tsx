@@ -6,6 +6,7 @@ import { CategoryChart } from "@/components/stats/category-chart"
 import { LocationChart } from "@/components/stats/location-chart"
 import { TagChart } from "@/components/stats/tag-chart"
 import { TrendChart } from "@/components/stats/trend-chart"
+import { ValueSection } from "@/components/stats/value-section"
 import { WarehouseChart } from "@/components/stats/warehouse-chart"
 import {
   Breadcrumb,
@@ -46,6 +47,8 @@ export default function StatisticsPage() {
       </Breadcrumb>
 
       <h1 className="text-2xl font-semibold">{t("stats.title")}</h1>
+
+      <ValueSection />
 
       <TrendChart points={trend.data ?? []} loading={trend.isLoading} />
 

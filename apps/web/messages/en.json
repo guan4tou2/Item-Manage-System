@@ -161,6 +161,19 @@
     "trend": {
       "title": "New items trend (last 30 days)"
     },
+    "value": {
+      "sectionTitle": "Inventory value",
+      "pricedLine": "Priced {priced}/{total} items",
+      "unpricedLine": "Unpriced {unpriced} ({pct}%)",
+      "unpricedNote": "Unpriced items are counted as {symbol}0",
+      "zeroTotal": "No costs recorded yet — add a cost to an item to see valuation",
+      "byCategory": "Value by category",
+      "byLocation": "Value by location",
+      "noLocation": "Unplaced",
+      "tooltip": "{amount} · {count} items",
+      "error": "Could not load the inventory value.",
+      "retry": "Retry"
+    },
     "empty": {
       "title": "No data yet",
       "cta": "Create some items first"

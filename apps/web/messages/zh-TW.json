@@ -161,6 +161,19 @@
     "trend": {
       "title": "新增趨勢 (近 30 天)"
     },
+    "value": {
+      "sectionTitle": "庫存估值",
+      "pricedLine": "已填成本 {priced}／{total} 件",
+      "unpricedLine": "未填成本 {unpriced} 件（{pct}%）",
+      "unpricedNote": "未填成本以 {symbol}0 計入",
+      "zeroTotal": "還沒有任何成本——為物品補上成本即可看到估值",
+      "byCategory": "依分類估值",
+      "byLocation": "依位置估值",
+      "noLocation": "未定位",
+      "tooltip": "{amount}・{count} 件",
+      "error": "無法載入庫存估值。",
+      "retry": "重試"
+    },
     "empty": {
       "title": "尚無資料",
       "cta": "先新增一些物品"

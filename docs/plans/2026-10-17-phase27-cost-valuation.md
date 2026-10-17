@@ -234,11 +234,12 @@
 - Modify: i18n 兩檔（見 T2.7）
 
 **TODO:**
-- [ ] `ValueSummaryCard`：標題 `stats.value.title`；大字 `formatCurrency(total_value, currency, locale)`（`data-testid="value-summary"`）；副行「已填成本 {priced}/{total}・未填 {unpriced}（{pct}%）」＋說明「未填成本以 0 計」（i18n）；loading skeleton；error → 卡內 compact 錯誤＋重試
-- [ ] `ValueCategoryChart`：比照 `category-chart`（Pie＋`PALETTE`）；資料＝`by_category` 過濾 `value > 0` 轉 Number；`count` 入 Tooltip；不足 1 桶 → `EmptyChart`；CardTitle `stats.value.byCategory`
-- [ ] `ValueLocationChart`：橫向 Bar（比照 `tag-chart`）；label＝`label ?? stats.value.noLocation`；>24 字元截斷 `…`＋Tooltip 全路徑；`value > 0` 過濾；CardTitle `stats.value.byLocation`
-- [ ] 統計頁：置頂新增 `h2`（`stats.value.sectionTitle`）＋`ValueSummaryCard`＋`md:grid-cols-2` 兩圖；**既有 5 圖表順序與內容不動**；各卡片自帶 loading／error
-- [ ] 測試：summary 金額（`NT$1,200`）與比例文案；總值 0 → 引導文案；Pie 0 值桶排除；location 截斷＋`title`；EmptyChart 空態；loading skeleton
+- [x] `ValueSection`（self-contained，`useStatsValue()` 單一查詢）：h2 `stats.value.sectionTitle`＋summary＋`md:grid-cols-2` 兩圖；**錯誤 → 卡內 compact `role="alert"` ＋「重試」按鈕（`refetch`）**，不整頁壞
+- [x] `ValueSummaryCard`：大字 `formatCurrency(total_value, currency, locale)`（`data-testid="value-summary"`）；`stats.value.pricedLine`（已填 {priced}／{total} 件）＋`unpricedLine`（未填 {unpriced} 件（{pct}%），pct＝未填比例 round）＋`unpricedNote`（未填以 {symbol}0 計入）；`priced_items === 0` → `zeroTotal` 引導文案；`!data || loading` → Skeleton（`value-summary-skeleton`）
+- [x] `ValueCategoryChart`：Pie＋`PALETTE`（inner/outer 50/80）；`toCategoryValueData`（過濾 `value > 0` 轉 Number；null 分類 → `stats.byCategory.uncategorized`；`count` 入 Tooltip `stats.value.tooltip`）；空 → `EmptyChart`；CardTitle `stats.value.byCategory`
+- [x] `ValueLocationChart`：橫向 Bar（比照 `tag-chart`）；`toLocationValueData`（`label ?? stats.value.noLocation`；`truncateLabel` >24 截斷 `…`；保留 `full`）＋Tooltip `labelFormatter` 顯示全路徑；CardTitle `stats.value.byLocation`
+- [x] 統計頁：`<ValueSection />` 置於 h1 後、`TrendChart` 前；**既有 5 圖表順序與內容不動**
+- [x] 測試（15 例）：summary 金額 `NT$1,200`＋比例文案＋`NT$0` 計入註記；總值 0 → 引導文案；loading skeleton；Pie/location 0 值桶排除（helper）；null 分類／未定位 label；`truncateLabel` 邊界；EmptyChart 空態＋loading 不顯空態；section 錯誤＋重試 refetch；**全 web 套件 86 檔／410 例綠＋typecheck**
 
 **Commands:**
 - `pnpm -F @ims/web test -- components/stats`
