@@ -50,12 +50,13 @@
 | 26 | 多層位置樹重建 | ✅ | `locations` 樹化（parent_id／kind／同層同名唯一）、migration 0020＋一次性遷移（保證無孤兒＋報告／dry-run）、樹 API（tree／path／move／reorder／刪除 409）、`location_scope` 預設含子孫、樹管理頁（拖放／鍵盤／行動搬移）、樹狀選擇器、CSV `location_path`、backup v2 |
 | 27 | 成本與庫存估值 | ✅ | `items.cost`（Decimal 12,2 nullable）＋migration 0021、帳號層級 `currency` 偏好（六幣別、無匯率換算）、`GET /api/stats/value`（總值＋分類/位置/倉庫分布＋未填比例）、統計頁估值區塊（摘要＋兩圖）、儀表板估值卡（行動卡群組之後）、`formatCurrency`（TWD→`NT$` 雙語）、CSV `cost`／`currency`、backup `format_version` 3 |
 | 28 | Webhook 管理 UI | ✅ | deliveries 篩選（`status`／`event`）＋`offset` 分頁＋統計端點（成功率、最近成功）；面板桌機表格／行動卡片、篩選、載入更多、excerpt 展開、概覽與查詢錯誤態；無 migration |
+| 29 | 備份與還原 | ✅ | 匯出 v4（當期 schema 全量：barcode／批次／借還／歷程／盤點／webhooks／通知偏好／幣別、穩定排序）；`POST /api/backup/import`（multipart；20 MiB／413；`format_version` 1–4 相容）；plan／apply 兩段式——dry-run 零寫入；create_only 名稱匹配沿用＋重名後綴＋列級容忍；replace 單一交易清空＋全有全無＋`REPLACE` 確認字串；id-map 關聯重建＋批次對帳 invariant；warnings／errors／稽核 `backup.import`；Web「設定 → 整合與資料 → 備份」頁（匯出＋匯入三態）；無 migration |
 
 ## 測試規模
 
-- API 測試：750 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：429 passed（87 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：19 spec／59 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／位置樹／估值／webhook 管理／主題等關鍵流程）
+- API 測試：790 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
+- Web 測試：450 passed（89 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：20 spec／62 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／位置樹／估值／webhook 管理／備份還原／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）
@@ -91,5 +92,6 @@ v1（Flask + Jinja2）程式碼仍保留於 `app/`、`templates/`、`static/` �
 1. **Background Sync**：本次未排入，保留於新 roadmap 的〈未排程候選〉
 2. **多 location 階層**：已排入 → 新 roadmap Phase 26（多層位置樹重建）
 3. **Webhook retry UI**：已排入 → 新 roadmap Phase 28（Webhook 管理 UI）
+4. **備份還原**：已排入 → 新 roadmap Phase 29（備份與還原）
 
 排程時請把選定項目升成正式 phase，走既有的 worktree → 測試 → merge 節奏。

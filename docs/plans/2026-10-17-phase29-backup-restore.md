@@ -237,10 +237,10 @@
 - Modify: `CHANGELOG.md`（`[2.0.0-alpha.29]`）、`docs/v2-roadmap.md`（Phase 29 ✅＋測試規模）、本計畫（勾選＋Final Verification）
 
 **TODO:**
-- [ ] CHANGELOG alpha.29：export v4（全量：barcode／批次／借還／歷程／盤點／webhooks／通知偏好／幣別）；`POST /api/backup/import`（dry-run／create_only／replace／對帳／稽核）；Web「備份」頁（匯出＋匯入三態）
-- [ ] v2-roadmap：Phase 29 row ✅＋測試規模更新
-- [ ] 本計畫：全任務勾選＋Final Verification（實測數字、環境註記）
-- [ ] 收尾視覺走查：桌機（匯出卡／dry-run 摘要／replace 警示＋確認字串／結果三態）＋行動 390（卡片堆疊）；截圖人工檢視
+- [x] CHANGELOG alpha.29：export v4（全量：barcode／批次／借還／歷程／盤點／webhooks／通知偏好／幣別）；`POST /api/backup/import`（dry-run／create_only／replace／對帳／稽核）；Web「備份」頁（匯出＋匯入三態）
+- [x] v2-roadmap：Phase 29 row ✅＋測試規模更新（API 790／Web 451（89 檔）／e2e 62（20 spec））
+- [x] 本計畫：全任務勾選＋Final Verification（實測數字、環境註記）
+- [x] 收尾視覺走查：桌機 6 態（空態／create_only 摘要／含列級錯誤摘要／replace 警示＋確認字串／綠報告／橙報告／紅報告）＋行動 390 三態（空態／卡片摘要／replace）；10 張截圖人工檢視（發現並修正：390 寬摘要表改卡片）
 
 **Commands:**
 - `cd apps/web && pnpm exec playwright test --workers=2`
@@ -306,14 +306,15 @@
 
 ## Final Verification（收尾時填實測）
 
-- [ ] API：`uv run --extra test pytest -q` → ___ passed
-- [ ] Web：`pnpm test` → ___ passed（___ 檔）＋`typecheck` 0 error
-- [ ] api-types 重生成零 diff
-- [ ] e2e：___ passed（含 `backup.spec.ts` 3 情境；`--workers=2`；於全部程式碼變更後重跑）
-- [ ] 視覺走查：桌機（匯出卡／dry-run 摘要／replace 確認字串／結果三態）＋行動 390；截圖人工檢視
+- [x] API：`uv run --extra test pytest -q` → 790 passed（115.5s）
+- [x] Web：`pnpm test` → 451 passed（89 檔）＋`typecheck` 0 error
+- [x] api-types 重生成零 diff（`openapi.json`／`src/index.ts`）
+- [x] e2e：62 passed（20 spec；含 `backup.spec.ts` 3 情境；`--workers=2`；於全部程式碼變更後重跑）
+- [x] 視覺走查：桌機（匯出卡／dry-run 摘要／replace 確認字串／結果三態）＋行動 390；截圖人工檢視
 
 ### 收尾環境註記（2026-10-17 起填）
 
 - worktree 首次使用需先 `pnpm install`；`packages/api-types/src/index.ts` 為 tracked 生成檔 → 與 `openapi.json` 一併提交
 - e2e 跑在 worktree 自身 `ims-v2` stack（`ENABLE_DEV_ROUTES=1`、nginx port 80、`client_max_body_size 32m`）；本 phase 無 migration（alembic 維持 0021）
 - `collaboration.spec.ts` 為已知間歇性案例（重跑排除）
+- 匯入檔案輸入為 `sr-only`（`setInputFiles` 需可見元素；不用 `hidden`）；摘要表以 `md` 斷點切換桌機表格／行動卡片（roadmap §5.7）

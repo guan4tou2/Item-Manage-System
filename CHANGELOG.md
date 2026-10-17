@@ -6,6 +6,18 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.29] — Phase 29：備份與還原
+
+- **匯出 v4（當期 schema 全量）**：`GET /api/backup/export` `format_version` 3 → 4——items 加 `barcode`／`track_batches`；新增 `preferences`（幣別）、`item_custom_values`、`item_batches`、`loans`、`quantity_logs`、`item_versions`、`stocktakes`、`webhooks`、`notification_preferences`；各清單穩定排序（同資料 → 同檔案）；`audit_logs`／`api_tokens` 永不匯出
+- **`POST /api/backup/import`**（multipart：`file`／`mode`／`dry_run`／`confirm`）：`MAX_BACKUP_BYTES` 20 MiB → 413；硬錯誤 400（JSON 無效／root 非物件／`format_version` 缺失或非整數或 <1 或 >4；`mode=replace && !dry_run` 需 `confirm="REPLACE"`）；**plan（純讀）／apply 兩段式**——`dry_run=true` 只回摘要、零寫入
+- **create_only（預設）**：新 id；分類／位置／標籤／倉庫以名稱匹配沿用（`reused`）；`item_types`／`custom_fields`／`item_templates` 重名加後綴（`renamed`）；列級錯誤容忍（`status="partial"`）
+- **replace**：單一交易「依賴序 delete 清空（不用 DB cascade）＋匯入」，任何列錯誤即中止且零寫入（`deleted_total=0`）、例外全回滾；清空範圍不含 `audit_logs`／`api_tokens`／images／notifications／外部綁定／transfers／他人群組 membership；UI 需確認字串＋提示先匯出
+- **還原範圍與降級規則**：webhooks 以停用狀態還原、`items.image_id` 設 null、幣別僅 replace 還原、群組僅還原群組殼、借用人不存在改標籤、未知參照清空——皆附 `warnings[]`（如「N 件物品的圖片不還原」、「N 個 Webhook 已以停用狀態還原」）
+- **關聯重建與對帳**：loans／quantity_logs／item_batches 以 id-map 重建；匯入後逐 item 對帳 `items.quantity == Σ 未耗盡批次`，不一致進 `reconciliation[]`；`entities[]` per-entity 計數（existing／imported／created／reused／renamed／skipped／errors，`imported = created + reused + renamed + skipped + errors`）＋`errors`（上限 100）與 `errors_total`；成功匯入（非 dry-run）於 commit 後寫稽核 `backup.import`
+- **Web ＞ 設定 ＞ 備份**（integrations 群組第 4 位／`/settings/backup`；設定索引頁達 6 頁上限）：匯出卡（下載＋`Content-Disposition` 檔名 fallback、loading「準備中…」）；匯入卡——選檔自動 dry-run（`aria-busy`「解析與比對中…」）、模式 RadioGroup（切 replace 立即重跑）、per-entity 摘要表（現有／匯入後／建立／沿用／後綴／略過／錯誤，replace 之「匯入後」＝建立＋後綴）、列級錯誤前 5 筆＋「還有 N 筆」、warnings、對帳橙區、replace 紅警示「將刪除 N 筆」＋「先下載備份」＋確認字串（完全相符 `REPLACE` 才啟用）；結果報告 `role="status"`＋icon 三態（綠「匯入完成：建立 X 筆、刪除 Y 筆」／橙＋失敗清單／紅「匯入失敗，未變更任何資料」）＋「重新比對」；成功後 invalidate 全站查詢、失敗 inline 可重試；摘要表 `md` 斷點桌機表格／行動卡片（§5.7 寬表格卡片化）、行動按鈕 ≥44px
+- 新增 40 個 API 測試（750 → 790）；新增 22 個 web 測試（429 → 451，89 檔）；e2e 19 → 20 spec（59 → 62；新增匯出下載＋create_only round-trip／replace 確認字串把關與清空／無效 JSON 與缺 `format_version` 錯誤態）
+- **無 migration**（alembic 維持 0021）；api-types 重生成（`BackupImportResult` 系契約）
+
 ## [2.0.0-alpha.28] — Phase 28：Webhook 管理 UI
 
 - **API**：`GET /api/webhooks/{id}/deliveries` 新增 `offset` 分頁與 `status`（`success`＝2xx；`failed`＝非 2xx 含網路失敗 `status_code=null`；`pending`＝`next_retry_at` 非空，為 failed 子集）、`event` 篩選；新增 `GET /api/webhooks/{id}/deliveries/stats`（`total`／`succeeded`／`failed`／`pending`／`last_success_at`，獨立於列表篩選、不隨篩選變）
