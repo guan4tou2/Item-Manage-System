@@ -4,6 +4,7 @@ import csv
 import io
 from dataclasses import dataclass
 from datetime import date
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -16,7 +17,8 @@ from app.models.item_batch import ItemBatch
 from app.models.location import Location
 from app.models.tag import Tag
 from app.models.warehouse import Warehouse
-from app.repositories import locations_repository
+from app.repositories import locations_repository, preferences_repository
+from app.schemas.preferences import currency_from_raw
 from app.services import barcode_service
 
 
@@ -31,6 +33,8 @@ EXPORT_COLUMNS = [
     "barcode",
     "quantity",
     "min_quantity",
+    "cost",
+    "currency",
     "category_name",
     "location_path",
     "warehouse_name",
@@ -48,6 +52,8 @@ IMPORT_OPTIONAL = {
     "barcode",
     "quantity",
     "min_quantity",
+    "cost",
+    "currency",
     "notes",
     "category_name",
     "location_path",
@@ -124,6 +130,9 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
             locations = await locations_repository.fetch_all(session, owner_id)
             location_paths = locations_repository.paths_for(locations, location_ids)
 
+    raw_prefs = await preferences_repository.get_raw_preferences(session, owner_id)
+    account_currency = currency_from_raw(raw_prefs)
+
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=EXPORT_COLUMNS)
     writer.writeheader()
@@ -137,6 +146,8 @@ async def export_csv(session: AsyncSession, owner_id: UUID) -> str:
             "barcode": item.barcode or "",
             "quantity": item.quantity,
             "min_quantity": item.min_quantity if item.min_quantity is not None else "",
+            "cost": str(item.cost) if item.cost is not None else "",
+            "currency": account_currency,
             "category_name": item.category.name if item.category else "",
             "location_path": (
                 location_paths.get(item.location_id, "") if item.location_id else ""
@@ -159,6 +170,39 @@ def _parse_int(raw: str | None) -> int | None:
     if raw is None or raw == "":
         return None
     return int(raw)
+
+
+MAX_COST = Decimal("9999999999.99")  # Numeric(12,2)
+
+
+def _parse_cost(raw: str | None) -> Decimal | None:
+    """Parse a CSV cost cell; empty → None; invalid → ValueError."""
+    if raw is None:
+        return None
+    text = raw.strip()
+    if text == "":
+        return None
+    try:
+        value = Decimal(text)
+    except InvalidOperation:
+        raise ValueError("cost must be a number >= 0 with at most 2 decimals")
+    if not value.is_finite() or value < 0:
+        raise ValueError("cost must be a number >= 0 with at most 2 decimals")
+    normalized = value.quantize(Decimal("0.01"))
+    if normalized != value or normalized > MAX_COST:
+        raise ValueError("cost must be a number >= 0 with at most 2 decimals")
+    return normalized
+
+
+def _check_currency(raw: str | None, account_currency: str) -> str | None:
+    """Return an error reason when a non-empty currency cell mismatches."""
+    text = (raw or "").strip().upper()
+    if not text or text == account_currency:
+        return None
+    return (
+        f"currency mismatch: row uses {text} but account currency is "
+        f"{account_currency}"
+    )
 
 
 async def _ensure_category(
@@ -328,11 +372,19 @@ async def import_csv(
     tag_cache: dict[str, Tag] = {}
     total = 0
 
+    raw_prefs = await preferences_repository.get_raw_preferences(session, owner_id)
+    account_currency = currency_from_raw(raw_prefs)
+
     for idx, row in enumerate(reader, start=2):  # start=2 because row 1 is header
         total += 1
         name = (row.get("name") or "").strip()
         if not name:
             errors.append(RowError(row=idx, reason="name is required"))
+            continue
+
+        currency_error = _check_currency(row.get("currency"), account_currency)
+        if currency_error is not None:
+            errors.append(RowError(row=idx, reason=currency_error))
             continue
 
         try:
@@ -342,6 +394,7 @@ async def import_csv(
             min_qty = _parse_int((row.get("min_quantity") or "").strip())
             if min_qty is not None and min_qty < 0:
                 raise ValueError("min_quantity must be >= 0")
+            cost = _parse_cost(row.get("cost"))
         except ValueError as exc:
             errors.append(RowError(row=idx, reason=str(exc)))
             continue
@@ -381,6 +434,7 @@ async def import_csv(
             or None,
             quantity=qty,
             min_quantity=min_qty,
+            cost=cost,
             category_id=category_id,
             location_id=location_id,
             warehouse_id=warehouse_id,

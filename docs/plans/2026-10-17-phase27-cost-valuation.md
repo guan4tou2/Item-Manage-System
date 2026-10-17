@@ -126,10 +126,10 @@
 - Test: `apps/api/tests/test_csv_cost.py`（新）
 
 **TODO:**
-- [ ] `EXPORT_COLUMNS`：`min_quantity` 後插 `cost`、`currency`；export：cost＝`str(item.cost)`（DB scale 2 → `"12.30"`）或 `""`；currency＝帳號幣別（讀偏好，fallback TWD）
-- [ ] `IMPORT_OPTIONAL` 加 `cost`、`currency`；import：cost（strip；空→None；`Decimal` 失敗／<0／>2 位小數／整數 >10 位 → `RowError(row, "invalid_cost")`）；currency（strip；空→通過；≠帳號幣別 → `RowError(row, "currency_mismatch")`）；錯誤以既有列舉機制回報
-- [ ] `csv_service` 新增對 `preferences_repository` 的依賴（export／import 兩處）
-- [ ] 測試：export header 順序；有／無 cost 值；import 建帶成本物品；`"1.234"`／`"-1"`／`"abc"` → `invalid_cost`；`"USD"`（帳號 TWD）→ `currency_mismatch`；`"TWD"`／空 → 通過；無此兩欄舊檔相容；round-trip（export→import 新 owner，成本一致）
+- [x] `EXPORT_COLUMNS`：`min_quantity` 後插 `cost`、`currency`；export：cost＝`str(item.cost)`（DB scale 2 → `"12.30"`）或 `""`；currency＝帳號幣別（讀偏好，fallback TWD）
+- [x] `IMPORT_OPTIONAL` 加 `cost`、`currency`；import：cost（strip；空→None；`Decimal` 失敗／<0／>2 位小數／>10 位整數 → `RowError(row, "invalid_cost")`——實作以單一訊息 `cost must be a number >= 0 with at most 2 decimals`）；currency（strip＋upper；空→通過；≠帳號幣別 → `RowError(row, "currency_mismatch")`）；錯誤以既有列舉機制回報
+- [x] `csv_service` 新增對 `preferences_repository`／`currency_from_raw` 的依賴（export／import 兩處）
+- [x] 測試：export header 順序；有／無 cost 值；import 建帶成本物品；`"1.234"`／`"-1"`／`"abc"` → 錯誤；`"USD"`（帳號 TWD）→ mismatch；`"TWD"`／空 → 通過；無此兩欄舊檔相容；round-trip（export→import 新 owner，成本一致）（7 例）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_csv_cost.py`
