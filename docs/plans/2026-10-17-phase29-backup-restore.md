@@ -203,12 +203,12 @@
 - Modify: `apps/web/components/settings/backup-panel.tsx`、`backup-panel.test.tsx`
 
 **TODO:**
-- [ ] RED：
+- [x] RED：
   - 「確認匯入」→ `importBackup(file, {mode, dryRun:false, confirm})`；`status:"ok"` → 綠報告（建立 X 筆／刪除 Y 筆）；`partial` → 橙＋失敗清單；`error` → 紅「未變更任何資料」；成功且 `status!=="error"` → `qc.invalidateQueries()`（spy）＋「重新比對」按鈕
   - 上傳後網路失敗 → toast＋inline 可重試；重新選檔 → 清結果重跑 dry-run
   - replace 匯入呼叫帶 `confirm:"REPLACE"`；create_only 不帶
-- [ ] GREEN：結果報告區塊（`role="status"`＋icon＋文字，§5.6 不單靠色彩）；i18n `result.*`；QueryClient 注入
-- [ ] locale 鍵集比對零差異（python flat-set 檢查）
+- [x] GREEN：結果報告區塊（`role="status"`＋icon＋文字，§5.6 不單靠色彩）；i18n `result.*`；QueryClient 注入
+- [x] locale 鍵集比對零差異（python flat-set 檢查）
 
 **Commands:**
 - `cd apps/web && pnpm test -- components/settings/backup-panel && pnpm typecheck`

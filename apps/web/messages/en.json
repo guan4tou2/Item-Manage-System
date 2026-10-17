@@ -1134,6 +1134,7 @@
         "confirm": "Confirm import",
         "emptySummary": "Nothing to import from this backup.",
         "hardError": "Could not read the backup file",
+        "importFailed": "Import failed, please try again.",
         "errorsTitle": "Row errors",
         "errorRow": "{entity} #{index}: {message}",
         "moreErrors": "…and {count} more",
@@ -1157,6 +1158,12 @@
         "warning": "This will delete {count} existing rows and cannot be undone.",
         "downloadFirst": "Download backup first",
         "confirmLabel": "Type REPLACE to confirm"
+      },
+      "result": {
+        "ok": "Import complete: {created} created, {deleted} deleted.",
+        "partial": "Import complete: {created} created, {deleted} deleted, with {errors} row errors.",
+        "error": "Import failed. Nothing was changed.",
+        "recheck": "Re-check"
       },
       "entities": {
         "items": "Items",

@@ -1,6 +1,8 @@
 "use client"
 
 import { useRef, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
@@ -27,6 +29,7 @@ const MAX_ERRORS_SHOWN = 5
 export function BackupPanel() {
   const t = useTranslations()
   const token = useAccessToken()
+  const queryClient = useQueryClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [exporting, setExporting] = useState(false)
@@ -37,6 +40,8 @@ export function BackupPanel() {
   const [confirmText, setConfirmText] = useState("")
   const [busy, setBusy] = useState(false)
   const [hardError, setHardError] = useState<string | null>(null)
+  const [result, setResult] = useState<BackupImportResult | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
 
   async function handleExport() {
     setExporting(true)
@@ -62,7 +67,9 @@ export function BackupPanel() {
   async function runDryRun(nextFile: File, nextMode: BackupImportMode) {
     setBusy(true)
     setHardError(null)
+    setImportError(null)
     setDryRunResult(null)
+    setResult(null)
     try {
       const result = await importBackup(
         nextFile,
@@ -93,6 +100,38 @@ export function BackupPanel() {
     }
   }
 
+  async function handleConfirm() {
+    if (!file || !dryRunResult) return
+    setBusy(true)
+    setImportError(null)
+    setResult(null)
+    try {
+      const applied = await importBackup(
+        file,
+        {
+          mode,
+          dryRun: false,
+          ...(mode === "replace" ? { confirm: confirmText } : {}),
+        },
+        token,
+      )
+      setResult(applied)
+      if (applied.status !== "error") {
+        await queryClient.invalidateQueries()
+      }
+    } catch (err) {
+      setImportError(getApiErrorDetail(err) ?? t("settings.backup.import.importFailed"))
+      toast.error(t("settings.backup.import.importFailed"))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleRecheck() {
+    if (!file) return
+    await runDryRun(file, mode)
+  }
+
   const replaceReady = mode !== "replace" || confirmText === "REPLACE"
 
   /** 摘要「匯入後」：create_only＝現有＋建立＋加後綴；replace＝建立＋加後綴。 */
@@ -105,6 +144,42 @@ export function BackupPanel() {
   function entityLabel(entity: string) {
     return t(`settings.backup.entities.${entity}` as never)
   }
+
+  function renderRowErrors(
+    errors: BackupImportResult["errors"],
+    errorsTotal: number,
+  ) {
+    if (errors.length === 0) return null
+    return (
+      <div className="space-y-1 text-sm">
+        <p className="font-medium text-destructive">
+          {t("settings.backup.import.errorsTitle")}
+        </p>
+        <ul className="space-y-0.5">
+          {errors.slice(0, MAX_ERRORS_SHOWN).map((row, i) => (
+            <li key={`${row.entity}-${row.index}-${i}`} className="font-mono text-xs">
+              {t("settings.backup.import.errorRow", {
+                entity: entityLabel(row.entity),
+                index: row.index,
+                message: row.message,
+              })}
+            </li>
+          ))}
+        </ul>
+        {errorsTotal > MAX_ERRORS_SHOWN ? (
+          <p className="text-xs text-muted-foreground">
+            {t("settings.backup.import.moreErrors", {
+              count: errorsTotal - MAX_ERRORS_SHOWN,
+            })}
+          </p>
+        ) : null}
+      </div>
+    )
+  }
+
+  const appliedCreated = result
+    ? result.entities.reduce((acc, row) => acc + row.created + row.renamed, 0)
+    : 0
 
   return (
     <div className="space-y-4">
@@ -298,31 +373,7 @@ export function BackupPanel() {
                 </div>
               ) : null}
 
-              {dryRunResult.errors.length > 0 ? (
-                <div className="space-y-1 text-sm">
-                  <p className="font-medium text-destructive">
-                    {t("settings.backup.import.errorsTitle")}
-                  </p>
-                  <ul className="space-y-0.5">
-                    {dryRunResult.errors.slice(0, MAX_ERRORS_SHOWN).map((row, i) => (
-                      <li key={`${row.entity}-${row.index}-${i}`} className="font-mono text-xs">
-                        {t("settings.backup.import.errorRow", {
-                          entity: entityLabel(row.entity),
-                          index: row.index,
-                          message: row.message,
-                        })}
-                      </li>
-                    ))}
-                  </ul>
-                  {dryRunResult.errors_total > MAX_ERRORS_SHOWN ? (
-                    <p className="text-xs text-muted-foreground">
-                      {t("settings.backup.import.moreErrors", {
-                        count: dryRunResult.errors_total - MAX_ERRORS_SHOWN,
-                      })}
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
+              {renderRowErrors(dryRunResult.errors, dryRunResult.errors_total)}
 
               {mode === "replace" ? (
                 <div className="space-y-2 rounded border border-destructive/50 bg-destructive/10 p-3">
@@ -359,10 +410,73 @@ export function BackupPanel() {
                     />
                   </div>
                 ) : null}
-                <Button disabled={busy || !replaceReady} className="max-sm:min-h-11">
+                <Button
+                  disabled={busy || !replaceReady}
+                  onClick={() => {
+                    void handleConfirm()
+                  }}
+                  className="max-sm:min-h-11"
+                >
                   {t("settings.backup.import.confirm")}
                 </Button>
               </div>
+
+              {importError ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {importError}
+                </p>
+              ) : null}
+
+              {result ? (
+                <div
+                  role="status"
+                  data-status={result.status}
+                  className={`space-y-2 rounded border p-3 ${
+                    result.status === "ok"
+                      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                      : result.status === "partial"
+                        ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                        : "border-destructive/50 bg-destructive/10 text-destructive"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {result.status === "ok" ? (
+                      <CheckCircle2 aria-hidden="true" className="size-4 shrink-0" />
+                    ) : result.status === "partial" ? (
+                      <AlertTriangle aria-hidden="true" className="size-4 shrink-0" />
+                    ) : (
+                      <XCircle aria-hidden="true" className="size-4 shrink-0" />
+                    )}
+                    <p className="text-sm font-medium">
+                      {result.status === "ok"
+                        ? t("settings.backup.result.ok", {
+                            created: appliedCreated,
+                            deleted: result.deleted_total,
+                          })
+                        : result.status === "partial"
+                          ? t("settings.backup.result.partial", {
+                              created: appliedCreated,
+                              deleted: result.deleted_total,
+                              errors: result.errors_total,
+                            })
+                          : t("settings.backup.result.error")}
+                    </p>
+                  </div>
+                  {result.status !== "error" ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        void handleRecheck()
+                      }}
+                      className="max-sm:min-h-11"
+                    >
+                      {t("settings.backup.result.recheck")}
+                    </Button>
+                  ) : null}
+                  {renderRowErrors(result.errors, result.errors_total)}
+                </div>
+              ) : null}
             </div>
           ) : null}
         </CardContent>

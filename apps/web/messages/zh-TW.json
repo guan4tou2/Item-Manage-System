@@ -1134,6 +1134,7 @@
         "confirm": "確認匯入",
         "emptySummary": "備份中沒有可匯入的資料。",
         "hardError": "無法讀取備份檔",
+        "importFailed": "匯入失敗，請再試一次。",
         "errorsTitle": "列級錯誤",
         "errorRow": "{entity} #{index}：{message}",
         "moreErrors": "…還有 {count} 筆",
@@ -1157,6 +1158,12 @@
         "warning": "將刪除 {count} 筆現有資料，且無法復原。",
         "downloadFirst": "先下載備份",
         "confirmLabel": "輸入 REPLACE 以確認"
+      },
+      "result": {
+        "ok": "匯入完成：建立 {created} 筆、刪除 {deleted} 筆。",
+        "partial": "匯入完成：建立 {created} 筆、刪除 {deleted} 筆，另有 {errors} 筆列級錯誤。",
+        "error": "匯入失敗，未變更任何資料。",
+        "recheck": "重新比對"
       },
       "entities": {
         "items": "物品",

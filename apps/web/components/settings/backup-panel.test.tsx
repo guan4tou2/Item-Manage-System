@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { NextIntlClientProvider } from "next-intl"
@@ -76,11 +77,23 @@ const backupFile = () =>
   new File(["{}"], "backup.json", { type: "application/json" })
 
 function renderPanel() {
-  return render(
-    <NextIntlClientProvider locale="en" messages={enMessages}>
-      <BackupPanel />
-    </NextIntlClientProvider>,
-  )
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  })
+
+  return {
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        <NextIntlClientProvider locale="en" messages={enMessages}>
+          <BackupPanel />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    ),
+    queryClient,
+  }
 }
 
 describe("BackupPanel export card", () => {
@@ -310,5 +323,181 @@ describe("BackupPanel import card", () => {
 
     resolveDryRun(dryRunResult)
     expect(await screen.findByText(t.summary.title)).toBeInTheDocument()
+  })
+})
+
+const appliedResult = {
+  ...dryRunResult,
+  dry_run: false,
+}
+
+describe("BackupPanel import execution", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(api.downloadBackup).mockResolvedValue(undefined)
+  })
+
+  it("imports with create_only, reports success, and invalidates queries", async () => {
+    vi.mocked(api.importBackup)
+      .mockResolvedValueOnce(dryRunResult)
+      .mockResolvedValueOnce(appliedResult)
+    const { container, queryClient } = renderPanel()
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries")
+
+    await userEvent.upload(fileInput(container), backupFile())
+    await screen.findByText(t.summary.title)
+    await userEvent.click(screen.getByRole("button", { name: t.import.confirm }))
+
+    await waitFor(() =>
+      expect(vi.mocked(api.importBackup)).toHaveBeenLastCalledWith(
+        expect.any(File),
+        { mode: "create_only", dryRun: false },
+        "jwt",
+      ),
+    )
+    const report = await screen.findByRole("status")
+    expect(report).toHaveTextContent(
+      t.result.ok.replace("{created}", "3").replace("{deleted}", "0"),
+    )
+    expect(invalidate).toHaveBeenCalled()
+
+    // 「重新比對」以同一檔案重跑 dry-run
+    vi.mocked(api.importBackup).mockResolvedValueOnce(dryRunResult)
+    fireEvent.click(screen.getByRole("button", { name: t.result.recheck }))
+    await waitFor(() =>
+      expect(vi.mocked(api.importBackup)).toHaveBeenLastCalledWith(
+        expect.any(File),
+        { mode: "create_only", dryRun: true },
+        "jwt",
+      ),
+    )
+    await waitFor(() => expect(screen.queryByRole("status")).toBeNull())
+  })
+
+  it("sends confirm=REPLACE for a non-dry-run replace import", async () => {
+    vi.mocked(api.importBackup)
+      .mockResolvedValueOnce(replaceDryRunResult)
+      .mockResolvedValueOnce({ ...replaceDryRunResult, dry_run: false })
+    const { container } = renderPanel()
+
+    await userEvent.click(
+      screen.getByRole("radio", { name: t.import.modeReplace }),
+    )
+    await userEvent.upload(fileInput(container), backupFile())
+    await screen.findByText(t.replace.warning.replace("{count}", "7"))
+    await userEvent.type(screen.getByPlaceholderText("REPLACE"), "REPLACE")
+    await userEvent.click(screen.getByRole("button", { name: t.import.confirm }))
+
+    await waitFor(() =>
+      expect(vi.mocked(api.importBackup)).toHaveBeenLastCalledWith(
+        expect.any(File),
+        { mode: "replace", dryRun: false, confirm: "REPLACE" },
+        "jwt",
+      ),
+    )
+    const report = await screen.findByRole("status")
+    expect(report).toHaveTextContent(
+      t.result.ok.replace("{created}", "3").replace("{deleted}", "7"),
+    )
+  })
+
+  it("reports a partial import with row errors in orange", async () => {
+    vi.mocked(api.importBackup)
+      .mockResolvedValueOnce(dryRunResult)
+      .mockResolvedValueOnce({
+        ...appliedResult,
+        status: "partial" as const,
+        errors: [
+          { entity: "items", index: 4, name: "壞", message: "名稱為必填" },
+        ],
+        errors_total: 1,
+      })
+    const { container } = renderPanel()
+
+    await userEvent.upload(fileInput(container), backupFile())
+    await screen.findByText(t.summary.title)
+    await userEvent.click(screen.getByRole("button", { name: t.import.confirm }))
+
+    const report = await screen.findByRole("status")
+    expect(report).toHaveTextContent(
+      t.result.partial
+        .replace("{created}", "3")
+        .replace("{deleted}", "0")
+        .replace("{errors}", "1"),
+    )
+    expect(report).toHaveTextContent("名稱為必填")
+  })
+
+  it("reports an error import as unchanged and skips invalidate", async () => {
+    vi.mocked(api.importBackup)
+      .mockResolvedValueOnce(dryRunResult)
+      .mockResolvedValueOnce({
+        ...appliedResult,
+        status: "error" as const,
+        errors: [
+          { entity: "items", index: 0, name: "壞", message: "名稱為必填" },
+        ],
+        errors_total: 1,
+      })
+    const { container, queryClient } = renderPanel()
+    const invalidate = vi.spyOn(queryClient, "invalidateQueries")
+
+    await userEvent.upload(fileInput(container), backupFile())
+    await screen.findByText(t.summary.title)
+    await userEvent.click(screen.getByRole("button", { name: t.import.confirm }))
+
+    const report = await screen.findByRole("status")
+    expect(report).toHaveTextContent(t.result.error)
+    expect(invalidate).not.toHaveBeenCalled()
+    // 失敗態不提供「重新比對」以外的重新執行（狀態為 error 時無此按鈕）
+    expect(screen.queryByRole("button", { name: t.result.recheck })).toBeNull()
+  })
+
+  it("toasts and shows a retryable inline error when the import request fails", async () => {
+    vi.mocked(api.importBackup)
+      .mockResolvedValueOnce(dryRunResult)
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce(appliedResult)
+    const { container } = renderPanel()
+
+    await userEvent.upload(fileInput(container), backupFile())
+    await screen.findByText(t.summary.title)
+    await userEvent.click(screen.getByRole("button", { name: t.import.confirm }))
+
+    await waitFor(() =>
+      expect(vi.mocked(toast.error)).toHaveBeenCalledWith(t.import.importFailed),
+    )
+    expect(screen.getByRole("alert")).toHaveTextContent(t.import.importFailed)
+    expect(screen.queryByRole("status")).toBeNull()
+
+    // 可重試：再按一次即成功
+    await userEvent.click(screen.getByRole("button", { name: t.import.confirm }))
+    expect(await screen.findByRole("status")).toBeInTheDocument()
+  })
+
+  it("clears the previous report when a new file is picked", async () => {
+    vi.mocked(api.importBackup)
+      .mockResolvedValueOnce(dryRunResult)
+      .mockResolvedValueOnce(appliedResult)
+      .mockResolvedValueOnce(dryRunResult)
+    const { container } = renderPanel()
+
+    await userEvent.upload(fileInput(container), backupFile())
+    await screen.findByText(t.summary.title)
+    await userEvent.click(screen.getByRole("button", { name: t.import.confirm }))
+    expect(await screen.findByRole("status")).toBeInTheDocument()
+
+    const second = new File(["{}"], "backup2.json", { type: "application/json" })
+    await userEvent.upload(fileInput(container), second)
+
+    await waitFor(() =>
+      expect(vi.mocked(api.importBackup)).toHaveBeenLastCalledWith(
+        second,
+        { mode: "create_only", dryRun: true },
+        "jwt",
+      ),
+    )
+    expect(screen.queryByRole("status")).toBeNull()
+    await screen.findByText(t.summary.title)
   })
 })
