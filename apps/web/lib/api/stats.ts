@@ -12,6 +12,10 @@ export type ActiveLoan = paths["/api/stats/active-loans"]["get"]["responses"]["2
 export type TrendPoint = paths["/api/stats/trend"]["get"]["responses"]["200"]["content"]["application/json"][number]
 export type ActivityEntry = paths["/api/stats/activity"]["get"]["responses"]["200"]["content"]["application/json"][number]
 export type ExpiryStats = paths["/api/stats/expiry"]["get"]["responses"]["200"]["content"]["application/json"]
+export type ValueStats = paths["/api/stats/value"]["get"]["responses"]["200"]["content"]["application/json"]
+export type CategoryValueBucket = ValueStats["by_category"][number]
+export type LocationValueBucket = ValueStats["by_location"][number]
+export type WarehouseValueBucket = ValueStats["by_warehouse"][number]
 
 export async function getOverview(accessToken: string | null): Promise<OverviewStats> {
   const res = await apiFetch("/stats/overview", { accessToken })
@@ -66,4 +70,9 @@ export async function getActivity(limit: number, accessToken: string | null): Pr
 export async function getExpiryStats(days: number, accessToken: string | null): Promise<ExpiryStats> {
   const res = await apiFetch(`/stats/expiry?days=${days}`, { accessToken })
   return (await res.json()) as ExpiryStats
+}
+
+export async function getValue(accessToken: string | null): Promise<ValueStats> {
+  const res = await apiFetch("/stats/value", { accessToken })
+  return (await res.json()) as ValueStats
 }
