@@ -83,7 +83,7 @@
 - Modify: `apps/api/app/routes/backup.py`
 
 **TODO:**
-- [ ] RED：新測試檔（`auth` fixture 複製 `test_backup.py` 範式；上傳以 `files={"file": ("backup.json", json.dumps(doc).encode(), "application/json")}`＋`data={"mode":..., "dry_run":"true"}`）：
+- [x] RED：新測試檔（`auth` fixture 複製 `test_backup.py` 範式；上傳以 `files={"file": ("backup.json", json.dumps(doc).encode(), "application/json")}`＋`data={"mode":..., "dry_run":"true"}`）：
   - 無效 JSON／root 非物件／`format_version` 缺失／`format_version=5`／`format_version=0` → 400＋明確 detail
   - 大檔（monkeypatch `backup_import_service.MAX_BACKUP_BYTES` 縮小）→ 413
   - 空備份（全鍵空）→ 200 `status="ok"`、各實體 `imported=0`
@@ -91,11 +91,11 @@
   - `mode` 非白名單 → 422；`mode=replace`＋非 dry-run 未帶 `confirm` → 400；`confirm` 非 `REPLACE` → 400
   - v3 檔（無新鍵）可匯入；items 缺 `barcode`／`track_batches` → 預設 null／false
   - 摘要形狀：`entities[]`（entity／existing／imported／created／reused／renamed／skipped／errors）＋`errors[]`（entity／index／name／message）＋`warnings[]`＋`reconciliation[]`
-- [ ] GREEN：
+- [x] GREEN：
   - `schemas/backup.py`：`BackupImportEntitySummary`／`BackupImportError`／`BackupReconciliationItem`／`BackupImportResult`（`format_version:int, mode:Literal, dry_run:bool, status:Literal["ok","partial","error"], deleted_total:int, entities:[...], errors:[...], errors_total:int, warnings:[str], reconciliation:[...]`）
   - `backup_import_service.py`：`plan(session, user_id, payload, *, mode) -> _Plan`（純讀：解析→逐實體驗證→名稱匹配→id-map→對帳；UUID 於此配發；回 per-entity buckets＋errors＋warnings＋reconciliation＋replace 的將刪除數）；`MAX_BACKUP_BYTES`；`parse` 硬錯誤拋 `BackupFormatError`（route 轉 400）
   - `routes/backup.py`：`POST /import`（`file: UploadFile`、`mode: Literal["create_only","replace"]=Form("create_only")`、`dry_run: bool=Form(False)`、`confirm: str|None=Form(None)`；`response_model=BackupImportResult`）——讀檔（>上限→413）→ parse（硬錯→400）→ `confirm` 檢查 → plan → `dry_run=True` 回摘要；`:False` 進 apply（T1.3/T1.4）
-- [ ] 列級驗證定案（錯誤訊息具體、繁中）：items（`name` 必填非空；`quantity` 非負整數預設 1；`barcode` ≤32 字；`min_quantity`／`cost` 非負；`tag_names` 字串陣列）；categories/locations（`name` 必填；環檢測）；batches/logs/versions/loans/stocktake_items（`item_id` 須命中 id-map，否則列錯誤）；lists（`kind`／`title` 必填）；webhooks（`url` 必填）；通知偏好（`type`／`channel`／`enabled` 必填）
+- [x] 列級驗證定案（錯誤訊息具體、繁中）：items（`name` 必填非空；`quantity` 非負整數預設 1；`barcode` ≤32 字；`min_quantity`／`cost` 非負；`tag_names` 字串陣列）；categories/locations（`name` 必填；環檢測）；batches/logs/versions/loans/stocktake_items（`item_id` 須命中 id-map，否則列錯誤）；lists（`kind`／`title` 必填）；webhooks（`url` 必填）；通知偏好（`type`／`channel`／`enabled` 必填）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_backup_import.py`
