@@ -59,8 +59,8 @@
 - Test: `apps/api/tests/test_backup.py`（擴充）
 
 **TODO:**
-- [ ] RED：更新／新增測試——`format_version == 4`；items 含 `barcode`／`track_batches`；新鍵存在（`preferences`／`item_custom_values`／`item_batches`／`loans`／`quantity_logs`／`item_versions`／`stocktakes`／`webhooks`／`notification_preferences`）；建 1 物品（barcode、cost、2 批次 1 耗盡）＋借出＋調量 2 次＋自訂欄位/值＋清單＋盤點＋webhook＋通知偏好＋currency=USD → 各鍵內容正確；清單排序穩定（同名建立順序無關）
-- [ ] GREEN：items 欄位表加 `barcode`／`track_batches`；新增全域查詢與輸出：
+- [x] RED：更新／新增測試——`format_version == 4`；items 含 `barcode`／`track_batches`；新鍵存在（`preferences`／`item_custom_values`／`item_batches`／`loans`／`quantity_logs`／`item_versions`／`stocktakes`／`webhooks`／`notification_preferences`）；建 1 物品（barcode、cost、2 批次 1 耗盡）＋借出＋調量 2 次＋自訂欄位/值＋清單＋盤點＋webhook＋通知偏好＋currency=USD → 各鍵內容正確；清單排序穩定（同名建立順序無關）
+- [x] GREEN：items 欄位表加 `barcode`／`track_batches`；新增全域查詢與輸出：
   - `preferences: {currency}`（`currency_from_raw(user.preferences or {})`，需載入 user 或用 `select(User.preferences)`）
   - `item_custom_values: [{item_id, custom_field_id, value}]`（限自己 items 的列）
   - `item_batches: [{id, item_id, quantity, expiry_date, received_at, note, is_depleted, created_at}]`
@@ -70,8 +70,8 @@
   - `stocktakes: [{id, name, status, started_at, completed_at, items:[{item_id, expected_quantity, actual_quantity, note, scanned_at}]}]`
   - `webhooks: [{id, name, url, secret, events, is_active, created_at}]`
   - `notification_preferences: [{type, channel, enabled}]`
-- [ ] 各清單輸出前穩定排序（`created_at, id`；taxonomy `name, id`）；`_serialize` 沿用（UUID→str、Decimal→str、datetime→isoformat、date→isoformat 需確認——`date` 目前會落入 `hasattr(__dict__)` → None！**新增 `date` 分支**）
-- [ ] 既有鍵（items／categories／…／groups_owned）輸出欄位不變（除 items 加 2 欄）
+- [x] 各清單輸出前穩定排序（`created_at, id`；taxonomy `name, id`）；`_serialize` 沿用（UUID→str、Decimal→str、datetime→isoformat、**新增 `date`→isoformat 分支**——`date` 非 `datetime` 子類實例，先前會直落 `json.dumps` TypeError）
+- [x] 既有鍵（items／categories／…／groups_owned）輸出欄位不變（除 items 加 2 欄）
 
 **Commands:**
 - `cd apps/api && uv run --extra test pytest -q tests/test_backup.py`
