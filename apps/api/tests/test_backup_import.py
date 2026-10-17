@@ -602,6 +602,16 @@ async def test_replace_round_trip_equivalent(client, auth):
     # 通知偏好逐格還原
     assert _norm_export(doc_c)["notification_preferences"] == [("low_stock", "email", False)]
 
+    # 對帳 invariant：track_batches 物品 quantity == Σ 未耗盡批次
+    batch_totals: dict = {}
+    for b in doc_c["item_batches"]:
+        if not b["is_depleted"]:
+            batch_totals[b["item_id"]] = batch_totals.get(b["item_id"], 0) + b["quantity"]
+    for item in doc_c["items"]:
+        if item["track_batches"]:
+            assert item["quantity"] == batch_totals.get(item["id"], 0), item["name"]
+    assert batch_totals  # 至少一件批次物品被檢查
+
 
 async def test_create_only_round_trip_except_currency(client, auth):
     await _seed_full_account(client, auth)
@@ -682,28 +692,29 @@ async def test_partial_import_applies_valid_rows(client, auth):
     assert [i["name"] for i in exported["items"]] == ["好的"]
 
 
-async def test_import_apply_writes_audit_log(client, auth, db_session):
+async def _backup_import_audits(db_session):
     from sqlalchemy import select as sa_select
 
     from app.models.favorite_audit_token import AuditLog
 
-    async def _rows():
-        return (
-            (
-                await db_session.execute(
-                    sa_select(AuditLog).where(AuditLog.action == "backup.import")
-                )
+    return (
+        (
+            await db_session.execute(
+                sa_select(AuditLog).where(AuditLog.action == "backup.import")
             )
-            .scalars()
-            .all()
         )
+        .scalars()
+        .all()
+    )
 
+
+async def test_import_apply_writes_audit_log(client, auth, db_session):
     doc = {"format_version": 4, "items": [_item("稽核")]}
     assert (await _post(client, auth, doc=doc, dry_run=True)).status_code == 200
-    assert await _rows() == []  # dry-run 不寫稽核
+    assert await _backup_import_audits(db_session) == []  # dry-run 不寫稽核
 
     assert (await _post(client, auth, doc=doc, dry_run=False)).status_code == 200
-    rows = await _rows()
+    rows = await _backup_import_audits(db_session)
     assert len(rows) == 1
     assert rows[0].resource_type == "backup"
     assert rows[0].resource_id is None
@@ -712,7 +723,7 @@ async def test_import_apply_writes_audit_log(client, auth, db_session):
 
     # 再匯入一次 dry-run 不新增
     await _post(client, auth, doc=doc, dry_run=True)
-    assert len(await _rows()) == 1
+    assert len(await _backup_import_audits(db_session)) == 1
 
 
 async def test_import_same_name_suffix_and_bad_batch_row(client, auth):
@@ -768,3 +779,175 @@ async def test_import_loan_missing_borrower_labeled(client, auth):
     loan = exported["loans"][0]
     assert loan["borrower_user_id"] is None
     assert loan["borrower_label"] == "（原借用人不存在）"
+
+
+# ---------------------------------------------------------------------------
+# T1.4：replace 清空、隔離性、中止與回滾
+# ---------------------------------------------------------------------------
+
+
+async def _seed_legacy(client, auth) -> None:
+    """舊資料：涵蓋會被 replace 清空的各實體。"""
+    cat = (await client.post("/api/categories", headers=auth, json={"name": "舊分類"})).json()
+    await client.post("/api/locations", headers=auth, json={"name": "舊位置", "kind": "room"})
+    await client.post("/api/warehouses", headers=auth, json={"name": "舊倉"})
+    await client.post("/api/custom-fields", headers=auth, json={"name": "舊欄位", "field_type": "text"})
+    item = (
+        await client.post(
+            "/api/items", headers=auth, json={"name": "舊物", "quantity": 2, "category_id": cat["id"]}
+        )
+    ).json()
+    await client.post(f"/api/items/{item['id']}/batches", headers=auth, json={"quantity": 1})
+    await client.post(
+        "/api/lists", headers=auth, json={"kind": "generic", "title": "舊清單"}
+    )
+    await client.post("/api/stocktakes", headers=auth, json={"name": "舊盤點"})
+    await client.post(
+        "/api/webhooks",
+        headers=auth,
+        json={"name": "舊鉤", "url": "https://example.com/old", "events": ["item.created"]},
+    )
+    await client.put(
+        "/api/notifications/preferences",
+        headers=auth,
+        json={"updates": [{"type": "low_stock", "channel": "email", "enabled": False}]},
+    )
+
+
+async def test_replace_clears_existing_and_imports(client, auth):
+    await _seed_legacy(client, auth)
+    doc = {
+        "format_version": 4,
+        "items": [_item("新物", quantity=7)],
+        "lists": [{"kind": "generic", "title": "新清單"}],
+    }
+    r = await _post(client, auth, doc=doc, mode="replace", dry_run=False, confirm="REPLACE")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok", body["errors"]
+    assert body["deleted_total"] > 0
+
+    exported = (await client.get("/api/backup/export", headers=auth)).json()
+    assert [i["name"] for i in exported["items"]] == ["新物"]
+    assert exported["items"][0]["quantity"] == 7
+    assert [lst["title"] for lst in exported["lists"]] == ["新清單"]
+    # 舊資料全數消失（備份未含者）
+    for key in (
+        "categories",
+        "locations",
+        "warehouses",
+        "custom_fields",
+        "item_batches",
+        "stocktakes",
+        "webhooks",
+        "notification_preferences",
+        "loans",
+        "quantity_logs",
+        "item_versions",
+    ):
+        assert exported[key] == [], key
+
+
+async def test_replace_isolation_other_account(client, auth, db_session):
+    from sqlalchemy import select as sa_select
+
+    from app.models.group import GroupMember
+
+    auth_b = await _register(client, "iso_b")
+    await client.post("/api/items", headers=auth_b, json={"name": "B物", "quantity": 5})
+    await client.post("/api/lists", headers=auth_b, json={"kind": "generic", "title": "B清單"})
+    await client.post(
+        "/api/webhooks",
+        headers=auth_b,
+        json={"name": "B鉤", "url": "https://example.com/b", "events": ["item.created"]},
+    )
+    await client.put(
+        "/api/notifications/preferences",
+        headers=auth_b,
+        json={"updates": [{"type": "low_stock", "channel": "email", "enabled": False}]},
+    )
+    b_group = (await client.post("/api/groups", headers=auth_b, json={"name": "B群"})).json()
+    b_before = (await client.get("/api/backup/export", headers=auth_b)).json()
+
+    # A：舊資料 + 群組（B 為成員）
+    await _seed_legacy(client, auth)
+    a_group = (await client.post("/api/groups", headers=auth, json={"name": "A群"})).json()
+    r = await client.post(
+        f"/api/groups/{a_group['id']}/members", headers=auth, json={"username": "iso_b"}
+    )
+    assert r.status_code == 201
+
+    doc = {"format_version": 4, "items": [_item("A新")]}
+    r = await _post(client, auth, doc=doc, mode="replace", dry_run=False, confirm="REPLACE")
+    assert r.json()["status"] == "ok", r.json()["errors"]
+
+    # B 的資料完全不變
+    b_after = (await client.get("/api/backup/export", headers=auth_b)).json()
+    assert _norm_export(b_after) == _norm_export(b_before)
+
+    # B 自己建立的群組不受影響（members 亦保留）
+    assert [g["name"] for g in b_after["groups_owned"]] == ["B群"]
+    rows = (
+        await db_session.execute(
+            sa_select(GroupMember).where(GroupMember.group_id == b_group["id"])
+        )
+    ).scalars().all()
+    assert len(rows) == 1
+
+    # 「B 對 A 群組」的 membership 屬 A 資料範圍 → 隨 A 群組一併清除
+    rows = (
+        await db_session.execute(
+            sa_select(GroupMember).where(GroupMember.group_id == a_group["id"])
+        )
+    ).scalars().all()
+    assert rows == []
+
+
+async def test_replace_row_error_aborts_without_writes(client, auth, db_session):
+    await client.post("/api/items", headers=auth, json={"name": "原本"})
+    doc = {"format_version": 4, "items": [_item("新"), {"id": "bad", "name": "  "}]}
+    r = await _post(client, auth, doc=doc, mode="replace", dry_run=False, confirm="REPLACE")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "error"
+    assert body["deleted_total"] == 0
+    assert body["errors_total"] == 1
+
+    exported = (await client.get("/api/backup/export", headers=auth)).json()
+    assert [i["name"] for i in exported["items"]] == ["原本"]
+    assert await _backup_import_audits(db_session) == []
+
+
+async def test_replace_runtime_error_rolls_back(client, auth, monkeypatch):
+    import pytest as _pytest
+    from app.services import backup_import_service
+
+    await client.post("/api/items", headers=auth, json={"name": "倖存", "quantity": 3})
+
+    async def boom(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(backup_import_service, "_insert_items", boom)
+    doc = {"format_version": 4, "items": [_item("新")]}
+    with _pytest.raises(RuntimeError):
+        await _post(client, auth, doc=doc, mode="replace", dry_run=False, confirm="REPLACE")
+
+    # 清空＋寫入皆已回滾 → 舊資料完整
+    exported = (await client.get("/api/backup/export", headers=auth)).json()
+    assert [i["name"] for i in exported["items"]] == ["倖存"]
+    assert exported["items"][0]["quantity"] == 3
+
+
+async def test_replace_dry_run_counts_without_writing(client, auth, db_session):
+    await client.post("/api/items", headers=auth, json={"name": "x"})
+    await client.post("/api/lists", headers=auth, json={"kind": "generic", "title": "l"})
+    doc = {"format_version": 4, "items": [_item("y")]}
+    r = await _post(client, auth, doc=doc, mode="replace", dry_run=True)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["deleted_total"] >= 2
+    assert body["dry_run"] is True
+
+    exported = (await client.get("/api/backup/export", headers=auth)).json()
+    assert [i["name"] for i in exported["items"]] == ["x"]
+    assert await _backup_import_audits(db_session) == []

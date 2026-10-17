@@ -128,15 +128,15 @@
 - Test: `apps/api/tests/test_backup_import.py`（續寫）
 
 **TODO:**
-- [ ] RED：
+- [x] RED：
   - **等價＋清空**：C 有舊資料（物品／清單／批次／webhook）→ replace 匯入 → 舊資料全數消失（逐實體 0 或＝備份數）、`deleted_total` > 0、新資料完整
-  - **隔離性**：B 帳號自有物品／分類／清單／webhook／通知偏好 → A replace 匯入前後 B 全數不變（含 B 的 group_members 於 A 的群組？——A 群組被清 → B 對 A 群組的 membership 消失，屬 A 資料範圍，測試登錄此語意；反之「B 自己群組」不變）
-  - **plan 有錯 → 中止零寫入**：replace＋1 壞列 → `status="error"`、`deleted_total=0`、原資料與稽核不變、無 `backup.import` 稽核
-  - **執行期例外 → rollback**：monkeypatch apply 內某一步（如 `_insert_items`）raise → 原資料完整（含被清前的列數）＋rollback 後無殘留
-  - dry-run replace：`deleted_total`＝現有可清列數、零寫入
-  - `confirm=REPLACE` 成功案例（非 dry-run）通過
-- [ ] GREEN：`apply_replace(session, user_id, plan)`——同一交易：`_wipe(session, user_id)`（依定案 6 依賴序 delete，逐一計數）→ 建立（重用 create_only 的 insert 步驟）→ `commit()`；任何例外 `rollback()` → `BackupImportResult(status="error")`；currency 覆寫；稽核於 commit 後
-- [ ] `deleted_total` 於 replace dry-run 以 COUNT 計算（不刪）
+  - [x] **隔離性**：B 帳號自有物品／分類／清單／webhook／通知偏好 → A replace 匯入前後 B 全數不變（含 B 的 group_members 於 A 的群組？——A 群組被清 → B 對 A 群組的 membership 消失，屬 A 資料範圍，測試登錄此語意；反之「B 自己群組」不變）
+  - [x] **plan 有錯 → 中止零寫入**：replace＋1 壞列 → `status="error"`、`deleted_total=0`、原資料與稽核不變、無 `backup.import` 稽核
+  - [x] **執行期例外 → rollback**：monkeypatch apply 內某一步（如 `_insert_items`）raise → 原資料完整（含被清前的列數）＋rollback 後無殘留
+  - [x] dry-run replace：`deleted_total`＝現有可清列數、零寫入
+  - [x] `confirm=REPLACE` 成功案例（非 dry-run）通過
+- [x] GREEN：`apply_replace(session, user_id, plan)`（與 T1.3 共用 `apply_plan`；例外 rollback 後 re-raise → route 轉 500，資料完整）——同一交易：`_wipe(session, user_id)`（依定案 6 依賴序 delete，逐一計數）→ 建立（重用 create_only 的 insert 步驟）→ `commit()`；任何例外 `rollback()` → `BackupImportResult(status="error")`；currency 覆寫；稽核於 commit 後
+- [x] `deleted_total` 於 replace dry-run 以 COUNT 計算（不刪）；非 dry-run 以實際 rowcount 覆寫
 
 **Commands:**
 - 同 T1.2
