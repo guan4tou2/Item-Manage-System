@@ -1851,6 +1851,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/webhooks/{webhook_id}/deliveries/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Delivery Stats */
+        get: operations["delivery_stats_api_webhooks__webhook_id__deliveries_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/webhooks/{webhook_id}/deliveries/{delivery_id}/retry": {
         parameters: {
             query?: never;
@@ -3874,6 +3891,19 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** WebhookDeliveryStats */
+        WebhookDeliveryStats: {
+            /** Total */
+            total: number;
+            /** Succeeded */
+            succeeded: number;
+            /** Failed */
+            failed: number;
+            /** Pending */
+            pending: number;
+            /** Last Success At */
+            last_success_at?: string | null;
         };
         /** WebhookRead */
         WebhookRead: {
@@ -8118,6 +8148,9 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                offset?: number;
+                status?: ("success" | "failed" | "pending") | null;
+                event?: string | null;
             };
             header?: never;
             path: {
@@ -8134,6 +8167,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WebhookDeliveryRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delivery_stats_api_webhooks__webhook_id__deliveries_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                webhook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WebhookDeliveryStats"];
                 };
             };
             /** @description Validation Error */
