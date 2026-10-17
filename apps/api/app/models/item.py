@@ -2,10 +2,22 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Index, Integer, String, Text, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, _utcnow
@@ -20,6 +32,7 @@ class Item(Base):
             "min_quantity IS NULL OR min_quantity >= 0",
             name="ck_items_min_quantity_nonneg",
         ),
+        CheckConstraint("cost IS NULL OR cost >= 0", name="ck_items_cost_nonneg"),
         Index("ix_items_owner_barcode", "owner_id", "barcode"),
     )
 
@@ -33,6 +46,7 @@ class Item(Base):
     warehouse_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"), default=1)
     min_quantity: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, default=None)
+    cost: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True, default=None)
     track_batches: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     is_favorite: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"), index=True)

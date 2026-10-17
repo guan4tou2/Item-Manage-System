@@ -63,9 +63,9 @@
 - Test: `apps/api/tests/test_item_cost_smoke.py`
 
 **TODO:**
-- [ ] `Item.cost`：`Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)`；`__table_args__` 加 `CheckConstraint("cost IS NULL OR cost >= 0", name="ck_items_cost_nonneg")`（比照 `ck_items_quantity_nonneg`）；import `Decimal`／`Numeric`
-- [ ] migration `0021`（`down_revision="0020"`）：`op.add_column("items", sa.Column("cost", sa.Numeric(12, 2), nullable=True))`＋check constraint（SQLite 走 `batch_alter_table`，比照 0020 檔案風格）；downgrade：drop constraint＋drop column（可逆）
-- [ ] smoke：`cost=None` 可建；`Decimal("12.34")` 建→讀回；負值 → CheckConstraint 違反（SQLite／PG 皆擋，PG 於收尾 API 實測）；nullable 不影響既有欄位
+- [x] `Item.cost`：`Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)`；`__table_args__` 加 `CheckConstraint("cost IS NULL OR cost >= 0", name="ck_items_cost_nonneg")`（比照 `ck_items_quantity_nonneg`）；import `Decimal`／`Numeric`
+- [x] migration `0021`（`down_revision="0020"`）：`op.add_column("items", sa.Column("cost", sa.Numeric(12, 2), nullable=True))`＋check constraint（SQLite 走 `batch_alter_table`，比照 0020 檔案風格）；downgrade：drop constraint＋drop column（可逆）
+- [x] smoke：`cost=None` 可建；`Decimal("12.34")` 建→讀回；負值 → CheckConstraint 違反（SQLite／PG 皆擋，PG 於收尾 API 實測）；nullable 不影響既有欄位
 - 精度把關在 schema 層（SQLite 的 `Numeric` 不做 scale 強制，勿在 model 層測截斷）
 
 **Commands:**
