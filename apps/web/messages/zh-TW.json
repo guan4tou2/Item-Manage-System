@@ -4,10 +4,17 @@
     "categories": "分類",
     "collab": "協作",
     "dashboard": "儀表板",
+    "groups": {
+      "analysis": "分析",
+      "collab": "協作",
+      "inventory": "物品",
+      "system": "系統"
+    },
     "items": "物品",
     "lists": "清單",
     "locations": "位置",
     "notifications": "通知",
+    "reports": "報表",
     "scan": "掃碼",
     "settings": "設定",
     "stocktakes": "盤點",
@@ -735,6 +742,57 @@
       "sharedBy": "由 {username} 分享（唯讀）"
     }
   },
+  "reports": {
+    "title": "報表",
+    "description": "每月 1 日自動彙整上月的物品動態",
+    "loading": "載入中…",
+    "loadError": "無法載入報表",
+    "retry": "重試",
+    "empty": {
+      "title": "還沒有月報",
+      "firstMonth": "第一份月報將於次月 1 日生成",
+      "disabled": "月報已關閉",
+      "disabledHint": "已關閉月報的生成與寄送",
+      "openSettings": "前往月報設定"
+    },
+    "noActivity": "本月無動態",
+    "generatedAt": "產生時間：{time}",
+    "viewDetail": "查看詳情",
+    "summary": {
+      "created": "新增 {count}",
+      "used": "消耗 {count}",
+      "value": "估值 {value}"
+    },
+    "detail": {
+      "back": "返回報表列表",
+      "notFound": "找不到這份報表",
+      "loadError": "無法載入報表內容",
+      "inventory": "庫存現況",
+      "items": "物品",
+      "quantity": "總數量",
+      "activity": "本月動態",
+      "created": "新增",
+      "deleted": "刪除",
+      "qtyIn": "入庫",
+      "qtyOut": "消耗",
+      "loansOut": "借出",
+      "loansReturned": "歸還",
+      "loansOverdue": "逾期未還",
+      "expiry": "到期狀態（月底）",
+      "expiringSoon": "30 天內到期",
+      "expired": "已過期",
+      "valuation": "庫存估值",
+      "start": "月初",
+      "end": "月末",
+      "delta": "變化",
+      "unpriced": "{count} 件未設定成本",
+      "topCategories": "熱門分類",
+      "topLocations": "熱門位置",
+      "uncategorized": "未分類",
+      "unassigned": "未指定",
+      "itemsUnit": "{count} 件"
+    }
+  },
   "settings": {
     "subtitle": "集中管理帳號存取、偏好設定、整合與資料匯出入。",
     "title": "設定",
@@ -766,6 +824,7 @@
         "preferences": { "description": "語言與主題", "title": "偏好" },
         "profile": { "description": "顯示名稱與電子郵件", "title": "個人資料" },
         "reminders": { "description": "到期提醒的掃描門檻與上次執行狀態", "title": "提醒排程" },
+        "reports": { "description": "月報的生成與寄送開關", "title": "月報" },
         "taxonomy": { "description": "整理物品的分類結構", "title": "分類／位置／標籤" },
         "tokens": { "description": "供程式與行動 App 存取的權杖", "title": "API Tokens" },
         "webhooks": { "description": "將事件推送到外部系統", "title": "Webhooks" }
@@ -844,6 +903,19 @@
       "setupPatLink": "建立存取權杖",
       "setupDocsHint": "完整範例（systemd timer／GitHub Actions）：",
       "setupDocsLink": "排程文件"
+    },
+    "reports": {
+      "title": "月報",
+      "description": "每月 1 日自動彙整上月的物品動態",
+      "toggleTitle": "每月報表",
+      "toggleDescription": "於每月 1 日生成上個月的報表，並以站內通知與 Email 寄送。",
+      "scheduleNote": "生成時間：每月 1 日（Asia/Taipei）",
+      "historyLink": "查看報表歷史",
+      "savedOn": "月報已開啟",
+      "savedOff": "月報已關閉",
+      "saveFailed": "無法更新月報設定，請稍後再試",
+      "loadError": "無法載入月報設定",
+      "retry": "重試"
     },
     "profile": {
       "email": "電子郵件",

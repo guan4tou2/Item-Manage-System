@@ -4,10 +4,17 @@
     "categories": "Categories",
     "collab": "Collaboration",
     "dashboard": "Dashboard",
+    "groups": {
+      "analysis": "Analysis",
+      "collab": "Collaboration",
+      "inventory": "Items",
+      "system": "System"
+    },
     "items": "Items",
     "lists": "Lists",
     "locations": "Locations",
     "notifications": "Notifications",
+    "reports": "Reports",
     "scan": "Scan",
     "settings": "Settings",
     "stocktakes": "Stocktake",
@@ -735,6 +742,57 @@
       "sharedBy": "Shared by {username} (read-only)"
     }
   },
+  "reports": {
+    "title": "Reports",
+    "description": "A monthly digest of your items, generated on the 1st",
+    "loading": "Loading…",
+    "loadError": "Could not load reports",
+    "retry": "Retry",
+    "empty": {
+      "title": "No reports yet",
+      "firstMonth": "Your first report is generated on the 1st of next month",
+      "disabled": "Monthly reports are off",
+      "disabledHint": "Generation and delivery are turned off",
+      "openSettings": "Open monthly report settings"
+    },
+    "noActivity": "No activity this month",
+    "generatedAt": "Generated {time}",
+    "viewDetail": "View details",
+    "summary": {
+      "created": "{count} added",
+      "used": "{count} used",
+      "value": "value {value}"
+    },
+    "detail": {
+      "back": "Back to reports",
+      "notFound": "Report not found",
+      "loadError": "Could not load this report",
+      "inventory": "Inventory snapshot",
+      "items": "Items",
+      "quantity": "Total quantity",
+      "activity": "This month",
+      "created": "Added",
+      "deleted": "Deleted",
+      "qtyIn": "Stock in",
+      "qtyOut": "Used",
+      "loansOut": "Lent",
+      "loansReturned": "Returned",
+      "loansOverdue": "Overdue",
+      "expiry": "Expiry at month end",
+      "expiringSoon": "Expiring in 30 days",
+      "expired": "Expired",
+      "valuation": "Inventory value",
+      "start": "Start of month",
+      "end": "End of month",
+      "delta": "Change",
+      "unpriced": "{count} items without cost",
+      "topCategories": "Top categories",
+      "topLocations": "Top locations",
+      "uncategorized": "Uncategorized",
+      "unassigned": "Unassigned",
+      "itemsUnit": "{count} items"
+    }
+  },
   "settings": {
     "subtitle": "Manage account access, preferences, integrations, and data movement from one operational workspace.",
     "title": "Settings",
@@ -766,6 +824,7 @@
         "preferences": { "description": "Language and theme", "title": "Preferences" },
         "profile": { "description": "Display name and email", "title": "Profile" },
         "reminders": { "description": "Expiry reminder thresholds and last run status", "title": "Reminder schedule" },
+        "reports": { "description": "Monthly report generation and delivery", "title": "Monthly report" },
         "taxonomy": { "description": "Organize the item taxonomy", "title": "Categories / Locations / Tags" },
         "tokens": { "description": "Tokens for scripts and mobile apps", "title": "API Tokens" },
         "webhooks": { "description": "Push events to external systems", "title": "Webhooks" }
@@ -844,6 +903,19 @@
       "setupPatLink": "Create access token",
       "setupDocsHint": "Full examples (systemd timer / GitHub Actions):",
       "setupDocsLink": "Scheduling docs"
+    },
+    "reports": {
+      "title": "Monthly report",
+      "description": "A monthly digest of your items, generated on the 1st",
+      "toggleTitle": "Monthly report",
+      "toggleDescription": "Generate last month's report on the 1st and deliver it via in-app notification and email.",
+      "scheduleNote": "Generated on the 1st of each month (Asia/Taipei)",
+      "historyLink": "View report history",
+      "savedOn": "Monthly reports turned on",
+      "savedOff": "Monthly reports turned off",
+      "saveFailed": "Could not update the monthly report setting. Please try again.",
+      "loadError": "Could not load the monthly report setting",
+      "retry": "Retry"
     },
     "profile": {
       "email": "Email",
