@@ -6,6 +6,8 @@ export type GroupDetail = paths["/api/groups/{group_id}"]["get"]["responses"]["2
 export type GroupMember = GroupDetail["members"][number]
 export type GroupCreateBody = paths["/api/groups"]["post"]["requestBody"]["content"]["application/json"]
 export type GroupUpdateBody = paths["/api/groups/{group_id}"]["patch"]["requestBody"]["content"]["application/json"]
+export type GroupAddMemberBody = paths["/api/groups/{group_id}/members"]["post"]["requestBody"]["content"]["application/json"]
+export type GroupAssignableRole = GroupAddMemberBody["role"]
 
 export async function listGroups(token: string | null): Promise<GroupSummary[]> {
   return (await apiFetch("/groups", { accessToken: token })).json()
@@ -22,8 +24,22 @@ export async function updateGroup(id: string, body: GroupUpdateBody, token: stri
 export async function deleteGroup(id: string, token: string | null): Promise<void> {
   await apiFetch(`/groups/${id}`, { method: "DELETE", accessToken: token })
 }
-export async function addGroupMember(groupId: string, username: string, token: string | null): Promise<GroupMember> {
-  return (await apiFetch(`/groups/${groupId}/members`, { method: "POST", accessToken: token, body: JSON.stringify({ username }) })).json()
+export async function addGroupMember(groupId: string, body: GroupAddMemberBody, token: string | null): Promise<GroupMember> {
+  return (await apiFetch(`/groups/${groupId}/members`, { method: "POST", accessToken: token, body: JSON.stringify(body) })).json()
+}
+export async function updateGroupMemberRole(
+  groupId: string,
+  userId: string,
+  role: GroupAssignableRole,
+  token: string | null,
+): Promise<GroupMember> {
+  return (
+    await apiFetch(`/groups/${groupId}/members/${userId}`, {
+      method: "PATCH",
+      accessToken: token,
+      body: JSON.stringify({ role }),
+    })
+  ).json()
 }
 export async function removeGroupMember(groupId: string, userId: string, token: string | null): Promise<void> {
   await apiFetch(`/groups/${groupId}/members/${userId}`, { method: "DELETE", accessToken: token })

@@ -2,6 +2,7 @@
 import { useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { useTranslations } from "next-intl"
+import { EditableOnly } from "@/components/common/editable-only"
 import { GroupCard } from "@/components/collaboration/group-card"
 import { NewGroupDialog } from "@/components/collaboration/new-group-dialog"
 import { TransferCard } from "@/components/collaboration/transfer-card"
@@ -33,7 +34,11 @@ export default function CollaborationPage() {
           <TabsTrigger value="transfers">{t("collab.tabs.transfers")}</TabsTrigger>
         </TabsList>
         <TabsContent value="groups" className="space-y-4">
-          <div className="flex justify-end"><NewGroupDialog /></div>
+          <div className="flex justify-end">
+            <EditableOnly>
+              <NewGroupDialog />
+            </EditableOnly>
+          </div>
           {(groups.data?.length ?? 0) === 0 ? (
             <p className="text-sm text-muted-foreground">{t("collab.groups.empty")}</p>
           ) : (

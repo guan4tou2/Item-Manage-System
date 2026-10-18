@@ -667,8 +667,19 @@
         "confirmRemove": "確定移除此成員？",
         "delete": "刪除群組",
         "confirmDelete": "確定刪除此群組？所有成員將失去彼此物品的可見性。",
-        "leave": "離開群組"
+        "leave": "離開群組",
+        "roleFor": "{username} 的角色",
+        "memberRole": "角色",
+        "roleChanged": "已更新 {username} 的角色",
+        "changeRoleFailed": "無法變更角色，請稍後再試"
       }
+    },
+    "roles": {
+      "owner": "擁有者",
+      "admin": "管理員",
+      "editor": "編輯者",
+      "viewer": "檢視者",
+      "hint": "管理員可加入與管理成員；編輯者可新增與修改內容；檢視者僅能查看。"
     },
     "transfers": {
       "actions": {

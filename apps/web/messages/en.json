@@ -667,8 +667,19 @@
         "confirmRemove": "Remove this member?",
         "delete": "Delete group",
         "confirmDelete": "Delete this group? Members will lose visibility of each other's items.",
-        "leave": "Leave group"
+        "leave": "Leave group",
+        "roleFor": "Role for {username}",
+        "memberRole": "Role",
+        "roleChanged": "Updated the role for {username}",
+        "changeRoleFailed": "Could not change the role; please try again"
       }
+    },
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "editor": "Editor",
+      "viewer": "Viewer",
+      "hint": "Admins can add and manage members; editors can create and edit content; viewers can only look around."
     },
     "transfers": {
       "actions": {

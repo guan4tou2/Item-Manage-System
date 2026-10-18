@@ -26,7 +26,15 @@ export function useDeleteGroup() {
 }
 export function useAddGroupMember(groupId: string) {
   const token = useAccessToken(); const qc = useQueryClient()
-  return useMutation({ mutationFn: (username: string) => api.addGroupMember(groupId, username, token), onSuccess: () => qc.invalidateQueries({ queryKey: ["groups"] }) })
+  return useMutation({ mutationFn: (body: api.GroupAddMemberBody) => api.addGroupMember(groupId, body, token), onSuccess: () => qc.invalidateQueries({ queryKey: ["groups"] }) })
+}
+export function useUpdateMemberRole(groupId: string) {
+  const token = useAccessToken(); const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: api.GroupAssignableRole }) =>
+      api.updateGroupMemberRole(groupId, userId, role, token),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["groups"] }),
+  })
 }
 export function useRemoveGroupMember(groupId: string) {
   const token = useAccessToken(); const qc = useQueryClient()
