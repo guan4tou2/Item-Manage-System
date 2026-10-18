@@ -355,17 +355,23 @@ class Report(Base):
 - `docs/v2-roadmap.md`：Phase 31 ✅＋測試規模更新
 - 本計畫勾選與 Final Verification 實測記錄
 
-## Final Verification（合併前必做）
+## Final Verification（收尾時填實測）
 
-1. API：`uv run pytest`（全綠；記錄總數）
-2. Web：`pnpm test`＋`pnpm typecheck`（全綠）
-3. api-types：重跑 `export_openapi.py`＋`gen:types`，`git diff` 零差異
-4. Migration：Postgres 容器 `upgrade head` → `downgrade 0022` → `upgrade head`
-5. E2E：`docker compose build web api && docker compose up -d` 後
-   `pnpm exec playwright test`（含新 spec）
-6. 視覺走查：`/reports`、`/reports/[id]`、`/settings/reports`、桌面統計 dropdown、
-   行動 drawer（1440×900＋390×844）截圖人工檢視
-7. `git status` 乾淨；ff merge main；移除 worktree／分支；`ims-v2` stack 清理
+- [x] API：`uv run pytest -q` → **912 passed**（3:22，含 1592 warnings）
+- [x] Web：`pnpm vitest run` → **560 passed（111 檔，18.6s）**；`pnpm typecheck` → 0 error
+- [x] api-types 重生成零 diff（`export_openapi.py` ＋ `gen:types` 後 `git status packages/api-types` 空）
+- [x] Migration 0023 up／down 演練（Postgres 容器）：`upgrade 0022 → 0023`（`reports` 表建立）→ `downgrade 0023 → 0022` → `upgrade head`；`to_regclass('public.reports')` 有值
+- [x] e2e：重建 image（`docker compose build web api && docker compose up -d`）後 `pnpm exec playwright test` → **22 spec／68 passed**（含新 `reports.spec.ts` 3 情境；`navigation.spec.ts` 物品入口改於群組容器內定位）
+- [x] 視覺走查：桌機 1440×900＋行動 390×844 截圖人工檢視（`/reports` 週期卡、`/reports/[id]` 區塊卡與估值正負色、`/settings/reports` 開關、桌面「統計」下拉、行動 drawer 四群組展開／收合）——無遮擋或破版
+- [x] `git status` 乾淨；ff merge main；worktree／分支移除；`ims-v2` stack 清理
+
+### 收尾環境註記（2026-10-18 起填）
+
+- worktree `.claude/worktrees/phase31-monthly-reports`（分支 `claude/phase31-monthly-reports`）；stack `ims-v2`（nginx :80、`ENABLE_DEV_ROUTES=1`）
+- 全套驗證以重建 image 後的 production build 執行；migration 由 API 容器啟動時自動套用（`alembic upgrade head`）
+- e2e 前置：月報只計「上一個完整月」的動態，`reports.spec.ts` 以 SQL 將測試物品 `created_at` 回填至該期間（API 無此欄位寫入面）；每次執行皆註冊新使用者，避免 `UNIQUE(user_id, period)` 造成假性跳過
+- Email 未實寄（fail-soft）：`PUBLIC_WEB_URL` 未設時信件連結為 `http://localhost:3000`；站內通知與 API 契約以 unit／spec 覆蓋，部署時請於 `.env` 設定實際網址（已寫入 `docs/scheduling.md` 疑難排解）
+- 視覺走查腳本為臨時檔（`apps/web/visual-walk.mjs`／`visual-walk2.mjs`），截圖存於暫存目錄，未入版控
 
 ## 測試基線（main，Phase 30 完成）
 

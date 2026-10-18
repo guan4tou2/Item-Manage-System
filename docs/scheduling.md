@@ -4,9 +4,9 @@ IMS v2 的排程採「**外部 cron ＋ 冪等 job 端點**」：應用本身不
 
 - **冪等**：同日重跑不會重複發送提醒；補跑、手動觸發、排程器重試都安全
 - **可觀測**：每次執行寫入 `job_runs`；設定頁「提醒排程」（`/settings/reminders`）顯示上次執行與停跑警示
-- **第一號 job**：`expiry-scan`（批次到期掃描與摘要提醒）；Phase 31 的月報表會沿用同一機制
+- **Jobs**：`expiry-scan`（批次到期掃描與摘要提醒；每日一次）＋ `report.monthly`（月報表；每月 1 日一次）
 
-> 目前僅 `expiry-scan` 一個 job；`{job_name}` 換成未知名稱一律 404。
+> 未知名稱一律 404；目前提供的 job 為 `expiry-scan` 與 `report.monthly`。日報級排程請外掛「每日」呼叫，月報請外掛「每月 1 日」呼叫。
 
 ---
 
@@ -34,6 +34,14 @@ export IMS_PAT="ims_pat_xxxxxxxxxxxxxxxx"       # 步驟 1 的 Token
 ```
 
 （crontab 的時區依主機設定；請確認主機時區為 Asia/Taipei，或改用下方 systemd／GitHub Actions 範例。）
+
+### 3b. 設定月報 cron（每月 1 日台北時間 09:00）
+
+```cron
+0 9 1 * * curl -fsS -X POST "$IMS_BASE_URL/api/jobs/report.monthly/run" -H "Authorization: Bearer $IMS_PAT"
+```
+
+月報 job 生成**上一個完整月**（台北時區）的報表；漏跑補跑安全（冪等），但請設在每月 1 日以確保當月送達。
 
 ### 4. 驗證
 
@@ -136,6 +144,15 @@ jobs:
 - `processed`：本次新建的到期標記（`expiry_alerts`）列數
 - `emitted`：本次發出的用戶摘要數（通道過濾在偏好層處理，見下）
 
+`report.monthly` 同一端點：
+
+```json
+{ "job": "report.monthly", "status": "succeeded", "processed": 5, "emitted": 3 }
+```
+
+- `processed`：本次新建的月報列數（每位合格使用者一列）
+- `emitted`：本次實際發出的通知數；空動態月只建列、不通知，故可能小於 `processed`
+
 | 狀態碼 | 情境 |
 |--------|------|
 | 401 | 未帶 Token／Token 無效 |
@@ -177,13 +194,29 @@ jobs:
 
 ---
 
+## 行為語義（`report.monthly`）
+
+- **期間**：每次執行生成**上一個完整月**（Asia/Taipei）——10 月 1 日執行生成 9 月報表；不提供 backfill／指定月份參數，補跑只會補「尚未生成」的期間
+- **資格**：帳號啟用中、`/settings/reports` 的月報開關開啟，且至少 1 件可見（未刪除）物品；不符者整月跳過（不建列）
+- **範圍**：月報涵蓋「本人可見」的物品（含同群組共享），與站內列表口徑一致；viewer 亦會收到
+- **冪等**：`UNIQUE(user_id, period)`——同一使用者同一月份僅一列；同日重跑、跨日補跑都不會重複建列或重複發送
+- **空動態月**：期間內沒有任何動態（無新增／消耗／借還）時仍建立月報列（詳情頁標示「本月無動態」），但**不發通知、不寄 Email**
+- **交付**：站內通知 `report_ready`（deep link 至 `/reports/{id}`）＋Email（zh-TW／en 依使用者偏好語言；純文字 fallback）；Email 尊重「設定 → 通知偏好」的 `report_ready → Email`（預設開）與 `/settings/channels` 綁定，寄送失敗不影響站內通知（fail-soft）
+- **Email 連結網域**：信件中的連結以 `PUBLIC_WEB_URL` 為基底（預設 `http://localhost:3000`）；對外部署請於 `.env` 設為實際站台網址
+- **失敗語義**：逐使用者隔離（同 `expiry-scan`），錯誤記於 `GET status` 的 `last_run.result.errors`；已寫入的月報保留，重跑即可補齊
+
+---
+
 ## 疑難排解
 
 | 症狀 | 可能原因 | 處置 |
 |------|----------|------|
 | `401` | Token 無效、被刪除或未帶 `Authorization` | 於 `/settings/tokens` 重新建立 |
 | `403` | Token 所屬帳號不是管理員 | 以管理員帳號建立 Token（系統首位註冊者可於 `/settings` 取得管理員） |
-| `404` | `job_name` 拼錯 | 目前僅 `expiry-scan` |
+| `404` | `job_name` 拼錯 | 目前有 `expiry-scan` 與 `report.monthly` |
+| 月報只建了列、沒有任何通知／Email | 該期間沒有動態（空月只建列不通知） | 開月報詳情頁確認是否標示「本月無動態」 |
+| 月報完全沒有列 | 該使用者月報開關關閉、帳號停用，或沒有任何可見物品 | 於 `/settings/reports` 確認開關（使用者本人可自行切換） |
+| Email 月報的連結網域不對 | `PUBLIC_WEB_URL` 未設（預設 `http://localhost:3000`） | 於 `.env` 設定實際站台網址後重啟 API |
 | 站內完全沒有提醒 | 使用者關閉了站內偏好；或該使用者沒有符合門檻的批次 | 檢查 `/settings/notifications` 與物品到期日 |
 | 站內有、Email 沒有 | `expiring_soon`／`expired` 的 Email 預設為關 | 於 `/settings/notifications` 開啟 |
 | Email／LINE／Telegram／推播沒收到 | 管道未綁定 | 於 `/settings/channels` 完成綁定 |

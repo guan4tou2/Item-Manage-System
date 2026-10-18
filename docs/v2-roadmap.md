@@ -52,12 +52,13 @@
 | 28 | Webhook 管理 UI | ✅ | deliveries 篩選（`status`／`event`）＋`offset` 分頁＋統計端點（成功率、最近成功）；面板桌機表格／行動卡片、篩選、載入更多、excerpt 展開、概覽與查詢錯誤態；無 migration |
 | 29 | 備份與還原 | ✅ | 匯出 v4（當期 schema 全量：barcode／批次／借還／歷程／盤點／webhooks／通知偏好／幣別、穩定排序）；`POST /api/backup/import`（multipart；20 MiB／413；`format_version` 1–4 相容）；plan／apply 兩段式——dry-run 零寫入；create_only 名稱匹配沿用＋重名後綴＋列級容忍；replace 單一交易清空＋全有全無＋`REPLACE` 確認字串；id-map 關聯重建＋批次對帳 invariant；warnings／errors／稽核 `backup.import`；Web「設定 → 整合與資料 → 備份」頁（匯出＋匯入三態）；無 migration |
 | 30 | 成員權限細化 | ✅ | `group_members.role`（admin／editor／viewer，owner＝`groups.owner_id`）＋migration 0022；viewer 定義（全部 membership 為 viewer）→ `require_writer`＋`WriterGuardRoute` 套 14 routers（403 早於 body／資源查詢）；owner／admin 成員管理＋角色變更端點＋audit；Web 唯讀一律不渲染入口（一次性 banner／固定句／標籤列印與匯出保留）；群組角色管理 UI |
+| 31 | 定期報表（月報） | ✅ | `reports`（`UNIQUE(user_id, period)`、JSON 快照）＋migration 0023；`report.monthly` job 生成上一個完整月（Asia/Taipei；冪等、空月建列不通知、逐使用者隔離）；指標口徑（可見範圍、期間界、quantity_logs delta、借還與逾期、30 天到期、估值月初重建）；`GET /api/reports`／`{id}`（僅本人；他人 404）；`preferences.report_monthly_enabled`；站內 `report_ready`＋雙語 Email（fail-soft、純文字 fallback）；Web `/reports` 清單與詳情、`/settings/reports` 開關、桌面統計下拉＋行動二層群組導覽 |
 
 ## 測試規模
 
-- API 測試：864 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：502 passed（99 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：21 spec／65 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
+- API 測試：912 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
+- Web 測試：560 passed（111 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：22 spec／68 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）

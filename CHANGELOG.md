@@ -6,6 +6,21 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.31] — Phase 31：定期報表（月報）
+
+- **DB**：新增 `reports` 表（Alembic `0023`；`UNIQUE(user_id, period)`、`payload` JSON 快照、`generated_at`）；月報是**不可變快照**，生成後物品異動不回寫
+- **排程 job** `report.monthly`：生成**上一個完整月**（Asia/Taipei）的月報；沿用 `POST /api/jobs/{job_name}/run`（admin）與 `job_runs` 觀測；每位使用者獨立 commit、錯誤隔離進 `result.errors`；`processed`＝新建列數、`emitted`＝實際通知數
+- **資格與冪等**：帳號啟用＋`/settings/reports` 月報開關開啟＋至少 1 件可見（未刪除）物品；不符者整月跳過。`UNIQUE(user_id, period)` 保證同日重跑／跨日補跑不重複建列或重複發送。**空動態月**仍建列（`has_activity=false`，詳情頁標示「本月無動態」）但不通知、不寄信
+- **指標口徑**：totals＝當前可見未刪；created／deleted 依 `created_at`／`updated_at` 落於期間；quantity_in／out 取 `quantity_logs` 正負 delta；loans_out／returned／overdue 依 `lent_at`／`returned_at`／期末未還且逾期；expiry 以 `EXPIRING_HORIZON_DAYS=30`（30 天內到期）與 `expiry_date ≤ 期末`（已過期）；top 3 分類／位置（未分類／未指定以 null 標示）；估值以「期末 − 期間新增 + 期間刪除 − log 淨值變化」重建月初值，Decimal 2 位字串輸出、幣別取使用者偏好
+- **交付**：站內通知 `report_ready`（deep link `/reports/{id}`）＋雙語 Email（zh-TW／en；HTML＋純文字 fallback、使用者可控字串一律 escape、金額格式與 Web `formatCurrency` 對齊）；Email fail-soft 且尊重偏好矩陣（`report_ready → Email` 預設開）與管道綁定；通知以 `exclude_channels={"email"}` 避免與 Email 重複
+- **API**：`GET /api/reports`（period DESC、limit／offset／total；僅本人）、`GET /api/reports/{id}`（他人／不存在一律 404）；`preferences.report_monthly_enabled`（GET 預設 true、PUT `bool|None`）
+- **Web ＞ 報表**（`/reports`、`/reports/{id}`）：清單週期卡（在地化年月標題、摘要、產生時間、無動態徽章）＋四態（skeleton／首月空／月報關閉空＋設定連結／錯誤重試）；詳情區塊卡（庫存現況／本月動態／到期狀態（月底）／庫存估值（變化正負色、未設定成本註記）／熱門分類／熱門位置）＋ 404 與一般錯誤各自的返回／重試；行動優先 grid
+- **設定 ＞ 通知與提醒 ＞ 月報**（`/settings/reports`，群組第 4 頁）：月報總開關（非樂觀更新＋成功／失敗 toast）、排程說明、報表歷史連結
+- **導覽**：首層維持 11 項；桌面「統計」改下拉（統計／報表；`/statistics` 與 `/reports` 皆為 active）；行動 drawer 改「群組標題＋二層展開」（物品／分析／協作／系統；預設展開、可收合、active 高亮）
+- i18n：`reports.*`（含 `detail.*`／`empty.*`）＋`settings.reports.*`＋`nav.reports`／`nav.groups.*`（zh-TW／en 鍵集與行數一致）
+- 新增 48 個 API 測試（864 → 912；含月報 job 的冪等、空月、錯誤隔離與 rollback）；新增 58 個 web 測試（502 → 560，99 → 111 檔）；e2e 21 → 22 spec（65 → 68 情境；新增「生成→通知 deep link→詳情→冪等重跑」「空資料與開關關閉／重新開啟」「桌面下拉與行動群組導覽」3 情境）
+- **Migration 0023**（`reports`；Postgres up／down 驗證）；api-types 重生成（`/api/reports`、`ReportPayload` 系、`report_monthly_enabled`）
+
 ## [2.0.0-alpha.30] — Phase 30：成員權限細化（角色模型＋viewer 唯讀）
 
 - **角色模型**：`group_members.role`（Alembic `0022`，`String(16)` NOT NULL default `editor`＋CHECK `admin/editor/viewer`）；既有成員 backfill `editor`（零回歸）。**owner 不落庫**——由 `groups.owner_id` 判定（單一事實來源）；API `GroupMemberRead.role` 對 owner 列回傳有效角色 `owner`，`GroupDetail.my_role` 揭露呼叫者於該群組的角色
