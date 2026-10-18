@@ -83,3 +83,61 @@ async def test_suggest_image_not_found(client, auth, monkeypatch):
         json={"image_id": str(uuid.uuid4())},
     )
     assert r.status_code == 404
+
+
+def _mock_gemini(monkeypatch, response_text: str) -> MagicMock:
+    fake_response = MagicMock()
+    fake_response.text = response_text
+    fake_client = MagicMock()
+    fake_client.models.generate_content.return_value = fake_response
+    monkeypatch.setattr("google.genai.Client", lambda api_key: fake_client)
+    return fake_client
+
+
+async def test_suggest_quota_exhausted_returns_429(client, auth, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+    monkeypatch.setenv("AI_DAILY_QUOTA", "1")
+    from app.config import get_settings
+    get_settings.cache_clear()
+    fake_client = _mock_gemini(
+        monkeypatch, '{"name":"咖啡杯","description":null,"category_suggestion":null,"tag_suggestions":[]}'
+    )
+
+    files = {"file": ("x.png", _tiny_png(), "image/png")}
+    img = (await client.post("/api/images", headers=auth, files=files)).json()
+
+    first = await client.post(
+        "/api/ai/suggest-from-image", headers=auth, json={"image_id": img["id"]},
+    )
+    assert first.status_code == 200
+
+    second = await client.post(
+        "/api/ai/suggest-from-image", headers=auth, json={"image_id": img["id"]},
+    )
+    assert second.status_code == 429
+    assert "quota" in second.json()["detail"]
+    assert fake_client.models.generate_content.call_count == 1
+
+
+async def test_suggest_upstream_failure_consumes_quota(client, auth, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+    monkeypatch.setenv("AI_DAILY_QUOTA", "1")
+    from app.config import get_settings
+    get_settings.cache_clear()
+    fake_client = MagicMock()
+    fake_client.models.generate_content.side_effect = RuntimeError("boom")
+    monkeypatch.setattr("google.genai.Client", lambda api_key: fake_client)
+
+    files = {"file": ("x.png", _tiny_png(), "image/png")}
+    img = (await client.post("/api/images", headers=auth, files=files)).json()
+
+    failed = await client.post(
+        "/api/ai/suggest-from-image", headers=auth, json={"image_id": img["id"]},
+    )
+    assert failed.status_code == 502
+
+    # 失敗仍計次 → 已達每日上限
+    blocked = await client.post(
+        "/api/ai/suggest-from-image", headers=auth, json={"image_id": img["id"]},
+    )
+    assert blocked.status_code == 429

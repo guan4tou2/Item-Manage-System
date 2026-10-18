@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     # Public web base URL (used for encoding QR codes and deep links)
     public_web_url: str = Field(default="http://localhost:3000")
     gemini_api_key: str = Field(default="")
+    # AI 每日配額（per-user，Asia/Taipei 換日；<= 0 表示不設限）
+    ai_daily_quota: int = Field(default=50)
     # Email (SMTP)
     smtp_host: str = Field(default="")
     smtp_port: int = Field(default=587)

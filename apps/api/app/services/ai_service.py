@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.schemas.ai import AiSuggestResponse
+from app.services import ai_quota
 from app.services.images_service import get_visible as get_visible_image
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,11 @@ async def suggest_from_image(
     image_path = Path(image.storage_path)
     if not image_path.exists():
         raise HTTPException(status_code=404, detail="file missing on disk")
+
+    if not await ai_quota.consume(session, viewer_id):
+        raise HTTPException(
+            status_code=429, detail="AI daily quota exhausted (AI_DAILY_QUOTA)"
+        )
 
     try:
         from google import genai
