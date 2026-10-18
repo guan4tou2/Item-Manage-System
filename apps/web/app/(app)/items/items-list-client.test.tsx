@@ -1,11 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ItemRead } from "@/lib/api/items"
 import * as batchesApi from "@/lib/api/batches"
 import * as itemsApi from "@/lib/api/items"
+import { useAuthStore } from "@/lib/auth/auth-store"
 import enMessages from "@/messages/en.json"
 import { toast } from "sonner"
 
@@ -224,5 +225,56 @@ describe("ItemsListClient bulk actions", () => {
     )
     await waitFor(() => expect(vi.mocked(toast.success)).toHaveBeenCalledWith("Cleared: Milk"))
     expect(screen.getByTestId("items-list-announce")).toHaveTextContent("Cleared: Milk")
+  })
+})
+
+describe("ItemsListClient read-only viewer (Phase 30)", () => {
+  beforeEach(() => {
+    replace.mockReset()
+    searchParamsRef.current = new URLSearchParams()
+    vi.restoreAllMocks()
+    vi.spyOn(itemsApi, "listItems").mockResolvedValue({
+      items: [item("item-1", "Router")],
+      total: 1,
+      page: 1,
+      per_page: 20,
+    })
+  })
+
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it("hides create entry points and selection for viewers", async () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "viewer-1", is_read_only: true } as never })
+    renderClient()
+
+    expect(await screen.findByText("Router")).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "New item" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("checkbox", { name: "Select all items" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("checkbox", { name: "Select Router" })).not.toBeInTheDocument()
+  })
+
+  it("hides the empty-state CTA for viewers", async () => {
+    vi.mocked(itemsApi.listItems).mockResolvedValue({
+      items: [],
+      total: 0,
+      page: 1,
+      per_page: 20,
+    })
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "viewer-1", is_read_only: true } as never })
+    renderClient()
+
+    expect(await screen.findByText("No items yet")).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Create your first item" })).not.toBeInTheDocument()
+  })
+
+  it("keeps create entry points and selection for writers (zero regression)", async () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "writer-1", is_read_only: false } as never })
+    renderClient()
+
+    expect(await screen.findByText("Router")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "New item" })).toBeInTheDocument()
+    expect(screen.getByRole("checkbox", { name: "Select all items" })).toBeInTheDocument()
   })
 })

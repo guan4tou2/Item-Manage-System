@@ -1202,7 +1202,8 @@
       "dismiss": "我知道了",
       "dismissFailed": "無法關閉說明，請稍後再試"
     },
-    "itemNotice": "你是檢視者，如需修改請聯絡群組管理員"
+    "itemNotice": "你是檢視者，如需修改請聯絡群組管理員",
+    "notice": { "title": "檢視者無法編輯", "backToList": "返回物品列表" }
   },
   "pwa": {
     "install": "安裝至主畫面",

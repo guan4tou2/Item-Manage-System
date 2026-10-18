@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import * as customizationApi from "@/lib/api/customization"
 import enMessages from "@/messages/en.json"
@@ -29,9 +29,17 @@ vi.mock("@/components/items/favorite-button", () => ({
   FavoriteButton: () => <button type="button">Favorite</button>,
 }))
 
+const authState = { user: { id: "owner-1", is_read_only: false } }
+
 vi.mock("@/lib/auth/auth-store", () => ({
-  useAuthStore: (selector: (state: { user: { id: string } }) => unknown) =>
-    selector({ user: { id: "owner-1" } }),
+  useAuthStore: (selector: (state: { user: { id: string; is_read_only: boolean } }) => unknown) =>
+    selector(authState),
+}))
+
+vi.mock("@/components/items/batch-section", () => ({
+  BatchSection: ({ canEdit }: { canEdit: boolean }) => (
+    <div data-testid="batch-section" data-can-edit={String(canEdit)} />
+  ),
 }))
 
 vi.mock("@/lib/auth/use-auth", () => ({
@@ -50,6 +58,7 @@ vi.mock("@/lib/hooks/use-items", () => ({
       min_quantity: null,
       notes: "Keep warranty card",
       is_favorite: false,
+      track_batches: true,
       image_id: null,
       warehouse_id: null,
       owner_id: "owner-1",
@@ -171,4 +180,44 @@ describe("ItemDetailPage", () => {
     expect(path).toHaveAttribute("title", "1F / 廚房 / 上櫃 / 抽屜")
   })
 
+})
+
+describe("ItemDetailPage read-only viewer (Phase 30)", () => {
+  beforeEach(() => {
+    authState.user = { id: "owner-1", is_read_only: true }
+  })
+
+  afterEach(() => {
+    authState.user = { id: "owner-1", is_read_only: false }
+  })
+
+  it("hides all write actions and shows the sticky viewer notice", async () => {
+    renderPage()
+
+    expect(await screen.findByTestId("viewer-item-notice")).toHaveTextContent(
+      "You are a viewer",
+    )
+    expect(screen.queryByRole("button", { name: "Favorite" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Transfer" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Save as template" }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Edit" })).not.toBeInTheDocument()
+    expect(screen.queryByText("Loan card")).not.toBeInTheDocument()
+    expect(screen.getByTestId("batch-section")).toHaveAttribute("data-can-edit", "false")
+    // 列印標籤為讀取性操作，維持可用（登錄決策）
+    expect(screen.getByRole("link", { name: "Print label" })).toBeInTheDocument()
+  })
+
+  it("keeps all write actions for writers (zero regression)", async () => {
+    authState.user = { id: "owner-1", is_read_only: false }
+    renderPage()
+
+    expect(await screen.findByRole("link", { name: "Edit" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Favorite" })).toBeInTheDocument()
+    expect(screen.getByText("Loan card")).toBeInTheDocument()
+    expect(screen.getByTestId("batch-section")).toHaveAttribute("data-can-edit", "true")
+    expect(screen.queryByTestId("viewer-item-notice")).not.toBeInTheDocument()
+  })
 })

@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
+import { EditableOnly } from "@/components/common/editable-only"
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog"
 import { FavoriteButton } from "@/components/items/favorite-button"
 import { ItemCustomValuesDetail } from "@/components/items/item-custom-values-detail"
@@ -29,6 +30,7 @@ import { imageUrl } from "@/lib/api/images"
 import type { ItemRead } from "@/lib/api/items"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { useReadOnly } from "@/lib/auth/use-readonly"
 import { useDeleteItem, useItem } from "@/lib/hooks/use-items"
 import { formatCurrency } from "@/lib/format/currency"
 import { truncatePath } from "@/lib/locations/tree"
@@ -69,6 +71,7 @@ export default function ItemDetailPage() {
   const locale = useLocale()
   const prefs = usePreferences()
   const currency = prefs.data?.currency ?? "TWD"
+  const readOnly = useReadOnly()
   const currentUserId = useAuthStore((s) => s.user?.id ?? "")
   const isOwner = item.data?.owner_id === currentUserId
   const customFields = useQuery({
@@ -147,30 +150,41 @@ export default function ItemDetailPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-semibold">{i.name}</h1>
-          {isOwner ? <FavoriteButton itemId={i.id} isFavorite={i.is_favorite} /> : null}
+          {isOwner ? (
+            <EditableOnly>
+              <FavoriteButton itemId={i.id} isFavorite={i.is_favorite} />
+            </EditableOnly>
+          ) : null}
         </div>
         <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
           {isOwner ? (
             <>
-              <Button asChild variant="outline">
-                <Link href={`/items/${i.id}/edit`}>{t("items.detail.edit")}</Link>
-              </Button>
+              <EditableOnly>
+                <Button asChild variant="outline">
+                  <Link href={`/items/${i.id}/edit`}>{t("items.detail.edit")}</Link>
+                </Button>
+              </EditableOnly>
+              {/* 列印標籤為讀取性操作，viewer 維持可用（登錄決策） */}
               <Button asChild variant="outline">
                 <Link href={`/items/${i.id}/label` as never}>{t("items.detail.printLabel")}</Link>
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => saveTemplate.mutate()}
-                disabled={saveTemplate.isPending || customValues.isLoading}
-              >
-                <ListPlus className="mr-2 h-4 w-4" aria-hidden="true" />
-                {saveTemplate.isPending
-                  ? t("items.detail.savingTemplate")
-                  : t("items.detail.saveAsTemplate")}
-              </Button>
-              <NewTransferDialog itemId={i.id} />
-              <DeleteItemDialog onConfirm={handleDelete} pending={del.isPending} />
+              <EditableOnly>
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => saveTemplate.mutate()}
+                    disabled={saveTemplate.isPending || customValues.isLoading}
+                  >
+                    <ListPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+                    {saveTemplate.isPending
+                      ? t("items.detail.savingTemplate")
+                      : t("items.detail.saveAsTemplate")}
+                  </Button>
+                  <NewTransferDialog itemId={i.id} />
+                  <DeleteItemDialog onConfirm={handleDelete} pending={del.isPending} />
+                </>
+              </EditableOnly>
             </>
           ) : (
             <ReadonlyBadge ownerUsername={i.owner_username} />
@@ -256,7 +270,7 @@ export default function ItemDetailPage() {
         </div>
       </dl>
 
-      {i.track_batches ? <BatchSection itemId={i.id} canEdit={isOwner} /> : null}
+      {i.track_batches ? <BatchSection itemId={i.id} canEdit={isOwner && !readOnly} /> : null}
 
       {isOwner ? (
         <ItemCustomValuesDetail
@@ -266,10 +280,20 @@ export default function ItemDetailPage() {
         />
       ) : null}
 
-      {isOwner ? (
+      {isOwner && !readOnly ? (
         <div className="max-w-2xl">
           <LoanCard itemId={i.id} />
         </div>
+      ) : null}
+
+      {readOnly ? (
+        <p
+          role="status"
+          data-testid="viewer-item-notice"
+          className="sticky bottom-3 max-w-2xl rounded-md border bg-background/95 px-4 py-3 text-sm text-muted-foreground shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85"
+        >
+          {t("viewer.itemNotice")}
+        </p>
       ) : null}
     </section>
   )

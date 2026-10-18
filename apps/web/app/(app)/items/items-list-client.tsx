@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { EditableOnly } from "@/components/common/editable-only"
 import { ItemsFilterPanel } from "@/components/items/items-filter-panel"
 import { ItemsTable } from "@/components/items/items-table"
 import {
@@ -26,6 +27,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { ItemFilters, ItemRead } from "@/lib/api/items"
+import { useReadOnly } from "@/lib/auth/use-readonly"
 import { useConsumeFefo } from "@/lib/hooks/use-batches"
 import { useBulkDeleteItems, useBulkUpdateItems, useItems } from "@/lib/hooks/use-items"
 import { useLocations } from "@/lib/hooks/use-locations"
@@ -54,6 +56,7 @@ function labelsHref(itemIds: string[]): Route {
 
 export function ItemsListClient() {
   const t = useTranslations()
+  const readOnly = useReadOnly()
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -194,9 +197,11 @@ export function ItemsListClient() {
             placeholder={t("items.list.searchPlaceholder")}
             aria-label={t("items.list.searchPlaceholder")}
           />
-          <Button asChild>
-            <Link href="/items/new">{t("items.list.new")}</Link>
-          </Button>
+          <EditableOnly>
+            <Button asChild>
+              <Link href="/items/new">{t("items.list.new")}</Link>
+            </Button>
+          </EditableOnly>
         </div>
 
         <div
@@ -244,9 +249,11 @@ export function ItemsListClient() {
             {data && data.total === 0 && !filters.q && !filters.categoryId && !filters.locationId && !filters.tagIds && !filters.expiry ? (
               <>
                 <p>{t("items.list.empty")}</p>
-                <Button asChild variant="link">
-                  <Link href="/items/new">{t("items.list.emptyCta")}</Link>
-                </Button>
+                <EditableOnly>
+                  <Button asChild variant="link">
+                    <Link href="/items/new">{t("items.list.emptyCta")}</Link>
+                  </Button>
+                </EditableOnly>
               </>
             ) : (
               <p>{t("items.list.noResults")}</p>
@@ -406,10 +413,10 @@ export function ItemsListClient() {
 
             <ItemsTable
               items={data.items}
-              selectedIds={selectedIds}
-              onSelectionChange={setSelectedIds}
+              selectedIds={readOnly ? undefined : selectedIds}
+              onSelectionChange={readOnly ? undefined : setSelectedIds}
               expiryMode={expiryView}
-              onConsumeOne={consumeOne}
+              onConsumeOne={readOnly ? undefined : consumeOne}
             />
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>{t("items.list.page", {

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { ViewerNotice } from "@/components/common/viewer-notice"
 import { ItemForm, type ItemFormValues } from "@/components/items/item-form"
 import {
   Breadcrumb,
@@ -18,6 +19,7 @@ import {
 import { createBatch } from "@/lib/api/batches"
 import { listCustomFields, listItemTemplates, saveItemCustomValues } from "@/lib/api/customization"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { useReadOnly } from "@/lib/auth/use-readonly"
 import { useCategories } from "@/lib/hooks/use-categories"
 import { useCreateItem } from "@/lib/hooks/use-items"
 import { useLocations } from "@/lib/hooks/use-locations"
@@ -44,6 +46,7 @@ export default function NewItemPage() {
   const searchParams = useSearchParams()
   const barcodePrefill = searchParams.get("barcode")
   const token = useAccessToken()
+  const readOnly = useReadOnly()
   const [saving, setSaving] = useState(false)
   const [trackBatches, setTrackBatches] = useState(false)
   const create = useCreateItem()
@@ -99,6 +102,26 @@ export default function NewItemPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  if (readOnly) {
+    return (
+      <section className="space-y-6 p-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/items">{t("nav.items")}</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{t("items.list.new")}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <h1 className="text-2xl font-semibold">{t("items.list.new")}</h1>
+        <ViewerNotice backHref="/items" backLabel={t("viewer.notice.backToList")} />
+      </section>
+    )
   }
 
   return (

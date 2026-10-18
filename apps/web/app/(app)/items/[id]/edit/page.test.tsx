@@ -2,8 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
 import { toast } from "sonner"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { useAuthStore } from "@/lib/auth/auth-store"
 import enMessages from "@/messages/en.json"
 import type { ItemFormValues } from "@/components/items/item-form"
 
@@ -170,5 +171,43 @@ describe("EditItemPage batch tracking", () => {
 
     await waitFor(() => expect(vi.mocked(toast.error)).toHaveBeenCalled())
     expect(screen.getByTestId("tracking")).toHaveTextContent("false")
+  })
+})
+
+describe("EditItemPage read-only viewer (Phase 30)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    updateMock.mockResolvedValue({})
+  })
+
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it("blocks the edit form for viewers and links back to the item", async () => {
+    useAuthStore.setState({
+      accessToken: "jwt",
+      user: { id: "viewer-1", is_read_only: true } as never,
+    })
+    renderPage()
+
+    expect(await screen.findByTestId("viewer-notice")).toBeInTheDocument()
+    expect(screen.getByText("Viewers cannot edit")).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "submit-item" })).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Back to item" })).toHaveAttribute(
+      "href",
+      "/items/item-1",
+    )
+  })
+
+  it("renders the form for writers (zero regression)", async () => {
+    useAuthStore.setState({
+      accessToken: "jwt",
+      user: { id: "writer-1", is_read_only: false } as never,
+    })
+    renderPage()
+
+    expect(await screen.findByRole("button", { name: "submit-item" })).toBeInTheDocument()
+    expect(screen.queryByTestId("viewer-notice")).not.toBeInTheDocument()
   })
 })

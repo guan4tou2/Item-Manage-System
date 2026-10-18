@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { ViewerNotice } from "@/components/common/viewer-notice"
 import { ItemForm, type ItemFormValues } from "@/components/items/item-form"
 import {
   Breadcrumb,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/api/customization"
 import { getApiErrorDetail } from "@/lib/api/client"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { useReadOnly } from "@/lib/auth/use-readonly"
 import { useCreateBatch } from "@/lib/hooks/use-batches"
 import { useCategories } from "@/lib/hooks/use-categories"
 import { useItem, useUpdateItem } from "@/lib/hooks/use-items"
@@ -36,6 +38,7 @@ export default function EditItemPage() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ""
   const token = useAccessToken()
+  const readOnly = useReadOnly()
   const queryClient = useQueryClient()
   const [saving, setSaving] = useState(false)
   const [trackingOverride, setTrackingOverride] = useState<boolean | null>(null)
@@ -67,6 +70,33 @@ export default function EditItemPage() {
     return (
       <section className="space-y-6 p-6">
         <Skeleton className="h-64 w-full max-w-xl" />
+      </section>
+    )
+  }
+
+  if (readOnly) {
+    return (
+      <section className="space-y-6 p-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/items">{t("nav.items")}</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink href={`/items/${id}`}>{item.data.name}</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{t("items.detail.edit")}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+        <h1 className="text-2xl font-semibold">{t("items.detail.edit")}</h1>
+        <ViewerNotice
+          backHref={`/items/${id}`}
+          backLabel={t("items.detail.backToItem")}
+        />
       </section>
     )
   }
