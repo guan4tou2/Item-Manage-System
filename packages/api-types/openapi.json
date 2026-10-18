@@ -3929,6 +3929,72 @@
       }
     },
     "/api/groups/{group_id}/members/{user_id}": {
+      "patch": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Change Member Role",
+        "operationId": "change_member_role_api_groups__group_id__members__user_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Group Id"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupMemberRoleUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupMemberRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "groups"
@@ -8507,6 +8573,16 @@
             "maxLength": 50,
             "minLength": 1,
             "title": "Username"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "editor",
+              "viewer"
+            ],
+            "title": "Role",
+            "default": "editor"
           }
         },
         "type": "object",
@@ -8568,6 +8644,16 @@
             "format": "date-time",
             "title": "Updated At"
           },
+          "my_role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "editor",
+              "viewer"
+            ],
+            "title": "My Role"
+          },
           "members": {
             "items": {
               "$ref": "#/components/schemas/GroupMemberRead"
@@ -8586,6 +8672,7 @@
           "member_count",
           "created_at",
           "updated_at",
+          "my_role",
           "members"
         ],
         "title": "GroupDetail"
@@ -8605,15 +8692,45 @@
             "type": "string",
             "format": "date-time",
             "title": "Joined At"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "editor",
+              "viewer"
+            ],
+            "title": "Role"
           }
         },
         "type": "object",
         "required": [
           "user_id",
           "username",
-          "joined_at"
+          "joined_at",
+          "role"
         ],
         "title": "GroupMemberRead"
+      },
+      "GroupMemberRoleUpdate": {
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "editor",
+              "viewer"
+            ],
+            "title": "Role"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "title": "GroupMemberRoleUpdate"
       },
       "GroupSummary": {
         "properties": {
@@ -8652,6 +8769,16 @@
             "type": "string",
             "format": "date-time",
             "title": "Updated At"
+          },
+          "my_role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "editor",
+              "viewer"
+            ],
+            "title": "My Role"
           }
         },
         "type": "object",
@@ -8663,7 +8790,8 @@
           "is_owner",
           "member_count",
           "created_at",
-          "updated_at"
+          "updated_at",
+          "my_role"
         ],
         "title": "GroupSummary"
       },
@@ -11380,6 +11508,11 @@
             ],
             "title": "Currency",
             "default": "TWD"
+          },
+          "viewer_notice_dismissed": {
+            "type": "boolean",
+            "title": "Viewer Notice Dismissed",
+            "default": false
           }
         },
         "additionalProperties": true,
@@ -11437,6 +11570,17 @@
               }
             ],
             "title": "Currency"
+          },
+          "viewer_notice_dismissed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Viewer Notice Dismissed"
           }
         },
         "additionalProperties": true,
@@ -12178,6 +12322,11 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "is_read_only": {
+            "type": "boolean",
+            "title": "Is Read Only",
+            "default": false
           }
         },
         "type": "object",

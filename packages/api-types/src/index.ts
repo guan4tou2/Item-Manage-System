@@ -1117,7 +1117,8 @@ export interface paths {
         delete: operations["remove_member_api_groups__group_id__members__user_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Change Member Role */
+        patch: operations["change_member_role_api_groups__group_id__members__user_id__patch"];
         trace?: never;
     };
     "/api/items/{item_id}/loans": {
@@ -2589,6 +2590,12 @@ export interface components {
         GroupAddMember: {
             /** Username */
             username: string;
+            /**
+             * Role
+             * @default editor
+             * @enum {string}
+             */
+            role: "admin" | "editor" | "viewer";
         };
         /** GroupCreate */
         GroupCreate: {
@@ -2625,6 +2632,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * My Role
+             * @enum {string}
+             */
+            my_role: "owner" | "admin" | "editor" | "viewer";
             /** Members */
             members: components["schemas"]["GroupMemberRead"][];
         };
@@ -2642,6 +2654,19 @@ export interface components {
              * Format: date-time
              */
             joined_at: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "owner" | "admin" | "editor" | "viewer";
+        };
+        /** GroupMemberRoleUpdate */
+        GroupMemberRoleUpdate: {
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "admin" | "editor" | "viewer";
         };
         /** GroupSummary */
         GroupSummary: {
@@ -2673,6 +2698,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * My Role
+             * @enum {string}
+             */
+            my_role: "owner" | "admin" | "editor" | "viewer";
         };
         /** GroupUpdate */
         GroupUpdate: {
@@ -3555,6 +3585,11 @@ export interface components {
              * @enum {string}
              */
             currency: "TWD" | "USD" | "EUR" | "JPY" | "CNY" | "HKD";
+            /**
+             * Viewer Notice Dismissed
+             * @default false
+             */
+            viewer_notice_dismissed: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -3566,6 +3601,8 @@ export interface components {
             language?: ("zh-TW" | "en") | null;
             /** Currency */
             currency?: ("TWD" | "USD" | "EUR" | "JPY" | "CNY" | "HKD") | null;
+            /** Viewer Notice Dismissed */
+            viewer_notice_dismissed?: boolean | null;
         } & {
             [key: string]: unknown;
         };
@@ -3893,6 +3930,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Is Read Only
+             * @default false
+             */
+            is_read_only: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -6603,6 +6645,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_member_role_api_groups__group_id__members__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                group_id: string;
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupMemberRoleUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMemberRead"];
+                };
             };
             /** @description Validation Error */
             422: {
