@@ -1194,6 +1194,16 @@
       "success": "You are now an admin"
     }
   },
+  "viewer": {
+    "badge": "Viewer",
+    "banner": {
+      "title": "You are a viewer",
+      "body": "You can view all items; content is maintained by group members",
+      "dismiss": "Got it",
+      "dismissFailed": "Could not dismiss the notice; please try again"
+    },
+    "itemNotice": "You are a viewer. To make changes, contact a group admin"
+  },
   "pwa": {
     "install": "Install to home screen",
     "update": {

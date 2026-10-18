@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
 
 import { AppShell } from "@/components/shell/app-shell"
+import { MeSync } from "@/components/shell/me-sync"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { useAccessToken } from "@/lib/auth/use-auth"
@@ -39,5 +40,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     )
   }
 
-  return <AppShell>{children}</AppShell>
+  return (
+    <AppShell>
+      <MeSync />
+      {children}
+    </AppShell>
+  )
 }

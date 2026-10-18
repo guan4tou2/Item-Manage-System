@@ -1194,6 +1194,16 @@
       "success": "您已成為管理員"
     }
   },
+  "viewer": {
+    "badge": "檢視者",
+    "banner": {
+      "title": "你是檢視者",
+      "body": "可以查看所有物品，內容由群組成員維護",
+      "dismiss": "我知道了",
+      "dismissFailed": "無法關閉說明，請稍後再試"
+    },
+    "itemNotice": "你是檢視者，如需修改請聯絡群組管理員"
+  },
   "pwa": {
     "install": "安裝至主畫面",
     "update": {
