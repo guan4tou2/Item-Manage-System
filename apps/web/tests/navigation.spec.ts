@@ -73,7 +73,11 @@ test("mobile viewport: drawer opens and nav works", async ({ page, request }) =>
   await page.waitForURL("**/dashboard")
 
   await page.getByRole("button", { name: /開啟選單/ }).click()
-  await page.getByRole("dialog").getByRole("button", { name: "物品", exact: true }).click()
+  await page
+    .getByRole("dialog")
+    .getByTestId("nav-group-items-inventory")
+    .getByRole("button", { name: "物品", exact: true })
+    .click()
   await page.waitForURL("**/items")
   // drawer 應已關閉（sheet content 不可見）
   await expect(page.getByRole("dialog")).toHaveCount(0)
