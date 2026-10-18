@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { NextIntlClientProvider } from "next-intl"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
@@ -14,34 +14,116 @@ vi.mock("next/navigation", () => ({
 
 import { MobileNav } from "./mobile-nav"
 
+function renderNav() {
+  return render(
+    <NextIntlClientProvider locale="zh-TW" messages={messages}>
+      <MobileNav />
+    </NextIntlClientProvider>,
+  )
+}
+
+async function openDrawer(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: /開啟選單/ }))
+}
+
 describe("MobileNav", () => {
   beforeEach(() => pushMock.mockReset())
   afterEach(() => vi.restoreAllMocks())
 
-  it("opens drawer and renders all nav labels", async () => {
+  it("groups the entries under four labelled sections", async () => {
     const user = userEvent.setup()
-    render(
-      <NextIntlClientProvider locale="zh-TW" messages={messages}>
-        <MobileNav />
-      </NextIntlClientProvider>,
+    renderNav()
+    await openDrawer(user)
+
+    const labels = messages.nav.groups
+    expect(screen.getByTestId("nav-group-header-inventory")).toHaveTextContent(
+      labels.inventory,
     )
-    await user.click(screen.getByRole("button", { name: /開啟選單/ }))
-    expect(await screen.findByText("儀表板")).toBeInTheDocument()
-    expect(screen.getByText("物品")).toBeInTheDocument()
-    expect(screen.getByText("盤點")).toBeInTheDocument()
-    expect(screen.getByText("清單")).toBeInTheDocument()
-    expect(screen.getByText("設定")).toBeInTheDocument()
+    expect(screen.getByTestId("nav-group-header-analysis")).toHaveTextContent(
+      labels.analysis,
+    )
+    expect(screen.getByTestId("nav-group-header-collab")).toHaveTextContent(
+      labels.collab,
+    )
+    expect(screen.getByTestId("nav-group-header-system")).toHaveTextContent(
+      labels.system,
+    )
   })
 
-  it("clicking a nav item navigates and closes drawer", async () => {
+  it("expands every group by default", async () => {
     const user = userEvent.setup()
-    render(
-      <NextIntlClientProvider locale="zh-TW" messages={messages}>
-        <MobileNav />
-      </NextIntlClientProvider>,
+    renderNav()
+    await openDrawer(user)
+
+    const inventory = screen.getByTestId("nav-group-items-inventory")
+    expect(within(inventory).getByText(messages.nav.dashboard)).toBeInTheDocument()
+    expect(within(inventory).getByText(messages.nav.items)).toBeInTheDocument()
+    expect(within(inventory).getByText(messages.nav.scan)).toBeInTheDocument()
+    expect(within(inventory).getByText(messages.nav.stocktakes)).toBeInTheDocument()
+    expect(within(inventory).getByText(messages.nav.categories)).toBeInTheDocument()
+    expect(within(inventory).getByText(messages.nav.locations)).toBeInTheDocument()
+
+    expect(screen.getByTestId("nav-group-header-inventory")).toHaveAttribute(
+      "aria-expanded",
+      "true",
     )
-    await user.click(screen.getByRole("button", { name: /開啟選單/ }))
-    await user.click(screen.getByText("物品"))
+    expect(
+      within(screen.getByTestId("nav-group-items-analysis")).getByText(
+        messages.nav.reports,
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId("nav-group-items-collab")).getByText(
+        messages.nav.lists,
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId("nav-group-items-system")).getByText(
+        messages.nav.settings,
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it("collapses and re-expands a group when its header is clicked", async () => {
+    const user = userEvent.setup()
+    renderNav()
+    await openDrawer(user)
+
+    const header = screen.getByTestId("nav-group-header-analysis")
+    await user.click(header)
+    expect(header).toHaveAttribute("aria-expanded", "false")
+    expect(screen.queryByTestId("nav-group-items-analysis")).not.toBeInTheDocument()
+
+    await user.click(header)
+    expect(header).toHaveAttribute("aria-expanded", "true")
+    expect(screen.getByTestId("nav-group-items-analysis")).toBeInTheDocument()
+  })
+
+  it("navigates to reports and closes the drawer", async () => {
+    const user = userEvent.setup()
+    renderNav()
+    await openDrawer(user)
+
+    await user.click(
+      within(screen.getByTestId("nav-group-items-analysis")).getByText(
+        messages.nav.reports,
+      ),
+    )
+
+    expect(pushMock).toHaveBeenCalledWith("/reports")
+  })
+
+  it("navigates to items from its group", async () => {
+    const user = userEvent.setup()
+    renderNav()
+    await openDrawer(user)
+
+    await user.click(
+      within(screen.getByTestId("nav-group-items-inventory")).getByText(
+        messages.nav.items,
+      ),
+    )
+
     expect(pushMock).toHaveBeenCalledWith("/items")
   })
 
@@ -50,13 +132,8 @@ describe("MobileNav", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {})
 
-    render(
-      <NextIntlClientProvider locale="zh-TW" messages={messages}>
-        <MobileNav />
-      </NextIntlClientProvider>,
-    )
-
-    await user.click(screen.getByRole("button", { name: /開啟選單/ }))
+    renderNav()
+    await openDrawer(user)
 
     const output = [...warnSpy.mock.calls, ...errorSpy.mock.calls]
       .flat()
@@ -66,13 +143,9 @@ describe("MobileNav", () => {
 
   it("uses a localized label for the close button", async () => {
     const user = userEvent.setup()
-    render(
-      <NextIntlClientProvider locale="zh-TW" messages={messages}>
-        <MobileNav />
-      </NextIntlClientProvider>,
-    )
+    renderNav()
 
-    await user.click(screen.getByRole("button", { name: /開啟選單/ }))
+    await openDrawer(user)
 
     expect(screen.getByRole("button", { name: "關閉選單" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument()
