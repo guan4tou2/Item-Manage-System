@@ -1,3 +1,5 @@
+from app.models.ai_draft import AiDraftItem
+from app.models.ai_usage import AiUsage
 from app.models.barcode_lookup import BarcodeLookup
 from app.models.category import Category
 from app.models.customization import CustomField, ItemCustomValue, ItemTemplate, ItemType
@@ -60,4 +62,6 @@ __all__ = [
     "ExpiryAlert",
     "BarcodeLookup",
     "Report",
+    "AiDraftItem",
+    "AiUsage",
 ]
