@@ -61,6 +61,7 @@ JSON_WRITES = [
     ("POST", "/api/tags/{id}/merge"),
     ("POST", "/api/item-types"),
     ("POST", "/api/ai/drafts"),
+    ("POST", "/api/ai/drafts/{id}/process"),
 ]
 
 MULTIPART_WRITES = [

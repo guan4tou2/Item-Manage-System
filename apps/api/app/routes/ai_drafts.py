@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,3 +79,13 @@ async def list_drafts(
         total=total,
         counts=DraftCounts(**counts),
     )
+
+
+@router.post("/{draft_id}/process", response_model=DraftRead)
+async def process_draft(
+    draft_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> DraftRead:
+    draft = await ai_drafts_service.process_draft(session, user.id, draft_id)
+    return to_read(draft)

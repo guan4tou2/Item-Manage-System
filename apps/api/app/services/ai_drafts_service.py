@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any, Optional
 from uuid import UUID
 
@@ -16,7 +17,10 @@ from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
+from app.db.base import _utcnow
 from app.models.ai_draft import AiDraftItem
+from app.services import ai_quota, ai_service, classification_service
 from app.services.images_service import get_visible as get_visible_image
 
 logger = logging.getLogger(__name__)
@@ -138,3 +142,81 @@ async def counts(session: AsyncSession, owner_id: UUID) -> dict[str, int]:
     for status, count in rows:
         result[status] = int(count)
     return result
+
+
+def _history_dict(
+    suggestions: classification_service.ClassificationSuggestions,
+) -> dict[str, Any]:
+    def bucket(item: Any) -> Optional[dict[str, Any]]:
+        if item is None:
+            return None
+        return {
+            "id": item.id,
+            "name": item.name,
+            "item_count": item.item_count,
+            "score": item.score,
+        }
+
+    return {
+        "category": bucket(suggestions.category),
+        "location": bucket(suggestions.location),
+        "tags": [
+            {"name": tag.name, "item_count": tag.item_count, "score": tag.score}
+            for tag in suggestions.tags
+        ],
+    }
+
+
+async def process_draft(
+    session: AsyncSession, owner_id: UUID, draft_id: UUID
+) -> AiDraftItem:
+    """辨識單張草稿：配額 → Gemini → 歷史建議 → `ready`／`failed`（一律 200 回狀態）。"""
+    draft = await get_owned(session, owner_id, draft_id)
+    if draft.status in TERMINAL_STATUSES:
+        raise HTTPException(
+            status_code=409, detail=f"draft already {draft.status}"
+        )
+
+    # 先落地 `processing`：並行讀取可看到辨識中；卡住時可再次呼叫復原
+    draft.status = "processing"
+    draft.error_code = None
+    await session.commit()
+
+    payload: dict[str, Any] = empty_payload()
+    ai: Optional[ai_service.AiSuggestResponse] = None
+    error_code: Optional[str] = None
+
+    settings = get_settings()
+    image: Any = None
+    if draft.image_id is not None:
+        image = await get_visible_image(session, owner_id, draft.image_id)
+    image_path = Path(image.storage_path) if image is not None else None
+    image_ok = image_path is not None and image_path.exists()
+
+    if not image_ok:
+        error_code = "image_missing"
+    elif not settings.gemini_api_key:
+        error_code = "ai_disabled"
+    elif not await ai_quota.consume(session, owner_id):
+        error_code = "quota_exhausted"
+    else:
+        try:
+            ai = await ai_service.call_gemini_suggest(image_path, image.mime_type)
+        except ai_service.AiUpstreamError as exc:
+            logger.warning("draft %s AI call failed: %s", draft_id, exc)
+            error_code = "upstream_error"
+
+    if ai is not None:
+        payload["ai"] = ai.model_dump()
+        history = await classification_service.suggest_for_name(
+            session, owner_id, ai.name
+        )
+        payload["history"] = _history_dict(history)
+
+    draft.payload = payload
+    draft.error_code = error_code
+    draft.status = "ready" if ai is not None else "failed"
+    draft.processed_at = _utcnow()
+    await session.commit()
+    await session.refresh(draft)
+    return draft

@@ -32,6 +32,62 @@ Example:
 """
 
 
+class AiUpstreamError(Exception):
+    """Gemini 呼叫失敗（SDK 缺失、連線錯誤、空回應、非 JSON）。"""
+
+
+async def call_gemini_suggest(
+    image_path: Path, mime_type: str, hint: Optional[str] = None
+) -> AiSuggestResponse:
+    """純 LLM 呼叫層（不含可見性與配額檢查）；失敗一律 `AiUpstreamError`。
+
+    呼叫端負責：`GEMINI_API_KEY` 檢查與配額扣次。
+    """
+    try:
+        from google import genai
+        from google.genai import types as genai_types
+    except ImportError as exc:
+        raise AiUpstreamError(f"AI SDK not installed: {exc}") from exc
+
+    settings = get_settings()
+    image_bytes = image_path.read_bytes()
+    client = genai.Client(api_key=settings.gemini_api_key)
+
+    parts = [_PROMPT]
+    if hint:
+        parts.append(f"Hint from user: {hint}")
+    parts.append(genai_types.Part.from_bytes(data=image_bytes, mime_type=mime_type))
+
+    try:
+        result = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=parts,
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.2,
+            ),
+        )
+    except Exception as exc:
+        logger.warning("gemini call failed", exc_info=True)
+        raise AiUpstreamError(f"upstream AI error: {exc}") from exc
+
+    text = (result.text or "").strip()
+    if not text:
+        raise AiUpstreamError("empty AI response")
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        logger.warning("gemini returned non-JSON: %s", text[:200])
+        raise AiUpstreamError("AI returned invalid JSON") from exc
+
+    return AiSuggestResponse(
+        name=str(payload.get("name") or "未命名物品")[:200],
+        description=(payload.get("description") or None),
+        category_suggestion=(payload.get("category_suggestion") or None),
+        tag_suggestions=[str(t)[:40] for t in (payload.get("tag_suggestions") or [])[:5]],
+    )
+
+
 async def suggest_from_image(
     session: AsyncSession,
     viewer_id: UUID,
@@ -55,46 +111,6 @@ async def suggest_from_image(
         )
 
     try:
-        from google import genai
-        from google.genai import types as genai_types
-    except ImportError as exc:
-        raise HTTPException(status_code=503, detail=f"AI SDK not installed: {exc}")
-
-    image_bytes = image_path.read_bytes()
-    client = genai.Client(api_key=settings.gemini_api_key)
-
-    parts = [_PROMPT]
-    if hint:
-        parts.append(f"Hint from user: {hint}")
-    parts.append(
-        genai_types.Part.from_bytes(data=image_bytes, mime_type=image.mime_type)
-    )
-
-    try:
-        result = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=parts,
-            config=genai_types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.2,
-            ),
-        )
-    except Exception as exc:
-        logger.warning("gemini call failed", exc_info=True)
-        raise HTTPException(status_code=502, detail=f"upstream AI error: {exc}") from exc
-
-    text = (result.text or "").strip()
-    if not text:
-        raise HTTPException(status_code=502, detail="empty AI response")
-    try:
-        payload = json.loads(text)
-    except json.JSONDecodeError as exc:
-        logger.warning("gemini returned non-JSON: %s", text[:200])
-        raise HTTPException(status_code=502, detail="AI returned invalid JSON") from exc
-
-    return AiSuggestResponse(
-        name=str(payload.get("name") or "未命名物品")[:200],
-        description=(payload.get("description") or None),
-        category_suggestion=(payload.get("category_suggestion") or None),
-        tag_suggestions=[str(t)[:40] for t in (payload.get("tag_suggestions") or [])[:5]],
-    )
+        return await call_gemini_suggest(image_path, image.mime_type, hint)
+    except AiUpstreamError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
