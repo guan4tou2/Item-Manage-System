@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import type { BulkImportSummary } from "@/lib/api/items-bulk"
 import { downloadItemsCsv, importItemsCsv } from "@/lib/api/items-bulk"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { EditableOnly } from "@/components/common/editable-only"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -73,22 +74,27 @@ export function CsvPanel() {
           <Button variant="outline" onClick={handleExport} disabled={exporting}>
             {exporting ? t("settings.csv.exporting") : t("settings.csv.downloadCsv")}
           </Button>
-          <Button
-            onClick={() => fileRef.current?.click()}
-            disabled={importing}
-          >
-            {importing ? t("settings.csv.importing") : t("settings.csv.selectCsvImport")}
-          </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) void handleImport(f)
-            }}
-          />
+          {/* 匯入為寫入操作：viewer 不渲染（匯出維持可用） */}
+          <EditableOnly>
+            <>
+              <Button
+                onClick={() => fileRef.current?.click()}
+                disabled={importing}
+              >
+                {importing ? t("settings.csv.importing") : t("settings.csv.selectCsvImport")}
+              </Button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) void handleImport(f)
+                }}
+              />
+            </>
+          </EditableOnly>
         </div>
 
         {summary ? (

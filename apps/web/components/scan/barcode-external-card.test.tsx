@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 
+import { useAuthStore } from "@/lib/auth/auth-store"
 import enMessages from "@/messages/en.json"
 import type { BarcodeLookup } from "@/lib/api/barcodes"
 
@@ -123,5 +124,36 @@ describe("BarcodeExternalCard", () => {
       screen.getByText("No public database for this barcode type."),
     ).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Create with barcode" })).toBeInTheDocument()
+  })
+})
+
+describe("BarcodeExternalCard read-only viewer (Phase 30)", () => {
+  const hit = () =>
+    result({
+      external_status: "ok",
+      external: {
+        source: "openfoodfacts",
+        name: "Fresh milk",
+        description: "Brand, Dairy, 936ml",
+        image_url: null,
+        suggested_category_id: null,
+      },
+    })
+
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it("keeps external info but hides the create entry for viewers", () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "viewer-1", is_read_only: true } as never })
+    render(<BarcodeExternalCard result={hit()} onRetry={vi.fn()} />, { wrapper: Provider })
+    expect(screen.getByText("Fresh milk")).toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: "Use in new item" })).not.toBeInTheDocument()
+  })
+
+  it("keeps the create entry for writers (zero regression)", () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "writer-1", is_read_only: false } as never })
+    render(<BarcodeExternalCard result={hit()} onRetry={vi.fn()} />, { wrapper: Provider })
+    expect(screen.getByRole("link", { name: "Use in new item" })).toBeInTheDocument()
   })
 })

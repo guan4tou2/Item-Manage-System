@@ -13,9 +13,17 @@ interface Props {
   onToggle: (id: string) => void
   onDelete: (id: string) => void
   dragHandleProps?: React.HTMLAttributes<HTMLElement>
+  /** Phase 30：唯讀檢視（不顯示刪除鈕、Checkbox 僅顯示狀態） */
+  readOnly?: boolean
 }
 
-export function ListEntryRow({ entry, onToggle, onDelete, dragHandleProps }: Props) {
+export function ListEntryRow({
+  entry,
+  onToggle,
+  onDelete,
+  dragHandleProps,
+  readOnly = false,
+}: Props) {
   const t = useTranslations()
   return (
     <li
@@ -35,6 +43,7 @@ export function ListEntryRow({ entry, onToggle, onDelete, dragHandleProps }: Pro
       ) : null}
       <Checkbox
         checked={entry.is_done}
+        disabled={readOnly}
         onCheckedChange={() => onToggle(entry.id)}
         aria-label={entry.name}
       />
@@ -54,14 +63,16 @@ export function ListEntryRow({ entry, onToggle, onDelete, dragHandleProps }: Pro
           <p className="text-xs text-muted-foreground">{entry.note}</p>
         ) : null}
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={t("lists.actions.delete")}
-        onClick={() => onDelete(entry.id)}
-      >
-        <X className="h-4 w-4" />
-      </Button>
+      {readOnly ? null : (
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t("lists.actions.delete")}
+          onClick={() => onDelete(entry.id)}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      )}
     </li>
   )
 }

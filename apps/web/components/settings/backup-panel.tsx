@@ -10,6 +10,7 @@ import type { BackupImportMode, BackupImportResult } from "@/lib/api/backup"
 import { downloadBackup, importBackup } from "@/lib/api/backup"
 import { getApiErrorDetail } from "@/lib/api/client"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { EditableOnly } from "@/components/common/editable-only"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -201,7 +202,9 @@ export function BackupPanel() {
         </CardContent>
       </Card>
 
-      <Card aria-busy={busy}>
+      {/* 匯入為寫入操作：viewer 僅渲染匯出卡 */}
+      <EditableOnly>
+        <Card aria-busy={busy}>
         <CardHeader>
           <CardTitle>{t("settings.backup.import.title")}</CardTitle>
           <CardDescription>{t("settings.backup.import.description")}</CardDescription>
@@ -529,7 +532,8 @@ export function BackupPanel() {
             </div>
           ) : null}
         </CardContent>
-      </Card>
+        </Card>
+      </EditableOnly>
     </div>
   )
 }

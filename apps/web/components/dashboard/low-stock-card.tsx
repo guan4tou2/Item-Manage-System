@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import type { LowStockItem } from "@/lib/api/stats"
+import { EditableOnly } from "@/components/common/editable-only"
 import { createRestockListFromLowStockItems } from "@/lib/api/lists"
 import { useAccessToken } from "@/lib/auth/use-auth"
 import { Button } from "@/components/ui/button"
@@ -45,23 +46,25 @@ export function LowStockCard({ items, loading }: Props) {
       <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-base">{t("dashboard.lowStock.title")}</CardTitle>
         {!loading && items.length > 0 ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={createRestockList}
-            disabled={creating}
-            className="w-full justify-center sm:w-auto"
-          >
-            {creating ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <ListPlus className="h-4 w-4" aria-hidden />
-            )}
-            {creating
-              ? t("dashboard.lowStock.creatingRestockList")
-              : t("dashboard.lowStock.createRestockList")}
-          </Button>
+          <EditableOnly>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={createRestockList}
+              disabled={creating}
+              className="w-full justify-center sm:w-auto"
+            >
+              {creating ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <ListPlus className="h-4 w-4" aria-hidden />
+              )}
+              {creating
+                ? t("dashboard.lowStock.creatingRestockList")
+                : t("dashboard.lowStock.createRestockList")}
+            </Button>
+          </EditableOnly>
         ) : null}
       </CardHeader>
       <CardContent>

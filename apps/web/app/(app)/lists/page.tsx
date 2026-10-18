@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { useTranslations } from "next-intl"
 
+import { EditableOnly } from "@/components/common/editable-only"
 import { KindBadge } from "@/components/lists/kind-badge"
 import { ListCard } from "@/components/lists/list-card"
 import { NewListDialog } from "@/components/lists/new-list-dialog"
@@ -47,7 +48,9 @@ export default function ListsPage() {
 
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{t("lists.title")}</h1>
-        <NewListDialog />
+        <EditableOnly>
+          <NewListDialog />
+        </EditableOnly>
       </div>
 
       <div className="flex flex-wrap gap-2">

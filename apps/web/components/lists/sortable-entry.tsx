@@ -10,11 +10,14 @@ interface Props {
   entry: ListEntry
   onToggle: (id: string) => void
   onDelete: (id: string) => void
+  /** Phase 30：唯讀檢視（停用排序、不顯示拖放把手） */
+  readOnly?: boolean
 }
 
-export function SortableEntry({ entry, onToggle, onDelete }: Props) {
+export function SortableEntry({ entry, onToggle, onDelete, readOnly = false }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: entry.id,
+    disabled: readOnly,
   })
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -26,7 +29,8 @@ export function SortableEntry({ entry, onToggle, onDelete }: Props) {
         entry={entry}
         onToggle={onToggle}
         onDelete={onDelete}
-        dragHandleProps={{ ...attributes, ...listeners }}
+        readOnly={readOnly}
+        dragHandleProps={readOnly ? undefined : { ...attributes, ...listeners }}
       />
     </div>
   )

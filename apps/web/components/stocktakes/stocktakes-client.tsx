@@ -24,6 +24,7 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb'
+import { EditableOnly } from '@/components/common/editable-only'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -394,11 +395,12 @@ export function StocktakesClient() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.2fr)]">
         <aside className="space-y-4">
-          <section className="rounded-lg border bg-card p-4">
-            <div className="flex items-start gap-3">
-              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
-                <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
-              </div>
+          <EditableOnly>
+            <section className="rounded-lg border bg-card p-4">
+              <div className="flex items-start gap-3">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
+                  <ClipboardCheck className="h-5 w-5" aria-hidden="true" />
+                </div>
               <div>
                 <h2 className="text-base font-semibold">{t('stocktakes.createTitle')}</h2>
                 <p className="text-muted-foreground mt-1 text-sm">
@@ -416,11 +418,12 @@ export function StocktakesClient() {
                   placeholder={t('stocktakes.namePlaceholder')}
                 />
               </div>
-              <Button onClick={() => create.mutate()} disabled={!name.trim() || create.isPending}>
-                {create.isPending ? t('stocktakes.starting') : t('stocktakes.start')}
-              </Button>
-            </div>
-          </section>
+                <Button onClick={() => create.mutate()} disabled={!name.trim() || create.isPending}>
+                  {create.isPending ? t('stocktakes.starting') : t('stocktakes.start')}
+                </Button>
+              </div>
+            </section>
+          </EditableOnly>
 
           <section className="space-y-3">
             <h2 className="text-base font-semibold">{t('stocktakes.sessionsTitle')}</h2>
@@ -469,6 +472,7 @@ export function StocktakesClient() {
                         : ''}
                     </p>
                   </div>
+                  <EditableOnly>
                   <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
@@ -520,6 +524,7 @@ export function StocktakesClient() {
                       </AlertDialogContent>
                     </AlertDialog>
                   </div>
+                  </EditableOnly>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-3">
@@ -541,7 +546,8 @@ export function StocktakesClient() {
             )}
           </section>
 
-          <section className="rounded-lg border bg-card p-4">
+          <EditableOnly>
+            <section className="rounded-lg border bg-card p-4">
             <div className="flex items-start gap-3">
               <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary/10 text-primary">
                 <PackageSearch className="h-5 w-5" aria-hidden="true" />
@@ -604,7 +610,8 @@ export function StocktakesClient() {
             {items.length === 0 && !itemsQuery.isLoading ? (
               <p className="text-muted-foreground mt-3 text-sm">{t('stocktakes.noItems')}</p>
             ) : null}
-          </section>
+            </section>
+          </EditableOnly>
 
           <section className="rounded-lg border bg-card p-4">
             <h2 className="text-base font-semibold">{t('stocktakes.scannedTitle')}</h2>

@@ -18,6 +18,7 @@ import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
 import { useTranslations } from "next-intl"
 
+import { EditableOnly } from "@/components/common/editable-only"
 import { KindBadge } from "@/components/lists/kind-badge"
 import { SortableEntry } from "@/components/lists/sortable-entry"
 import {
@@ -50,10 +51,12 @@ import {
   useReorderEntries,
   useToggleEntry,
 } from "@/lib/hooks/use-lists"
+import { useReadOnly } from "@/lib/auth/use-readonly"
 import type { ListKind } from "@/lib/api/lists"
 
 export default function ListDetailPage() {
   const t = useTranslations()
+  const readOnly = useReadOnly()
   const params = useParams()
   const router = useRouter()
   const listId = String(params.id)
@@ -167,12 +170,13 @@ export default function ListDetailPage() {
           ) : null}
         </div>
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              {t("lists.actions.delete")}
-            </Button>
-          </AlertDialogTrigger>
+        <EditableOnly>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                {t("lists.actions.delete")}
+              </Button>
+            </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>{t("lists.actions.confirmDelete")}</AlertDialogTitle>
@@ -190,9 +194,10 @@ export default function ListDetailPage() {
               >
                 {t("lists.actions.delete")}
               </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </EditableOnly>
       </div>
 
       <div className="rounded-lg border">
@@ -215,6 +220,7 @@ export default function ListDetailPage() {
                   <SortableEntry
                     key={entry.id}
                     entry={entry}
+                    readOnly={readOnly}
                     onToggle={(id) => toggleEntry.mutate(id)}
                     onDelete={(id) => deleteEntry.mutate(id)}
                   />
@@ -224,7 +230,8 @@ export default function ListDetailPage() {
           </DndContext>
         )}
 
-        <div className="border-t p-4">
+        <EditableOnly>
+          <div className="border-t p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -241,7 +248,8 @@ export default function ListDetailPage() {
               {t("lists.new.create")}
             </Button>
           </form>
-        </div>
+          </div>
+        </EditableOnly>
       </div>
     </section>
   )

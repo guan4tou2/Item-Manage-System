@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 
+import { EditableOnly } from "@/components/common/editable-only"
 import { Button } from "@/components/ui/button"
 import type { BarcodeLookup } from "@/lib/api/barcodes"
 
@@ -53,9 +54,11 @@ export function BarcodeExternalCard({ result, onRetry }: Props) {
             ) : null}
           </div>
         </div>
-        <Button asChild>
-          <Link href={createHref}>{t("scan.external.bringToNew")}</Link>
-        </Button>
+        <EditableOnly>
+          <Button asChild>
+            <Link href={createHref}>{t("scan.external.bringToNew")}</Link>
+          </Button>
+        </EditableOnly>
       </div>
     )
   }

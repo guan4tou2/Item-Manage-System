@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as itemsApi from '@/lib/api/items'
 import * as stocktakeApi from '@/lib/api/stocktakes'
+import { useAuthStore } from '@/lib/auth/auth-store'
 import enMessages from '@/messages/en.json'
 
 import { StocktakesClient } from './stocktakes-client'
@@ -290,5 +291,45 @@ describe('StocktakesClient', () => {
     await waitFor(() => {
       expect(stocktakeApi.completeStocktake).toHaveBeenCalledWith('st_1', 'jwt')
     })
+  })
+})
+
+describe('StocktakesClient read-only viewer (Phase 30)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(stocktakeApi.listStocktakes).mockResolvedValue([openStocktake])
+    vi.mocked(stocktakeApi.getStocktake).mockResolvedValue(detail)
+    vi.mocked(itemsApi.listItems).mockResolvedValue({
+      items: [item, matchedItem, overItem],
+      total: 3,
+      page: 1,
+      per_page: 100,
+    })
+  })
+
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it('hides create, counting and resolve entries for viewers', async () => {
+    useAuthStore.setState({ accessToken: 'jwt', user: { id: "viewer-1", is_read_only: true } as never })
+    renderClient()
+
+    expect(await screen.findByText('June stocktake')).toBeInTheDocument()
+    expect(screen.queryByText('New session')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Start stocktake' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Record count' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel stocktake' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Complete stocktake' })).not.toBeInTheDocument()
+  })
+
+  it('keeps all entries for writers (zero regression)', async () => {
+    useAuthStore.setState({ accessToken: 'jwt', user: { id: "writer-1", is_read_only: false } as never })
+    renderClient()
+
+    expect(await screen.findByText('June stocktake')).toBeInTheDocument()
+    expect(screen.getByText('New session')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Record count' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Complete stocktake' })).toBeInTheDocument()
   })
 })

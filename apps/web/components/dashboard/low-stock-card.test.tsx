@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
-import { describe, expect, it, vi, beforeEach } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import * as listsApi from "@/lib/api/lists"
 import type { LowStockItem } from "@/lib/api/stats"
+import { useAuthStore } from "@/lib/auth/auth-store"
 import enMessages from "@/messages/en.json"
 
 import { LowStockCard } from "./low-stock-card"
@@ -84,5 +85,23 @@ describe("LowStockCard", () => {
       )
       expect(push).toHaveBeenCalledWith("/lists/list-1")
     })
+  })
+})
+
+describe("LowStockCard read-only viewer (Phase 30)", () => {
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it("hides the restock list entry for viewers", () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "viewer-1", is_read_only: true } as never })
+    render(<LowStockCard items={lowStockItems} />, { wrapper: Provider })
+    expect(screen.queryByRole("button", { name: "Create restock list" })).not.toBeInTheDocument()
+  })
+
+  it("keeps the restock list entry for writers (zero regression)", () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "writer-1", is_read_only: false } as never })
+    render(<LowStockCard items={lowStockItems} />, { wrapper: Provider })
+    expect(screen.getByRole("button", { name: "Create restock list" })).toBeInTheDocument()
   })
 })

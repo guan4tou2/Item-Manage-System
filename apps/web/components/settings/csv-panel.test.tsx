@@ -2,9 +2,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
 import { toast } from "sonner"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import * as api from "@/lib/api/items-bulk"
+import { useAuthStore } from "@/lib/auth/auth-store"
 import enMessages from "@/messages/en.json"
 
 import { CsvPanel } from "./csv-panel"
@@ -92,5 +93,25 @@ describe("CsvPanel", () => {
     // 匯入說明需提及 cost（最多 2 位小數）與 currency（帳號幣別）
     expect(screen.getByText(/cost \(up to 2 decimals\)/)).toBeInTheDocument()
     expect(screen.getByText(/currency \(must match your account currency\)/)).toBeInTheDocument()
+  })
+})
+
+describe("CsvPanel read-only viewer (Phase 30)", () => {
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it("keeps export but hides import for viewers", () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "viewer-1", is_read_only: true } as never })
+    renderPanel()
+    expect(screen.getByRole("button", { name: t.downloadCsv })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: t.selectCsvImport })).not.toBeInTheDocument()
+  })
+
+  it("keeps export and import for writers (zero regression)", () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "writer-1", is_read_only: false } as never })
+    renderPanel()
+    expect(screen.getByRole("button", { name: t.downloadCsv })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: t.selectCsvImport })).toBeInTheDocument()
   })
 })

@@ -3,10 +3,11 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event"
 import { NextIntlClientProvider } from "next-intl"
 import { toast } from "sonner"
-import { beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import * as api from "@/lib/api/backup"
 import { ApiError } from "@/lib/api/client"
+import { useAuthStore } from "@/lib/auth/auth-store"
 import enMessages from "@/messages/en.json"
 
 import { BackupPanel } from "./backup-panel"
@@ -517,5 +518,25 @@ describe("BackupPanel import execution", () => {
     )
     expect(screen.queryByRole("status")).toBeNull()
     await screen.findByText(t.summary.title)
+  })
+})
+
+describe("BackupPanel read-only viewer (Phase 30)", () => {
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it("renders only the export card for viewers", () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "viewer-1", is_read_only: true } as never })
+    renderPanel()
+    expect(screen.getByText(t.export.title)).toBeInTheDocument()
+    expect(screen.queryByText(t.import.title)).not.toBeInTheDocument()
+  })
+
+  it("renders both cards for writers (zero regression)", () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "writer-1", is_read_only: false } as never })
+    renderPanel()
+    expect(screen.getByText(t.export.title)).toBeInTheDocument()
+    expect(screen.getByText(t.import.title)).toBeInTheDocument()
   })
 })
