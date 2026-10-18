@@ -11,9 +11,12 @@ from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clock import TAIPEI
+from app.config import get_settings
+from app.models.user import User
 from app.repositories import locations_repository, reports_repository
 from app.schemas.reports import (
     ReportActivity,
@@ -23,7 +26,15 @@ from app.schemas.reports import (
     ReportTotals,
     ReportValuation,
 )
-from app.services import visibility_service
+from app.services import (
+    external_notifications,
+    jobs_service,
+    notification_prefs,
+    notifications_service,
+    preferences_service,
+    report_render,
+    visibility_service,
+)
 
 #: 月報的「即將到期」視窗（與列表的 7 天不同；以期末為基準）
 EXPIRING_HORIZON_DAYS = 30
@@ -186,3 +197,123 @@ async def build_payload(
         ],
         has_activity=has_activity,
     )
+
+
+# ---------- job（report.monthly） ----------------------------------------
+
+
+async def _deliver_report(
+    session: AsyncSession,
+    *,
+    user_id: UUID,
+    report_id: UUID,
+    payload: ReportPayload,
+    language: str,
+) -> bool:
+    """站內通知＋HTML Email。回傳是否有任一管道實際成立（emit 失敗視為未成立）。"""
+    user = await session.get(User, user_id)
+    if user is None:
+        return False
+
+    title, body = report_render.notification_text(payload, language)
+    link = f"/reports/{report_id}"
+    absolute = f"{get_settings().public_web_url.rstrip('/')}{link}"
+
+    delivered = False
+    if user.email and await notification_prefs.is_enabled(
+        session, user_id, type="report_ready", channel="email"
+    ):
+        text = report_render.render_text(payload, language, absolute)
+        html = report_render.render_html(payload, language, absolute)
+        delivered = await external_notifications.deliver_email(
+            user.email, title, text, html=html
+        )
+
+    notification = await notifications_service.emit(
+        session,
+        user_id=user_id,
+        type="report_ready",
+        title=title,
+        body=body,
+        link=link,
+        exclude_channels=frozenset({"email"}),
+    )
+    return delivered or notification is not None
+
+
+async def generate_monthly(
+    session: AsyncSession, today: date
+) -> jobs_service.JobResult:
+    """`report.monthly`：為每位合格使用者生成上一個完整月的報表。
+
+    - 資格：is_active ＋ 月報開關開啟 ＋ 至少 1 件可見（未刪除）物品
+    - 空動態月仍建立列（站內留痕），但不通知、不寄信
+    - 已存在同 `(user_id, period)` → 跳過（冪等）
+    - 每位使用者獨立 commit；失敗 rollback 並記入 `errors`，不阻斷其他人
+    """
+    period = previous_period(today)
+    generated_at = datetime.now(UTC)
+    result = jobs_service.JobResult()
+
+    user_ids = list(
+        (
+            await session.execute(
+                select(User.id).where(User.is_active.is_(True))
+            )
+        ).scalars()
+    )
+
+    for user_id in user_ids:
+        try:
+            prefs = await preferences_service.get_preferences(
+                session, user_id=user_id
+            )
+            if not prefs.report_monthly_enabled:
+                continue
+            owner_ids = await visibility_service.visible_item_owner_ids(
+                session, user_id
+            )
+            if not await reports_repository.has_visible_items(session, owner_ids):
+                continue
+            existing = await reports_repository.get_by_user_period(
+                session, user_id, period.key
+            )
+            if existing is not None:
+                continue
+
+            payload = await build_payload(
+                session,
+                user_id=user_id,
+                period=period,
+                generated_at=generated_at,
+                currency=prefs.currency,
+            )
+            row = await reports_repository.create(
+                session,
+                user_id=user_id,
+                period=period.key,
+                payload=payload.model_dump(mode="json"),
+                generated_at=generated_at,
+            )
+            await session.commit()
+            result.processed += 1
+
+            if payload.has_activity and await _deliver_report(
+                session,
+                user_id=user_id,
+                report_id=row.id,
+                payload=payload,
+                language=prefs.language,
+            ):
+                await session.commit()
+                result.emitted += 1
+        except Exception as exc:  # noqa: BLE001 — 單一使用者失敗不阻斷整批
+            await session.rollback()
+            result.errors.append(f"{user_id}: {type(exc).__name__}: {exc}")
+
+    return result
+
+
+jobs_service.register(
+    jobs_service.JobSpec(name="report.monthly", run=generate_monthly)
+)

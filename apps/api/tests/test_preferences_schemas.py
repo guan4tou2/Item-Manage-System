@@ -13,6 +13,15 @@ class TestPreferencesRead:
         prefs = PreferencesRead()
         assert prefs.language == "zh-TW"
 
+    def test_report_monthly_enabled_defaults_true(self):
+        assert PreferencesRead().report_monthly_enabled is True
+
+    def test_report_monthly_enabled_can_be_disabled(self):
+        assert (
+            PreferencesRead(report_monthly_enabled=False).report_monthly_enabled
+            is False
+        )
+
     def test_accepts_valid_theme(self):
         prefs = PreferencesRead(theme="dark")
         assert prefs.theme == "dark"

@@ -139,3 +139,19 @@ async def test_admin_pat_can_trigger(client, admin_auth, db_session):
 
     assert r.status_code == 200
     assert r.json()["status"] == "succeeded"
+
+
+async def test_report_monthly_job_status_and_run(client, admin_auth):
+    """Phase 31：月報 job 需註冊在 registry 且可經管理員觸發。"""
+    s = await client.get("/api/jobs/report.monthly/status", headers=admin_auth)
+    assert s.status_code == 200
+    body = s.json()
+    assert body["job"] == "report.monthly"
+    assert body["last_run"] is None
+
+    r = await client.post("/api/jobs/report.monthly/run", headers=admin_auth)
+
+    assert r.status_code == 200
+    assert r.json()["job"] == "report.monthly"
+    assert r.json()["status"] == "succeeded"
+    assert r.json()["processed"] == 0

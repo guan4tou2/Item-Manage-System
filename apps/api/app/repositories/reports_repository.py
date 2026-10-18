@@ -87,6 +87,15 @@ async def totals(
     return int(row[0]), int(row[1])
 
 
+async def has_visible_items(
+    session: AsyncSession, owner_ids: Sequence[UUID]
+) -> bool:
+    stmt = select(func.count(Item.id)).where(
+        Item.owner_id.in_(owner_ids), Item.is_deleted.is_(False)
+    )
+    return int((await session.execute(stmt)).scalar_one()) > 0
+
+
 async def items_created(
     session: AsyncSession,
     owner_ids: Sequence[UUID],

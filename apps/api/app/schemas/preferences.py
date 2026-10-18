@@ -26,6 +26,8 @@ class PreferencesRead(BaseModel):
     currency: Currency = "TWD"
     #: Phase 30：viewer 一次性說明 banner 是否已關閉（不重複顯示）
     viewer_notice_dismissed: bool = False
+    #: Phase 31：月報總開關（關閉後不生成、不通知、不寄信）
+    report_monthly_enabled: bool = True
 
     model_config = ConfigDict(extra="allow")
 
@@ -35,5 +37,6 @@ class PreferencesUpdate(BaseModel):
     language: Language | None = None
     currency: Currency | None = None
     viewer_notice_dismissed: bool | None = None
+    report_monthly_enabled: bool | None = None
 
     model_config = ConfigDict(extra="allow")

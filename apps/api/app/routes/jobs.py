@@ -20,7 +20,7 @@ from app.schemas.jobs import (
     JobStatus,
     JobThresholds,
 )
-from app.services import expiry_scan, jobs_service  # noqa: F401 — import 觸發 job 註冊
+from app.services import expiry_scan, jobs_service, reports_service  # noqa: F401 — import 觸發 job 註冊
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 

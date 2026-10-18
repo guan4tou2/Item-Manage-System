@@ -35,6 +35,7 @@ class TestGetPreferences:
             "language": "zh-TW",
             "currency": "TWD",
             "viewer_notice_dismissed": False,
+            "report_monthly_enabled": True,
         }
 
 
@@ -55,6 +56,16 @@ class TestPutPreferences:
         body = resp.json()
         assert body["theme"] == "dark"
         assert body["language"] == "zh-TW"
+
+    async def test_updates_report_monthly_enabled(self, client, auth_headers):
+        resp = await client.put(
+            "/api/users/me/preferences",
+            headers=auth_headers,
+            json={"report_monthly_enabled": False},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["report_monthly_enabled"] is False
+        assert resp.json()["language"] == "zh-TW"
 
     async def test_updates_language(self, client, auth_headers):
         resp = await client.put(
