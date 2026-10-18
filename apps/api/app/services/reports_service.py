@@ -178,7 +178,9 @@ async def build_payload(
     )
 
     return ReportPayload(
+        version=1,
         period=period.key,
+        timezone="Asia/Taipei",
         period_start=period.start,
         period_end=period.end,
         generated_at=generated_at,

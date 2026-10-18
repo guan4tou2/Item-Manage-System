@@ -3706,40 +3706,19 @@ export interface components {
         };
         /** ReportActivity */
         ReportActivity: {
-            /**
-             * Items Created
-             * @default 0
-             */
+            /** Items Created */
             items_created: number;
-            /**
-             * Items Deleted
-             * @default 0
-             */
+            /** Items Deleted */
             items_deleted: number;
-            /**
-             * Quantity In
-             * @default 0
-             */
+            /** Quantity In */
             quantity_in: number;
-            /**
-             * Quantity Out
-             * @default 0
-             */
+            /** Quantity Out */
             quantity_out: number;
-            /**
-             * Loans Out
-             * @default 0
-             */
+            /** Loans Out */
             loans_out: number;
-            /**
-             * Loans Returned
-             * @default 0
-             */
+            /** Loans Returned */
             loans_returned: number;
-            /**
-             * Loans Overdue
-             * @default 0
-             */
+            /** Loans Overdue */
             loans_overdue: number;
         };
         /**
@@ -3748,24 +3727,15 @@ export interface components {
          */
         ReportBucket: {
             /** Label */
-            label?: string | null;
-            /**
-             * Count
-             * @default 0
-             */
+            label: string | null;
+            /** Count */
             count: number;
         };
         /** ReportExpiry */
         ReportExpiry: {
-            /**
-             * Expiring Soon
-             * @default 0
-             */
+            /** Expiring Soon */
             expiring_soon: number;
-            /**
-             * Expired
-             * @default 0
-             */
+            /** Expired */
             expired: number;
         };
         /** ReportListResponse */
@@ -3784,17 +3754,11 @@ export interface components {
          * @description 月報快照（version=1）；站內詳情與 Email 共用同一份 payload。
          */
         ReportPayload: {
-            /**
-             * Version
-             * @default 1
-             */
+            /** Version */
             version: number;
             /** Period */
             period: string;
-            /**
-             * Timezone
-             * @default Asia/Taipei
-             */
+            /** Timezone */
             timezone: string;
             /**
              * Period Start
@@ -3811,23 +3775,17 @@ export interface components {
              * Format: date-time
              */
             generated_at: string;
-            /**
-             * Currency
-             * @default TWD
-             */
+            /** Currency */
             currency: string;
-            totals?: components["schemas"]["ReportTotals"];
-            activity?: components["schemas"]["ReportActivity"];
-            expiry?: components["schemas"]["ReportExpiry"];
-            valuation?: components["schemas"]["ReportValuation"];
+            totals: components["schemas"]["ReportTotals"];
+            activity: components["schemas"]["ReportActivity"];
+            expiry: components["schemas"]["ReportExpiry"];
+            valuation: components["schemas"]["ReportValuation"];
             /** Top Categories */
-            top_categories?: components["schemas"]["ReportBucket"][];
+            top_categories: components["schemas"]["ReportBucket"][];
             /** Top Locations */
-            top_locations?: components["schemas"]["ReportBucket"][];
-            /**
-             * Has Activity
-             * @default false
-             */
+            top_locations: components["schemas"]["ReportBucket"][];
+            /** Has Activity */
             has_activity: boolean;
         };
         /** ReportRead */
@@ -3848,15 +3806,9 @@ export interface components {
         };
         /** ReportTotals */
         ReportTotals: {
-            /**
-             * Item Count
-             * @default 0
-             */
+            /** Item Count */
             item_count: number;
-            /**
-             * Quantity
-             * @default 0
-             */
+            /** Quantity */
             quantity: number;
         };
         /**
@@ -3864,25 +3816,13 @@ export interface components {
          * @description 估值以字串輸出（Decimal 2 位），幣別取使用者偏好。
          */
         ReportValuation: {
-            /**
-             * Start
-             * @default 0.00
-             */
+            /** Start */
             start: string;
-            /**
-             * End
-             * @default 0.00
-             */
+            /** End */
             end: string;
-            /**
-             * Delta
-             * @default 0.00
-             */
+            /** Delta */
             delta: string;
-            /**
-             * Unpriced Items
-             * @default 0
-             */
+            /** Unpriced Items */
             unpriced_items: number;
         };
         /** StocktakeCreate */

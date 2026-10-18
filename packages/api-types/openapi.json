@@ -11858,41 +11858,43 @@
         "properties": {
           "items_created": {
             "type": "integer",
-            "title": "Items Created",
-            "default": 0
+            "title": "Items Created"
           },
           "items_deleted": {
             "type": "integer",
-            "title": "Items Deleted",
-            "default": 0
+            "title": "Items Deleted"
           },
           "quantity_in": {
             "type": "integer",
-            "title": "Quantity In",
-            "default": 0
+            "title": "Quantity In"
           },
           "quantity_out": {
             "type": "integer",
-            "title": "Quantity Out",
-            "default": 0
+            "title": "Quantity Out"
           },
           "loans_out": {
             "type": "integer",
-            "title": "Loans Out",
-            "default": 0
+            "title": "Loans Out"
           },
           "loans_returned": {
             "type": "integer",
-            "title": "Loans Returned",
-            "default": 0
+            "title": "Loans Returned"
           },
           "loans_overdue": {
             "type": "integer",
-            "title": "Loans Overdue",
-            "default": 0
+            "title": "Loans Overdue"
           }
         },
         "type": "object",
+        "required": [
+          "items_created",
+          "items_deleted",
+          "quantity_in",
+          "quantity_out",
+          "loans_out",
+          "loans_returned",
+          "loans_overdue"
+        ],
         "title": "ReportActivity"
       },
       "ReportBucket": {
@@ -11910,11 +11912,14 @@
           },
           "count": {
             "type": "integer",
-            "title": "Count",
-            "default": 0
+            "title": "Count"
           }
         },
         "type": "object",
+        "required": [
+          "label",
+          "count"
+        ],
         "title": "ReportBucket",
         "description": "熱門分類／位置的一列；`label=null` 代表未分類／未指定。"
       },
@@ -11922,16 +11927,18 @@
         "properties": {
           "expiring_soon": {
             "type": "integer",
-            "title": "Expiring Soon",
-            "default": 0
+            "title": "Expiring Soon"
           },
           "expired": {
             "type": "integer",
-            "title": "Expired",
-            "default": 0
+            "title": "Expired"
           }
         },
         "type": "object",
+        "required": [
+          "expiring_soon",
+          "expired"
+        ],
         "title": "ReportExpiry"
       },
       "ReportListResponse": {
@@ -11969,8 +11976,7 @@
         "properties": {
           "version": {
             "type": "integer",
-            "title": "Version",
-            "default": 1
+            "title": "Version"
           },
           "period": {
             "type": "string",
@@ -11978,8 +11984,7 @@
           },
           "timezone": {
             "type": "string",
-            "title": "Timezone",
-            "default": "Asia/Taipei"
+            "title": "Timezone"
           },
           "period_start": {
             "type": "string",
@@ -11998,8 +12003,7 @@
           },
           "currency": {
             "type": "string",
-            "title": "Currency",
-            "default": "TWD"
+            "title": "Currency"
           },
           "totals": {
             "$ref": "#/components/schemas/ReportTotals"
@@ -12029,16 +12033,25 @@
           },
           "has_activity": {
             "type": "boolean",
-            "title": "Has Activity",
-            "default": false
+            "title": "Has Activity"
           }
         },
         "type": "object",
         "required": [
+          "version",
           "period",
+          "timezone",
           "period_start",
           "period_end",
-          "generated_at"
+          "generated_at",
+          "currency",
+          "totals",
+          "activity",
+          "expiry",
+          "valuation",
+          "top_categories",
+          "top_locations",
+          "has_activity"
         ],
         "title": "ReportPayload",
         "description": "月報快照（version=1）；站內詳情與 Email 共用同一份 payload。"
@@ -12076,42 +12089,46 @@
         "properties": {
           "item_count": {
             "type": "integer",
-            "title": "Item Count",
-            "default": 0
+            "title": "Item Count"
           },
           "quantity": {
             "type": "integer",
-            "title": "Quantity",
-            "default": 0
+            "title": "Quantity"
           }
         },
         "type": "object",
+        "required": [
+          "item_count",
+          "quantity"
+        ],
         "title": "ReportTotals"
       },
       "ReportValuation": {
         "properties": {
           "start": {
             "type": "string",
-            "title": "Start",
-            "default": "0.00"
+            "title": "Start"
           },
           "end": {
             "type": "string",
-            "title": "End",
-            "default": "0.00"
+            "title": "End"
           },
           "delta": {
             "type": "string",
-            "title": "Delta",
-            "default": "0.00"
+            "title": "Delta"
           },
           "unpriced_items": {
             "type": "integer",
-            "title": "Unpriced Items",
-            "default": 0
+            "title": "Unpriced Items"
           }
         },
         "type": "object",
+        "required": [
+          "start",
+          "end",
+          "delta",
+          "unpriced_items"
+        ],
         "title": "ReportValuation",
         "description": "估值以字串輸出（Decimal 2 位），幣別取使用者偏好。"
       },

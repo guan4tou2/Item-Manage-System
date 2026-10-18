@@ -17,7 +17,9 @@ LINK = "http://localhost:3000/reports/abc"
 
 def _payload(**overrides) -> ReportPayload:
     base = dict(
+        version=1,
         period="2026-09",
+        timezone="Asia/Taipei",
         period_start=date(2026, 9, 1),
         period_end=date(2026, 9, 30),
         generated_at=datetime(2026, 10, 1, 0, 5, tzinfo=UTC),
