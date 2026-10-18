@@ -916,6 +916,7 @@
       "savedOn": "月報已開啟",
       "savedOff": "月報已關閉",
       "saveFailed": "無法更新月報設定，請稍後再試",
+      "loading": "載入月報設定…",
       "loadError": "無法載入月報設定",
       "retry": "重試"
     },

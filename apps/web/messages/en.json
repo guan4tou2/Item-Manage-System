@@ -916,6 +916,7 @@
       "savedOn": "Monthly reports turned on",
       "savedOff": "Monthly reports turned off",
       "saveFailed": "Could not update the monthly report setting. Please try again.",
+      "loading": "Loading monthly report settings…",
       "loadError": "Could not load the monthly report setting",
       "retry": "Retry"
     },

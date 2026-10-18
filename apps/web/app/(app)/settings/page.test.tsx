@@ -76,6 +76,9 @@ describe("SettingsPage", () => {
     expect(
       screen.getByRole("link", { name: new RegExp(t.index.pages.notifications.title) }),
     ).toHaveAttribute("href", "/settings/notifications")
+    expect(
+      screen.getByRole("link", { name: new RegExp(t.index.pages.reports.title) }),
+    ).toHaveAttribute("href", "/settings/reports")
   })
 
   it("lists the backup page between tokens and data in the integrations group", () => {
