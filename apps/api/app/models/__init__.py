@@ -15,6 +15,7 @@ from app.models.loan import ItemLoan
 from app.models.location import Location
 from app.models.notification import Notification
 from app.models.notification_preference import NotificationPreference
+from app.models.report import Report
 from app.models.stocktake import Stocktake, StocktakeItem
 from app.models.tag import Tag, item_tags
 from app.models.transfer import ItemTransfer
@@ -58,4 +59,5 @@ __all__ = [
     "JobRun",
     "ExpiryAlert",
     "BarcodeLookup",
+    "Report",
 ]
