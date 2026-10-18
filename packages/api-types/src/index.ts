@@ -943,6 +943,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Reports */
+        get: operations["list_reports_api_reports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/{report_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Report */
+        get: operations["get_report_api_reports__report_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lists": {
         parameters: {
             query?: never;
@@ -3590,6 +3624,11 @@ export interface components {
              * @default false
              */
             viewer_notice_dismissed: boolean;
+            /**
+             * Report Monthly Enabled
+             * @default true
+             */
+            report_monthly_enabled: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -3603,6 +3642,8 @@ export interface components {
             currency?: ("TWD" | "USD" | "EUR" | "JPY" | "CNY" | "HKD") | null;
             /** Viewer Notice Dismissed */
             viewer_notice_dismissed?: boolean | null;
+            /** Report Monthly Enabled */
+            report_monthly_enabled?: boolean | null;
         } & {
             [key: string]: unknown;
         };
@@ -3662,6 +3703,187 @@ export interface components {
         ReorderRequest: {
             /** Entry Ids */
             entry_ids: string[];
+        };
+        /** ReportActivity */
+        ReportActivity: {
+            /**
+             * Items Created
+             * @default 0
+             */
+            items_created: number;
+            /**
+             * Items Deleted
+             * @default 0
+             */
+            items_deleted: number;
+            /**
+             * Quantity In
+             * @default 0
+             */
+            quantity_in: number;
+            /**
+             * Quantity Out
+             * @default 0
+             */
+            quantity_out: number;
+            /**
+             * Loans Out
+             * @default 0
+             */
+            loans_out: number;
+            /**
+             * Loans Returned
+             * @default 0
+             */
+            loans_returned: number;
+            /**
+             * Loans Overdue
+             * @default 0
+             */
+            loans_overdue: number;
+        };
+        /**
+         * ReportBucket
+         * @description 熱門分類／位置的一列；`label=null` 代表未分類／未指定。
+         */
+        ReportBucket: {
+            /** Label */
+            label?: string | null;
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+        };
+        /** ReportExpiry */
+        ReportExpiry: {
+            /**
+             * Expiring Soon
+             * @default 0
+             */
+            expiring_soon: number;
+            /**
+             * Expired
+             * @default 0
+             */
+            expired: number;
+        };
+        /** ReportListResponse */
+        ReportListResponse: {
+            /** Items */
+            items: components["schemas"]["ReportRead"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+        };
+        /**
+         * ReportPayload
+         * @description 月報快照（version=1）；站內詳情與 Email 共用同一份 payload。
+         */
+        ReportPayload: {
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /** Period */
+            period: string;
+            /**
+             * Timezone
+             * @default Asia/Taipei
+             */
+            timezone: string;
+            /**
+             * Period Start
+             * Format: date
+             */
+            period_start: string;
+            /**
+             * Period End
+             * Format: date
+             */
+            period_end: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /**
+             * Currency
+             * @default TWD
+             */
+            currency: string;
+            totals?: components["schemas"]["ReportTotals"];
+            activity?: components["schemas"]["ReportActivity"];
+            expiry?: components["schemas"]["ReportExpiry"];
+            valuation?: components["schemas"]["ReportValuation"];
+            /** Top Categories */
+            top_categories?: components["schemas"]["ReportBucket"][];
+            /** Top Locations */
+            top_locations?: components["schemas"]["ReportBucket"][];
+            /**
+             * Has Activity
+             * @default false
+             */
+            has_activity: boolean;
+        };
+        /** ReportRead */
+        ReportRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Period */
+            period: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            payload: components["schemas"]["ReportPayload"];
+        };
+        /** ReportTotals */
+        ReportTotals: {
+            /**
+             * Item Count
+             * @default 0
+             */
+            item_count: number;
+            /**
+             * Quantity
+             * @default 0
+             */
+            quantity: number;
+        };
+        /**
+         * ReportValuation
+         * @description 估值以字串輸出（Decimal 2 位），幣別取使用者偏好。
+         */
+        ReportValuation: {
+            /**
+             * Start
+             * @default 0.00
+             */
+            start: string;
+            /**
+             * End
+             * @default 0.00
+             */
+            end: string;
+            /**
+             * Delta
+             * @default 0.00
+             */
+            delta: string;
+            /**
+             * Unpriced Items
+             * @default 0
+             */
+            unpriced_items: number;
         };
         /** StocktakeCreate */
         StocktakeCreate: {
@@ -6105,6 +6327,69 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_reports_api_reports_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_report_api_reports__report_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportRead"];
+                };
             };
             /** @description Validation Error */
             422: {

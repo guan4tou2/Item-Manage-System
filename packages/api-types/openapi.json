@@ -3105,6 +3105,115 @@
         }
       }
     },
+    "/api/reports": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "List Reports",
+        "operationId": "list_reports_api_reports_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/{report_id}": {
+      "get": {
+        "tags": [
+          "reports"
+        ],
+        "summary": "Get Report",
+        "operationId": "get_report_api_reports__report_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Report Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReportRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/lists": {
       "get": {
         "tags": [
@@ -11513,6 +11622,11 @@
             "type": "boolean",
             "title": "Viewer Notice Dismissed",
             "default": false
+          },
+          "report_monthly_enabled": {
+            "type": "boolean",
+            "title": "Report Monthly Enabled",
+            "default": true
           }
         },
         "additionalProperties": true,
@@ -11581,6 +11695,17 @@
               }
             ],
             "title": "Viewer Notice Dismissed"
+          },
+          "report_monthly_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Report Monthly Enabled"
           }
         },
         "additionalProperties": true,
@@ -11728,6 +11853,267 @@
           "entry_ids"
         ],
         "title": "ReorderRequest"
+      },
+      "ReportActivity": {
+        "properties": {
+          "items_created": {
+            "type": "integer",
+            "title": "Items Created",
+            "default": 0
+          },
+          "items_deleted": {
+            "type": "integer",
+            "title": "Items Deleted",
+            "default": 0
+          },
+          "quantity_in": {
+            "type": "integer",
+            "title": "Quantity In",
+            "default": 0
+          },
+          "quantity_out": {
+            "type": "integer",
+            "title": "Quantity Out",
+            "default": 0
+          },
+          "loans_out": {
+            "type": "integer",
+            "title": "Loans Out",
+            "default": 0
+          },
+          "loans_returned": {
+            "type": "integer",
+            "title": "Loans Returned",
+            "default": 0
+          },
+          "loans_overdue": {
+            "type": "integer",
+            "title": "Loans Overdue",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ReportActivity"
+      },
+      "ReportBucket": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ReportBucket",
+        "description": "熱門分類／位置的一列；`label=null` 代表未分類／未指定。"
+      },
+      "ReportExpiry": {
+        "properties": {
+          "expiring_soon": {
+            "type": "integer",
+            "title": "Expiring Soon",
+            "default": 0
+          },
+          "expired": {
+            "type": "integer",
+            "title": "Expired",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ReportExpiry"
+      },
+      "ReportListResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ReportRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "ReportListResponse"
+      },
+      "ReportPayload": {
+        "properties": {
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "timezone": {
+            "type": "string",
+            "title": "Timezone",
+            "default": "Asia/Taipei"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date",
+            "title": "Period Start"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Period End"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "TWD"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ReportTotals"
+          },
+          "activity": {
+            "$ref": "#/components/schemas/ReportActivity"
+          },
+          "expiry": {
+            "$ref": "#/components/schemas/ReportExpiry"
+          },
+          "valuation": {
+            "$ref": "#/components/schemas/ReportValuation"
+          },
+          "top_categories": {
+            "items": {
+              "$ref": "#/components/schemas/ReportBucket"
+            },
+            "type": "array",
+            "title": "Top Categories"
+          },
+          "top_locations": {
+            "items": {
+              "$ref": "#/components/schemas/ReportBucket"
+            },
+            "type": "array",
+            "title": "Top Locations"
+          },
+          "has_activity": {
+            "type": "boolean",
+            "title": "Has Activity",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "period_start",
+          "period_end",
+          "generated_at"
+        ],
+        "title": "ReportPayload",
+        "description": "月報快照（version=1）；站內詳情與 Email 共用同一份 payload。"
+      },
+      "ReportRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Generated At"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/ReportPayload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "period",
+          "generated_at",
+          "payload"
+        ],
+        "title": "ReportRead"
+      },
+      "ReportTotals": {
+        "properties": {
+          "item_count": {
+            "type": "integer",
+            "title": "Item Count",
+            "default": 0
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ReportTotals"
+      },
+      "ReportValuation": {
+        "properties": {
+          "start": {
+            "type": "string",
+            "title": "Start",
+            "default": "0.00"
+          },
+          "end": {
+            "type": "string",
+            "title": "End",
+            "default": "0.00"
+          },
+          "delta": {
+            "type": "string",
+            "title": "Delta",
+            "default": "0.00"
+          },
+          "unpriced_items": {
+            "type": "integer",
+            "title": "Unpriced Items",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "ReportValuation",
+        "description": "估值以字串輸出（Decimal 2 位），幣別取使用者偏好。"
       },
       "StocktakeCreate": {
         "properties": {
