@@ -765,6 +765,7 @@
     },
     "detail": {
       "back": "返回報表列表",
+      "heading": "{period}月報",
       "notFound": "找不到這份報表",
       "loadError": "無法載入報表內容",
       "inventory": "庫存現況",
@@ -790,7 +791,8 @@
       "topLocations": "熱門位置",
       "uncategorized": "未分類",
       "unassigned": "未指定",
-      "itemsUnit": "{count} 件"
+      "itemsUnit": "{count} 件",
+      "retry": "重試"
     }
   },
   "settings": {

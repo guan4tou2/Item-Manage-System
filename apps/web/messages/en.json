@@ -765,6 +765,7 @@
     },
     "detail": {
       "back": "Back to reports",
+      "heading": "{period} report",
       "notFound": "Report not found",
       "loadError": "Could not load this report",
       "inventory": "Inventory snapshot",
@@ -790,7 +791,8 @@
       "topLocations": "Top locations",
       "uncategorized": "Uncategorized",
       "unassigned": "Unassigned",
-      "itemsUnit": "{count} items"
+      "itemsUnit": "{count} items",
+      "retry": "Retry"
     }
   },
   "settings": {
