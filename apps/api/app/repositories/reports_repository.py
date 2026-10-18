@@ -177,6 +177,76 @@ async def top_locations(
     return [(row[0], int(row[1])) for row in rows]
 
 
+async def valuation_parts(
+    session: AsyncSession,
+    owner_ids: Sequence[UUID],
+    *,
+    start: datetime,
+    end: datetime,
+) -> tuple[object, object, object, object, int]:
+    """回傳 (end, created, deleted, log_delta, unpriced_items)。
+
+    - end：目前存活物品 cost×qty
+    - created：期間內建立且目前存活
+    - deleted：期間內軟刪除（以 updated_at 近似）
+    - log_delta：期間前已存在物品的 quantity_log delta×cost（用於反推月初）
+    """
+    value = Item.cost * Item.quantity
+    priced = (Item.owner_id.in_(owner_ids), Item.cost.is_not(None))
+
+    async def _scalar(stmt) -> object:
+        return (await session.execute(stmt)).scalar_one()
+
+    end_stmt = select(func.coalesce(func.sum(value), 0)).where(
+        *priced, Item.is_deleted.is_(False)
+    )
+    created_stmt = select(func.coalesce(func.sum(value), 0)).where(
+        *priced,
+        Item.is_deleted.is_(False),
+        Item.created_at >= start,
+        Item.created_at < end,
+    )
+    deleted_stmt = select(func.coalesce(func.sum(value), 0)).where(
+        *priced,
+        Item.is_deleted.is_(True),
+        # 期間內「建立又刪除」的物品對月初估值淨影響為 0，排除
+        Item.created_at < start,
+        Item.updated_at >= start,
+        Item.updated_at < end,
+    )
+    log_stmt = (
+        select(
+            func.coalesce(
+                func.sum(
+                    (QuantityLog.new_quantity - QuantityLog.old_quantity) * Item.cost
+                ),
+                0,
+            )
+        )
+        .select_from(QuantityLog)
+        .join(Item, Item.id == QuantityLog.item_id)
+        .where(
+            *priced,
+            Item.created_at < start,
+            QuantityLog.created_at >= start,
+            QuantityLog.created_at < end,
+        )
+    )
+    unpriced_stmt = select(func.count(Item.id)).where(
+        Item.owner_id.in_(owner_ids),
+        Item.is_deleted.is_(False),
+        Item.cost.is_(None),
+    )
+
+    return (
+        await _scalar(end_stmt),
+        await _scalar(created_stmt),
+        await _scalar(deleted_stmt),
+        await _scalar(log_stmt),
+        int(await _scalar(unpriced_stmt)),
+    )
+
+
 async def expiry_counts(
     session: AsyncSession,
     owner_ids: Sequence[UUID],

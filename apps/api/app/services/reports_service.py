@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -61,6 +62,18 @@ def previous_period(today: date) -> Period:
     return period_for(first_of_this_month - timedelta(days=1))
 
 
+def _as_decimal(value) -> Decimal:
+    if value is None:
+        return Decimal("0")
+    if isinstance(value, Decimal):
+        return value
+    return Decimal(str(value))
+
+
+def _money(value: Decimal) -> str:
+    return str(value.quantize(Decimal("0.01")))
+
+
 async def build_payload(
     session: AsyncSession,
     *,
@@ -85,10 +98,39 @@ async def build_payload(
         session, owner_ids, start=period.start_utc, end=period.end_utc
     )
 
-    # T1.3 補上估值／到期／借還；先以零值維持 payload 契約完整
-    expiry_soon, expired = 0, 0
-    loans_out, loans_returned, loans_overdue = 0, 0, 0
-    valuation = ReportValuation()
+    expiry_soon, expired = await reports_repository.expiry_counts(
+        session,
+        owner_ids,
+        period_end=period.end,
+        horizon_days=EXPIRING_HORIZON_DAYS,
+    )
+    loans_out, loans_returned, loans_overdue = (
+        await reports_repository.loan_counts(
+            session,
+            owner_ids,
+            start=period.start_utc,
+            end=period.end_utc,
+            period_end=period.end,
+        )
+    )
+    end_value, created_value, deleted_value, log_delta_value, unpriced = (
+        await reports_repository.valuation_parts(
+            session, owner_ids, start=period.start_utc, end=period.end_utc
+        )
+    )
+    end_dec = _as_decimal(end_value)
+    start_dec = (
+        end_dec
+        - _as_decimal(created_value)
+        + _as_decimal(deleted_value)
+        - _as_decimal(log_delta_value)
+    )
+    valuation = ReportValuation(
+        start=_money(start_dec),
+        end=_money(end_dec),
+        delta=_money(end_dec - start_dec),
+        unpriced_items=unpriced,
+    )
 
     category_rows = await reports_repository.top_categories(
         session, owner_ids, limit=TOP_BUCKETS
