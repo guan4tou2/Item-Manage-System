@@ -103,6 +103,18 @@ async def member_roles_for_user(
     return {group_id: role for group_id, role in (await session.execute(stmt)).all()}
 
 
+async def set_member_role(
+    session: AsyncSession, group_id: UUID, user_id: UUID, role: str
+) -> GroupMember | None:
+    gm = await get_member(session, group_id, user_id)
+    if gm is None:
+        return None
+    gm.role = role
+    await session.commit()
+    await session.refresh(gm)
+    return gm
+
+
 async def remove_member(
     session: AsyncSession, group_id: UUID, user_id: UUID
 ) -> bool:

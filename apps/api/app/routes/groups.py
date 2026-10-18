@@ -12,6 +12,7 @@ from app.schemas.group import (
     GroupCreate,
     GroupDetail,
     GroupMemberRead,
+    GroupMemberRoleUpdate,
     GroupSummary,
     GroupUpdate,
 )
@@ -80,6 +81,19 @@ async def add_member(
     session: AsyncSession = Depends(get_db),
 ):
     return await svc.add_member_by_username(session, user.id, group_id, body)
+
+
+@router.patch(
+    "/{group_id}/members/{user_id}", response_model=GroupMemberRead
+)
+async def change_member_role(
+    group_id: UUID,
+    user_id: UUID,
+    body: GroupMemberRoleUpdate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+):
+    return await svc.change_member_role(session, user.id, group_id, user_id, body.role)
 
 
 @router.delete(

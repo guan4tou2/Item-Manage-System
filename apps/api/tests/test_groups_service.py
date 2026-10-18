@@ -29,7 +29,8 @@ async def test_non_owner_cannot_rename(db_session, users):
     await svc.add_member_by_username(db_session, a.id, g.id, GroupAddMember(username="b_user"))
     with pytest.raises(HTTPException) as ex:
         await svc.update_group(db_session, b.id, g.id, GroupUpdate(name="new"))
-    assert ex.value.status_code == 404
+    # Phase 30：成員（editor）無管理權 → 403；非成員才是 404
+    assert ex.value.status_code == 403
 
 
 async def test_non_owner_cannot_add_member(db_session, users):
@@ -38,7 +39,8 @@ async def test_non_owner_cannot_add_member(db_session, users):
     await svc.add_member_by_username(db_session, a.id, g.id, GroupAddMember(username="b_user"))
     with pytest.raises(HTTPException) as ex:
         await svc.add_member_by_username(db_session, b.id, g.id, GroupAddMember(username="a_user"))
-    assert ex.value.status_code == 404
+    # Phase 30：成員（editor）無管理權 → 403
+    assert ex.value.status_code == 403
 
 
 async def test_add_member_unknown_username(db_session, users):
