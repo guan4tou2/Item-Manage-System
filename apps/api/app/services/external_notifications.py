@@ -26,13 +26,24 @@ logger = logging.getLogger(__name__)
 
 
 async def deliver_email(
-    to_email: str, subject: str, body: str
+    to_email: str,
+    subject: str,
+    body: str,
+    *,
+    html: Optional[str] = None,
 ) -> bool:
+    """寄送 Email；`html` 提供時附上 HTML alternative（plain-text fallback）。"""
     s = get_settings()
     if not (s.smtp_host and s.smtp_from):
         return False
     try:
-        from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
+        from fastapi_mail import (
+            ConnectionConfig,
+            FastMail,
+            MessageSchema,
+            MessageType,
+            MultipartSubtypeEnum,
+        )
 
         conf = ConnectionConfig(
             MAIL_USERNAME=s.smtp_user,
@@ -45,12 +56,16 @@ async def deliver_email(
             USE_CREDENTIALS=bool(s.smtp_user),
             VALIDATE_CERTS=True,
         )
-        message = MessageSchema(
-            subject=subject,
-            recipients=[to_email],
-            body=body,
-            subtype=MessageType.plain,
-        )
+        message_kwargs: dict = {
+            "subject": subject,
+            "recipients": [to_email],
+            "body": body,
+            "subtype": MessageType.plain,
+        }
+        if html is not None:
+            message_kwargs["alternative_body"] = html
+            message_kwargs["multipart_subtype"] = MultipartSubtypeEnum.alternative
+        message = MessageSchema(**message_kwargs)
         await FastMail(conf).send_message(message)
         return True
     except Exception:
@@ -129,12 +144,15 @@ async def deliver_all(
     body: str,
     link: Optional[str],
     type: str,
+    exclude: frozenset[str] = frozenset(),
 ) -> dict[str, bool]:
     """Attempt delivery across all channels the user has linked.
 
     Each external channel is filtered through the user's notification
     preferences for `(type, channel)`; locked types always deliver and
-    preference lookup failures are fail-soft (deliver)."""
+    preference lookup failures are fail-soft (deliver).
+
+    `exclude` 讓呼叫端略過特定管道（月報以 HTML 版單獨寄 email，避免重複）。"""
     from app.services.notification_prefs import is_enabled
 
     user = await session.get(User, user_id)
@@ -144,28 +162,44 @@ async def deliver_all(
     results: dict[str, bool] = {}
 
     # Email
-    if user.email and await is_enabled(session, user_id, type=type, channel="email"):
+    if (
+        "email" not in exclude
+        and user.email
+        and await is_enabled(session, user_id, type=type, channel="email")
+    ):
         results["email"] = await deliver_email(user.email, title, body)
 
     # LINE
     line_link = (await session.execute(
         select(LineUserLink).where(LineUserLink.user_id == user_id)
     )).scalar_one_or_none()
-    if line_link and await is_enabled(session, user_id, type=type, channel="line"):
+    if (
+        "line" not in exclude
+        and line_link
+        and await is_enabled(session, user_id, type=type, channel="line")
+    ):
         results["line"] = await deliver_line(line_link.line_user_id, f"{title}\n{body}")
 
     # Telegram
     tg_link = (await session.execute(
         select(TelegramUserLink).where(TelegramUserLink.user_id == user_id)
     )).scalar_one_or_none()
-    if tg_link and await is_enabled(session, user_id, type=type, channel="telegram"):
+    if (
+        "telegram" not in exclude
+        and tg_link
+        and await is_enabled(session, user_id, type=type, channel="telegram")
+    ):
         results["telegram"] = await deliver_telegram(tg_link.chat_id, f"{title}\n{body}")
 
     # Web Push
     subs = (await session.execute(
         select(WebPushSubscription).where(WebPushSubscription.user_id == user_id)
     )).scalars().all()
-    if subs and await is_enabled(session, user_id, type=type, channel="web_push"):
+    if (
+        "web_push" not in exclude
+        and subs
+        and await is_enabled(session, user_id, type=type, channel="web_push")
+    ):
         results["web_push"] = any(deliver_web_push(s, title, body, link) for s in subs)
 
     return results

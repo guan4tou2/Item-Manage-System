@@ -25,6 +25,7 @@ async def emit(
     title: str,
     body: str | None = None,
     link: str | None = None,
+    exclude_channels: frozenset[str] = frozenset(),
 ) -> Notification | None:
     """Create a notification. Swallows errors and returns None to avoid
     breaking the triggering transaction. Also best-effort delivers via
@@ -32,7 +33,8 @@ async def emit(
 
     Preference-aware: `in_app` disabled → no in-app row (returns None);
     external channels are filtered per-channel inside `deliver_all`.
-    Preference lookup failures are fail-soft (treated as enabled)."""
+    Preference lookup failures are fail-soft (treated as enabled).
+    `exclude_channels` 供呼叫端略過特定管道（月報 email 由 job 單獨寄 HTML 版）。"""
     from app.services import notification_prefs
 
     notif: Notification | None = None
@@ -66,6 +68,7 @@ async def emit(
             body=body or "",
             link=link,
             type=type,
+            exclude=exclude_channels,
         )
     except Exception:
         logger.warning("external delivery failed", exc_info=True)

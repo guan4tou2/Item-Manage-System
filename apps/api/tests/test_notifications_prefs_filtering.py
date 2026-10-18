@@ -196,3 +196,41 @@ async def test_expired_email_opt_in_restores_delivery(db_session, user, recorded
     n = await svc.emit(db_session, user_id=user.id, type="expired", title="已過期")
     assert n is not None
     assert _channels(recorded) == ["email", "web_push"]
+
+
+async def test_exclude_channels_skips_email_only(db_session, user, recorded):
+    """月報以 HTML 版單獨寄信，emit 需能排除 email 以免重複。"""
+    await _link_all_channels(db_session, user)
+
+    n = await svc.emit(
+        db_session,
+        user_id=user.id,
+        type="report_ready",
+        title="月報已生成",
+        exclude_channels=frozenset({"email"}),
+    )
+
+    assert n is not None
+    assert _channels(recorded) == ["line", "telegram", "web_push"]
+    assert await _in_app_count(db_session, user) == 1
+
+
+async def test_exclude_channels_leaves_in_app_pref_logic(db_session, user, recorded):
+    await _link_all_channels(db_session, user)
+    await prefs.apply_updates(
+        db_session,
+        user.id,
+        [{"type": "report_ready", "channel": "in_app", "enabled": False}],
+    )
+
+    n = await svc.emit(
+        db_session,
+        user_id=user.id,
+        type="report_ready",
+        title="月報已生成",
+        exclude_channels=frozenset({"email"}),
+    )
+
+    assert n is None
+    assert _channels(recorded) == ["line", "telegram", "web_push"]
+    assert await _in_app_count(db_session, user) == 0
