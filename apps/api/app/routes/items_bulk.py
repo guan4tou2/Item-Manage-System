@@ -4,12 +4,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFil
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
+from app.auth.readonly import WriterGuardRoute
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.items_bulk import BulkImportRowError, BulkImportSummary
 from app.services import csv_service
 
-router = APIRouter(prefix="/api/items", tags=["items-bulk"])
+router = APIRouter(route_class=WriterGuardRoute, prefix="/api/items", tags=["items-bulk"])
 
 MAX_CSV_BYTES = 5 * 1024 * 1024  # 5 MB
 

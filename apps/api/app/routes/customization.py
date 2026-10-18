@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
+from app.auth.readonly import WriterGuardRoute
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.customization import (
@@ -20,7 +21,7 @@ from app.schemas.customization import (
 )
 from app.services import customization_service as svc
 
-router = APIRouter(prefix="/api", tags=["customization"])
+router = APIRouter(route_class=WriterGuardRoute, prefix="/api", tags=["customization"])
 
 
 # --- item types ---

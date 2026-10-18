@@ -8,12 +8,13 @@ from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
+from app.auth.readonly import WriterGuardRoute
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.image import ImageRead
 from app.services import images_service
 
-router = APIRouter(prefix="/api/images", tags=["images"])
+router = APIRouter(route_class=WriterGuardRoute, prefix="/api/images", tags=["images"])
 
 
 @router.post("", response_model=ImageRead, status_code=status.HTTP_201_CREATED)

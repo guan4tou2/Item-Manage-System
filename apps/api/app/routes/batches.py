@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
+from app.auth.readonly import WriterGuardRoute
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.batch import (
@@ -20,7 +21,7 @@ from app.schemas.item import ItemRead
 from app.services import batches_service as svc
 from app.services import items_service
 
-router = APIRouter(prefix="/api/items/{item_id}/batches", tags=["batches"])
+router = APIRouter(route_class=WriterGuardRoute, prefix="/api/items/{item_id}/batches", tags=["batches"])
 
 #: FEFO 便捷消耗端點路徑不在 batches prefix 下（roadmap L253）
 item_consume_router = APIRouter(prefix="/api/items/{item_id}", tags=["batches"])

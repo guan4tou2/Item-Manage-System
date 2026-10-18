@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
+from app.auth.readonly import WriterGuardRoute
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.list import (
@@ -21,7 +22,7 @@ from app.schemas.list import (
 )
 from app.services import lists_service as svc
 
-router = APIRouter(prefix="/api/lists", tags=["lists"])
+router = APIRouter(route_class=WriterGuardRoute, prefix="/api/lists", tags=["lists"])
 
 
 @router.get("", response_model=ListListResponse)

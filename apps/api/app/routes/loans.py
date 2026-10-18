@@ -5,12 +5,13 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
+from app.auth.readonly import WriterGuardRoute
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.loan import LoanCreate, LoanRead
 from app.services import loans_service as svc
 
-router = APIRouter(prefix="/api/items/{item_id}/loans", tags=["loans"])
+router = APIRouter(route_class=WriterGuardRoute, prefix="/api/items/{item_id}/loans", tags=["loans"])
 
 
 @router.get("", response_model=list[LoanRead])
