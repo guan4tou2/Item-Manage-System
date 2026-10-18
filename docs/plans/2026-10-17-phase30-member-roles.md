@@ -75,9 +75,9 @@
 - Test: `apps/api/tests/test_group_model_smoke.py`、`tests/test_collab_schemas.py`、`tests/test_groups_repository.py`、`tests/test_groups_routes.py`（擴充）
 
 **TODO:**
-- [ ] RED：model smoke——`GroupMember` 具 `role` 欄、預設 `editor`、CHECK 拒絕非法值（SQLite 亦強制）；schema——`GroupMemberRead.role`（owner 列 → `owner`）、`GroupSummary.my_role`（owner／admin／editor／viewer 四態）、`GroupAddMember.role` 預設 `editor`、非法 role 422；repository——`member_roles_for_user` 回傳 {group_id: role}；routes——`GET /api/groups`／`GET /api/groups/{id}` 含 `my_role`、成員列含 role
-- [ ] GREEN：model 加 `role: Mapped[str] = mapped_column(String(16), nullable=False, default="editor")`＋`CheckConstraint("role IN ('admin','editor','viewer')", name="ck_group_members_role")`（`__table_args__` 合併）；migration 0022（`add_column(server_default='editor')`＋`create_check_constraint`；downgrade 逆序）；schema 改為 Literal 四態（owner 列計算）；`_summary` 加 `my_role`（先判 `g.owner_id == user_id` → `owner`，再查 member row）；`get_group_detail` 成員 role：`m.user_id == g.owner_id → "owner"` 否則 DB 值；repository `member_roles_for_user`（單查詢，供 list_groups 批次使用）
-- [ ] 註：owner 建群時自身 member row 維持 `editor`（owner 判定先行）；`GroupAddMember.role` 僅存值、權限檢查於 T1.4
+- [x] RED：model smoke——`GroupMember` 具 `role` 欄、預設 `editor`、CHECK 拒絕非法值（SQLite 亦強制）；schema——`GroupMemberRead.role`（owner 列 → `owner`）、`GroupSummary.my_role`（owner／admin／editor／viewer 四態）、`GroupAddMember.role` 預設 `editor`、非法 role 422；repository——`member_roles_for_user` 回傳 {group_id: role}；routes——`GET /api/groups`／`GET /api/groups/{id}` 含 `my_role`、成員列含 role
+- [x] GREEN：model 加 `role: Mapped[str] = mapped_column(String(16), nullable=False, default="editor")`＋`CheckConstraint("role IN ('admin','editor','viewer')", name="ck_group_members_role")`（`__table_args__` 合併）；migration 0022（`add_column(server_default='editor')`＋`create_check_constraint`；downgrade 逆序）；schema 改為 Literal 四態（owner 列計算）；`_summary` 加 `my_role`（先判 `g.owner_id == user_id` → `owner`，再查 member row）；`get_group_detail` 成員 role：`m.user_id == g.owner_id → "owner"` 否則 DB 值；repository `member_roles_for_user`（單查詢，供 list_groups 批次使用）
+- [x] 註：owner 建群時自身 member row 維持 `editor`（owner 判定先行）；`GroupAddMember.role` 僅存值、權限檢查於 T1.4
 
 ### Task 1.2: 唯讀判定與暴露（`is_read_only`）
 
@@ -89,9 +89,9 @@
 - Test: Create `apps/api/tests/test_readonly_access.py`；擴充 `tests/test_auth.py`、`tests/test_admin_routes.py`
 
 **TODO:**
-- [ ] RED：判定表——①單群組 viewer → True；②viewer＋editor（跨群組）→ False；③owner（含自身 row 為 editor）→ False；④無任何群組 → False；⑤離開所有群組後 → False；暴露——`POST /api/auth/register`／`login`、`GET /api/auth/me`、`GET`／`PATCH /api/users/me` 回應含 `is_read_only`；`GET /api/admin/users` 每列正確；偏好——`PUT /api/users/me/preferences {viewer_notice_dismissed: true}` → GET 回 true 且不覆蓋 theme/currency（merge）
-- [ ] GREEN：`visibility_service.read_only_user_ids(session, user_ids) -> set[UUID]`（單查詢 GROUP BY：`COUNT(*) == SUM(role=='viewer')` 且有列）；`is_read_only(session, user_id) -> bool`；`user_public(session, user) -> UserPublic`（`model_validate` ＋ `model_copy(update={"is_read_only": …})`）；`UserPublic.is_read_only: bool = False`；`PreferencesRead/Update` 加 `viewer_notice_dismissed`；auth.py（register／login／me／bootstrap）／users.py（me GET／PATCH）改用 `user_public`；admin_service `list_users` 以 `read_only_user_ids` 批次附帶
-- [ ] 註：`PATCH /users/me` 亦需計算（web `useUpdateProfile` 會以回應覆寫 auth store，預設 False 會誤清除）
+- [x] RED：判定表——①單群組 viewer → True；②viewer＋editor（跨群組）→ False；③owner（含自身 row 為 editor）→ False；④無任何群組 → False；⑤離開所有群組後 → False；暴露——`POST /api/auth/register`／`login`、`GET /api/auth/me`、`GET`／`PATCH /api/users/me` 回應含 `is_read_only`；`GET /api/admin/users` 每列正確；偏好——`PUT /api/users/me/preferences {viewer_notice_dismissed: true}` → GET 回 true 且不覆蓋 theme/currency（merge）
+- [x] GREEN：`visibility_service.read_only_user_ids(session, user_ids) -> set[UUID]`（單查詢 GROUP BY：`COUNT(*) == SUM(role=='viewer')` 且有列）；`is_read_only(session, user_id) -> bool`；`user_public(session, user) -> UserPublic`（`model_validate` ＋ `model_copy(update={"is_read_only": …})`）；`UserPublic.is_read_only: bool = False`；`PreferencesRead/Update` 加 `viewer_notice_dismissed`；auth.py（register／login／me／bootstrap）／users.py（me GET／PATCH）改用 `user_public`；admin_service `list_users` 以 `read_only_user_ids` 批次附帶
+- [x] 註：`PATCH /users/me` 亦需計算（web `useUpdateProfile` 會以回應覆寫 auth store，預設 False 會誤清除）
 
 ### Task 1.3: 唯讀寫入防線（`WriterGuardRoute`）
 
@@ -101,9 +101,9 @@
 - Test: Create `apps/api/tests/test_readonly_guard.py`
 
 **TODO:**
-- [ ] RED（矩陣測試）：viewer 帳號 → ①每個擋域各打一個代表性 mutate（items POST／PATCH／DELETE／favorite／bulk-delete、batches POST、items_bulk bulk-import、images POST、loans POST、lists POST、stocktake POST、transfers POST、backup import POST、categories POST、locations POST／reorder、warehouses POST、tags POST、customization POST）→ **403**（含資源不存在情境亦 403）；②讀取（items GET、backup export GET、items_bulk export.csv GET）→ 200；③不擋域：`PUT /users/me/preferences`→200、`PATCH /notifications/{id}/read`→204；④editor 同操作非 403（零回歸）；⑤未認證 → 401（防線不改變既有行為）
-- [ ] GREEN：`require_writer(user=Depends(get_current_user), session=Depends(get_db))` → `is_read_only` 為 True 時 403（detail「唯讀帳號不可修改資料」）；`WriterGuardRoute(APIRoute)`：`methods` 非 `{GET,HEAD,OPTIONS}` 子集時 append `Depends(require_writer)`；各 router 建構子加 `route_class=WriterGuardRoute`
-- [ ] 註：`groups` router **不套**（leave 需開放，見 T1.4）；`labels`／`barcodes`／`stats`／`item_history` 唯讀不套；403 發生於路由依賴階段（早於 body 解析與資源查詢）
+- [x] RED（矩陣測試）：viewer 帳號 → ①每個擋域各打一個代表性 mutate（items POST／PATCH／DELETE／favorite／bulk-delete、batches POST、items_bulk bulk-import、images POST、loans POST、lists POST、stocktake POST、transfers POST、backup import POST、categories POST、locations POST／reorder、warehouses POST、tags POST、customization POST）→ **403**（含資源不存在情境亦 403）；②讀取（items GET、backup export GET、items_bulk export.csv GET）→ 200；③不擋域：`PUT /users/me/preferences`→200、`PATCH /notifications/{id}/read`→204；④editor 同操作非 403（零回歸）；⑤未認證 → 401（防線不改變既有行為）
+- [x] GREEN：`require_writer(user=Depends(get_current_user), session=Depends(get_db))` → `is_read_only` 為 True 時 403（detail「唯讀帳號不可修改資料」）；`WriterGuardRoute(APIRoute)`：`methods` 非 `{GET,HEAD,OPTIONS}` 子集時 append `Depends(require_writer)`；各 router 建構子加 `route_class=WriterGuardRoute`
+- [x] 註：`groups` router **不套**（leave 需開放，見 T1.4）；`labels`／`barcodes`／`stats`／`item_history` 唯讀不套；403 發生於路由依賴階段（早於 body 解析與資源查詢）
 
 ### Task 1.4: 群組管理權限＋角色變更端點＋audit
 
@@ -114,15 +114,15 @@
 - Test: `apps/api/tests/test_groups_service.py`、`tests/test_groups_routes.py`（擴充）
 
 **TODO:**
-- [ ] RED：
+- [x] RED：
   - 建立群組：viewer → **403**；一般使用者 → 201
   - 加入成員：owner ✓、**admin ✓**、editor/viewer → 403；`role` 參數（省略 → editor；`role="viewer"` → 該使用者 `is_read_only` 成 True）；非成員 caller → 404；目標非使用者 → 404；重複 → 409
   - 角色變更 `PATCH .../members/{user_id}`：owner ✓、admin ✓（可改其他 admin）；editor → 403；非成員 → 404；**目標為 owner → 409**；`role="owner"` → 422；目標非成員 → 404；成功回 `GroupMemberRead`（role 新值）
   - 改名：admin ✓、editor/viewer → 403；**刪群組：admin → 403、owner → 204**
   - 移除成員：self → 204（editor／viewer 亦可，維持）、owner／admin 移除他人 → 204、editor 移除他人 → 403、移除 owner → 409
   - audit：`group.member_added`／`group.member_role_changed`／`group.member_removed` 各寫入 audit_logs（meta 含 from/to／target）
-- [ ] GREEN：`_ensure_managed(session, user_id, group_id)`（`get_for_member` → 非成員 404；`owner_id == user_id` → 通過；否則 member row `role == "admin"` → 通過；editor/viewer → 403）；`create_group` 先擋 `is_read_only` → 403；`update_group`／`add_member_by_username`／`change_member_role`／`remove_member` 套用（remove 保留 self／owner 特別規則）；`delete_group` 維持 owner-only（`_ensure_owned`）；role 變更寫入後於交易外呼叫 `audit_service.log`
-- [ ] 註：admin 可管理其他 admin（簡化決策）；owner 的 member row 不可被 PATCH（409）；`GroupAddMember.role` 僅 owner／admin 可指定
+- [x] GREEN：`_ensure_managed(session, user_id, group_id)`（`get_for_member` → 非成員 404；`owner_id == user_id` → 通過；否則 member row `role == "admin"` → 通過；editor/viewer → 403）；`create_group` 先擋 `is_read_only` → 403；`update_group`／`add_member_by_username`／`change_member_role`／`remove_member` 套用（remove 保留 self／owner 特別規則）；`delete_group` 維持 owner-only（`_ensure_owned`）；role 變更寫入後於交易外呼叫 `audit_service.log`
+- [x] 註：admin 可管理其他 admin（簡化決策）；owner 的 member row 不可被 PATCH（409）；`GroupAddMember.role` 僅 owner／admin 可指定
 
 ### Task 1.5: api-types 重生成
 
@@ -130,10 +130,10 @@
 - Modify: `packages/api-types/openapi.json`、`packages/api-types/src/index.ts`（tracked 生成檔）
 
 **TODO:**
-- [ ] `cd apps/api && uv run python scripts/export_openapi.py > ../../packages/api-types/openapi.json`
-- [ ] `pnpm --filter @ims/api-types gen:types`
-- [ ] 確認新 schema 進型別：`GroupMemberRead.role`、`GroupSummary.my_role`、`PATCH …/members/{user_id}`、`UserPublic.is_read_only`、`Preferences.viewer_notice_dismissed`
-- [ ] commit（與 T1.1–T1.4 一起或獨立；生成檔一併入版控）
+- [x] `cd apps/api && uv run python scripts/export_openapi.py > ../../packages/api-types/openapi.json`
+- [x] `pnpm --filter @ims/api-types gen:types`
+- [x] 確認新 schema 進型別：`GroupMemberRead.role`、`GroupSummary.my_role`、`PATCH …/members/{user_id}`、`UserPublic.is_read_only`、`Preferences.viewer_notice_dismissed`
+- [x] commit（與 T1.1–T1.4 一起或獨立；生成檔一併入版控）
 
 ---
 
@@ -150,9 +150,9 @@
 - Test: `apps/web/components/shell/viewer-banner.test.tsx`、`apps/web/components/common/editable-only.test.tsx`、`apps/web/lib/auth/use-readonly.test.ts`（新增）
 
 **TODO:**
-- [ ] RED／GREEN：`useReadOnly()`（`useAuthStore(s => s.user?.is_read_only ?? false)`）；`MeSync`（`useMe()` 成功 → `setAuth(token, user)` 同步 store；render null；掛於 `(app)/layout.tsx`）；`EditableOnly`（readOnly → 回 `null`，否則 children）；`ViewerBanner`——readOnly 且偏好未載入 → 不渲染（避免閃爍）；readOnly 且 `!viewer_notice_dismissed` → 顯示 §5.5 文案＋關閉鈕；關閉 → `PUT /users/me/preferences {viewer_notice_dismissed:true}` → 樂觀隱藏＋invalidate；非 viewer 不渲染；掛於 `AppShell`（`AppHeader` 之後）
-- [ ] i18n 逐鍵插入：`viewer.banner.title`（你是檢視者）、`viewer.banner.body`（可以查看所有物品，內容由群組成員維護）、`viewer.banner.dismiss`、`viewer.itemNotice`（你是檢視者，如需修改請聯絡群組管理員）；en 對應
-- [ ] 鍵集驗證：python flat-set 比對 zh-TW／en 零差異
+- [x] RED／GREEN：`useReadOnly()`（`useAuthStore(s => s.user?.is_read_only ?? false)`）；`MeSync`（`useMe()` 成功 → `setAuth(token, user)` 同步 store；render null；掛於 `(app)/layout.tsx`）；`EditableOnly`（readOnly → 回 `null`，否則 children）；`ViewerBanner`——readOnly 且偏好未載入 → 不渲染（避免閃爍）；readOnly 且 `!viewer_notice_dismissed` → 顯示 §5.5 文案＋關閉鈕；關閉 → `PUT /users/me/preferences {viewer_notice_dismissed:true}` → 樂觀隱藏＋invalidate；非 viewer 不渲染；掛於 `AppShell`（`AppHeader` 之後）
+- [x] i18n 逐鍵插入：`viewer.banner.title`（你是檢視者）、`viewer.banner.body`（可以查看所有物品，內容由群組成員維護）、`viewer.banner.dismiss`、`viewer.itemNotice`（你是檢視者，如需修改請聯絡群組管理員）；en 對應
+- [x] 鍵集驗證：python flat-set 比對 zh-TW／en 零差異
 
 ### Task 2.2: 物品介面唯讀
 
@@ -164,9 +164,9 @@
 - Test: 對應 `page.test.tsx`／`items-list-client.test.tsx` 擴充
 
 **TODO:**
-- [ ] RED：readOnly → 列表無「新增物品」與空態 CTA；詳情頁無全部動作鈕（含 favorite、批次、借出）＋底部固定句存在（`role="status"` 靜態文案）；`/items/new`／`/items/[id]/edit` 直達 → 顯示「檢視者無法編輯」提示卡且表單不渲染；非 readOnly → 全部照舊（零回歸斷言）
-- [ ] GREEN：以 `<EditableOnly>` 包覆各編輯入口；詳情頁 `const readOnly = useReadOnly()`；`canEdit={isOwner && !readOnly}`；底部固定句 `readOnly` 時渲染
-- [ ] 註：`/items/labels`（列印）維持可用（讀取性操作，登錄決策）
+- [x] RED：readOnly → 列表無「新增物品」與空態 CTA；詳情頁無全部動作鈕（含 favorite、批次、借出）＋底部固定句存在（`role="status"` 靜態文案）；`/items/new`／`/items/[id]/edit` 直達 → 顯示「檢視者無法編輯」提示卡且表單不渲染；非 readOnly → 全部照舊（零回歸斷言）
+- [x] GREEN：以 `<EditableOnly>` 包覆各編輯入口；詳情頁 `const readOnly = useReadOnly()`；`canEdit={isOwner && !readOnly}`；底部固定句 `readOnly` 時渲染
+- [x] 註：`/items/labels`（列印）維持可用（讀取性操作，登錄決策）
 
 ### Task 2.3: 清單／盤點／掃碼／儀表板／設定（data＋backup）唯讀
 
@@ -180,9 +180,9 @@
 - Test: 上述各頁 vitest 擴充
 
 **TODO:**
-- [ ] RED：readOnly → 各頁編輯入口不渲染（清單新增／勾選、盤點開始與操作、掃碼建立、補貨清單鈕、CSV 匯入卡、備份匯入卡）；`匯出`（CSV export／備份 export）仍渲染；非 readOnly 零回歸
-- [ ] GREEN：`<EditableOnly>` 包覆；備份頁：readOnly 僅渲染匯出卡
-- [ ] 註：清單 detail readOnly 時為唯讀檢視（項目與數量顯示、無 toggle／delete）
+- [x] RED：readOnly → 各頁編輯入口不渲染（清單新增／勾選、盤點開始與操作、掃碼建立、補貨清單鈕、CSV 匯入卡、備份匯入卡）；`匯出`（CSV export／備份 export）仍渲染；非 readOnly 零回歸
+- [x] GREEN：`<EditableOnly>` 包覆；備份頁：readOnly 僅渲染匯出卡
+- [x] 註：清單 detail readOnly 時為唯讀檢視（項目與數量顯示、無 toggle／delete）
 
 ### Task 2.4: taxonomy 面板唯讀
 
@@ -193,9 +193,9 @@
 - Test: `categories-panel.test.tsx`、`tags-panel.test.tsx`、`locations-panel.test.tsx`、customization 測試擴充
 
 **TODO:**
-- [ ] RED：readOnly → 各面板不渲染建立／編輯／刪除／合併／拖放入口，資料列仍可見；非 readOnly 零回歸
-- [ ] GREEN：`readOnly` prop（或 `<EditableOnly>`＋元件層條件）；locations 樹：`draggable={!readOnly}`、drop handlers 條件、鍵盤 handler 早退、動作選單不渲染
-- [ ] fallback（若 locations 成本超預期，主席裁定）：頁面級 `ViewerNotice`（不渲染樹編輯 UI）
+- [x] RED：readOnly → 各面板不渲染建立／編輯／刪除／合併／拖放入口，資料列仍可見；非 readOnly 零回歸
+- [x] GREEN：`readOnly` prop（或 `<EditableOnly>`＋元件層條件）；locations 樹：`draggable={!readOnly}`、drop handlers 條件、鍵盤 handler 早退、動作選單不渲染
+- [x] fallback（未採用：locations 已完整實作唯讀，無需頁面級 fallback）
 
 ### Task 2.5: 群組角色管理 UI（collaboration）
 
@@ -207,9 +207,9 @@
 - Test: `groups/[id]/page.test.tsx`（新增）、`add-member-dialog.test.tsx` 擴充
 
 **TODO:**
-- [ ] RED：`my_role ∈ {owner, admin}` → 成員列顯示角色 Select（admin／editor／viewer 三選）＋「新增成員」；`owner` 列顯示「擁有者」徽章不可改；`my_role ∈ {editor, viewer}` → 成員列唯讀（角色徽章、無 Select）＋無新增入口；viewer → 「新增群組」不渲染；leave 鈕對所有非 owner 保留；變更成功 → toast＋群組 query invalidate；失敗 → toast＋select 回復
-- [ ] GREEN：member row role 徽章／Select（`useUpdateMemberRole` → `PATCH`）；角色說明文案（`collab.roles.*`）；`<EditableOnly>` 包新群組入口
-- [ ] i18n：`collab.roles.owner/admin/editor/viewer`（擁有者／管理員／編輯者／檢視者）＋說明行＋`members.changeRoleFailed`
+- [x] RED：`my_role ∈ {owner, admin}` → 成員列顯示角色 Select（admin／editor／viewer 三選）＋「新增成員」；`owner` 列顯示「擁有者」徽章不可改；`my_role ∈ {editor, viewer}` → 成員列唯讀（角色徽章、無 Select）＋無新增入口；viewer → 「新增群組」不渲染；leave 鈕對所有非 owner 保留；變更成功 → toast＋群組 query invalidate；失敗 → toast＋select 回復
+- [x] GREEN：member row role 徽章／Select（`useUpdateMemberRole` → `PATCH`）；角色說明文案（`collab.roles.*`）；`<EditableOnly>` 包新群組入口
+- [x] i18n：`collab.roles.owner/admin/editor/viewer`（擁有者／管理員／編輯者／檢視者）＋說明行＋`members.changeRoleFailed`（實作落點 `collab.groups.detail.changeRoleFailed`，與既有 `collab.groups.detail.*` 命名一致）
 
 ---
 
@@ -221,10 +221,10 @@
 - Create: `apps/web/tests/viewer-role.spec.ts`
 
 **TODO:**
-- [ ] 情境① viewer 旅程：API 建 owner＋viewer 帳號 → owner 建群組、`POST members {role:"viewer"}` → viewer 登入 → banner 顯示（§5.5 文案）→ 關閉 → reload 不再出現 → `/items` 無「新增物品」→ owner 的物品詳情顯示唯讀徽章＋底部固定句 → 直接 `POST /api/items`（viewer token）→ 403 → viewer 於群組頁 leave → reload → 可編輯（零唯讀）
-- [ ] 情境② 角色管理：owner 將 editor 升 `admin` → admin 登入可新增成員／改角色；改回 `editor` → 管理入口消失；`PATCH` owner 的 role → 409
-- [ ] 情境③ 越權：editor 呼叫 `PATCH .../members/{user}` → 403；viewer 呼叫 `POST /api/groups` → 403
-- [ ] 全部以 `request` fixture 準備狀態（多帳號 context 範式沿用 `backup.spec.ts`）
+- [x] 情境① viewer 旅程：API 建 owner＋viewer 帳號 → owner 建群組、`POST members {role:"viewer"}` → viewer 登入 → banner 顯示（§5.5 文案）→ 關閉 → reload 不再出現 → `/items` 無「新增物品」→ owner 的物品詳情顯示唯讀徽章＋底部固定句 → 直接 `POST /api/items`（viewer token）→ 403 → viewer 於群組頁 leave → reload → 可編輯（零唯讀）
+- [x] 情境② 角色管理：owner 將 editor 升 `admin` → admin 登入可新增成員／改角色；改回 `editor` → 管理入口消失；`PATCH` owner 的 role → 409
+- [x] 情境③ 越權：editor 呼叫 `PATCH .../members/{user}` → 403；viewer 呼叫 `POST /api/groups` → 403
+- [x] 全部以 `request` fixture 準備狀態（多帳號 context 範式沿用 `backup.spec.ts`）
 
 ### Task 3.2: 文件收尾
 
@@ -234,9 +234,9 @@
 - Modify: 本計畫（勾選＋Final Verification 實測）
 
 **TODO:**
-- [ ] CHANGELOG alpha.30（繁中）
-- [ ] v2-roadmap Phase 30 ✅＋測試統計
-- [ ] 本計畫全勾選＋驗收對照確認
+- [x] CHANGELOG alpha.30（繁中）
+- [x] v2-roadmap Phase 30 ✅＋測試統計
+- [x] 本計畫全勾選＋驗收對照確認
 
 ---
 
@@ -259,13 +259,16 @@
 
 ## Final Verification（收尾時填實測）
 
-- [ ] API：`uv run --extra test pytest -q` → 全部 passed
-- [ ] Web：`pnpm test` → 全部 passed＋`pnpm typecheck` 0 error
-- [ ] api-types 重生成零 diff（`openapi.json`／`src/index.ts`）
-- [ ] e2e：`pnpm exec playwright test --workers=2`（含 `viewer-role.spec.ts`；程式碼凍結後重跑）
-- [ ] 視覺走查：桌機（viewer banner／items 唯讀／詳情固定句／群組角色管理）＋行動 390；截圖人工檢視
-- [ ] migration 0022 up／down 演練（`alembic upgrade head`／`downgrade -1`）
+- [x] API：`uv run pytest -q` → **864 passed**（2:35，含 1573 warnings）
+- [x] Web：`pnpm vitest run` → **502 passed（99 檔）**；`pnpm typecheck` → 0 error
+- [x] api-types 重生成零 diff（`export_openapi.py` ＋ `gen:types` 後 `git status packages/api-types` 空）
+- [x] e2e：`pnpm test:e2e` → **64 passed／1 failed**；失敗為 `collaboration.spec.ts`（既有間歇性，單獨重跑通過）；`viewer-role.spec.ts` 3/3
+- [x] 視覺走查：桌機 1440×900＋行動 390×844 截圖人工檢視（viewer banner／items 唯讀／共享詳情徽章＋固定句／owner 角色 Select／editor 唯讀徽章）——無遮擋或破版
+- [x] migration 0022 up／down 演練：`downgrade -1` → 0021（欄位與 CHECK 移除）→ `upgrade head` → 0022（`role varchar(16) NOT NULL default 'editor'`＋`ck_group_members_role` CHECK `admin/editor/viewer`）
 
 ### 收尾環境註記（2026-10-17 起填）
 
-- （待填）
+- worktree `.claude/worktrees/phase30-member-roles`（分支 `claude/phase30-member-roles`）；stack `ims-v2`（nginx :80、`ENABLE_DEV_ROUTES=1`）
+- 全套驗證以重建 image（`docker compose build web api`＋`up -d`）後的 production build 執行；migration 由 API 容器啟動時自動套用
+- e2e 已知間歇：`collaboration.spec.ts`（全套偶發 1 次失敗，單獨重跑通過；與本 phase 無關）
+- 視覺走查腳本為臨時檔（`apps/web/visual-walk.mjs`），截圖存於暫存目錄，未入版控

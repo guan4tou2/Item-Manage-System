@@ -6,6 +6,20 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.30] — Phase 30：成員權限細化（角色模型＋viewer 唯讀）
+
+- **角色模型**：`group_members.role`（Alembic `0022`，`String(16)` NOT NULL default `editor`＋CHECK `admin/editor/viewer`）；既有成員 backfill `editor`（零回歸）。**owner 不落庫**——由 `groups.owner_id` 判定（單一事實來源）；API `GroupMemberRead.role` 對 owner 列回傳有效角色 `owner`，`GroupDetail.my_role` 揭露呼叫者於該群組的角色
+- **群組管理權限**：owner／admin 可改名、加入成員、變更角色、移除成員；刪群組維持 owner-only。admin 不得變更／移除 owner（409）、owner 自身 role 列亦 409；`role=owner` 一律 422；非成員 404、editor／viewer 403（成員越權由 404 收斂為 403）。角色變更寫 audit log（`group.member_role_changed`；加入／移除為 `group.member_added`／`group.member_removed`）
+- **新端點** `PATCH /api/groups/{id}/members/{user_id}`（body `{role}`）；`POST /api/groups/{id}/members` 支援 `{username, role}`（預設 `editor`）
+- **viewer 判定**：`is_read_only ⇔ 有 ≥1 筆 membership 且全部為 viewer`（owner 絕不唯讀；跨群組 editor 不唯讀）；`UserPublic.is_read_only` 隨登入／`/users/me` 回傳，離開群組後即恢復可寫
+- **唯讀防線（403）**：`require_writer`＋`WriterGuardRoute` 套 14 個寫入 router（items 含 favorite／bulk、batches、items_bulk import、images、loans、lists、stocktake、transfers、backup import、categories、locations、warehouses、tags、customization）；403 發生於路由依賴階段（早於 body 解析與資源查詢，不洩漏資源存在性）。不擋：users／notifications／webhooks／external_channels／stats／barcodes／labels／item_history／jobs／admin／ai／groups（leave 需開放）
+- **Web 唯讀（不渲染，非禁用）**：`useReadOnly`＋`<EditableOnly>`；items 列表／詳情／新增／編輯、清單 detail（勾選改為狀態顯示）、盤點、掃碼外查「帶入新增」、低庫存補貨、CSV／備份「匯入」、分類／標籤／位置樹／自訂面板、新增群組；**列印標籤與匯出維持可用**（讀取性操作，登錄決策）；位置樹拖放停用、F2 不進改名，方向鍵導覽與展開保留
+- **§5.5 一次性 banner**：viewer 首次登入顯示（偏好 `viewer_notice_dismissed`，關閉即持久化、reload 不再出現）；物品詳情底部固定句；`/items/new`、`/items/[id]/edit` 直達顯示「檢視者無法編輯」提示卡且表單不渲染
+- **群組角色管理 UI**：成員列角色 Select（`my_role ∈ {owner, admin}`；admin／editor／viewer 三選）＋角色說明；owner 列固定「擁有者」徽章不可改；editor／viewer 僅角色徽章、無成員管理入口；加入成員對話框可選角色（預設 editor）；成功 toast＋群組 query invalidate、失敗 toast（Select 由伺服器資料控制，自動回復原值）
+- i18n：`viewer.*` 8 鍵＋`collab.roles.*`（含說明）＋`collab.groups.detail.roleFor`／`memberRole`／`roleChanged`／`changeRoleFailed`（zh-TW／en 鍵集一致）
+- 新增 74 個 API 測試（790 → 864）；新增 51 個 web 測試（451 → 502，89 → 99 檔）；e2e 20 → 21 spec（62 → 65 情境；新增 viewer 旅程／角色管理／越權 3 情境）
+- **Migration 0022**；api-types 重生成（`GroupMemberRoleUpdate`、`my_role`）
+
 ## [2.0.0-alpha.29] — Phase 29：備份與還原
 
 - **匯出 v4（當期 schema 全量）**：`GET /api/backup/export` `format_version` 3 → 4——items 加 `barcode`／`track_batches`；新增 `preferences`（幣別）、`item_custom_values`、`item_batches`、`loans`、`quantity_logs`、`item_versions`、`stocktakes`、`webhooks`、`notification_preferences`；各清單穩定排序（同資料 → 同檔案）；`audit_logs`／`api_tokens` 永不匯出

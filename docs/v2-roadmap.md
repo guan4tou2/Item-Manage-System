@@ -51,12 +51,13 @@
 | 27 | 成本與庫存估值 | ✅ | `items.cost`（Decimal 12,2 nullable）＋migration 0021、帳號層級 `currency` 偏好（六幣別、無匯率換算）、`GET /api/stats/value`（總值＋分類/位置/倉庫分布＋未填比例）、統計頁估值區塊（摘要＋兩圖）、儀表板估值卡（行動卡群組之後）、`formatCurrency`（TWD→`NT$` 雙語）、CSV `cost`／`currency`、backup `format_version` 3 |
 | 28 | Webhook 管理 UI | ✅ | deliveries 篩選（`status`／`event`）＋`offset` 分頁＋統計端點（成功率、最近成功）；面板桌機表格／行動卡片、篩選、載入更多、excerpt 展開、概覽與查詢錯誤態；無 migration |
 | 29 | 備份與還原 | ✅ | 匯出 v4（當期 schema 全量：barcode／批次／借還／歷程／盤點／webhooks／通知偏好／幣別、穩定排序）；`POST /api/backup/import`（multipart；20 MiB／413；`format_version` 1–4 相容）；plan／apply 兩段式——dry-run 零寫入；create_only 名稱匹配沿用＋重名後綴＋列級容忍；replace 單一交易清空＋全有全無＋`REPLACE` 確認字串；id-map 關聯重建＋批次對帳 invariant；warnings／errors／稽核 `backup.import`；Web「設定 → 整合與資料 → 備份」頁（匯出＋匯入三態）；無 migration |
+| 30 | 成員權限細化 | ✅ | `group_members.role`（admin／editor／viewer，owner＝`groups.owner_id`）＋migration 0022；viewer 定義（全部 membership 為 viewer）→ `require_writer`＋`WriterGuardRoute` 套 14 routers（403 早於 body／資源查詢）；owner／admin 成員管理＋角色變更端點＋audit；Web 唯讀一律不渲染入口（一次性 banner／固定句／標籤列印與匯出保留）；群組角色管理 UI |
 
 ## 測試規模
 
-- API 測試：790 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：450 passed（89 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：20 spec／62 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／位置樹／估值／webhook 管理／備份還原／主題等關鍵流程）
+- API 測試：864 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
+- Web 測試：502 passed（99 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：21 spec／65 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）
