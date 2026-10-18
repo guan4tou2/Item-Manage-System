@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, _utcnow
@@ -27,11 +27,15 @@ class Group(Base):
 
 class GroupMember(Base):
     __tablename__ = "group_members"
-    __table_args__ = (UniqueConstraint("group_id", "user_id", name="uq_group_members_group_user"),)
+    __table_args__ = (
+        UniqueConstraint("group_id", "user_id", name="uq_group_members_group_user"),
+        CheckConstraint("role IN ('admin', 'editor', 'viewer')", name="ck_group_members_role"),
+    )
 
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     group_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("groups.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id: Mapped[UUID] = mapped_column(GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    role: Mapped[str] = mapped_column(String(16), nullable=False, default="editor")
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, nullable=False)
 
     group: Mapped[Group] = relationship("Group", back_populates="members")

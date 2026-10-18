@@ -52,3 +52,32 @@ async def test_add_duplicate_member_409(client, auth):
 async def test_cross_owner_404(client, auth, friend_auth):
     gid = (await client.post("/api/groups", headers=auth, json={"name": "g"})).json()["id"]
     assert (await client.get(f"/api/groups/{gid}", headers=friend_auth)).status_code == 404
+
+
+async def test_group_detail_exposes_my_role_and_member_role(client, auth):
+    gid = (await client.post("/api/groups", headers=auth, json={"name": "g"})).json()["id"]
+    detail = (await client.get(f"/api/groups/{gid}", headers=auth)).json()
+    assert detail["my_role"] == "owner"
+    assert detail["members"][0]["role"] == "owner"
+
+
+async def test_list_groups_exposes_my_role(client, auth, friend_auth):
+    gid = (await client.post("/api/groups", headers=auth, json={"name": "g"})).json()["id"]
+    await client.post(f"/api/groups/{gid}/members", headers=auth, json={"username": "fr_user"})
+    mine = (await client.get("/api/groups", headers=auth)).json()
+    theirs = (await client.get("/api/groups", headers=friend_auth)).json()
+    assert mine[0]["my_role"] == "owner"
+    assert theirs[0]["my_role"] == "editor"
+
+
+async def test_add_member_with_viewer_role(client, auth, friend_auth):
+    gid = (await client.post("/api/groups", headers=auth, json={"name": "fam"})).json()["id"]
+    r = await client.post(
+        f"/api/groups/{gid}/members", headers=auth, json={"username": "fr_user", "role": "viewer"}
+    )
+    assert r.status_code == 201
+    assert r.json()["role"] == "viewer"
+    detail = (await client.get(f"/api/groups/{gid}", headers=friend_auth)).json()
+    assert detail["my_role"] == "viewer"
+    rows = {m["username"]: m["role"] for m in detail["members"]}
+    assert rows == {"g_user": "owner", "fr_user": "viewer"}

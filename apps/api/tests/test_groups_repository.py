@@ -62,3 +62,24 @@ async def test_remove_member(db_session, users):
     assert ok is True
     members = await repo.list_members(db_session, g.id)
     assert {m.user_id for m in members} == {a.id}
+
+
+async def test_add_member_with_role(db_session, users):
+    a, b = users
+    g = await repo.create(db_session, owner_id=a.id, name="g")
+    m = await repo.add_member(db_session, g.id, b.id, role="viewer")
+    assert m.role == "viewer"
+
+
+async def test_member_roles_for_user(db_session, users):
+    a, b = users
+    g1 = await repo.create(db_session, owner_id=a.id, name="g1")
+    g2 = await repo.create(db_session, owner_id=b.id, name="g2")
+    await repo.add_member(db_session, g2.id, a.id, role="viewer")
+    roles = await repo.member_roles_for_user(db_session, a.id)
+    assert roles == {g1.id: "editor", g2.id: "viewer"}
+
+
+async def test_member_roles_for_user_empty(db_session, users):
+    a, _ = users
+    assert await repo.member_roles_for_user(db_session, a.id) == {}

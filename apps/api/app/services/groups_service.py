@@ -23,7 +23,24 @@ async def _user_by_username(session: AsyncSession, username: str) -> User | None
     )).scalar_one_or_none()
 
 
-async def _summary(session: AsyncSession, g, current_user_id: UUID) -> GroupSummary:
+async def _my_role(
+    session: AsyncSession, g, current_user_id: UUID, roles: dict[UUID, str] | None = None
+) -> str:
+    """Effective role of the current user in the group (owner checked first)."""
+    if g.owner_id == current_user_id:
+        return "owner"
+    if roles is not None:
+        return roles.get(g.id, "editor")
+    row = await groups_repository.get_member(session, g.id, current_user_id)
+    return row.role if row is not None else "editor"
+
+
+async def _summary(
+    session: AsyncSession,
+    g,
+    current_user_id: UUID,
+    roles: dict[UUID, str] | None = None,
+) -> GroupSummary:
     owner = (await session.execute(
         select(User).where(User.id == g.owner_id)
     )).scalar_one()
@@ -32,12 +49,14 @@ async def _summary(session: AsyncSession, g, current_user_id: UUID) -> GroupSumm
         id=g.id, name=g.name, owner_id=g.owner_id, owner_username=owner.username,
         is_owner=(g.owner_id == current_user_id), member_count=count,
         created_at=g.created_at, updated_at=g.updated_at,
+        my_role=await _my_role(session, g, current_user_id, roles),
     )
 
 
 async def list_groups(session: AsyncSession, user_id: UUID) -> list[GroupSummary]:
     groups = await groups_repository.list_for_user(session, user_id)
-    return [await _summary(session, g, user_id) for g in groups]
+    roles = await groups_repository.member_roles_for_user(session, user_id)
+    return [await _summary(session, g, user_id, roles) for g in groups]
 
 
 async def create_group(
@@ -78,6 +97,7 @@ async def get_group_detail(
             user_id=gm.user_id,
             username=users_map[gm.user_id].username,
             joined_at=gm.joined_at,
+            role="owner" if gm.user_id == g.owner_id else gm.role,
         ) for gm in gms
     ]
     return GroupDetail(**summary.model_dump(), members=members)
@@ -109,8 +129,10 @@ async def add_member_by_username(
     existing = await groups_repository.get_member(session, group_id, user.id)
     if existing is not None:
         raise HTTPException(status_code=409, detail="already a member")
-    gm = await groups_repository.add_member(session, group_id, user.id)
-    return GroupMemberRead(user_id=user.id, username=user.username, joined_at=gm.joined_at)
+    gm = await groups_repository.add_member(session, group_id, user.id, role=body.role)
+    return GroupMemberRead(
+        user_id=user.id, username=user.username, joined_at=gm.joined_at, role=gm.role
+    )
 
 
 async def remove_member(

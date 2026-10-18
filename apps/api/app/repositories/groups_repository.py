@@ -84,13 +84,23 @@ async def get_member(
 
 
 async def add_member(
-    session: AsyncSession, group_id: UUID, user_id: UUID
+    session: AsyncSession, group_id: UUID, user_id: UUID, role: str = "editor"
 ) -> GroupMember:
-    gm = GroupMember(group_id=group_id, user_id=user_id)
+    gm = GroupMember(group_id=group_id, user_id=user_id, role=role)
     session.add(gm)
     await session.commit()
     await session.refresh(gm)
     return gm
+
+
+async def member_roles_for_user(
+    session: AsyncSession, user_id: UUID
+) -> dict[UUID, str]:
+    """{group_id: role} for every membership of the given user."""
+    stmt = select(GroupMember.group_id, GroupMember.role).where(
+        GroupMember.user_id == user_id
+    )
+    return {group_id: role for group_id, role in (await session.execute(stmt)).all()}
 
 
 async def remove_member(
