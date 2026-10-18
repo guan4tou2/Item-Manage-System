@@ -13,7 +13,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.schemas.user import UserPublic
-from app.services import notifications_service
+from app.services import notifications_service, visibility_service
 from app.services.auth_service import (
     AuthService,
     EmailAlreadyExists,
@@ -61,7 +61,9 @@ async def register(
     access = service.issue_access_token(user)
     refresh = service.issue_refresh_token(user)
     _set_refresh_cookie(response, refresh)
-    return TokenResponse(access_token=access, user=UserPublic.model_validate(user))
+    return TokenResponse(
+        access_token=access, user=await visibility_service.user_public(session, user)
+    )
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -76,7 +78,9 @@ async def login(
     access = service.issue_access_token(user)
     refresh = service.issue_refresh_token(user)
     _set_refresh_cookie(response, refresh)
-    return TokenResponse(access_token=access, user=UserPublic.model_validate(user))
+    return TokenResponse(
+        access_token=access, user=await visibility_service.user_public(session, user)
+    )
 
 
 @router.post("/refresh", response_model=AccessTokenResponse)
@@ -111,8 +115,11 @@ async def logout(response: Response) -> Response:
 
 
 @router.get("/me", response_model=UserPublic)
-async def me(current_user: User = Depends(get_current_user)) -> UserPublic:
-    return UserPublic.model_validate(current_user)
+async def me(
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> UserPublic:
+    return await visibility_service.user_public(session, current_user)
 
 
 @router.post("/bootstrap-admin", response_model=UserPublic)
@@ -122,4 +129,4 @@ async def bootstrap_admin(
 ) -> UserPublic:
     from app.services import profile_service
     promoted = await profile_service.bootstrap_admin_if_none(session, current_user)
-    return UserPublic.model_validate(promoted)
+    return await visibility_service.user_public(session, promoted)

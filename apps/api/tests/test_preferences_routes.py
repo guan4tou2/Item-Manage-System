@@ -30,7 +30,12 @@ class TestGetPreferences:
             "/api/users/me/preferences", headers=auth_headers
         )
         assert resp.status_code == 200
-        assert resp.json() == {"theme": "system", "language": "zh-TW", "currency": "TWD"}
+        assert resp.json() == {
+            "theme": "system",
+            "language": "zh-TW",
+            "currency": "TWD",
+            "viewer_notice_dismissed": False,
+        }
 
 
 class TestPutPreferences:

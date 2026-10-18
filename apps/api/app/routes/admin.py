@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.audit import AuditLogRead
 from app.schemas.user import UserAdminUpdate, UserPublic
-from app.services import admin_service, audit_service
+from app.services import admin_service, audit_service, visibility_service
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -20,7 +20,7 @@ async def list_users(
     session: AsyncSession = Depends(get_db),
 ):
     users = await admin_service.list_users(session)
-    return [UserPublic.model_validate(u) for u in users]
+    return await visibility_service.user_public_many(session, users)
 
 
 @router.patch("/users/{user_id}", response_model=UserPublic)
@@ -31,7 +31,7 @@ async def update_user(
     session: AsyncSession = Depends(get_db),
 ) -> UserPublic:
     updated = await admin_service.set_active(session, admin, user_id, body.is_active)
-    return UserPublic.model_validate(updated)
+    return await visibility_service.user_public(session, updated)
 
 
 @router.post("/users/{user_id}/test-notification")

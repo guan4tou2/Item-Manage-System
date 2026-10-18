@@ -24,6 +24,8 @@ class PreferencesRead(BaseModel):
     theme: Theme = "system"
     language: Language = "zh-TW"
     currency: Currency = "TWD"
+    #: Phase 30：viewer 一次性說明 banner 是否已關閉（不重複顯示）
+    viewer_notice_dismissed: bool = False
 
     model_config = ConfigDict(extra="allow")
 
@@ -32,5 +34,6 @@ class PreferencesUpdate(BaseModel):
     theme: Theme | None = None
     language: Language | None = None
     currency: Currency | None = None
+    viewer_notice_dismissed: bool | None = None
 
     model_config = ConfigDict(extra="allow")

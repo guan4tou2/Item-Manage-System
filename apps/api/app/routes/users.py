@@ -11,14 +11,17 @@ from app.models.user import User
 from app.schemas.api_token import ApiTokenCreate, ApiTokenCreated, ApiTokenRead
 from app.schemas.preferences import PreferencesRead, PreferencesUpdate
 from app.schemas.user import PasswordChange, UserProfileUpdate, UserPublic
-from app.services import api_tokens_service, preferences_service, profile_service
+from app.services import api_tokens_service, preferences_service, profile_service, visibility_service
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
 
 @router.get("/me", response_model=UserPublic)
-async def get_me(user: User = Depends(get_current_user)) -> UserPublic:
-    return UserPublic.model_validate(user)
+async def get_me(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> UserPublic:
+    return await visibility_service.user_public(session, user)
 
 
 @router.patch("/me", response_model=UserPublic)
@@ -28,7 +31,7 @@ async def update_me(
     session: AsyncSession = Depends(get_db),
 ) -> UserPublic:
     updated = await profile_service.update_profile(session, user, body)
-    return UserPublic.model_validate(updated)
+    return await visibility_service.user_public(session, updated)
 
 
 @router.post("/me/change-password")

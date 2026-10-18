@@ -14,6 +14,8 @@ class UserPublic(BaseModel):
     is_active: bool
     is_admin: bool
     created_at: datetime
+    #: Phase 30：唯讀 viewer（計算值，預設 False；由 visibility_service 附帶）
+    is_read_only: bool = False
 
 
 class UserProfileUpdate(BaseModel):
