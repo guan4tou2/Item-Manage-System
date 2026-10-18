@@ -6,6 +6,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import type { CategoryTreeNode } from "@/lib/api/categories"
+import { EditableOnly } from "@/components/common/editable-only"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -48,7 +49,8 @@ export function CategoriesPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <EditableOnly>
+        <div className="flex gap-2">
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -67,7 +69,8 @@ export function CategoriesPanel() {
         <Button onClick={handleAdd} disabled={create.isPending || !name.trim()}>
           {t("taxonomy.categories.add")}
         </Button>
-      </div>
+        </div>
+      </EditableOnly>
 
       {flat.length === 0 ? (
         <p className="text-muted-foreground">{t("taxonomy.categories.empty")}</p>
@@ -76,18 +79,20 @@ export function CategoriesPanel() {
           {flat.map((c) => (
             <li key={c.id} className="flex items-center justify-between border rounded px-3 py-2">
               <span>{c.label}</span>
-              <Button
-                variant="ghost" size="sm"
-                onClick={() => {
-                  if (confirm(t("taxonomy.categories.confirmDelete"))) {
-                    del.mutate(c.id)
-                  }
-                }}
-                aria-label={t("taxonomy.categories.delete")}
-              >
-                <Trash2 className="h-4 w-4" />
-                <span className="sr-only">{t("taxonomy.categories.delete")}</span>
-              </Button>
+              <EditableOnly>
+                <Button
+                  variant="ghost" size="sm"
+                  onClick={() => {
+                    if (confirm(t("taxonomy.categories.confirmDelete"))) {
+                      del.mutate(c.id)
+                    }
+                  }}
+                  aria-label={t("taxonomy.categories.delete")}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">{t("taxonomy.categories.delete")}</span>
+                </Button>
+              </EditableOnly>
             </li>
           ))}
         </ul>

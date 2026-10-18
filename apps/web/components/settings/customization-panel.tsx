@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
+import { EditableOnly } from '@/components/common/editable-only'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -304,6 +305,7 @@ export function CustomizationPanel() {
             </div>
           </div>
 
+          <EditableOnly>
           <div className="mt-5 grid gap-3">
             <div className="grid gap-2">
               <Label htmlFor="item-type-name">{t('settings.customization.typeNameLabel')}</Label>
@@ -335,6 +337,8 @@ export function CustomizationPanel() {
             </Button>
           </div>
 
+          </EditableOnly>
+
           <ul className="mt-5 divide-y rounded-md border">
             {(itemTypes.data ?? []).length === 0 ? (
               <li className="text-muted-foreground p-3 text-sm">
@@ -349,15 +353,17 @@ export function CustomizationPanel() {
                       <p className="text-muted-foreground truncate text-xs">{type.icon}</p>
                     ) : null}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeType.mutate(type.id)}
-                    aria-label={t('settings.customization.deleteType', { name: type.name })}
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </Button>
+                  <EditableOnly>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeType.mutate(type.id)}
+                      aria-label={t('settings.customization.deleteType', { name: type.name })}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </EditableOnly>
                 </li>
               ))
             )}
@@ -377,6 +383,7 @@ export function CustomizationPanel() {
             </div>
           </div>
 
+          <EditableOnly>
           <div className="mt-5 grid gap-3">
             <div className="grid gap-2">
               <Label htmlFor="custom-field-name">{t('settings.customization.fieldNameLabel')}</Label>
@@ -414,6 +421,8 @@ export function CustomizationPanel() {
             </Button>
           </div>
 
+          </EditableOnly>
+
           <ul className="mt-5 divide-y rounded-md border">
             {(customFields.data ?? []).length === 0 ? (
               <li className="text-muted-foreground p-3 text-sm">
@@ -428,15 +437,17 @@ export function CustomizationPanel() {
                       {fieldTypeLabel(t, field.field_type)}
                     </Badge>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeField.mutate(field.id)}
-                    aria-label={t('settings.customization.deleteField', { name: field.name })}
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </Button>
+                  <EditableOnly>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeField.mutate(field.id)}
+                      aria-label={t('settings.customization.deleteField', { name: field.name })}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </EditableOnly>
                 </li>
               ))
             )}
@@ -456,6 +467,7 @@ export function CustomizationPanel() {
             </div>
           </div>
 
+          <EditableOnly>
           <div className="mt-5 grid gap-3">
             <div className="grid gap-2">
               <Label htmlFor="template-name">{t('settings.customization.templateNameLabel')}</Label>
@@ -582,6 +594,8 @@ export function CustomizationPanel() {
             ) : null}
           </div>
 
+          </EditableOnly>
+
           <ul className="mt-5 divide-y rounded-md border">
             {(templates.data ?? []).length === 0 ? (
               <li className="text-muted-foreground p-3 text-sm">
@@ -599,6 +613,7 @@ export function CustomizationPanel() {
                       {templateSummary(t, template.payload)}
                     </p>
                   </div>
+                  <EditableOnly>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button
                       type="button"
@@ -635,6 +650,7 @@ export function CustomizationPanel() {
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </div>
+                  </EditableOnly>
                 </li>
               ))
             )}

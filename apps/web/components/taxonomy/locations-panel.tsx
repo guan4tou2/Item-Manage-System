@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { EditableOnly } from "@/components/common/editable-only"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { listItems } from "@/lib/api/items"
 import { getApiErrorDetail } from "@/lib/api/client"
 import { useAccessToken } from "@/lib/auth/use-auth"
+import { useReadOnly } from "@/lib/auth/use-readonly"
 import {
   useCreateLocation,
   useDeleteLocation,
@@ -49,6 +51,7 @@ function errorCode(error: unknown): string | undefined {
 /** `/locations` 樹管理（§5.4／§5.7）：桌機拖放、行動 ⋯ 搬移、鍵盤操作、刪除限制。 */
 export function LocationsPanel() {
   const t = useTranslations()
+  const readOnly = useReadOnly()
   const token = useAccessToken()
   const isMobile = useIsMobile()
   const tree = useLocationTree()
@@ -272,6 +275,7 @@ export function LocationsPanel() {
       return
     }
     if (event.key === "F2") {
+      if (readOnly) return
       event.preventDefault()
       startRename(current.node)
       return
@@ -318,21 +322,23 @@ export function LocationsPanel() {
             className="pl-8"
           />
         </div>
-        <Button
-          type="button"
-          onClick={() => {
-            setAddingParent(null)
-            setAddingChildOf(null)
-            setDraft("")
-          }}
-          disabled={create.isPending}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {t("locations.tree.addRoot")}
-        </Button>
+        <EditableOnly>
+          <Button
+            type="button"
+            onClick={() => {
+              setAddingParent(null)
+              setAddingChildOf(null)
+              setDraft("")
+            }}
+            disabled={create.isPending}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {t("locations.tree.addRoot")}
+          </Button>
+        </EditableOnly>
       </div>
 
-      {addingChildOf === null && addingParent === null ? (
+      {!readOnly && addingChildOf === null && addingParent === null ? (
         <div className="flex items-end gap-2">
           <div className="flex-1">
             <Label htmlFor="new-location-name">{t("locations.tree.newRootLabel")}</Label>
@@ -356,24 +362,26 @@ export function LocationsPanel() {
       {searchEmpty ? (
         <div className="space-y-2 rounded border p-3 text-sm">
           <p>{t("locations.tree.noSearchResult")}</p>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={create.isPending}
-            onClick={() => {
-              setAddingParent(null)
-              setAddingChildOf(null)
-              setDraft(search)
-              setSearch("")
-              void create.mutateAsync({ name: search, parent_id: null, sort_order: 0 }).then(() => {
-                setAnnouncement(t("locations.tree.created", { name: search }))
-                setDraft("")
-              })
-            }}
-          >
-            {t("locations.tree.createFromSearch", { name: search })}
-          </Button>
+          <EditableOnly>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={create.isPending}
+              onClick={() => {
+                setAddingParent(null)
+                setAddingChildOf(null)
+                setDraft(search)
+                setSearch("")
+                void create.mutateAsync({ name: search, parent_id: null, sort_order: 0 }).then(() => {
+                  setAnnouncement(t("locations.tree.created", { name: search }))
+                  setDraft("")
+                })
+              }}
+            >
+              {t("locations.tree.createFromSearch", { name: search })}
+            </Button>
+          </EditableOnly>
         </div>
       ) : null}
 
@@ -387,10 +395,10 @@ export function LocationsPanel() {
         aria-label={t("nav.locations")}
         className="rounded border p-1"
         onKeyDown={onKeyDown}
-        onDragOver={(event) => {
+        onDragOver={readOnly ? undefined : (event) => {
           if (dragId !== null && canMove(flat, dragId, null)) event.preventDefault()
         }}
-        onDrop={(event) => {
+        onDrop={readOnly ? undefined : (event) => {
           if (dragId !== null && canMove(flat, dragId, null)) {
             event.preventDefault()
             void performMove(dragId, null)
@@ -413,6 +421,7 @@ export function LocationsPanel() {
                 dragId !== null && dragId !== node.id && !canMove(flat, dragId, node.id)
               }
               isMobile={isMobile}
+              readOnly={readOnly}
               editing={editingId === node.id}
               draft={draft}
               onToggle={() => toggle(node.id)}
@@ -448,7 +457,7 @@ export function LocationsPanel() {
                 setDropTargetId(null)
               }}
             />
-            {addingChildOf === node.id ? (
+            {!readOnly && addingChildOf === node.id ? (
               <div className="flex items-center gap-2 py-2" style={{ paddingInlineStart: (depth + 1) * 16 }}>
                 <Input
                   autoFocus
@@ -484,7 +493,7 @@ export function LocationsPanel() {
         ))}
       </div>
 
-      {!isMobile ? (
+      {!isMobile && !readOnly ? (
         <p className="text-xs text-muted-foreground">{t("locations.tree.dragHint")}</p>
       ) : null}
 

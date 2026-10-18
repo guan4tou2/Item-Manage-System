@@ -27,6 +27,8 @@ export interface TreeNodeRowProps {
   dropTarget: boolean
   dropInvalid: boolean
   isMobile: boolean
+  /** Phase 30：唯讀檢視（不可拖放、無動作選單） */
+  readOnly?: boolean
   editing: boolean
   draft: string
   onToggle: () => void
@@ -55,6 +57,7 @@ export function TreeNodeRow({
   dropTarget,
   dropInvalid,
   isMobile,
+  readOnly = false,
   editing,
   draft,
   onToggle,
@@ -83,8 +86,8 @@ export function TreeNodeRow({
       tabIndex={selected ? 0 : -1}
       data-testid={`location-node-${node.id}`}
       data-drop-invalid={dropInvalid || undefined}
-      draggable={!isMobile && !editing}
-      onDragStart={onDragStart}
+      draggable={!isMobile && !editing && !readOnly}
+      onDragStart={readOnly ? undefined : onDragStart}
       onDragOver={(event) => {
         // 阻斷冒泡：列 hover 的合法性由本列決定，不讓容器（搬到最上層）介入
         event.stopPropagation()
@@ -96,7 +99,7 @@ export function TreeNodeRow({
         event.stopPropagation()
         onDrop()
       }}
-      onDragEnd={onDragEnd}
+      onDragEnd={readOnly ? undefined : onDragEnd}
       onClick={onFocusRow}
       onFocus={onFocusRow}
       className={cn(
@@ -150,7 +153,7 @@ export function TreeNodeRow({
         <span
           className="min-w-0 flex-1 truncate text-sm"
           onDoubleClick={
-            isMobile
+            isMobile || readOnly
               ? undefined
               : (event) => {
                   event.stopPropagation()
@@ -175,8 +178,9 @@ export function TreeNodeRow({
         </span>
       ) : null}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      {readOnly ? null : (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
           <Button
             type="button"
             variant="ghost"
@@ -205,8 +209,9 @@ export function TreeNodeRow({
             <Trash2 className="mr-2 h-4 w-4" />
             {t("locations.tree.delete")}
           </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   )
 }

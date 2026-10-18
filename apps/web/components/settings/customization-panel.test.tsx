@@ -1,9 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { NextIntlClientProvider } from 'next-intl'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import * as api from '@/lib/api/customization'
+import { useAuthStore } from '@/lib/auth/auth-store'
 import enMessages from '@/messages/en.json'
 
 import { CustomizationPanel } from './customization-panel'
@@ -202,5 +203,59 @@ describe('CustomizationPanel', () => {
         'jwt',
       )
     })
+  })
+})
+
+describe('CustomizationPanel read-only viewer (Phase 30)', () => {
+  beforeEach(() => {
+    vi.mocked(api.listItemTypes).mockResolvedValue([itemType])
+    vi.mocked(api.listCustomFields).mockResolvedValue([customField])
+    vi.mocked(api.listItemTemplates).mockResolvedValue([template])
+  })
+
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it('keeps all lists visible but hides every edit entry for viewers', async () => {
+    useAuthStore.setState({ accessToken: 'jwt', user: { id: "viewer-1", is_read_only: true } as never })
+    renderPanel()
+
+    expect(await screen.findByText('Appliance')).toBeInTheDocument()
+    expect(screen.getByText('Warranty date')).toBeInTheDocument()
+    expect(screen.getByText('Battery pack')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create type' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create field' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create template' })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Delete item type Appliance' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Delete custom field Warranty date' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Edit template Battery pack' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Duplicate template Battery pack' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Delete template Battery pack' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps all edit entries for writers (zero regression)', async () => {
+    useAuthStore.setState({ accessToken: 'jwt', user: { id: "writer-1", is_read_only: false } as never })
+    renderPanel()
+
+    expect(await screen.findByRole('button', { name: 'Create type' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create field' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Create template' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Delete item type Appliance' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Edit template Battery pack' }),
+    ).toBeInTheDocument()
   })
 })

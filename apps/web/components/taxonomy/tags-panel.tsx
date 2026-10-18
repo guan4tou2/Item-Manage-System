@@ -5,6 +5,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import type { TagReadWithCount } from "@/lib/api/tags"
+import { EditableOnly } from "@/components/common/editable-only"
 import { Button } from "@/components/ui/button"
 import {
   useDeleteTag,
@@ -94,14 +95,16 @@ export function TagsPanel() {
           {t("taxonomy.tags.count", { count: rows.length })}
           {orphanCount > 0 ? t("taxonomy.tags.orphanCount", { count: orphanCount }) : ""}
         </p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handlePrune}
-          disabled={prune.isPending || orphanCount === 0}
-        >
-          {t("taxonomy.tags.pruneOrphans")}
-        </Button>
+        <EditableOnly>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrune}
+            disabled={prune.isPending || orphanCount === 0}
+          >
+            {t("taxonomy.tags.pruneOrphans")}
+          </Button>
+        </EditableOnly>
       </div>
 
       {rows.length === 0 ? (

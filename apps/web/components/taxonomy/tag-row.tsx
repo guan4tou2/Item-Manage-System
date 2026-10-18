@@ -4,6 +4,7 @@ import { Check, Merge, Pencil, Trash2, X } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import type { TagReadWithCount } from "@/lib/api/tags"
+import { EditableOnly } from "@/components/common/editable-only"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -117,7 +118,8 @@ export function TagRow({
           </Button>
         </div>
       ) : (
-        <div className="flex gap-1">
+        <EditableOnly>
+          <div className="flex gap-1">
           <Button
             variant="ghost"
             size="sm"
@@ -144,7 +146,8 @@ export function TagRow({
           >
             <Trash2 className="h-4 w-4" />
           </Button>
-        </div>
+          </div>
+        </EditableOnly>
       )}
     </li>
   )

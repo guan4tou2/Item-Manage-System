@@ -2,9 +2,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { NextIntlClientProvider } from "next-intl"
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import type { ReactNode } from "react"
 
+import { useAuthStore } from "@/lib/auth/auth-store"
 import enMessages from "@/messages/en.json"
 import type { LocationTreeNode } from "@/lib/api/locations"
 
@@ -365,5 +366,55 @@ describe("LocationsPanel（樹管理）", () => {
     hooks.flat.mockReturnValue({ data: [], isLoading: false })
     renderPanel()
     expect(screen.getByText("No locations yet")).toBeInTheDocument()
+  })
+})
+
+describe("LocationsPanel read-only viewer (Phase 30)", () => {
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it("renders the tree read-only without any edit entry", async () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "viewer-1", is_read_only: true } as never })
+    const user = userEvent.setup()
+    renderPanel()
+
+    expect(screen.getByText("1F")).toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "Add top-level location" }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByLabelText("New location name")).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole("button", { name: "More actions for 1F" }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByTestId("location-node-1")).toHaveAttribute("draggable", "false")
+    expect(screen.queryByText(/Tip: drag a node/)).not.toBeInTheDocument()
+
+    // 展開為讀取操作，維持可用
+    await user.click(
+      within(screen.getByTestId("location-node-1")).getByRole("button", { name: "Expand" }),
+    )
+    expect(screen.getByText("Kitchen")).toBeInTheDocument()
+
+    // F2 不進入改名
+    fireEvent.focus(screen.getByTestId("location-node-1"))
+    fireEvent.keyDown(screen.getByTestId("location-node-1"), { key: "F2" })
+    expect(screen.queryByLabelText("Rename")).not.toBeInTheDocument()
+  })
+
+  it("keeps all edit entries for writers (zero regression)", async () => {
+    useAuthStore.setState({ accessToken: "jwt", user: { id: "writer-1", is_read_only: false } as never })
+    const user = userEvent.setup()
+    renderPanel()
+
+    expect(
+      screen.getByRole("button", { name: "Add top-level location" }),
+    ).toBeInTheDocument()
+    await user.click(
+      within(screen.getByTestId("location-node-1")).getByRole("button", {
+        name: "More actions for 1F",
+      }),
+    )
+    expect(await screen.findByText("Add child")).toBeInTheDocument()
   })
 })
