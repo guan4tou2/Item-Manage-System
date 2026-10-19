@@ -263,3 +263,68 @@ async def test_suggest_respects_scan_limit(db_session, monkeypatch):
     # 只掃描前 2 筆（未套用護欄會是 score 3／item_count 3）
     assert result.category is not None
     assert (result.category.score, result.category.item_count) == (2, 2)
+
+
+# --- suggest_for_names（Phase 33 批次化） ------------------------------------
+
+
+async def test_suggest_for_names_matches_single_calls(db_session):
+    """批次結果與逐次呼叫完全相同（含排序與分數）。"""
+    user = await _user(db_session)
+    kitchen = await _category(db_session, user.id, "廚房用品")
+    food = await _category(db_session, user.id, "食品")
+    kitchen_loc = await _location(db_session, user.id, "廚房")
+    coffee_tag = await _tag(db_session, user.id, "咖啡")
+    await _item(
+        db_session, user.id, "陶瓷咖啡杯",
+        category=kitchen, location=kitchen_loc, tags=[coffee_tag],
+    )
+    await _item(db_session, user.id, "鮮乳", category=food)
+    await _item(db_session, user.id, "咖啡豆", category=food, tags=[coffee_tag])
+
+    names = ["陶瓷咖啡杯", "鮮乳", "咖啡豆", "無關字串"]
+    batched = await classification_service.suggest_for_names(
+        db_session, user.id, names
+    )
+    singles = [
+        await classification_service.suggest_for_name(db_session, user.id, name)
+        for name in names
+    ]
+
+    assert batched == singles
+
+
+async def test_suggest_for_names_preserves_order_and_handles_empty(db_session):
+    user = await _user(db_session)
+    food = await _category(db_session, user.id, "食品")
+    await _item(db_session, user.id, "鮮乳", category=food)
+
+    results = await classification_service.suggest_for_names(
+        db_session, user.id, ["", "鮮乳", "不存在"]
+    )
+
+    assert len(results) == 3
+    # 空名稱 → 無建議；命中 → 食品；未命中 → 無建議
+    assert results[0].category is None
+    assert results[1].category is not None
+    assert results[1].category.id == food.id
+    assert results[2].category is None
+
+
+async def test_suggest_for_names_empty_list(db_session):
+    user = await _user(db_session)
+
+    assert await classification_service.suggest_for_names(db_session, user.id, []) == []
+
+
+async def test_suggest_for_names_isolates_users(db_session):
+    alice = await _user(db_session, "cls_alice")
+    bob = await _user(db_session, "cls_bob")
+    alice_cat = await _category(db_session, alice.id, "廚房用品")
+    await _item(db_session, alice.id, "咖啡濾杯", category=alice_cat)
+
+    result = await classification_service.suggest_for_names(
+        db_session, bob.id, ["咖啡濾杯"]
+    )
+
+    assert result[0].category is None

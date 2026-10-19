@@ -99,17 +99,24 @@ def to_payload(suggestions: ClassificationSuggestions) -> dict[str, Any]:
 
 
 async def _bucket(
-    session: AsyncSession, model, scores: dict[int, list[int]]
+    session: AsyncSession,
+    model,
+    scores: dict[int, list[int]],
+    names: Optional[dict[int, str]] = None,
 ) -> Optional[BucketSuggestion]:
+    """分數聚合 → top1 建議；`names` 可帶入已載入的名稱表（批次化避免重查）。"""
     if not scores:
         return None
     ranked = sorted(scores.items(), key=lambda kv: (-kv[1][0], -kv[1][1], kv[0]))
-    rows = (
-        await session.execute(
-            select(model.id, model.name).where(model.id.in_([key for key, _ in ranked]))
-        )
-    ).all()
-    names = dict(rows)
+    if names is None:
+        rows = (
+            await session.execute(
+                select(model.id, model.name).where(
+                    model.id.in_([key for key, _ in ranked])
+                )
+            )
+        ).all()
+        names = dict(rows)
     for bucket_id, (score, count) in ranked:
         name = names.get(bucket_id)
         if name is not None:
@@ -119,13 +126,21 @@ async def _bucket(
     return None
 
 
-async def suggest_for_name(
-    session: AsyncSession, owner_id: UUID, name: str
-) -> ClassificationSuggestions:
-    """以 `name` 為關鍵詞，回傳本人歷史中的分類／位置／標籤建議。"""
-    tokens = tokenize(name)
-    if not tokens:
-        return ClassificationSuggestions(category=None, location=None, tags=[])
+async def suggest_for_names(
+    session: AsyncSession, owner_id: UUID, names: list[str]
+) -> list[ClassificationSuggestions]:
+    """批次建議（Phase 33 收據品項）：**單次**掃描歷史，逐一比對名稱。
+
+    與逐次呼叫 `suggest_for_name` 結果完全相同（含排序與分數）；僅節省查詢次數
+    （收據一次最多 50 品項）。空名稱／無 token 者回空建議，順序與輸入一致。
+    """
+    if not names:
+        return []
+
+    token_sets = [tokenize(name) for name in names]
+    empty = ClassificationSuggestions(category=None, location=None, tags=[])
+    if not any(token_sets):
+        return [empty for _ in names]
 
     rows = (
         await session.execute(
@@ -135,47 +150,64 @@ async def suggest_for_name(
             .limit(MAX_SCAN)
         )
     ).all()
-
-    category_scores: dict[int, list[int]] = {}
-    location_scores: dict[int, list[int]] = {}
-    tag_scores: dict[str, list[int]] = {}
-    matched_item_ids: list[UUID] = []
-    overlaps: dict[UUID, int] = {}
-    for item_id, item_name, category_id, location_id in rows:
-        overlap = len(tokens & tokenize(item_name))
-        if overlap == 0:
-            continue
-        matched_item_ids.append(item_id)
-        overlaps[item_id] = overlap
-        if category_id is not None:
-            _accumulate(category_scores, category_id, overlap)
-        if location_id is not None:
-            _accumulate(location_scores, location_id, overlap)
-
-    if matched_item_ids:
-        tag_rows = (
-            await session.execute(
-                select(item_tags.c.item_id, Tag.name)
-                .join(Tag, Tag.id == item_tags.c.tag_id)
-                .where(
-                    item_tags.c.item_id.in_(matched_item_ids),
-                    Tag.owner_id == owner_id,
-                )
-            )
-        ).all()
-        for item_id, tag_name in tag_rows:
-            _accumulate(tag_scores, tag_name, overlaps[item_id])
-
-    ranked_tags = sorted(
-        tag_scores.items(), key=lambda kv: (-kv[1][0], -kv[1][1], kv[0])
-    )[:TOP_TAGS]
-    tags = [
-        TagSuggestion(name=tag_name, item_count=count, score=score)
-        for tag_name, (score, count) in ranked_tags
+    # 歷史名稱 token 只算一次（多個品項共用）
+    item_tokens = [
+        (item_id, tokenize(item_name), category_id, location_id)
+        for item_id, item_name, category_id, location_id in rows
     ]
 
-    return ClassificationSuggestions(
-        category=await _bucket(session, Category, category_scores),
-        location=await _bucket(session, Location, location_scores),
-        tags=tags,
-    )
+    results: list[ClassificationSuggestions] = []
+    for tokens in token_sets:
+        if not tokens:
+            results.append(empty)
+            continue
+
+        category_scores: dict[int, list[int]] = {}
+        location_scores: dict[int, list[int]] = {}
+        tag_scores: dict[str, list[int]] = {}
+        overlaps: dict[UUID, int] = {}
+        for item_id, hist_tokens, category_id, location_id in item_tokens:
+            overlap = len(tokens & hist_tokens)
+            if overlap == 0:
+                continue
+            overlaps[item_id] = overlap
+            if category_id is not None:
+                _accumulate(category_scores, category_id, overlap)
+            if location_id is not None:
+                _accumulate(location_scores, location_id, overlap)
+
+        if overlaps:
+            tag_rows = (
+                await session.execute(
+                    select(item_tags.c.item_id, Tag.name)
+                    .join(Tag, Tag.id == item_tags.c.tag_id)
+                    .where(
+                        item_tags.c.item_id.in_(list(overlaps)),
+                        Tag.owner_id == owner_id,
+                    )
+                )
+            ).all()
+            for item_id, tag_name in tag_rows:
+                _accumulate(tag_scores, tag_name, overlaps[item_id])
+
+        ranked_tags = sorted(
+            tag_scores.items(), key=lambda kv: (-kv[1][0], -kv[1][1], kv[0])
+        )[:TOP_TAGS]
+        results.append(
+            ClassificationSuggestions(
+                category=await _bucket(session, Category, category_scores),
+                location=await _bucket(session, Location, location_scores),
+                tags=[
+                    TagSuggestion(name=tag_name, item_count=count, score=score)
+                    for tag_name, (score, count) in ranked_tags
+                ],
+            )
+        )
+    return results
+
+
+async def suggest_for_name(
+    session: AsyncSession, owner_id: UUID, name: str
+) -> ClassificationSuggestions:
+    """以 `name` 為關鍵詞，回傳本人歷史中的分類／位置／標籤建議。"""
+    return (await suggest_for_names(session, owner_id, [name]))[0]
