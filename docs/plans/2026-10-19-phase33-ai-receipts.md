@@ -1,7 +1,7 @@
 # Phase 33 — AI 收據辨識（多頁收據 → 品項草稿 → 帶成本入庫）
 
 - **日期**：2026-10-19
-- **狀態**：規劃完成，待執行
+- **狀態**：已完成（T1.1–T3.2 全部落地；TDD 紅綠、全套驗證與視覺走查見文末 Final Verification）
 - **依據**：`docs/plans/2026-10-15-next-iteration-roadmap.md` §六 Phase 33、§5.4（互動狀態契約）、§5.6（AI 標記／金額格式）、§九風險 3（Gemini 成本／配額）
 - **依賴**：Phase 32（草稿表、狀態機、`DraftCard`／`DraftUploadZone`／批量條、`classification_service`、`ai_quota`）、Phase 27（`items.cost` 與 `formatCurrency`）
 - **規模**：M（API 1 個新端點＋LLM 抽取層＋規則引擎批次化＋migration 0025；Web 上傳區模式切換＋佇列分組標頭；e2e 1 spec）
@@ -328,19 +328,25 @@ ai_draft_items（既有表）
 
 ---
 
-## Final Verification（收尾時填實測）
+## Final Verification（收尾時填實測；2026-10-19）
 
-- [ ] API：`uv run pytest -q` → ___ passed
-- [ ] Web：`pnpm vitest run` → ___ passed（___ 檔）；`pnpm typecheck` → 0 error
-- [ ] api-types 重生成零 diff
-- [ ] Migration 0025 up／down／up（Postgres 容器）
-- [ ] e2e：重建 image 後 `pnpm exec playwright test` → ___ spec／___ passed
-- [ ] 視覺走查：桌機 1440×900＋行動 390×844（收據模式上傳區、抽取失敗態、收據群組標頭（相符／差額）、收據卡、批量條）——人工檢視無破版
+- [x] API：`uv run pytest -q` → **1021 passed**（基線 984；2:54）
+- [x] Web：`pnpm vitest run` → **686 passed（125 檔）**（基線 649／121 檔）；`pnpm typecheck` → **0 error**
+- [x] api-types 重生成：**純新增**（370 行、零移除）；`/api/ai/receipts`、`ReceiptSnapshot`／`ReceiptItemSnapshot`、`DraftRead.receipt_id`；既有端點與欄位契約未變
+- [x] Migration 0025 up／down／up（Postgres 容器：`0024` → `upgrade head` → `0025 (head)` → `downgrade 0024` → `upgrade head`）
+- [x] e2e：重建 image 後 `pnpm exec playwright test --workers=2` → **24 spec／75 passed**（基線 23／71）
+- [x] 視覺走查：桌機 1440×900＋行動 390×844（照片模式／收據模式／抽取失敗態（含已上傳頁面與重試）／收據群組標頭（相符與差額兩態）／收據卡小計與數量成本預填／批量條）——無破版
 - [ ] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
 
-### 收尾環境註記（2026-10-19 起填）
+### 收尾環境註記（2026-10-19）
 
-- （待填：worktree 名稱、stack 狀態、e2e 前置與資料種子、無 key 路徑說明）
+- Worktree：`.claude/worktrees/phase33-ai-receipts`；分支 `claude/phase33-ai-receipts`，base＝main 計畫 commit `3e8a153`
+- Stack：compose 專案 `ims-v2`；e2e 前 `docker compose up -d --build`（api 含 0025、web 含新 UI）；入口 `http://localhost`
+- `.env`：`GEMINI_API_KEY=` 空 → 本機與 e2e 走 no-key 失敗路徑（`ai_disabled`）；`AI_DAILY_QUOTA` 未設（預設 50）
+- **收據成功路徑無法用 e2e 覆蓋**（無 key）：以 API 測試（mock `google.genai.Client`，含多頁單請求、金額補齊四種情形、對帳快照）＋元件測試（分組／標頭／小計／錯誤碼）＋視覺走查（DB 直插 `ready` 收據草稿，含相符與差額兩組）驗證
+- 資料種子：e2e 每次註冊新使用者隔離；`tests/ai-receipts.spec.ts` 不需種歷史（只驗證失敗路徑與模式切換）
+- Migration 演練以 `docker compose cp` 將 0025 放入執行中的 api 容器（image 內建版本較舊）後執行 alembic；正式 `up --build` 後 `alembic current` 為 `0025 (head)`
+- e2e 定位注意：Next.js 的 route announcer 也是一個 `role="alert"`，需以 `draft-upload-zone` 範圍內定位；檔案 input 為 `hidden`，以按鈕文案斷言而非 `getByLabel(...).toBeVisible()`
 
 ## 測試基線（main，Phase 32 完成）
 

@@ -6,6 +6,22 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.33] — Phase 33：AI 收據辨識（多頁收據 → 品項草稿 → 帶成本入庫）
+
+- **DB**：`ai_draft_items` 新增 `receipt_id`（UUID nullable、**無 FK**；同次收據的品項草稿共用群組鍵）＋索引 `(owner_id, receipt_id)`（Alembic `0025`；既有列為 `NULL`，無需回填）
+- **抽取**（`POST /api/ai/receipts`，同步）：多頁**一次**送交 Gemini（每頁一個 Part、單一請求、`temperature=0`）→ 嚴格 JSON（商家／購買日期／幣別／總額／品項）；**一次呼叫＝1 次配額**（與頁數、品項數無關）；失敗**不落地任何列**（重試＝重送同一組圖片）
+- **金額補齊**（伺服器端、決定性）：單價缺→小計/數量（2 位四捨五入）；小計缺→單價×數量；兩者皆缺→`null`（接受時成本留空）；兩者都有但不一致→保留原值（差異由對帳呈現）；日期非 ISO→`null`；無名稱列略過；品項上限 50（超出截斷並回 `truncated`）
+- **草稿落地**：每個品項一列 `source='receipt'`、`status='ready'`、共用 `receipt_id`、`image_id`＝第一頁；payload 新增 `receipt`（商家／日期／幣別／總額／品項合計／差額／頁數／截斷）與 `receipt_item`（index／quantity／unit_price／subtotal）快照；`DraftRead` 新增 `receipt_id`
+- **對帳**：`item_total`＝品項小計合計、`discrepancy = total - item_total`；`|差額| ≥ 0.01` → 群組標頭警示（**不阻擋接受**）；相符／未標示總額各有文案
+- **狀態機邊界**：`process` 對收據草稿一律 `409`（建立即抽取完成）；`accept` 對收據草稿**不綁**收據照片為物品圖片（照片草稿行為不變）；同圖去重限定 `source='batch_photo'`（收據照片不誤擋一般照片草稿）
+- **規則引擎批次化**：新增 `suggest_for_names`（單次掃描歷史、歷史 token 只算一次），供收據最多 50 品項使用；與逐次呼叫 `suggest_for_name` **結果完全相同**（含排序與分數），後者改為薄包裝
+- **Web**：上傳區 `Tabs` 切換照片／收據；收據模式多頁上傳→一次抽取（「辨識收據中…」）→失敗以代碼文案＋「重試」（保留已上傳頁面）；`truncated` info toast。佇列以 `groupDrafts` 分組（照片原位、收據同組、組內依行序），群組標頭 `ReceiptGroupHeader` 顯示商家 · 日期 · N 頁 · M 品項＋對帳三態（相符／差額／無總額）；收據卡片右上「小計 {金額}」，`quantity`／`cost` 預填收據值
+- **錯誤碼契約**（新端點以代碼字串回 `detail`）：`503 ai_disabled`／`429 quota_exhausted`／`502 upstream_error`／`422 no_items`／`404`（圖片不可見）／`403`（viewer）
+- i18n：`ai.receipts.*`（22 鍵：模式切換、上傳、錯誤碼、群組標頭、對帳、小計、截斷）（zh-TW／en 鍵集與行數一致 1428）；對帳測試追加 Phase 33 鍵清單＋「收據命名空間無未使用鍵」檢查（並據此移除 2 個冗餘鍵）
+- 新增 37 個 API 測試（984 → 1021）；新增 37 個 web 測試（649 → 686，121 → 125 檔）；e2e 23 → 24 spec（71 → 75 情境；新增「收據模式無 key 失敗且不產生草稿」「失敗後保留頁面可重試」「切回照片模式行為不變」「收據失敗後入口徽章仍為 0」）
+- **Migration 0025**（`receipt_id`＋索引；Postgres up／down／up 驗證）；api-types 重生成（**純新增**：`/api/ai/receipts`、`ReceiptSnapshot`／`ReceiptItemSnapshot`、`DraftRead.receipt_id`；既有契約零變動）
+- 文件：[`docs/ai.md`](docs/ai.md) 新增收據章節（端點、抽取欄位、金額補齊表、對帳語義、配額計次、錯誤碼表、e2e 無 key 限制）與疑難排解 7 列
+
 ## [2.0.0-alpha.32] — Phase 32：AI 批次入庫（草稿佇列＋智慧分類建議）
 
 - **DB**：新增 `ai_draft_items`（Alembic `0024`；`status` CHECK `pending/processing/ready/failed/accepted/discarded`、`payload` JSON 快照、`error_code`、`item_id` 回連建立的物品、索引 `(owner_id, status)`）與 `ai_usage`（`UNIQUE(user_id, day)`，per-user 每日 LLM 計次；`day` 為 Asia/Taipei 當地日期）

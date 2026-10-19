@@ -54,12 +54,13 @@
 | 30 | 成員權限細化 | ✅ | `group_members.role`（admin／editor／viewer，owner＝`groups.owner_id`）＋migration 0022；viewer 定義（全部 membership 為 viewer）→ `require_writer`＋`WriterGuardRoute` 套 14 routers（403 早於 body／資源查詢）；owner／admin 成員管理＋角色變更端點＋audit；Web 唯讀一律不渲染入口（一次性 banner／固定句／標籤列印與匯出保留）；群組角色管理 UI |
 | 31 | 定期報表（月報） | ✅ | `reports`（`UNIQUE(user_id, period)`、JSON 快照）＋migration 0023；`report.monthly` job 生成上一個完整月（Asia/Taipei；冪等、空月建列不通知、逐使用者隔離）；指標口徑（可見範圍、期間界、quantity_logs delta、借還與逾期、30 天到期、估值月初重建）；`GET /api/reports`／`{id}`（僅本人；他人 404）；`preferences.report_monthly_enabled`；站內 `report_ready`＋雙語 Email（fail-soft、純文字 fallback）；Web `/reports` 清單與詳情、`/settings/reports` 開關、桌面統計下拉＋行動二層群組導覽 |
 | 32 | AI 批次入庫＋智慧分類建議 | ✅ | `ai_draft_items`＋`ai_usage`（migration 0024）；伺服器端狀態機（非終態可重入、終態 409、錯誤碼化）＋逐張序列處理（不引入背景 worker）；`/api/ai/drafts` 建立／清單／process／accept／discard／批量 discard（writer guard、僅本人）；`suggest-classification` 純規則引擎（分詞／交集評分／決定性排序；僅本人資料、不耗配額）；`AI_DAILY_QUOTA` per-user 每日配額（既有 `suggest-from-image` 額度耗盡轉 429）；Web `/items/drafts` 佇列（上傳區＋四態卡＋批量條＋四態頁面契約）、`AiMark` 記號、`/items/new` 入口卡與待審核徽章（不入首層導覽）；`AuthImage`（既有全站 `<img>` 無 Bearer 破圖之修正）；`docs/ai.md` |
+| 33 | AI 收據辨識 | ✅ | `ai_draft_items.receipt_id` 群組鍵＋索引（migration 0025）；`POST /api/ai/receipts` 多頁一次抽取（單一請求、一次配額、失敗不落地）；金額補齊規則（缺單價／缺小計／皆缺／不一致）；每品項一列 `ready` 草稿＋`receipt`／`receipt_item` 快照；對帳（品項合計 vs 收據總額，差額警示不阻擋）；`process` 對收據 409、`accept` 不綁收據照片；同圖去重限定 `batch_photo`；`suggest_for_names` 批次化（與逐次呼叫等價）；Web 上傳區照片／收據 Tabs、佇列分組與群組標頭、卡片小計與數量／成本預填；`docs/ai.md` 收據章節 |
 
 ## 測試規模
 
-- API 測試：984 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：649 passed（121 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：23 spec／71 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
+- API 測試：1021 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
+- Web 測試：686 passed（125 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：24 spec／75 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）
