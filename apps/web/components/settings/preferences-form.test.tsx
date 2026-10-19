@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { NextIntlClientProvider } from "next-intl"
 import { beforeAll, describe, expect, it, vi } from "vitest"
 
 import enMessages from "@/messages/en.json"
+import { toast } from "sonner"
 
 import { PreferencesForm } from "./preferences-form"
 
@@ -75,5 +76,37 @@ describe("PreferencesForm", () => {
     )
 
     expect(mocks.mutateAsync).toHaveBeenCalledWith({ currency: "JPY" })
+  })
+})
+
+describe("PreferencesForm — AI 資料分享（Phase 34）", () => {
+  it("renders the AI data sharing toggle, off by default", () => {
+    renderForm()
+
+    expect(screen.getByText(t.aiSharing)).toBeInTheDocument()
+    expect(screen.getByText(t.aiSharingHint)).toBeInTheDocument()
+    expect(screen.getByRole("switch")).not.toBeChecked()
+  })
+
+  it("enables AI data sharing and confirms with a toast", async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await user.click(screen.getByRole("switch"))
+
+    expect(mocks.mutateAsync).toHaveBeenCalledWith({ ai_data_sharing_enabled: true })
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith(t.aiSharingOn))
+  })
+
+  it("reports a failure when the update fails", async () => {
+    const user = userEvent.setup()
+    mocks.mutateAsync.mockRejectedValueOnce(new Error("boom"))
+    renderForm()
+
+    await user.click(screen.getByRole("switch"))
+
+    await waitFor(() =>
+      expect(screen.getByRole("switch")).not.toBeChecked(),
+    )
   })
 })

@@ -1123,6 +1123,11 @@
       "language": "Language",
       "currency": "Currency",
       "currencyHint": "Currency used for item costs and inventory value; no FX conversion",
+      "aiSharing": "AI data sharing",
+      "aiSharingHint": "Allows AI search and Q&A to send item summaries (name, category, location, quantity, expiry) to Google Gemini. Photos, costs, and notes are never sent.",
+      "aiSharingOn": "AI data sharing enabled",
+      "aiSharingOff": "AI data sharing disabled",
+      "saveFailed": "Could not save preferences",
       "saved": "Preferences saved"
     },
     "admin": {
