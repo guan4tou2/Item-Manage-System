@@ -1,17 +1,20 @@
-"""AI 入庫草稿（Phase 32）：建立／清單／狀態機／接受／丟棄。
+"""AI 入庫草稿（Phase 32／33）：建立／清單／狀態機／接受／丟棄／收據。
 
 狀態機（伺服器端唯一來源）：
     pending → processing → ready | failed（終態 accepted | discarded）
-- `process`：非終態皆可進入（`processing` 可重入＝卡住復原）；終態 409
+- `process`：非終態皆可進入（`processing` 可重入＝卡住復原）；終態 409；
+  `source='receipt'` 於建立時即抽取完成 → process 一律 409
 - `accept`：`ready` 或 `failed`（手動完成）可接受；`pending`／`processing` 409
-- payload（version=1）：`ai`（Gemini 建議）＋ `history`（本人歷史規則建議）
+- payload（version=1）：`ai`（Gemini 建議）＋ `history`（本人歷史規則建議）；
+  收據草稿另有 `receipt`／`receipt_item` 快照
 """
 from __future__ import annotations
 
 import logging
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 from sqlalchemy import func, select
@@ -75,6 +78,7 @@ async def create_drafts(
                 select(AiDraftItem.id).where(
                     AiDraftItem.owner_id == owner_id,
                     AiDraftItem.image_id == image_id,
+                    AiDraftItem.source == "batch_photo",
                     AiDraftItem.status.in_(DEDUPE_STATUSES),
                 )
             )
@@ -94,6 +98,118 @@ async def create_drafts(
     for draft in created:
         await session.refresh(draft)
     return created, skipped
+
+
+async def create_receipt_drafts(
+    session: AsyncSession,
+    owner_id: UUID,
+    image_ids: list[UUID],
+) -> tuple[UUID, list[AiDraftItem], bool]:
+    """收據抽取 → 每品項一列 `ready` 草稿（Phase 33）。
+
+    回傳 `(receipt_id, created, truncated)`；失敗一律 HTTP 錯誤且**不落地任何列**：
+    - 圖片不可見 → 404
+    - 未設 key → 503 `ai_disabled`
+    - 配額耗盡 → 429 `quota_exhausted`（於呼叫前扣次）
+    - 上游錯誤／非 JSON → 502 `upstream_error`
+    - 抽取不到品項 → 422 `no_items`
+    """
+    settings = get_settings()
+    images = []
+    for image_id in image_ids:
+        image = await get_visible_image(session, owner_id, image_id)
+        if image is None:
+            raise HTTPException(status_code=404, detail="image not found")
+        images.append(image)
+
+    if not settings.gemini_api_key:
+        raise HTTPException(status_code=503, detail="ai_disabled")
+
+    if not await ai_quota.consume(session, owner_id):
+        raise HTTPException(status_code=429, detail="quota_exhausted")
+
+    pages: list[tuple[Path, str]] = []
+    for image in images:
+        path = Path(image.storage_path)
+        if not path.exists():
+            raise HTTPException(status_code=404, detail="image not found")
+        pages.append((path, image.mime_type))
+
+    try:
+        extraction = await ai_service.call_gemini_receipt(pages)
+    except ai_service.AiUpstreamError as exc:
+        logger.warning("receipt extraction failed: %s", exc)
+        if "no usable items" in str(exc) or "no items" in str(exc):
+            raise HTTPException(status_code=422, detail="no_items") from exc
+        raise HTTPException(status_code=502, detail="upstream_error") from exc
+
+    truncated = len(extraction.items) >= ai_service.MAX_RECEIPT_ITEMS
+    suggestions = await classification_service.suggest_for_names(
+        session, owner_id, [item.name for item in extraction.items]
+    )
+
+    item_total = sum(
+        (item.subtotal for item in extraction.items if item.subtotal is not None),
+        Decimal("0"),
+    )
+    item_total = item_total.quantize(Decimal("0.01")) if extraction.items else None
+    discrepancy = (
+        (extraction.total - item_total).quantize(Decimal("0.01"))
+        if extraction.total is not None and item_total is not None
+        else None
+    )
+    receipt_id = uuid4()
+    receipt_snapshot = {
+        "merchant": extraction.merchant,
+        "purchased_at": extraction.purchased_at,
+        "currency": extraction.currency,
+        "total": _decimal_str(extraction.total),
+        "item_total": _decimal_str(item_total),
+        "discrepancy": _decimal_str(discrepancy),
+        "page_count": len(pages),
+        "truncated": truncated,
+    }
+
+    created: list[AiDraftItem] = []
+    for index, item in enumerate(extraction.items):
+        draft = AiDraftItem(
+            owner_id=owner_id,
+            source="receipt",
+            receipt_id=receipt_id,
+            image_id=images[0].id,
+            status="ready",
+            payload={
+                "version": PAYLOAD_VERSION,
+                "ai": {
+                    "name": item.name,
+                    "description": None,
+                    "category_suggestion": None,
+                    "tag_suggestions": [],
+                },
+                "history": classification_service.to_payload(suggestions[index]),
+                "receipt": receipt_snapshot,
+                "receipt_item": {
+                    "index": index,
+                    "quantity": item.quantity,
+                    "unit_price": _decimal_str(item.unit_price),
+                    "subtotal": _decimal_str(item.subtotal),
+                },
+            },
+        )
+        session.add(draft)
+        created.append(draft)
+
+    await session.commit()
+    for draft in created:
+        await session.refresh(draft)
+    return receipt_id, created, truncated
+
+
+def _decimal_str(value: Optional[Decimal]) -> Optional[str]:
+    """Decimal → payload 用的 2 位字串（None 保留 None）。"""
+    if value is None:
+        return None
+    return str(value.quantize(Decimal("0.01")))
 
 
 async def list_drafts(

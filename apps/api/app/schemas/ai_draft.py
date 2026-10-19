@@ -7,7 +7,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.ai import AiSuggestResponse, HistorySuggestions
+from app.schemas.ai import (
+    AiSuggestResponse,
+    HistorySuggestions,
+    ReceiptItemSnapshot,
+    ReceiptSnapshot,
+)
 from app.schemas.item import ItemRead
 
 DraftStatus = Literal[
@@ -20,11 +25,16 @@ DraftErrorCode = Literal[
 
 
 class DraftPayload(BaseModel):
-    """草稿建議快照（version=1）。全欄位必填。"""
+    """草稿建議快照（version=1）。全欄位必填。
+
+    `receipt`／`receipt_item` 為 Phase 33 收據草稿專用（一般照片草稿為 `null`）。
+    """
 
     version: int
     ai: Optional[AiSuggestResponse]
     history: HistorySuggestions
+    receipt: Optional[ReceiptSnapshot] = None
+    receipt_item: Optional[ReceiptItemSnapshot] = None
 
 
 class DraftCreate(BaseModel):
@@ -43,6 +53,7 @@ class DraftRead(BaseModel):
     payload: DraftPayload
     processed_at: Optional[datetime]
     created_at: datetime
+    receipt_id: Optional[UUID] = None
 
 
 class DraftCreateResponse(BaseModel):

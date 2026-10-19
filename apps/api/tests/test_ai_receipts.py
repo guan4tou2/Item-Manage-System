@@ -276,3 +276,266 @@ def test_call_gemini_receipt_upstream_error(monkeypatch, tmp_path):
 
     with pytest.raises(ai_service.AiUpstreamError):
         asyncio.run(ai_service.call_gemini_receipt([(path, "image/png")]))
+
+
+# --- 端點：POST /api/ai/receipts --------------------------------------------
+
+
+async def _upload(client, headers: dict, name: str = "receipt.png") -> str:
+    files = {"file": (name, _tiny_png(), "image/png")}
+    r = await client.post("/api/images", headers=headers, files=files)
+    assert r.status_code == 201
+    return r.json()["id"]
+
+
+async def _login(client, username: str) -> dict:
+    await client.post(
+        "/api/auth/register",
+        json={"email": f"{username}@t.io", "username": username, "password": "secret1234"},
+    )
+    r = await client.post(
+        "/api/auth/login", json={"username": username, "password": "secret1234"}
+    )
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+async def _enable_ai(monkeypatch, payload: dict):
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    return _gemini(monkeypatch, payload)
+
+
+async def test_create_receipt_creates_ready_item_drafts(client, auth, monkeypatch):
+    await _enable_ai(monkeypatch, _receipt_payload())
+    page1 = await _upload(client, auth, "page1.png")
+    page2 = await _upload(client, auth, "page2.png")
+
+    r = await client.post(
+        "/api/ai/receipts", headers=auth, json={"image_ids": [page1, page2]}
+    )
+
+    assert r.status_code == 201
+    body = r.json()
+    assert body["truncated"] is False
+    receipt_id = body["receipt_id"]
+    assert len(body["created"]) == 2
+
+    first, second = body["created"]
+    # 同組、皆 ready、皆為收據來源、共用群組鍵
+    assert {first["receipt_id"], second["receipt_id"]} == {receipt_id}
+    assert [d["source"] for d in body["created"]] == ["receipt", "receipt"]
+    assert [d["status"] for d in body["created"]] == ["ready", "ready"]
+    # 卡片縮圖用第一頁
+    assert first["image_id"] == page1
+    assert first["processed_at"] is None
+
+    # 依收據行序回傳
+    assert [d["payload"]["receipt_item"]["index"] for d in body["created"]] == [0, 1]
+    assert first["payload"]["ai"]["name"] == "鮮乳"
+    assert first["payload"]["receipt_item"]["quantity"] == 2
+    assert first["payload"]["receipt_item"]["unit_price"] == "62.00"
+    assert first["payload"]["receipt"]["merchant"] == "全聯福利中心"
+    assert first["payload"]["receipt"]["page_count"] == 2
+    assert first["payload"]["receipt"]["item_total"] == "323.00"
+    assert first["payload"]["receipt"]["discrepancy"] == "927.00"
+    assert first["payload"]["history"] == {
+        "category": None,
+        "location": None,
+        "tags": [],
+    }
+
+
+async def test_create_receipt_uses_history_rules(client, auth, monkeypatch):
+    """分類建議沿用 Phase 32 歷史規則（批次化）。"""
+    await _enable_ai(monkeypatch, _receipt_payload())
+    category = (
+        await client.post(
+            "/api/categories", headers=auth, json={"name": "食品"}
+        )
+    ).json()
+    await client.post(
+        "/api/items",
+        headers=auth,
+        json={"name": "鮮乳", "quantity": 1, "category_id": category["id"]},
+    )
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    assert r.status_code == 201
+    first = r.json()["created"][0]
+    assert first["payload"]["history"]["category"]["id"] == category["id"]
+    assert first["payload"]["history"]["category"]["name"] == "食品"
+
+
+async def test_create_receipt_requires_api_key(client, auth):
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    assert r.status_code == 503
+    assert r.json()["detail"] == "ai_disabled"
+
+
+async def test_create_receipt_quota_exhausted_creates_nothing(
+    client, auth, monkeypatch, db_session
+):
+    from sqlalchemy import select
+
+    from app.models.ai_draft import AiDraftItem
+
+    await _enable_ai(monkeypatch, _receipt_payload())
+    monkeypatch.setenv("AI_DAILY_QUOTA", "0")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    # 0 表示無限制，改用 1 次配額：先耗盡
+    monkeypatch.setenv("AI_DAILY_QUOTA", "1")
+    get_settings.cache_clear()
+    page = await _upload(client, auth)
+    first = await client.post(
+        "/api/ai/receipts", headers=auth, json={"image_ids": [page]}
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        "/api/ai/receipts", headers=auth, json={"image_ids": [page]}
+    )
+    assert second.status_code == 429
+    assert second.json()["detail"] == "quota_exhausted"
+
+    rows = (await db_session.execute(select(AiDraftItem))).scalars().all()
+    # 只有第一次成功的 2 筆
+    assert len(rows) == 2
+
+
+async def test_create_receipt_counts_once_per_receipt(client, auth, monkeypatch):
+    """多頁只扣 1 次配額。"""
+    await _enable_ai(monkeypatch, _receipt_payload())
+    monkeypatch.setenv("AI_DAILY_QUOTA", "1")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    page1 = await _upload(client, auth, "a.png")
+    page2 = await _upload(client, auth, "b.png")
+
+    r = await client.post(
+        "/api/ai/receipts", headers=auth, json={"image_ids": [page1, page2]}
+    )
+
+    assert r.status_code == 201
+
+
+async def test_create_receipt_upstream_error(client, auth, monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "fake-key")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    fake_client = MagicMock()
+    fake_client.models.generate_content.side_effect = RuntimeError("boom")
+    monkeypatch.setattr("google.genai.Client", lambda api_key: fake_client)
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    assert r.status_code == 502
+    assert r.json()["detail"] == "upstream_error"
+
+
+async def test_create_receipt_no_items(client, auth, monkeypatch):
+    await _enable_ai(monkeypatch, _receipt_payload(items=[]))
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    assert r.status_code == 422
+    assert r.json()["detail"] == "no_items"
+
+
+async def test_create_receipt_image_not_found(client, auth, monkeypatch):
+    await _enable_ai(monkeypatch, _receipt_payload())
+
+    r = await client.post(
+        "/api/ai/receipts",
+        headers=auth,
+        json={"image_ids": ["00000000-0000-0000-0000-000000000000"]},
+    )
+
+    assert r.status_code == 404
+
+
+async def test_create_receipt_rejects_too_many_pages(client, auth, monkeypatch):
+    await _enable_ai(monkeypatch, _receipt_payload())
+
+    r = await client.post(
+        "/api/ai/receipts",
+        headers=auth,
+        json={"image_ids": ["00000000-0000-0000-0000-000000000000"] * 11},
+    )
+
+    assert r.status_code == 422
+
+
+async def test_create_receipt_truncates_items(client, auth, monkeypatch):
+    items = [
+        {"name": f"品項{i}", "quantity": 1, "unit_price": "1.00", "subtotal": "1.00"}
+        for i in range(55)
+    ]
+    await _enable_ai(monkeypatch, _receipt_payload(items=items))
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    assert r.status_code == 201
+    body = r.json()
+    assert body["truncated"] is True
+    assert len(body["created"]) == 50
+
+
+async def test_create_receipt_other_users_image_is_404(client, monkeypatch):
+    await _enable_ai(monkeypatch, _receipt_payload())
+    owner = await _login(client, "rc_owner")
+    other = await _login(client, "rc_other")
+    page = await _upload(client, owner)
+
+    r = await client.post("/api/ai/receipts", headers=other, json={"image_ids": [page]})
+
+    assert r.status_code == 404
+
+
+async def test_create_receipt_viewer_forbidden(client, monkeypatch):
+    await _enable_ai(monkeypatch, _receipt_payload())
+    owner = await _login(client, "rc_v_owner")
+    viewer = await _login(client, "rc_viewer")
+    gid = (
+        await client.post("/api/groups", headers=owner, json={"name": "g-rc"})
+    ).json()["id"]
+    assert (
+        await client.post(
+            f"/api/groups/{gid}/members",
+            headers=owner,
+            json={"username": "rc_viewer", "role": "viewer"},
+        )
+    ).status_code == 201
+    page = await _upload(client, owner)
+
+    r = await client.post("/api/ai/receipts", headers=viewer, json={"image_ids": [page]})
+
+    assert r.status_code == 403
+
+
+async def test_create_receipt_does_not_block_photo_drafts(client, auth, monkeypatch):
+    """收據照片不誤擋一般照片草稿（去重限定 batch_photo）。"""
+    await _enable_ai(monkeypatch, _receipt_payload())
+    page = await _upload(client, auth)
+
+    receipt = await client.post(
+        "/api/ai/receipts", headers=auth, json={"image_ids": [page]}
+    )
+    assert receipt.status_code == 201
+
+    photo = await client.post("/api/ai/drafts", headers=auth, json={"image_ids": [page]})
+    assert photo.status_code == 201
+    assert len(photo.json()["created"]) == 1

@@ -49,6 +49,7 @@ def to_read(row: AiDraftItem) -> DraftRead:
         payload=DraftPayload.model_validate(row.payload),
         processed_at=row.processed_at,
         created_at=row.created_at,
+        receipt_id=row.receipt_id,
     )
 
 

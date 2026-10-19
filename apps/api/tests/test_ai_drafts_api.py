@@ -94,6 +94,8 @@ async def test_create_drafts_creates_pending_rows(client):
             "version": 1,
             "ai": None,
             "history": {"category": None, "location": None, "tags": []},
+            "receipt": None,
+            "receipt_item": None,
         }
 
 
