@@ -1396,6 +1396,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/suggest-classification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Suggest Classification
+         * @description 以本人歷史資料建議分類／位置／標籤（純規則式；不呼叫 LLM、不消耗配額）。
+         *
+         *     LLM 不可用時的替代動線：使用者在草稿卡輸入名稱後即可套用歷史建議。
+         */
+        post: operations["suggest_classification_api_ai_suggest_classification_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Drafts */
+        get: operations["list_drafts_api_ai_drafts_get"];
+        put?: never;
+        /** Create Drafts */
+        post: operations["create_drafts_api_ai_drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/drafts/{draft_id}/process": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Process Draft */
+        post: operations["process_draft_api_ai_drafts__draft_id__process_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/drafts/{draft_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Draft */
+        post: operations["accept_draft_api_ai_drafts__draft_id__accept_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/drafts/{draft_id}/discard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Discard Draft */
+        post: operations["discard_draft_api_ai_drafts__draft_id__discard_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/drafts/discard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Discard Many */
+        post: operations["discard_many_api_ai_drafts_discard_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/item-types": {
         parameters: {
             query?: never;
@@ -2474,6 +2582,20 @@ export interface components {
              */
             file: string;
         };
+        /**
+         * BucketSuggestion
+         * @description 歷史規則建議（分類／位置）。全欄位必填。
+         */
+        BucketSuggestion: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Item Count */
+            item_count: number;
+            /** Score */
+            score: number;
+        };
         /** BulkImportRowError */
         BulkImportRowError: {
             /** Row */
@@ -2564,6 +2686,11 @@ export interface components {
             /** User Web Push Count */
             user_web_push_count: number;
         };
+        /** ClassificationSuggestRequest */
+        ClassificationSuggestRequest: {
+            /** Name */
+            name: string;
+        };
         /** CustomFieldCreate */
         CustomFieldCreate: {
             /** Name */
@@ -2582,6 +2709,130 @@ export interface components {
             name: string;
             /** Field Type */
             field_type: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** DraftAccept */
+        DraftAccept: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            /** Category Id */
+            category_id?: number | null;
+            /** Location Id */
+            location_id?: number | null;
+            /**
+             * Quantity
+             * @default 1
+             */
+            quantity: number;
+            /** Cost */
+            cost?: number | string | null;
+            /** Tag Names */
+            tag_names?: string[];
+        };
+        /** DraftAcceptResponse */
+        DraftAcceptResponse: {
+            draft: components["schemas"]["DraftRead"];
+            item: components["schemas"]["ItemRead"];
+        };
+        /** DraftCounts */
+        DraftCounts: {
+            /** Pending */
+            pending: number;
+            /** Processing */
+            processing: number;
+            /** Ready */
+            ready: number;
+            /** Failed */
+            failed: number;
+            /** Accepted */
+            accepted: number;
+            /** Discarded */
+            discarded: number;
+        };
+        /** DraftCreate */
+        DraftCreate: {
+            /** Image Ids */
+            image_ids: string[];
+        };
+        /** DraftCreateResponse */
+        DraftCreateResponse: {
+            /** Created */
+            created: components["schemas"]["DraftRead"][];
+            /** Skipped Image Ids */
+            skipped_image_ids: string[];
+        };
+        /** DraftDiscardRequest */
+        DraftDiscardRequest: {
+            /** Ids */
+            ids: string[];
+        };
+        /** DraftDiscardResponse */
+        DraftDiscardResponse: {
+            /** Discarded */
+            discarded: number;
+            /** Skipped */
+            skipped: components["schemas"]["DraftDiscardSkipped"][];
+        };
+        /** DraftDiscardSkipped */
+        DraftDiscardSkipped: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Reason */
+            reason: string;
+        };
+        /** DraftListResponse */
+        DraftListResponse: {
+            /** Items */
+            items: components["schemas"]["DraftRead"][];
+            /** Total */
+            total: number;
+            counts: components["schemas"]["DraftCounts"];
+        };
+        /**
+         * DraftPayload
+         * @description 草稿建議快照（version=1）。全欄位必填。
+         */
+        DraftPayload: {
+            /** Version */
+            version: number;
+            ai: components["schemas"]["AiSuggestResponse"] | null;
+            history: components["schemas"]["HistorySuggestions"];
+        };
+        /** DraftRead */
+        DraftRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "batch_photo" | "receipt";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "processing" | "ready" | "failed" | "accepted" | "discarded";
+            /** Image Id */
+            image_id: string | null;
+            /** Item Id */
+            item_id: string | null;
+            /** Error Code */
+            error_code: ("ai_disabled" | "quota_exhausted" | "upstream_error" | "image_missing") | null;
+            payload: components["schemas"]["DraftPayload"];
+            /** Processed At */
+            processed_at: string | null;
             /**
              * Created At
              * Format: date-time
@@ -2747,6 +2998,16 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * HistorySuggestions
+         * @description 歷史規則建議（草稿 payload.history 與 suggest-classification 共用形狀）。
+         */
+        HistorySuggestions: {
+            category: components["schemas"]["BucketSuggestion"] | null;
+            location: components["schemas"]["BucketSuggestion"] | null;
+            /** Tags */
+            tags: components["schemas"]["TagSuggestion"][];
         };
         /** ImageRead */
         ImageRead: {
@@ -3970,6 +4231,15 @@ export interface components {
         TagRename: {
             /** Name */
             name: string;
+        };
+        /** TagSuggestion */
+        TagSuggestion: {
+            /** Name */
+            name: string;
+            /** Item Count */
+            item_count: number;
+            /** Score */
+            score: number;
         };
         /** TelegramLinkSet */
         TelegramLinkSet: {
@@ -7437,6 +7707,235 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiSuggestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suggest_classification_api_ai_suggest_classification_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClassificationSuggestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistorySuggestions"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_drafts_api_ai_drafts_get: {
+        parameters: {
+            query?: {
+                status?: ("pending" | "processing" | "ready" | "failed" | "accepted" | "discarded") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_drafts_api_ai_drafts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    process_draft_api_ai_drafts__draft_id__process_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_draft_api_ai_drafts__draft_id__accept_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftAccept"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftAcceptResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_draft_api_ai_drafts__draft_id__discard_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_many_api_ai_drafts_discard_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DraftDiscardRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftDiscardResponse"];
                 };
             };
             /** @description Validation Error */
