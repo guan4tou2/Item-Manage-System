@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any, Optional
 from uuid import UUID
 
@@ -26,9 +27,18 @@ from app.repositories import (
 from app.schemas.ai_search import (
     AppliedBucket,
     AppliedFilters,
+    AskResponse,
+    Citation,
     SearchResponse,
 )
-from app.services import ai_quota, ai_service, ai_search_filters, items_service, preferences_service
+from app.services import (
+    ai_quota,
+    ai_service,
+    ai_search_filters,
+    classification_service,
+    items_service,
+    preferences_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +138,90 @@ async def _fallback(
     )
 
 
+#: 問答上下文上限
+ASK_CONTEXT_LIMIT = 20
+#: 資料不足時的固定回答（伺服器提供，避免空字串）
+INSUFFICIENT_ANSWER = "目前資料中找不到足夠資訊回答這個問題。"
+
+
+async def _ask_context(
+    session: AsyncSession,
+    owner_id: UUID,
+    question: str,
+    item_ids: list[UUID],
+) -> list[dict[str, Any]]:
+    """組裝問答上下文（僅本人可見物品）；無 `item_ids` 時以問題做關鍵字搜尋。"""
+    if item_ids:
+        items = []
+        for item_id in item_ids[:ASK_CONTEXT_LIMIT]:
+            try:
+                items.append(await items_service.get_item(session, owner_id, item_id))
+            except HTTPException:
+                # 不存在或非本人可見 → 丟棄（不洩漏存在性）
+                continue
+    else:
+        # 無指定物品：以問題的關鍵詞（分詞取最長者，最多 3 個）逐一搜尋並去重；
+        # 整句 ILIKE 幾乎不會命中，故不以整句查詢。
+        tokens = sorted(
+            classification_service.tokenize(question), key=len, reverse=True
+        )[:3]
+        if not tokens:
+            tokens = [question]
+        seen: set[str] = set()
+        items = []
+        for token in tokens:
+            result = await _run_search(session, owner_id, {"q": token})
+            for item in result.items:
+                if str(item.id) in seen:
+                    continue
+                seen.add(str(item.id))
+                items.append(item)
+            if len(items) >= ASK_CONTEXT_LIMIT:
+                break
+        items = items[:ASK_CONTEXT_LIMIT]
+
+    context: list[dict[str, Any]] = []
+    for item in items:
+        context.append(
+            {
+                "item_id": str(item.id),
+                "name": item.name,
+                "category": item.category.name if item.category else None,
+                "location": item.location.path if item.location else None,
+                "quantity": item.quantity,
+                "soonest_expiry": (
+                    item.soonest_expiry.isoformat() if item.soonest_expiry else None
+                ),
+                "tags": [tag.name for tag in item.tags],
+            }
+        )
+    return context
+
+
+def _citations_from_answer(
+    answer: str, context: list[dict[str, Any]]
+) -> list[Citation]:
+    """`[#n]` → citations（1 起算；越界丟棄、去重保序）。"""
+    citations: list[Citation] = []
+    seen: set[str] = set()
+    for match in re.finditer(r"\[#(\d+)\]", answer):
+        index = int(match.group(1)) - 1
+        if index < 0 or index >= len(context):
+            continue
+        entry = context[index]
+        if entry["item_id"] in seen:
+            continue
+        seen.add(entry["item_id"])
+        citations.append(
+            Citation(
+                item_id=UUID(entry["item_id"]),
+                name=entry["name"],
+                path=entry["location"],
+            )
+        )
+    return citations
+
+
 async def search(session: AsyncSession, owner_id: UUID, query: str) -> SearchResponse:
     prefs = await preferences_service.get_preferences(session, user_id=owner_id)
     if not prefs.ai_data_sharing_enabled:
@@ -167,6 +261,41 @@ async def search(session: AsyncSession, owner_id: UUID, query: str) -> SearchRes
     )
 
 
-async def ask(session: AsyncSession, owner_id: UUID, question: str, item_ids: list[UUID]):
-    """物品問答（T1.5 實作）。"""
-    raise HTTPException(status_code=501, detail="not implemented")
+async def ask(
+    session: AsyncSession, owner_id: UUID, question: str, item_ids: list[UUID]
+) -> AskResponse:
+    """以本人可見物品摘要做 grounding 問答（Phase 34）。
+
+    - 上下文：`item_ids`（≤20，僅可見者）或 `q=question` 前 20 筆
+    - 上下文為空 → `grounded=false`（不呼叫 LLM、不扣配額）
+    - 未 opt-in → 403；無 key → 503；配額 → 429；上游 → 502
+    - 回答中的 `[#n]` 只映射到上下文內物品（越界丟棄、去重保序）
+    """
+    prefs = await preferences_service.get_preferences(session, user_id=owner_id)
+    if not prefs.ai_data_sharing_enabled:
+        raise HTTPException(status_code=403, detail="ai_opt_in_required")
+
+    settings = get_settings()
+    if not settings.gemini_api_key:
+        raise HTTPException(status_code=503, detail="ai_disabled")
+
+    context = await _ask_context(session, owner_id, question, item_ids)
+    if not context:
+        return AskResponse(
+            answer=INSUFFICIENT_ANSWER, citations=[], grounded=False
+        )
+
+    if not await ai_quota.consume(session, owner_id):
+        raise HTTPException(status_code=429, detail="quota_exhausted")
+
+    try:
+        answer, grounded = await ai_service.call_gemini_ask(question, context)
+    except ai_service.AiUpstreamError as exc:
+        logger.warning("ai ask failed: %s", exc)
+        raise HTTPException(status_code=502, detail="upstream_error") from exc
+
+    if not grounded or not answer:
+        return AskResponse(answer=INSUFFICIENT_ANSWER, citations=[], grounded=False)
+
+    citations = _citations_from_answer(answer, context)
+    return AskResponse(answer=answer, citations=citations, grounded=True)
