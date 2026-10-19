@@ -357,6 +357,9 @@
       "tooltip": "AI-generated, editable"
     },
     "drafts": {
+      "title": "AI batch intake",
+      "subtitle": "Upload photos and each one is recognized in turn with suggested category, location, and tags. Review, edit, then add it to your inventory.",
+      "backToNew": "Add manually instead",
       "status": {
         "pending": "Queued",
         "processing": "Recognizing…",
@@ -385,10 +388,62 @@
         "accepting": "Accepting…",
         "discard": "Discard",
         "discarding": "Discarding…"
+      },
+      "upload": {
+        "title": "Upload photos",
+        "hint": "Drop photos here or choose them — up to 10 at a time",
+        "choose": "Choose photos",
+        "aria": "Choose photos to intake",
+        "uploading": "Uploading…",
+        "uploaded": "Uploaded",
+        "uploadFailed": "Upload failed",
+        "retry": "Retry",
+        "tooMany": "Up to 10 photos at a time — {count} ignored",
+        "create": "Start recognition",
+        "creating": "Creating drafts…",
+        "createFailed": "Could not create drafts, please retry",
+        "skipped": "{count} photo(s) already had a draft and were skipped"
+      },
+      "queue": {
+        "loadFailed": "Could not load drafts",
+        "retry": "Retry",
+        "paused": "Processing stopped (connection problem); drafts that finished are unaffected",
+        "resume": "Continue"
+      },
+      "empty": {
+        "title": "No drafts yet",
+        "hint": "Upload photos above to start"
+      },
+      "bulk": {
+        "selectAll": "Select all",
+        "clear": "Clear",
+        "selected": "{count} selected",
+        "acceptAll": "Accept all",
+        "accepting": "Accepting {done}/{total}",
+        "discardAll": "Discard all",
+        "discarding": "Discarding…"
+      },
+      "toast": {
+        "accepted": "Accepted “{name}”",
+        "acceptFailed": "Could not accept the draft",
+        "discarded": "Draft discarded",
+        "discardFailed": "Could not discard the draft",
+        "bulkAccepted": "Accepted {count} drafts",
+        "bulkDiscarded": "Discarded {count} drafts",
+        "bulkSkipped": "Skipped {count} (not ready to review)"
       }
     }
   },
   "items": {
+    "new": {
+      "batchEntry": {
+        "title": "AI batch intake",
+        "description": "Upload several photos; each one is recognized in turn with category, location, and tag suggestions.",
+        "cta": "Open draft queue",
+        "badge": "{count} awaiting review",
+        "badgeLoading": "Checking…"
+      }
+    },
     "list": {
       "searchPlaceholder": "Search items by name or description…",
       "new": "New item",

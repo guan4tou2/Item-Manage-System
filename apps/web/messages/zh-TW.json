@@ -357,6 +357,9 @@
       "tooltip": "由 AI 產生，可編輯"
     },
     "drafts": {
+      "title": "AI 批次入庫",
+      "subtitle": "上傳照片後逐張辨識並建議分類、位置與標籤；確認或修改後即可入庫。",
+      "backToNew": "改為手動新增",
       "status": {
         "pending": "排隊中",
         "processing": "辨識中…",
@@ -385,10 +388,62 @@
         "accepting": "接受中…",
         "discard": "丟棄",
         "discarding": "丟棄中…"
+      },
+      "upload": {
+        "title": "上傳照片",
+        "hint": "拖放照片到此處或選擇檔案；一次最多 10 張",
+        "choose": "選擇照片",
+        "aria": "選擇要入庫的照片",
+        "uploading": "上傳中…",
+        "uploaded": "已上傳",
+        "uploadFailed": "上傳失敗",
+        "retry": "重試",
+        "tooMany": "一次最多 10 張，已忽略 {count} 張",
+        "create": "開始辨識",
+        "creating": "建立草稿中…",
+        "createFailed": "無法建立草稿，請重試",
+        "skipped": "已有草稿的照片已略過 {count} 張"
+      },
+      "queue": {
+        "loadFailed": "無法載入草稿",
+        "retry": "重試",
+        "paused": "處理中斷（連線問題）；已完成的草稿不受影響",
+        "resume": "繼續處理"
+      },
+      "empty": {
+        "title": "尚無草稿",
+        "hint": "從上方上傳照片開始辨識"
+      },
+      "bulk": {
+        "selectAll": "全選",
+        "clear": "取消選取",
+        "selected": "已選 {count} 筆",
+        "acceptAll": "全部接受",
+        "accepting": "接受中 {done}/{total}",
+        "discardAll": "全部丟棄",
+        "discarding": "丟棄中…"
+      },
+      "toast": {
+        "accepted": "已接受「{name}」",
+        "acceptFailed": "接受失敗",
+        "discarded": "已丟棄草稿",
+        "discardFailed": "丟棄失敗",
+        "bulkAccepted": "已接受 {count} 筆草稿",
+        "bulkDiscarded": "已丟棄 {count} 筆草稿",
+        "bulkSkipped": "已跳過 {count} 筆（非辨識完成）"
       }
     }
   },
   "items": {
+    "new": {
+      "batchEntry": {
+        "title": "AI 批次入庫",
+        "description": "一次上傳多張照片，系統逐張辨識並建議分類、位置與標籤。",
+        "cta": "開啟草稿佇列",
+        "badge": "{count} 筆待審核",
+        "badgeLoading": "確認中…"
+      }
+    },
     "list": {
       "searchPlaceholder": "搜尋物品名稱或描述…",
       "new": "新增物品",

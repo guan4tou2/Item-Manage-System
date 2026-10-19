@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { AiMark } from "@/components/ai/ai-mark"
-import { CategorySelect, findCategoryByName } from "@/components/categories/category-select"
+import { CategorySelect } from "@/components/categories/category-select"
 import { LocationSelect } from "@/components/locations/location-select"
 import { TagMultiSelect } from "@/components/items/tag-multi-select"
 import { Badge } from "@/components/ui/badge"
@@ -16,65 +16,27 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import type { DraftAcceptRequest, DraftRead } from "@/lib/api/ai-drafts"
+import type { DraftAcceptRequest, DraftRead, DraftStatus } from "@/lib/api/ai-drafts"
 import { getApiErrorDetail } from "@/lib/api/client"
 import type { CategoryTreeNode } from "@/lib/api/categories"
 import { imageUrl } from "@/lib/api/images"
 import type { LocationRead } from "@/lib/api/locations"
+import {
+  acceptBodyFrom,
+  seedDraftHistory,
+  seedDraftValues,
+  type DraftValues,
+  type HistorySource,
+} from "@/lib/ai/draft-values"
 import { useSuggestClassification } from "@/lib/hooks/use-ai-drafts"
-
-interface HistorySource {
-  category: { id: number; name: string } | null
-  location: { id: number; name: string } | null
-  tags: string[]
-}
-
-interface DraftValues {
-  name: string
-  description: string
-  categoryId: number | null
-  locationId: number | null
-  tags: string[]
-  quantity: number
-  cost: string
-}
-
-const EMPTY_HISTORY: HistorySource = { category: null, location: null, tags: [] }
-
-/** 建議預設：歷史優先；歷史缺分類時退回 AI 建議的完整同名分類。 */
-function seedValues(draft: DraftRead, categories: CategoryTreeNode[]): DraftValues {
-  const ai = draft.payload.ai
-  const history = draft.payload.history
-  const suggestion = ai?.category_suggestion?.trim()
-  const categoryId =
-    history.category?.id ??
-    (suggestion ? findCategoryByName(categories, suggestion) : null)
-
-  return {
-    name: ai?.name ?? "",
-    description: ai?.description ?? "",
-    categoryId,
-    locationId: history.location?.id ?? null,
-    tags: history.tags.map((tag) => tag.name),
-    quantity: 1,
-    cost: "",
-  }
-}
-
-function seedHistory(draft: DraftRead): HistorySource {
-  const history = draft.payload.history
-  return {
-    category: history.category ? { id: history.category.id, name: history.category.name } : null,
-    location: history.location ? { id: history.location.id, name: history.location.name } : null,
-    tags: history.tags.map((tag) => tag.name),
-  }
-}
 
 interface Props {
   draft: DraftRead
   categories: CategoryTreeNode[]
   locations: LocationRead[]
   tagSuggestions: string[]
+  /** 佇列頁在送出處理請求期間的即時狀態（快取尚未回寫前顯示「辨識中」）。 */
+  statusOverride?: DraftStatus
   selected?: boolean
   onSelectedChange?: (selected: boolean) => void
   processing?: boolean
@@ -83,6 +45,8 @@ interface Props {
   onProcess: (id: string) => void
   onAccept: (id: string, body: DraftAcceptRequest) => void
   onDiscard: (id: string) => void
+  /** 回報目前編輯值（批量接受時由佇列頁取用）。 */
+  onValuesChange?: (id: string, body: DraftAcceptRequest) => void
 }
 
 /**
@@ -97,6 +61,7 @@ export function DraftCard({
   categories,
   locations,
   tagSuggestions,
+  statusOverride,
   selected,
   onSelectedChange,
   processing = false,
@@ -105,26 +70,35 @@ export function DraftCard({
   onProcess,
   onAccept,
   onDiscard,
+  onValuesChange,
 }: Props) {
   const t = useTranslations()
   const suggest = useSuggestClassification()
 
-  const [values, setValues] = useState<DraftValues>(() => seedValues(draft, categories))
-  const [history, setHistory] = useState<HistorySource>(() => seedHistory(draft))
+  const [values, setValues] = useState<DraftValues>(() => seedDraftValues(draft, categories))
+  const [history, setHistory] = useState<HistorySource>(() => seedDraftHistory(draft))
   const [manualOpen, setManualOpen] = useState(false)
   const [suggesting, setSuggesting] = useState(false)
   const [suggestEmpty, setSuggestEmpty] = useState(false)
   const seededRef = useRef(`${draft.id}:${draft.status}`)
+  const status = statusOverride ?? draft.status
 
   // 狀態推進（pending → ready、重試成功）時重新帶入建議；同一狀態重整不覆蓋使用者編輯
   const seedKey = `${draft.id}:${draft.status}`
   useEffect(() => {
     if (seededRef.current === seedKey) return
     seededRef.current = seedKey
-    setValues(seedValues(draft, categories))
-    setHistory(seedHistory(draft))
+    setValues(seedDraftValues(draft, categories))
+    setHistory(seedDraftHistory(draft))
     setSuggestEmpty(false)
   }, [seedKey, draft, categories])
+
+  // 回報目前編輯值給佇列頁（批量接受用）
+  const reportRef = useRef(onValuesChange)
+  reportRef.current = onValuesChange
+  useEffect(() => {
+    reportRef.current?.(draft.id, acceptBodyFrom(values))
+  }, [draft.id, values])
 
   const ai = draft.payload.ai
   const displayName = ai?.name?.trim() || t("ai.drafts.card.untitled")
@@ -159,17 +133,7 @@ export function DraftCard({
 
   const accept = () => {
     if (!nameFilled) return
-    const description = values.description.trim()
-    const cost = values.cost.trim()
-    onAccept(draft.id, {
-      name: values.name.trim(),
-      description: description === "" ? null : description,
-      category_id: values.categoryId,
-      location_id: values.locationId,
-      tag_names: values.tags,
-      quantity: values.quantity,
-      cost: cost === "" ? null : cost,
-    })
+    onAccept(draft.id, acceptBodyFrom(values))
   }
 
   const historyTagNames = history.tags.filter((tag) => values.tags.includes(tag))
@@ -348,7 +312,7 @@ export function DraftCard({
   )
 
   return (
-    <Card data-testid={`draft-card-${draft.id}`} data-status={draft.status}>
+    <Card data-testid={`draft-card-${draft.id}`} data-status={status}>
       <CardContent className="flex gap-3 p-4">
         {onSelectedChange ? (
           <Checkbox
@@ -379,11 +343,11 @@ export function DraftCard({
               aria-live="polite"
               className="text-sm font-medium text-muted-foreground"
             >
-              {t(`ai.drafts.status.${draft.status}`)}
+              {t(`ai.drafts.status.${status}`)}
             </span>
           </div>
 
-          {draft.status === "processing" ? (
+          {status === "processing" ? (
             <div className="flex flex-wrap items-center gap-2">
               <Loader2 aria-hidden="true" className="size-4 animate-spin text-muted-foreground" />
               <Button
@@ -398,7 +362,7 @@ export function DraftCard({
             </div>
           ) : null}
 
-          {draft.status === "failed" ? (
+          {status === "failed" ? (
             <div className="space-y-3">
               <p role="alert" className="text-sm text-destructive">
                 {t(`ai.drafts.errors.${draft.error_code ?? "upstream_error"}`)}
@@ -427,7 +391,7 @@ export function DraftCard({
             </div>
           ) : null}
 
-          {draft.status === "ready" ? fields : null}
+          {status === "ready" ? fields : null}
         </div>
       </CardContent>
     </Card>

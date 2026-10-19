@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { NextIntlClientProvider } from "next-intl"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
@@ -373,5 +373,38 @@ describe("DraftCard 建議預設與編輯", () => {
     await user.click(screen.getByRole("checkbox", { name: "Select draft Coffee dripper" }))
 
     expect(onSelectedChange).toHaveBeenCalledWith(true)
+  })
+
+  it("shows the overridden status while the queue is processing the draft", () => {
+    renderCard({ draft: draftOf({ status: "pending" }), statusOverride: "processing" })
+
+    expect(screen.getByTestId("draft-card-draft-1")).toHaveAttribute(
+      "data-status",
+      "processing",
+    )
+    expect(screen.getByTestId("draft-status")).toHaveTextContent("Recognizing…")
+  })
+
+  it("reports its current accept payload so the queue can bulk accept", async () => {
+    const user = userEvent.setup()
+    const onValuesChange = vi.fn()
+    renderCard({ draft: readyDraft, onValuesChange })
+
+    await waitFor(() =>
+      expect(onValuesChange).toHaveBeenCalledWith(
+        "draft-1",
+        expect.objectContaining({ name: "Coffee dripper", category_id: 3, quantity: 1 }),
+      ),
+    )
+
+    await user.clear(screen.getByLabelText("Name"))
+    await user.type(screen.getByLabelText("Name"), "V60")
+
+    await waitFor(() =>
+      expect(onValuesChange).toHaveBeenLastCalledWith(
+        "draft-1",
+        expect.objectContaining({ name: "V60" }),
+      ),
+    )
   })
 })
