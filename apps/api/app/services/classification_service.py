@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -73,6 +73,29 @@ def _accumulate(scores: dict, key, overlap: int) -> None:
     entry = scores.setdefault(key, [0, 0])
     entry[0] += overlap
     entry[1] += 1
+
+
+def to_payload(suggestions: ClassificationSuggestions) -> dict[str, Any]:
+    """`ClassificationSuggestions` → payload／回應的 dict 形狀（`HistorySuggestions`）。"""
+
+    def bucket(item: Optional[Any]) -> Optional[dict[str, Any]]:
+        if item is None:
+            return None
+        return {
+            "id": item.id,
+            "name": item.name,
+            "item_count": item.item_count,
+            "score": item.score,
+        }
+
+    return {
+        "category": bucket(suggestions.category),
+        "location": bucket(suggestions.location),
+        "tags": [
+            {"name": tag.name, "item_count": tag.item_count, "score": tag.score}
+            for tag in suggestions.tags
+        ],
+    }
 
 
 async def _bucket(

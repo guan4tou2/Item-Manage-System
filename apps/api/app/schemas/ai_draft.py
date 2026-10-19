@@ -7,7 +7,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.ai import AiSuggestResponse
+from app.schemas.ai import AiSuggestResponse, HistorySuggestions
 from app.schemas.item import ItemRead
 
 DraftStatus = Literal[
@@ -17,29 +17,6 @@ DraftSource = Literal["batch_photo", "receipt"]
 DraftErrorCode = Literal[
     "ai_disabled", "quota_exhausted", "upstream_error", "image_missing"
 ]
-
-
-class BucketSuggestion(BaseModel):
-    """歷史規則建議（分類／位置）。全欄位必填。"""
-
-    id: int
-    name: str
-    item_count: int
-    score: int
-
-
-class TagSuggestion(BaseModel):
-    name: str
-    item_count: int
-    score: int
-
-
-class HistorySuggestions(BaseModel):
-    """歷史規則建議（payload.history 與 suggest-classification 的共用形狀）。"""
-
-    category: Optional[BucketSuggestion]
-    location: Optional[BucketSuggestion]
-    tags: list[TagSuggestion]
 
 
 class DraftPayload(BaseModel):

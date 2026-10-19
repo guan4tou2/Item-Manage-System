@@ -146,29 +146,6 @@ async def counts(session: AsyncSession, owner_id: UUID) -> dict[str, int]:
     return result
 
 
-def _history_dict(
-    suggestions: classification_service.ClassificationSuggestions,
-) -> dict[str, Any]:
-    def bucket(item: Any) -> Optional[dict[str, Any]]:
-        if item is None:
-            return None
-        return {
-            "id": item.id,
-            "name": item.name,
-            "item_count": item.item_count,
-            "score": item.score,
-        }
-
-    return {
-        "category": bucket(suggestions.category),
-        "location": bucket(suggestions.location),
-        "tags": [
-            {"name": tag.name, "item_count": tag.item_count, "score": tag.score}
-            for tag in suggestions.tags
-        ],
-    }
-
-
 async def process_draft(
     session: AsyncSession, owner_id: UUID, draft_id: UUID
 ) -> AiDraftItem:
@@ -213,7 +190,7 @@ async def process_draft(
         history = await classification_service.suggest_for_name(
             session, owner_id, ai.name
         )
-        payload["history"] = _history_dict(history)
+        payload["history"] = classification_service.to_payload(history)
 
     draft.payload = payload
     draft.error_code = error_code
