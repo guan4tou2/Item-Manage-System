@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { EditableOnly } from "@/components/common/editable-only"
+import { AiAskPanel } from "@/components/items/ai-ask-panel"
 import { AiSearchBar } from "@/components/items/ai-search-bar"
 import { ItemsFilterPanel } from "@/components/items/items-filter-panel"
 import { ItemsTable } from "@/components/items/items-table"
@@ -220,6 +221,10 @@ export function ItemsListClient() {
         </div>
 
         {aiMode ? <AiSearchBar onResults={setAiResult} /> : null}
+
+        {aiMode && aiResult !== null && aiResult.total > 0 ? (
+          <AiAskPanel itemIds={aiResult.items.map((item) => item.id)} />
+        ) : null}
 
         <div
           className="flex flex-wrap items-center gap-2"
