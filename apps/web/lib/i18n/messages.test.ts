@@ -129,6 +129,58 @@ const PHASE_32_KEYS = [
   "ai.receipts.group.mismatch",
   "ai.receipts.group.noTotal",
   "ai.receipts.item.subtotal",
+  // AI 自然語言搜尋（Phase 34）
+  "ai.search.toggle",
+  "ai.search.placeholder",
+  "ai.search.aria",
+  "ai.search.submit",
+  "ai.search.thinking",
+  "ai.search.understood",
+  "ai.search.clear",
+  "ai.search.openInList",
+  "ai.search.noResults",
+  "ai.search.unresolved",
+  "ai.search.fallback.ai_disabled",
+  "ai.search.fallback.quota_exhausted",
+  "ai.search.fallback.upstream_error",
+  "ai.search.fallback.unparsed",
+  "ai.search.optInRequired",
+  "ai.search.openSettings",
+  "ai.search.labels.q",
+  "ai.search.labels.category",
+  "ai.search.labels.location",
+  "ai.search.labels.tags",
+  "ai.search.labels.expiry",
+  "ai.search.labels.loan",
+  "ai.search.labels.favorite",
+  "ai.search.labels.quantity",
+  "ai.search.labels.sort",
+  "ai.search.expiry.expired",
+  "ai.search.expiry.expiring_soon",
+  "ai.search.loan.borrowed",
+  "ai.search.loan.overdue",
+  "ai.search.sort.expiry_asc",
+  "ai.search.sort.name_asc",
+  "ai.search.sort.created_desc",
+  // 物品問答（Phase 34）
+  "ai.ask.title",
+  "ai.ask.description",
+  "ai.ask.placeholder",
+  "ai.ask.aria",
+  "ai.ask.submit",
+  "ai.ask.thinking",
+  "ai.ask.disclaimer",
+  "ai.ask.insufficient",
+  "ai.ask.citations",
+  "ai.ask.errors.ai_disabled",
+  "ai.ask.errors.quota_exhausted",
+  "ai.ask.errors.upstream_error",
+  "ai.ask.errors.ai_opt_in_required",
+  // 設定：AI 資料分享（Phase 34）
+  "settings.preferences.aiSharing",
+  "settings.preferences.aiSharingHint",
+  "settings.preferences.aiSharingOn",
+  "settings.preferences.aiSharingOff",
 ]
 
 describe("i18n messages", () => {
@@ -169,6 +221,41 @@ describe("i18n messages", () => {
       const suffix = key.slice("ai.receipts.".length)
       // 動態鍵（errors.*）以樣板字串組合，改用前綴檢查
       if (suffix.startsWith("errors.")) return !sources.includes("ai.receipts.errors.")
+      return !sources.includes(key)
+    })
+
+    expect(missing).toEqual([])
+  })
+
+  it("has no unused keys in the Phase 34 AI search/ask namespaces", () => {
+    const sources = [
+      "components/items/ai-search-bar.tsx",
+      "components/items/ai-search-chips.tsx",
+      "components/items/ai-ask-panel.tsx",
+      "components/settings/preferences-form.tsx",
+      "app/(app)/items/items-list-client.tsx",
+    ]
+      .map((relative) => fs.readFileSync(path.resolve(__dirname, "..", "..", relative), "utf8"))
+      .join("\n")
+
+    const keys = enKeys.filter(
+      (key) =>
+        key.startsWith("ai.search.") ||
+        key.startsWith("ai.ask.") ||
+        key.startsWith("settings.preferences.aiSharing"),
+    )
+    // 動態鍵（`t(\`ai.search.fallback.${reason}\`)` 等）以命名空間前綴判定
+    const dynamicNamespaces = [
+      "ai.search.fallback.",
+      "ai.search.labels.",
+      "ai.search.expiry.",
+      "ai.search.loan.",
+      "ai.search.sort.",
+      "ai.ask.errors.",
+    ]
+    const missing = keys.filter((key) => {
+      const namespace = dynamicNamespaces.find((prefix) => key.startsWith(prefix))
+      if (namespace) return !sources.includes(namespace)
       return !sources.includes(key)
     })
 
