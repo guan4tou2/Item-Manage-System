@@ -30,7 +30,18 @@ function requestOf(fetchMock: ReturnType<typeof mockFetch>, index = 0) {
 }
 
 const searchResponse: SearchResponse = {
-  filters: { q: "藥", expiry: "expiring_soon" },
+  filters: {
+    q: "藥",
+    category_id: null,
+    location_id: null,
+    tag_ids: [],
+    expiry: "expiring_soon",
+    loan: null,
+    favorite: null,
+    min_quantity: null,
+    max_quantity: null,
+    sort: null,
+  },
   applied: {
     q: "藥",
     category: null,

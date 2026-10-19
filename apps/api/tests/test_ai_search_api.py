@@ -151,7 +151,8 @@ async def test_search_without_key_falls_back_to_keyword(client, monkeypatch, db_
     assert r.status_code == 200
     body = r.json()
     assert body["fallback_reason"] == "ai_disabled"
-    assert body["filters"] == {"q": "感冒藥"}
+    assert body["filters"]["q"] == "感冒藥"
+    assert body["filters"]["location_id"] is None
     assert [i["name"] for i in body["items"]] == ["感冒藥"]
     # 未呼叫 LLM → 不扣配額
     assert (await db_session.execute(select(AiUsage))).scalars().all() == []
@@ -173,7 +174,8 @@ async def test_search_quota_exhausted_falls_back(client, monkeypatch, db_session
     assert second.status_code == 200
     body = second.json()
     assert body["fallback_reason"] == "quota_exhausted"
-    assert body["filters"] == {"q": "感冒藥"}
+    assert body["filters"]["q"] == "感冒藥"
+    assert body["filters"]["location_id"] is None
     assert [i["name"] for i in body["items"]] == ["感冒藥"]
 
 
@@ -225,7 +227,8 @@ async def test_search_drops_foreign_ids_and_reports_unresolved(client, monkeypat
 
     assert r.status_code == 200
     body = r.json()
-    assert body["filters"] == {"q": "藥"}
+    assert body["filters"]["q"] == "藥"
+    assert body["filters"]["category_id"] is None
     assert body["unresolved"] == ["category:別人的分類", "location:不存在的房間"]
 
 
@@ -264,7 +267,20 @@ async def test_search_ignores_injected_fields(client, monkeypatch):
     r = await client.post("/api/ai/search", headers=auth, json={"query": "藥"})
 
     assert r.status_code == 200
-    assert r.json()["filters"] == {"q": "藥"}
+    assert r.json()["filters"]["q"] == "藥"
+    # 契約只含白名單欄位（注入欄位不存在）
+    assert set(r.json()["filters"]) == {
+        "q",
+        "category_id",
+        "location_id",
+        "tag_ids",
+        "expiry",
+        "loan",
+        "favorite",
+        "min_quantity",
+        "max_quantity",
+        "sort",
+    }
     assert r.json()["fallback_reason"] is None
 
 

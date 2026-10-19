@@ -25,8 +25,20 @@ export function filtersFromSearchParams(params: URLSearchParams): ItemFilters {
   if (page) f.page = Math.max(1, Number(page))
   const expiry = params.get("expiry")
   if (expiry === "expired" || expiry === "expiring_soon") f.expiry = expiry
+  const loan = params.get("loan")
+  if (loan === "borrowed" || loan === "overdue") f.loan = loan
+  const minQuantity = params.get("min_quantity")
+  if (minQuantity !== null && !Number.isNaN(Number(minQuantity))) {
+    f.minQuantity = Number(minQuantity)
+  }
+  const maxQuantity = params.get("max_quantity")
+  if (maxQuantity !== null && !Number.isNaN(Number(maxQuantity))) {
+    f.maxQuantity = Number(maxQuantity)
+  }
   const sort = params.get("sort")
-  if (sort === "expiry_asc") f.sort = sort
+  if (sort === "expiry_asc" || sort === "name_asc" || sort === "created_desc") {
+    f.sort = sort
+  }
   return f
 }
 
@@ -40,6 +52,9 @@ export function filtersToSearchParams(f: ItemFilters): URLSearchParams {
   }
   if (f.tagIds && f.tagIds.length > 0) p.set("tags", f.tagIds.join(","))
   if (f.expiry) p.set("expiry", f.expiry)
+  if (f.loan) p.set("loan", f.loan)
+  if (f.minQuantity != null) p.set("min_quantity", String(f.minQuantity))
+  if (f.maxQuantity != null) p.set("max_quantity", String(f.maxQuantity))
   if (f.sort) p.set("sort", f.sort)
   if (f.page && f.page > 1) p.set("page", String(f.page))
   return p

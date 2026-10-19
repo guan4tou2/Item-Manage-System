@@ -48,8 +48,23 @@ class AppliedFilters(BaseModel):
     sort: Optional[str]
 
 
+class ParsedFiltersOut(BaseModel):
+    """實際套用的查詢條件（與 `GET /api/items` 參數一一對應）。全欄位必填可為 null。"""
+
+    q: Optional[str]
+    category_id: Optional[int]
+    location_id: Optional[int]
+    tag_ids: list[int]
+    expiry: Optional[str]
+    loan: Optional[str]
+    favorite: Optional[bool]
+    min_quantity: Optional[int]
+    max_quantity: Optional[int]
+    sort: Optional[str]
+
+
 class SearchResponse(BaseModel):
-    filters: dict
+    filters: ParsedFiltersOut
     applied: AppliedFilters
     unresolved: list[str]
     items: list[ItemRead]

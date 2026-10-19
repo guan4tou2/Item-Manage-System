@@ -3969,6 +3969,32 @@ export interface components {
              */
             active_loans: number;
         };
+        /**
+         * ParsedFiltersOut
+         * @description 實際套用的查詢條件（與 `GET /api/items` 參數一一對應）。全欄位必填可為 null。
+         */
+        ParsedFiltersOut: {
+            /** Q */
+            q: string | null;
+            /** Category Id */
+            category_id: number | null;
+            /** Location Id */
+            location_id: number | null;
+            /** Tag Ids */
+            tag_ids: number[];
+            /** Expiry */
+            expiry: string | null;
+            /** Loan */
+            loan: string | null;
+            /** Favorite */
+            favorite: boolean | null;
+            /** Min Quantity */
+            min_quantity: number | null;
+            /** Max Quantity */
+            max_quantity: number | null;
+            /** Sort */
+            sort: string | null;
+        };
         /** PasswordChange */
         PasswordChange: {
             /** Current Password */
@@ -4272,8 +4298,7 @@ export interface components {
         };
         /** SearchResponse */
         SearchResponse: {
-            /** Filters */
-            filters: Record<string, never>;
+            filters: components["schemas"]["ParsedFiltersOut"];
             applied: components["schemas"]["AppliedFilters"];
             /** Unresolved */
             unresolved: string[];

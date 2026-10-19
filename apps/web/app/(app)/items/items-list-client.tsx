@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { EditableOnly } from "@/components/common/editable-only"
+import { AiSearchBar } from "@/components/items/ai-search-bar"
 import { ItemsFilterPanel } from "@/components/items/items-filter-panel"
 import { ItemsTable } from "@/components/items/items-table"
 import {
@@ -27,6 +28,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { ItemFilters, ItemRead } from "@/lib/api/items"
+import type { SearchResponse } from "@/lib/api/ai-search"
 import { useReadOnly } from "@/lib/auth/use-readonly"
 import { useConsumeFefo } from "@/lib/hooks/use-batches"
 import { useBulkDeleteItems, useBulkUpdateItems, useItems } from "@/lib/hooks/use-items"
@@ -66,6 +68,8 @@ export function ItemsListClient() {
   )
 
   const [searchInput, setSearchInput] = useState(filters.q ?? "")
+  const [aiMode, setAiMode] = useState(false)
+  const [aiResult, setAiResult] = useState<SearchResponse | null>(null)
   useEffect(() => setSearchInput(filters.q ?? ""), [filters.q])
 
   const writeFilters = useCallback(
@@ -197,12 +201,25 @@ export function ItemsListClient() {
             placeholder={t("items.list.searchPlaceholder")}
             aria-label={t("items.list.searchPlaceholder")}
           />
+          <Button
+            type="button"
+            variant={aiMode ? "secondary" : "outline"}
+            aria-pressed={aiMode}
+            onClick={() => {
+              setAiMode((prev) => !prev)
+              if (aiMode) setAiResult(null)
+            }}
+          >
+            {t("ai.search.toggle")}
+          </Button>
           <EditableOnly>
             <Button asChild>
               <Link href="/items/new">{t("items.list.new")}</Link>
             </Button>
           </EditableOnly>
         </div>
+
+        {aiMode ? <AiSearchBar onResults={setAiResult} /> : null}
 
         <div
           className="flex flex-wrap items-center gap-2"

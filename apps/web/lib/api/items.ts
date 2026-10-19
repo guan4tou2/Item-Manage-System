@@ -27,7 +27,12 @@ export interface ItemFilters {
   locationScope?: "subtree" | "exact"
   tagIds?: number[]
   expiry?: "expired" | "expiring_soon"
-  sort?: "expiry_asc"
+  /** Phase 34：借出狀態（`borrowed` 未歸還／`overdue` 逾期未還）。 */
+  loan?: "borrowed" | "overdue"
+  /** Phase 34：數量區間（含邊界）。 */
+  minQuantity?: number
+  maxQuantity?: number
+  sort?: "expiry_asc" | "name_asc" | "created_desc"
   page?: number
   perPage?: number
 }
@@ -44,6 +49,9 @@ function buildQuery(filters: ItemFilters): string {
     for (const id of filters.tagIds) params.append("tag_ids", String(id))
   }
   if (filters.expiry) params.set("expiry", filters.expiry)
+  if (filters.loan) params.set("loan", filters.loan)
+  if (filters.minQuantity != null) params.set("min_quantity", String(filters.minQuantity))
+  if (filters.maxQuantity != null) params.set("max_quantity", String(filters.maxQuantity))
   if (filters.sort) params.set("sort", filters.sort)
   if (filters.page != null) params.set("page", String(filters.page))
   if (filters.perPage != null) params.set("per_page", String(filters.perPage))

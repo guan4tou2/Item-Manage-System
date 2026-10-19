@@ -462,6 +462,67 @@
       "item": {
         "subtotal": "Line total {amount}"
       }
+    },
+    "search": {
+      "toggle": "AI search",
+      "placeholder": "Describe what you are looking for…",
+      "aria": "Describe what you are looking for",
+      "submit": "Search",
+      "thinking": "Understanding…",
+      "understood": "Understood as",
+      "clear": "Clear",
+      "openInList": "Open in item list",
+      "noResults": "No matches — try rephrasing",
+      "unresolved": "Not found: {name}",
+      "fallback": {
+        "ai_disabled": "AI is not configured; showing keyword results instead",
+        "quota_exhausted": "Today’s AI quota is used up; showing keyword results instead",
+        "upstream_error": "The AI service is unavailable; showing keyword results instead",
+        "unparsed": "Could not understand the request; showing keyword results instead"
+      },
+      "optInRequired": "Enable AI data sharing in settings to use AI search",
+      "openSettings": "Open settings",
+      "labels": {
+        "q": "Keyword: {value}",
+        "category": "Category: {value}",
+        "location": "Location: {value}",
+        "tags": "Tags: {value}",
+        "expiry": "Expiry: {value}",
+        "loan": "Loans: {value}",
+        "favorite": "Favorites only",
+        "quantity": "Quantity: {value}",
+        "sort": "Sort: {value}"
+      },
+      "expiry": {
+        "expired": "expired",
+        "expiring_soon": "within 7 days"
+      },
+      "loan": {
+        "borrowed": "lent out",
+        "overdue": "overdue"
+      },
+      "sort": {
+        "expiry_asc": "soonest expiry",
+        "name_asc": "name",
+        "created_desc": "newest"
+      }
+    },
+    "ask": {
+      "title": "Ask about these items",
+      "description": "Answers use only your inventory data",
+      "placeholder": "Ask a question about these items…",
+      "aria": "Ask a question about these items",
+      "submit": "Ask",
+      "thinking": "Thinking…",
+      "disclaimer": "Answers are limited to your inventory data",
+      "insufficient": "Not enough data to answer that",
+      "citations": "Sources",
+      "errors": {
+        "ai_disabled": "AI is not configured; asking is unavailable",
+        "quota_exhausted": "Today’s AI quota is used up; try again tomorrow",
+        "upstream_error": "The AI service is unavailable, please retry",
+        "ai_opt_in_required": "Enable AI data sharing in settings to ask questions"
+      }
     }
   },
   "items": {

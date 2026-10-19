@@ -29,6 +29,7 @@ from app.schemas.ai_search import (
     AppliedFilters,
     AskResponse,
     Citation,
+    ParsedFiltersOut,
     SearchResponse,
 )
 from app.services import (
@@ -65,6 +66,22 @@ async def _catalog(session: AsyncSession, owner_id: UUID) -> ai_search_filters.C
             for loc in locations
         ],
         tags=[ai_search_filters.CatalogEntry(id=t.id, name=t.name) for t in tags],
+    )
+
+
+def _normalized_filters(filters: dict[str, Any]) -> ParsedFiltersOut:
+    """把內部 dict 正規化為契約形狀（缺鍵補 `null`／空陣列）。"""
+    return ParsedFiltersOut(
+        q=filters.get("q"),
+        category_id=filters.get("category_id"),
+        location_id=filters.get("location_id"),
+        tag_ids=filters.get("tag_ids") or [],
+        expiry=filters.get("expiry"),
+        loan=filters.get("loan"),
+        favorite=filters.get("favorite"),
+        min_quantity=filters.get("min_quantity"),
+        max_quantity=filters.get("max_quantity"),
+        sort=filters.get("sort"),
     )
 
 
@@ -129,7 +146,7 @@ async def _fallback(
     filters = {"q": query}
     result = await _run_search(session, owner_id, filters)
     return SearchResponse(
-        filters=filters,
+        filters=_normalized_filters(filters),
         applied=_applied(filters, catalog),
         unresolved=unresolved or [],
         items=result.items,
@@ -252,7 +269,7 @@ async def search(session: AsyncSession, owner_id: UUID, query: str) -> SearchRes
 
     result = await _run_search(session, owner_id, parsed.filters)
     return SearchResponse(
-        filters=parsed.filters,
+        filters=_normalized_filters(parsed.filters),
         applied=_applied(parsed.filters, catalog),
         unresolved=parsed.unresolved,
         items=result.items,

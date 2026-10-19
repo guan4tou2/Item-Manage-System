@@ -12876,6 +12876,131 @@
         ],
         "title": "OverviewStats"
       },
+      "ParsedFiltersOut": {
+        "properties": {
+          "q": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "category_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category Id"
+          },
+          "location_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location Id"
+          },
+          "tag_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Tag Ids"
+          },
+          "expiry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry"
+          },
+          "loan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loan"
+          },
+          "favorite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Favorite"
+          },
+          "min_quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Quantity"
+          },
+          "max_quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Quantity"
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort"
+          }
+        },
+        "type": "object",
+        "required": [
+          "q",
+          "category_id",
+          "location_id",
+          "tag_ids",
+          "expiry",
+          "loan",
+          "favorite",
+          "min_quantity",
+          "max_quantity",
+          "sort"
+        ],
+        "title": "ParsedFiltersOut",
+        "description": "實際套用的查詢條件（與 `GET /api/items` 參數一一對應）。全欄位必填可為 null。"
+      },
       "PasswordChange": {
         "properties": {
           "current_password": {
@@ -13661,8 +13786,7 @@
       "SearchResponse": {
         "properties": {
           "filters": {
-            "type": "object",
-            "title": "Filters"
+            "$ref": "#/components/schemas/ParsedFiltersOut"
           },
           "applied": {
             "$ref": "#/components/schemas/AppliedFilters"

@@ -25,7 +25,18 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 const searchResponse = {
-  filters: { q: "藥" },
+  filters: {
+    q: "藥",
+    category_id: null,
+    location_id: null,
+    tag_ids: [],
+    expiry: null,
+    loan: null,
+    favorite: null,
+    min_quantity: null,
+    max_quantity: null,
+    sort: null,
+  },
   applied: {
     q: "藥",
     category: null,

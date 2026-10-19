@@ -462,6 +462,67 @@
       "item": {
         "subtotal": "小計 {amount}"
       }
+    },
+    "search": {
+      "toggle": "AI 搜尋",
+      "placeholder": "用一句話描述你要找的東西…",
+      "aria": "用一句話描述你要找的東西",
+      "submit": "搜尋",
+      "thinking": "理解中…",
+      "understood": "理解為",
+      "clear": "清除",
+      "openInList": "在物品列表開啟",
+      "noResults": "沒有符合的物品，換個說法試試",
+      "unresolved": "未找到：{name}",
+      "fallback": {
+        "ai_disabled": "AI 未設定；已改用關鍵字搜尋",
+        "quota_exhausted": "今日 AI 額度已用完；已改用關鍵字搜尋",
+        "upstream_error": "AI 服務暫時無法使用；已改用關鍵字搜尋",
+        "unparsed": "無法理解這句話；已改用關鍵字搜尋"
+      },
+      "optInRequired": "請先在設定開啟「AI 資料分享」才能使用 AI 搜尋",
+      "openSettings": "前往設定",
+      "labels": {
+        "q": "關鍵字：{value}",
+        "category": "分類：{value}",
+        "location": "位置：{value}",
+        "tags": "標籤：{value}",
+        "expiry": "到期：{value}",
+        "loan": "借出：{value}",
+        "favorite": "僅最愛",
+        "quantity": "數量：{value}",
+        "sort": "排序：{value}"
+      },
+      "expiry": {
+        "expired": "已過期",
+        "expiring_soon": "7 天內"
+      },
+      "loan": {
+        "borrowed": "已借出",
+        "overdue": "逾期"
+      },
+      "sort": {
+        "expiry_asc": "最快到期",
+        "name_asc": "名稱",
+        "created_desc": "最新建立"
+      }
+    },
+    "ask": {
+      "title": "問問這些物品",
+      "description": "回答只使用你的物品資料",
+      "placeholder": "對這些物品提問…",
+      "aria": "對這些物品提問",
+      "submit": "提問",
+      "thinking": "整理中…",
+      "disclaimer": "回答以系統資料為限",
+      "insufficient": "資料不足，無法回答這個問題",
+      "citations": "引用",
+      "errors": {
+        "ai_disabled": "AI 未設定；無法使用問答",
+        "quota_exhausted": "今日 AI 額度已用完；請隔日再試",
+        "upstream_error": "AI 服務暫時無法使用，請稍後重試",
+        "ai_opt_in_required": "請先在設定開啟「AI 資料分享」才能提問"
+      }
     }
   },
   "items": {
