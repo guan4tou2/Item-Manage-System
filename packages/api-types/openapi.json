@@ -1490,6 +1490,60 @@
             }
           },
           {
+            "name": "loan",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "borrowed",
+                    "overdue"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Loan"
+            }
+          },
+          {
+            "name": "min_quantity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Quantity"
+            }
+          },
+          {
+            "name": "max_quantity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Quantity"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "required": false,
@@ -1497,9 +1551,10 @@
               "anyOf": [
                 {
                   "enum": [
-                    "expiry_asc"
+                    "expiry_asc",
+                    "name_asc",
+                    "created_desc"
                   ],
-                  "const": "expiry_asc",
                   "type": "string"
                 },
                 {
@@ -5464,6 +5519,98 @@
         ]
       }
     },
+    "/api/ai/search": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Ai Search",
+        "operationId": "ai_search_api_ai_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/ai/ask": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Ai Ask",
+        "operationId": "ai_ask_api_ai_ask_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/item-types": {
       "get": {
         "tags": [
@@ -7956,6 +8103,209 @@
         ],
         "title": "ApiTokenRead"
       },
+      "AppliedBucket": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "AppliedBucket"
+      },
+      "AppliedFilters": {
+        "properties": {
+          "q": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Q"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppliedBucket"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "location": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppliedBucket"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/AppliedBucket"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "expiry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiry"
+          },
+          "loan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loan"
+          },
+          "favorite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Favorite"
+          },
+          "min_quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Quantity"
+          },
+          "max_quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Quantity"
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort"
+          }
+        },
+        "type": "object",
+        "required": [
+          "q",
+          "category",
+          "location",
+          "tags",
+          "expiry",
+          "loan",
+          "favorite",
+          "min_quantity",
+          "max_quantity",
+          "sort"
+        ],
+        "title": "AppliedFilters",
+        "description": "實際套用的條件（前端「理解為」chip）。全欄位必填可為 null。"
+      },
+      "AskRequest": {
+        "properties": {
+          "question": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Question"
+          },
+          "item_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Item Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "question"
+        ],
+        "title": "AskRequest"
+      },
+      "AskResponse": {
+        "properties": {
+          "answer": {
+            "type": "string",
+            "title": "Answer"
+          },
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "type": "array",
+            "title": "Citations"
+          },
+          "grounded": {
+            "type": "boolean",
+            "title": "Grounded"
+          }
+        },
+        "type": "object",
+        "required": [
+          "answer",
+          "citations",
+          "grounded"
+        ],
+        "title": "AskResponse"
+      },
       "AuditLogRead": {
         "properties": {
           "id": {
@@ -8980,6 +9330,37 @@
           "user_web_push_count"
         ],
         "title": "ChannelStatus"
+      },
+      "Citation": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item_id",
+          "name",
+          "path"
+        ],
+        "title": "Citation"
       },
       "ClassificationSuggestRequest": {
         "properties": {
@@ -12558,6 +12939,11 @@
             "type": "boolean",
             "title": "Report Monthly Enabled",
             "default": true
+          },
+          "ai_data_sharing_enabled": {
+            "type": "boolean",
+            "title": "Ai Data Sharing Enabled",
+            "default": false
           }
         },
         "additionalProperties": true,
@@ -12637,6 +13023,17 @@
               }
             ],
             "title": "Report Monthly Enabled"
+          },
+          "ai_data_sharing_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Data Sharing Enabled"
           }
         },
         "additionalProperties": true,
@@ -13244,6 +13641,78 @@
         ],
         "title": "ReportValuation",
         "description": "估值以字串輸出（Decimal 2 位），幣別取使用者偏好。"
+      },
+      "SearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Query"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest"
+      },
+      "SearchResponse": {
+        "properties": {
+          "filters": {
+            "type": "object",
+            "title": "Filters"
+          },
+          "applied": {
+            "$ref": "#/components/schemas/AppliedFilters"
+          },
+          "unresolved": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unresolved"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "fallback_reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "ai_disabled",
+                  "quota_exhausted",
+                  "upstream_error",
+                  "unparsed"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fallback Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filters",
+          "applied",
+          "unresolved",
+          "items",
+          "total",
+          "fallback_reason"
+        ],
+        "title": "SearchResponse"
       },
       "StocktakeCreate": {
         "properties": {

@@ -1521,6 +1521,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ai Search */
+        post: operations["ai_search_api_ai_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/ask": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ai Ask */
+        post: operations["ai_ask_api_ai_ask_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/item-types": {
         parameters: {
             query?: never;
@@ -2297,6 +2331,55 @@ export interface components {
              */
             created_at: string;
         };
+        /** AppliedBucket */
+        AppliedBucket: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Path */
+            path?: string | null;
+        };
+        /**
+         * AppliedFilters
+         * @description 實際套用的條件（前端「理解為」chip）。全欄位必填可為 null。
+         */
+        AppliedFilters: {
+            /** Q */
+            q: string | null;
+            category: components["schemas"]["AppliedBucket"] | null;
+            location: components["schemas"]["AppliedBucket"] | null;
+            /** Tags */
+            tags: components["schemas"]["AppliedBucket"][];
+            /** Expiry */
+            expiry: string | null;
+            /** Loan */
+            loan: string | null;
+            /** Favorite */
+            favorite: boolean | null;
+            /** Min Quantity */
+            min_quantity: number | null;
+            /** Max Quantity */
+            max_quantity: number | null;
+            /** Sort */
+            sort: string | null;
+        };
+        /** AskRequest */
+        AskRequest: {
+            /** Question */
+            question: string;
+            /** Item Ids */
+            item_ids?: string[];
+        };
+        /** AskResponse */
+        AskResponse: {
+            /** Answer */
+            answer: string;
+            /** Citations */
+            citations: components["schemas"]["Citation"][];
+            /** Grounded */
+            grounded: boolean;
+        };
         /** AuditLogRead */
         AuditLogRead: {
             /**
@@ -2702,6 +2785,18 @@ export interface components {
             user_telegram_linked: boolean;
             /** User Web Push Count */
             user_web_push_count: number;
+        };
+        /** Citation */
+        Citation: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string | null;
         };
         /** ClassificationSuggestRequest */
         ClassificationSuggestRequest: {
@@ -3911,6 +4006,11 @@ export interface components {
              * @default true
              */
             report_monthly_enabled: boolean;
+            /**
+             * Ai Data Sharing Enabled
+             * @default false
+             */
+            ai_data_sharing_enabled: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -3926,6 +4026,8 @@ export interface components {
             viewer_notice_dismissed?: boolean | null;
             /** Report Monthly Enabled */
             report_monthly_enabled?: boolean | null;
+            /** Ai Data Sharing Enabled */
+            ai_data_sharing_enabled?: boolean | null;
         } & {
             [key: string]: unknown;
         };
@@ -4162,6 +4264,25 @@ export interface components {
             delta: string;
             /** Unpriced Items */
             unpriced_items: number;
+        };
+        /** SearchRequest */
+        SearchRequest: {
+            /** Query */
+            query: string;
+        };
+        /** SearchResponse */
+        SearchResponse: {
+            /** Filters */
+            filters: Record<string, never>;
+            applied: components["schemas"]["AppliedFilters"];
+            /** Unresolved */
+            unresolved: string[];
+            /** Items */
+            items: components["schemas"]["ItemRead"][];
+            /** Total */
+            total: number;
+            /** Fallback Reason */
+            fallback_reason: ("ai_disabled" | "quota_exhausted" | "upstream_error" | "unparsed") | null;
         };
         /** StocktakeCreate */
         StocktakeCreate: {
@@ -5614,7 +5735,10 @@ export interface operations {
                 tag_ids?: number[] | null;
                 favorite?: boolean | null;
                 expiry?: ("expired" | "expiring_soon") | null;
-                sort?: "expiry_asc" | null;
+                loan?: ("borrowed" | "overdue") | null;
+                min_quantity?: number | null;
+                max_quantity?: number | null;
+                sort?: ("expiry_asc" | "name_asc" | "created_desc") | null;
                 page?: number;
                 per_page?: number;
             };
@@ -8046,6 +8170,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReceiptCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ai_search_api_ai_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ai_ask_api_ai_ask_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AskResponse"];
                 };
             };
             /** @description Validation Error */
