@@ -355,6 +355,37 @@
   "ai": {
     "mark": {
       "tooltip": "AI-generated, editable"
+    },
+    "drafts": {
+      "status": {
+        "pending": "Queued",
+        "processing": "Recognizing…",
+        "ready": "Ready to review",
+        "failed": "Recognition failed"
+      },
+      "errors": {
+        "ai_disabled": "AI is not configured (missing API key); fill in manually instead",
+        "quota_exhausted": "Today's AI quota is used up; fill in manually instead",
+        "upstream_error": "The AI service is temporarily unavailable, please retry",
+        "image_missing": "The photo no longer exists, please upload it again"
+      },
+      "card": {
+        "photoAlt": "Draft photo",
+        "untitled": "Untitled photo",
+        "select": "Select draft {name}",
+        "retry": "Retry recognition",
+        "reprocess": "Recognize again",
+        "manualToggle": "Fill in manually",
+        "historyBadge": "From history: {name}",
+        "suggest": "Suggest from history",
+        "suggesting": "Searching…",
+        "suggestEmpty": "No matching history found",
+        "suggestFailed": "Could not load history suggestions",
+        "accept": "Accept",
+        "accepting": "Accepting…",
+        "discard": "Discard",
+        "discarding": "Discarding…"
+      }
     }
   },
   "items": {

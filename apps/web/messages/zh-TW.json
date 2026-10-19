@@ -355,6 +355,37 @@
   "ai": {
     "mark": {
       "tooltip": "由 AI 產生，可編輯"
+    },
+    "drafts": {
+      "status": {
+        "pending": "排隊中",
+        "processing": "辨識中…",
+        "ready": "辨識完成",
+        "failed": "辨識失敗"
+      },
+      "errors": {
+        "ai_disabled": "AI 未設定（缺少 API 金鑰）；可展開手動填寫",
+        "quota_exhausted": "今日 AI 額度已用完；可展開手動填寫",
+        "upstream_error": "AI 服務暫時無法使用，請稍後重試",
+        "image_missing": "照片已不存在，請重新上傳"
+      },
+      "card": {
+        "photoAlt": "草稿照片",
+        "untitled": "未命名照片",
+        "select": "選取草稿 {name}",
+        "retry": "重試辨識",
+        "reprocess": "重新辨識",
+        "manualToggle": "手動填寫",
+        "historyBadge": "依歷史：{name}",
+        "suggest": "依歷史建議",
+        "suggesting": "查詢中…",
+        "suggestEmpty": "找不到相符的歷史紀錄",
+        "suggestFailed": "無法取得歷史建議",
+        "accept": "接受",
+        "accepting": "接受中…",
+        "discard": "丟棄",
+        "discarding": "丟棄中…"
+      }
     }
   },
   "items": {

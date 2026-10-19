@@ -11,13 +11,13 @@ import { z } from "zod"
 
 import { LocationSelect } from "@/components/locations/location-select"
 
+import { CategorySelect } from "@/components/categories/category-select"
 import { ImageUpload } from "./image-upload"
 import { TagMultiSelect } from "./tag-multi-select"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { suggestFromImage } from "@/lib/api/ai"
@@ -89,15 +89,6 @@ interface AppliedTemplateState {
   fields: AppliedField[]
 }
 
-function flattenCategories(nodes: CategoryTreeNode[], depth = 0): Array<{ id: number; label: string }> {
-  const out: Array<{ id: number; label: string }> = []
-  for (const n of nodes) {
-    out.push({ id: n.id, label: `${"— ".repeat(depth)}${n.name}` })
-    if (n.children && n.children.length > 0) out.push(...flattenCategories(n.children, depth + 1))
-  }
-  return out
-}
-
 function valuesEqual(a: unknown, b: unknown) {
   return JSON.stringify(a) === JSON.stringify(b)
 }
@@ -120,7 +111,6 @@ export function ItemForm({
     resolver: zodResolver(itemFormSchema),
     defaultValues,
   })
-  const flatCats = flattenCategories(categories)
 
   const [lookupCode, setLookupCode] = useState<string | null>(null)
   const [prefillSource, setPrefillSource] = useState<string | null>(null)
@@ -421,18 +411,13 @@ export function ItemForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label>{t("items.form.category")}</Label>
-          <Select
-            value={form.watch("category_id")?.toString() ?? "none"}
-            onValueChange={(v) => form.setValue("category_id", v === "none" ? null : Number(v))}
-          >
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">{t("items.form.noneOption")}</SelectItem>
-              {flatCats.map((c) => (
-                <SelectItem key={c.id} value={String(c.id)}>{c.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <CategorySelect
+            value={form.watch("category_id")}
+            onChange={(id) => form.setValue("category_id", id)}
+            categories={categories}
+            label={t("items.form.category")}
+            testId="item-category-select"
+          />
         </div>
 
         <div>
