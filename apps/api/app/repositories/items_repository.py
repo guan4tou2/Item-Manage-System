@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.clock import EXPIRING_SOON_DAYS, today_taipei
 from app.models.item import Item
 from app.models.item_batch import ItemBatch
+from app.models.loan import ItemLoan
 from app.models.tag import item_tags
 
 
@@ -108,6 +109,9 @@ async def list_paginated(
     tag_ids: list[int] | None,
     favorite: bool | None = None,
     expiry: str | None = None,
+    loan: str | None = None,
+    min_quantity: int | None = None,
+    max_quantity: int | None = None,
     sort: str | None = None,
     page: int,
     per_page: int,
@@ -139,6 +143,19 @@ async def list_paginated(
         )
     if favorite is not None:
         base = base.where(Item.is_favorite.is_(favorite))
+    if loan is not None:
+        # Phase 34：借出狀態篩選（僅未歸還的借出紀錄）
+        active = select(ItemLoan.item_id).where(ItemLoan.returned_at.is_(None))
+        if loan == "overdue":
+            active = active.where(
+                ItemLoan.expected_return.is_not(None),
+                ItemLoan.expected_return < today_taipei(),
+            )
+        base = base.where(Item.id.in_(active))
+    if min_quantity is not None:
+        base = base.where(Item.quantity >= min_quantity)
+    if max_quantity is not None:
+        base = base.where(Item.quantity <= max_quantity)
     if expiry == "expired":
         base = base.where(soonest < today_taipei())
     elif expiry == "expiring_soon":
@@ -159,7 +176,10 @@ async def list_paginated(
             soonest.asc(),
             Item.created_at.desc(),
         )
+    elif sort == "name_asc":
+        stmt = stmt.order_by(Item.name.asc(), Item.id.asc())
     else:
+        # `created_desc`（預設）與舊行為相同
         stmt = stmt.order_by(Item.created_at.desc())
     stmt = (
         stmt.offset((page - 1) * per_page)
