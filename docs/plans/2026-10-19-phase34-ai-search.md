@@ -356,7 +356,7 @@ LLM 只允許輸出以下欄位，其餘一律丟棄（**不做自由 SQL／任�
 ## Final Verification（收尾時填實測；2026-10-19）
 
 - [x] API：`uv run pytest -q` → **1086 passed**（基線 1021；4:28）
-- [x] Web：`pnpm vitest run` → **716 passed（128 檔）**（基線 686／125 檔）；`pnpm typecheck` → **0 error**
+- [x] Web：`pnpm vitest run` → **717 passed（128 檔）**（基線 686／125 檔）；`pnpm typecheck` → **0 error**
 - [x] api-types 重生成：新增 2 端點與 schema；`sort` 列舉擴充（僅 2 行 schema 展開差異，無破壞性移除）
 - [x] golden eval（mock 模式）：`uv run pytest evals/ -q` → **28 passed、1 skipped**（24 句＋注入＋資料集檢查；live 模式未設 key 自動 skip）
 - [x] e2e：重建 image 後 `pnpm exec playwright test --workers=2` → **25 spec／79 passed**（基線 24／75）
@@ -376,5 +376,5 @@ LLM 只允許輸出以下欄位，其餘一律丟棄（**不做自由 SQL／任�
 ## 測試基線（main，Phase 33 完成）
 
 - API：1021 passed
-- Web：686 passed（125 檔）＋typecheck
+- Web：717 passed（128 檔）＋typecheck
 - E2E：24 spec／75 情境

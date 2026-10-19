@@ -17,7 +17,7 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 - **golden eval**（`apps/api/evals/`）：`search_golden.jsonl` 24 句（含英文與注入樣本）；mock 模式進 CI（`uv run pytest evals/ -q`，不連外網、不在預設套件內）；`EVAL_LIVE=1` 實際呼叫計分（門檻 70%，無 key 自動 skip）
 - **Web**：`/items` 搜尋列「AI 搜尋」切換；「理解為」chip（含未解析灰字）＋「清除」＋「在物品列表開啟」（把條件帶回一般篩選）；fallback 以中性 `role=status` 說明（非錯誤）；未 opt-in 引導至設定；有結果時顯示「問問這些物品」問答面板（`AiMark`＋引用連結＋「以系統資料為限」聲明）；設定 → 偏好新增「AI 資料分享」開關（說明傳送範圍）
 - i18n：`ai.search.*`（33 鍵）、`ai.ask.*`（13 鍵）、`settings.preferences.aiSharing*`（4 鍵）（zh-TW／en 鍵集與行數一致 1495）；對帳測試追加 Phase 34 鍵清單＋「命名空間無未使用鍵」檢查（動態鍵以命名空間前綴判定）
-- 新增 65 個 API 測試（1021 → 1086）＋ golden eval 28 件（24 句 mock＋注入＋資料集檢查）；新增 30 個 web 測試（686 → 716，125 → 128 檔）；e2e 24 → 25 spec（75 → 79 情境）
+- 新增 65 個 API 測試（1021 → 1086）＋ golden eval 28 件（24 句 mock＋注入＋資料集檢查）；新增 31 個 web 測試（686 → 717，125 → 128 檔）；e2e 24 → 25 spec（75 → 79 情境）
 - **無 migration**（偏好沿用既有 JSON 欄位；`loan`／數量／排序為查詢參數）；api-types 重生成（新增 2 端點與 schema；`sort` 列舉擴充，零破壞性移除）
 - 視覺走查發現並修正：AI 搜尋結果數誤用 `items.list.page`（語義不符且缺變數 → 畫面漏出原始鍵）→ 新增 `ai.search.resultCount` 並補回歸測試
 - 文件：[`docs/ai.md`](docs/ai.md) 新增 NL 搜尋／問答章節（opt-in、filters 白名單表、fallback 矩陣、grounding 與引用規則、注入防護、golden eval 操作）與疑難排解 9 列

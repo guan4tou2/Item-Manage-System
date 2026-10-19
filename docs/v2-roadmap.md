@@ -60,7 +60,7 @@
 ## 測試規模
 
 - API 測試：1086 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
-- Web 測試：716 passed（128 檔；vitest + @testing-library/react + jsdom）
+- Web 測試：717 passed（128 檔；vitest + @testing-library/react + jsdom）
 - Playwright e2e：25 spec／79 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
