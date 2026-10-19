@@ -472,6 +472,7 @@
       "understood": "Understood as",
       "clear": "Clear",
       "openInList": "Open in item list",
+      "resultCount": "{count} result(s)",
       "noResults": "No matches — try rephrasing",
       "unresolved": "Not found: {name}",
       "fallback": {

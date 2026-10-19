@@ -244,6 +244,18 @@ describe("AiSearchBar", () => {
     expect(await screen.findByText("No matches — try rephrasing")).toBeInTheDocument()
   })
 
+  it("shows the result count without leaking translation keys", async () => {
+    const user = userEvent.setup()
+    search.mutateAsync.mockResolvedValue(response({ total: 3 }))
+    renderBar()
+
+    await user.type(screen.getByLabelText("Describe what you are looking for"), "藥")
+    await user.click(screen.getByRole("button", { name: "Search" }))
+
+    expect(await screen.findByText("3 result(s)")).toBeInTheDocument()
+    expect(screen.queryByText(/items\.list/)).not.toBeInTheDocument()
+  })
+
   it("does not submit an empty sentence", async () => {
     const user = userEvent.setup()
     renderBar()

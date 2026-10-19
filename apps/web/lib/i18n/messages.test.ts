@@ -138,6 +138,7 @@ const PHASE_32_KEYS = [
   "ai.search.understood",
   "ai.search.clear",
   "ai.search.openInList",
+  "ai.search.resultCount",
   "ai.search.noResults",
   "ai.search.unresolved",
   "ai.search.fallback.ai_disabled",

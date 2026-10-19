@@ -472,6 +472,7 @@
       "understood": "理解為",
       "clear": "清除",
       "openInList": "在物品列表開啟",
+      "resultCount": "{count} 筆結果",
       "noResults": "沒有符合的物品，換個說法試試",
       "unresolved": "未找到：{name}",
       "fallback": {

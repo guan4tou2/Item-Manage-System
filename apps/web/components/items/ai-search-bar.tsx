@@ -131,7 +131,7 @@ export function AiSearchBar({ onResults }: Props) {
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs text-muted-foreground">
-                {t("items.list.page", { page: 1 })} · {result.total}
+                {t("ai.search.resultCount", { count: result.total })}
               </span>
               <Button type="button" size="sm" variant="outline" onClick={openInList}>
                 {t("ai.search.openInList")}
