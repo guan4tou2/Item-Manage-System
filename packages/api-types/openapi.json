@@ -5418,6 +5418,52 @@
         ]
       }
     },
+    "/api/ai/receipts": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Create Receipt",
+        "operationId": "create_receipt_api_ai_receipts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReceiptCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReceiptCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/item-types": {
       "get": {
         "tags": [
@@ -9285,6 +9331,26 @@
           },
           "history": {
             "$ref": "#/components/schemas/HistorySuggestions"
+          },
+          "receipt": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReceiptSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "receipt_item": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ReceiptItemSnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -9383,6 +9449,18 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "receipt_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Receipt Id"
           }
         },
         "type": "object",
@@ -12661,6 +12739,188 @@
           "created_at"
         ],
         "title": "QuantityLogRead"
+      },
+      "ReceiptCreateRequest": {
+        "properties": {
+          "image_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Image Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "image_ids"
+        ],
+        "title": "ReceiptCreateRequest"
+      },
+      "ReceiptCreateResponse": {
+        "properties": {
+          "receipt_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Receipt Id"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "created": {
+            "items": {
+              "$ref": "#/components/schemas/DraftRead"
+            },
+            "type": "array",
+            "title": "Created"
+          }
+        },
+        "type": "object",
+        "required": [
+          "receipt_id",
+          "truncated",
+          "created"
+        ],
+        "title": "ReceiptCreateResponse",
+        "description": "`POST /api/ai/receipts` 回應（Phase 33）。"
+      },
+      "ReceiptItemSnapshot": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "quantity": {
+            "type": "integer",
+            "title": "Quantity"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "subtotal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtotal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "index",
+          "quantity",
+          "unit_price",
+          "subtotal"
+        ],
+        "title": "ReceiptItemSnapshot",
+        "description": "品項在收據上的位置與金額（存於該品項草稿的 payload）。"
+      },
+      "ReceiptSnapshot": {
+        "properties": {
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant"
+          },
+          "purchased_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Purchased At"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total"
+          },
+          "item_total": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Total"
+          },
+          "discrepancy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discrepancy"
+          },
+          "page_count": {
+            "type": "integer",
+            "title": "Page Count"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "merchant",
+          "purchased_at",
+          "currency",
+          "total",
+          "item_total",
+          "discrepancy",
+          "page_count",
+          "truncated"
+        ],
+        "title": "ReceiptSnapshot",
+        "description": "收據中繼資料快照（存於每個品項草稿的 payload）。"
       },
       "RegisterRequest": {
         "properties": {

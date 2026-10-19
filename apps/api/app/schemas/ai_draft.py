@@ -25,10 +25,7 @@ DraftErrorCode = Literal[
 
 
 class DraftPayload(BaseModel):
-    """草稿建議快照（version=1）。全欄位必填。
-
-    `receipt`／`receipt_item` 為 Phase 33 收據草稿專用（一般照片草稿為 `null`）。
-    """
+    """草稿建議快照（version=1）。全欄位必填。"""
 
     version: int
     ai: Optional[AiSuggestResponse]

@@ -1504,6 +1504,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Receipt */
+        post: operations["create_receipt_api_ai_receipts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/item-types": {
         parameters: {
             query?: never;
@@ -2806,6 +2823,8 @@ export interface components {
             version: number;
             ai: components["schemas"]["AiSuggestResponse"] | null;
             history: components["schemas"]["HistorySuggestions"];
+            receipt?: components["schemas"]["ReceiptSnapshot"] | null;
+            receipt_item?: components["schemas"]["ReceiptItemSnapshot"] | null;
         };
         /** DraftRead */
         DraftRead: {
@@ -2838,6 +2857,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Receipt Id */
+            receipt_id?: string | null;
         };
         /** ExpiryItem */
         ExpiryItem: {
@@ -3947,6 +3968,62 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** ReceiptCreateRequest */
+        ReceiptCreateRequest: {
+            /** Image Ids */
+            image_ids: string[];
+        };
+        /**
+         * ReceiptCreateResponse
+         * @description `POST /api/ai/receipts` 回應（Phase 33）。
+         */
+        ReceiptCreateResponse: {
+            /**
+             * Receipt Id
+             * Format: uuid
+             */
+            receipt_id: string;
+            /** Truncated */
+            truncated: boolean;
+            /** Created */
+            created: components["schemas"]["DraftRead"][];
+        };
+        /**
+         * ReceiptItemSnapshot
+         * @description 品項在收據上的位置與金額（存於該品項草稿的 payload）。
+         */
+        ReceiptItemSnapshot: {
+            /** Index */
+            index: number;
+            /** Quantity */
+            quantity: number;
+            /** Unit Price */
+            unit_price: string | null;
+            /** Subtotal */
+            subtotal: string | null;
+        };
+        /**
+         * ReceiptSnapshot
+         * @description 收據中繼資料快照（存於每個品項草稿的 payload）。
+         */
+        ReceiptSnapshot: {
+            /** Merchant */
+            merchant: string | null;
+            /** Purchased At */
+            purchased_at: string | null;
+            /** Currency */
+            currency: string | null;
+            /** Total */
+            total: string | null;
+            /** Item Total */
+            item_total: string | null;
+            /** Discrepancy */
+            discrepancy: string | null;
+            /** Page Count */
+            page_count: number;
+            /** Truncated */
+            truncated: boolean;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -7936,6 +8013,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DraftDiscardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_receipt_api_ai_receipts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptCreateResponse"];
                 };
             };
             /** @description Validation Error */
