@@ -20,7 +20,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.db.base import _utcnow
 from app.models.ai_draft import AiDraftItem
-from app.services import ai_quota, ai_service, classification_service
+from app.schemas.ai_draft import DraftAccept
+from app.schemas.item import ItemCreate, ItemRead
+from app.services import ai_quota, ai_service, classification_service, items_service
 from app.services.images_service import get_visible as get_visible_image
 
 logger = logging.getLogger(__name__)
@@ -220,3 +222,82 @@ async def process_draft(
     await session.commit()
     await session.refresh(draft)
     return draft
+
+
+#: 可接受（建立物品）的狀態：`ready` 辨識完成；`failed` 手動完成
+ACCEPTABLE_STATUSES: tuple[str, ...] = ("ready", "failed")
+
+
+async def accept_draft(
+    session: AsyncSession, owner_id: UUID, draft_id: UUID, body: DraftAccept
+) -> tuple[AiDraftItem, ItemRead]:
+    """接受草稿 → 以編輯後欄位建立物品（`items_service.create_item` 單一入口）。
+
+    - 僅 `ready`／`failed` 可接受；`pending`／`processing`／終態 409
+    - 草稿照片一併綁定到新物品；`item_id` 回寫草稿
+    """
+    draft = await get_owned(session, owner_id, draft_id)
+    if draft.status not in ACCEPTABLE_STATUSES:
+        raise HTTPException(
+            status_code=409, detail=f"draft is {draft.status}, not reviewable"
+        )
+
+    item = await items_service.create_item(
+        session,
+        owner_id,
+        ItemCreate(
+            name=body.name,
+            description=body.description,
+            category_id=body.category_id,
+            location_id=body.location_id,
+            quantity=body.quantity,
+            cost=body.cost,
+            image_id=draft.image_id,
+            tag_names=body.tag_names,
+        ),
+    )
+    draft.status = "accepted"
+    draft.item_id = item.id
+    draft.error_code = None
+    await session.commit()
+    await session.refresh(draft)
+    return draft, item
+
+
+async def discard_draft(
+    session: AsyncSession, owner_id: UUID, draft_id: UUID
+) -> AiDraftItem:
+    """丟棄單張草稿（`pending | processing | ready | failed`）；終態 409。"""
+    draft = await get_owned(session, owner_id, draft_id)
+    if draft.status in TERMINAL_STATUSES:
+        raise HTTPException(status_code=409, detail=f"draft already {draft.status}")
+    draft.status = "discarded"
+    await session.commit()
+    await session.refresh(draft)
+    return draft
+
+
+async def discard_many(
+    session: AsyncSession, owner_id: UUID, draft_ids: list[UUID]
+) -> tuple[int, list[tuple[UUID, str]]]:
+    """批量丟棄：逐筆隔離，終態／不存在者入 `skipped`（不整批失敗）。"""
+    skipped: list[tuple[UUID, str]] = []
+    discarded = 0
+    for draft_id in draft_ids:
+        row = (
+            await session.execute(
+                select(AiDraftItem).where(
+                    AiDraftItem.id == draft_id, AiDraftItem.owner_id == owner_id
+                )
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            skipped.append((draft_id, "not found"))
+            continue
+        if row.status in TERMINAL_STATUSES:
+            skipped.append((draft_id, f"already {row.status}"))
+            continue
+        row.status = "discarded"
+        discarded += 1
+    await session.commit()
+    return discarded, skipped

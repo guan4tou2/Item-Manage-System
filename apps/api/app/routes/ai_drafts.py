@@ -18,9 +18,14 @@ from app.db.session import get_db
 from app.models.ai_draft import AiDraftItem
 from app.models.user import User
 from app.schemas.ai_draft import (
+    DraftAccept,
+    DraftAcceptResponse,
     DraftCounts,
     DraftCreate,
     DraftCreateResponse,
+    DraftDiscardRequest,
+    DraftDiscardResponse,
+    DraftDiscardSkipped,
     DraftListResponse,
     DraftPayload,
     DraftRead,
@@ -89,3 +94,42 @@ async def process_draft(
 ) -> DraftRead:
     draft = await ai_drafts_service.process_draft(session, user.id, draft_id)
     return to_read(draft)
+
+
+@router.post("/{draft_id}/accept", response_model=DraftAcceptResponse)
+async def accept_draft(
+    draft_id: UUID,
+    body: DraftAccept,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> DraftAcceptResponse:
+    draft, item = await ai_drafts_service.accept_draft(session, user.id, draft_id, body)
+    return DraftAcceptResponse(draft=to_read(draft), item=item)
+
+
+@router.post("/{draft_id}/discard", response_model=DraftRead)
+async def discard_draft(
+    draft_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> DraftRead:
+    draft = await ai_drafts_service.discard_draft(session, user.id, draft_id)
+    return to_read(draft)
+
+
+@router.post("/discard", response_model=DraftDiscardResponse)
+async def discard_many(
+    body: DraftDiscardRequest,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> DraftDiscardResponse:
+    discarded, skipped = await ai_drafts_service.discard_many(
+        session, user.id, body.ids
+    )
+    return DraftDiscardResponse(
+        discarded=discarded,
+        skipped=[
+            DraftDiscardSkipped(id=draft_id, reason=reason)
+            for draft_id, reason in skipped
+        ],
+    )
