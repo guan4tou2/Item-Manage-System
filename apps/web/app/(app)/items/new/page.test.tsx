@@ -11,6 +11,7 @@ import type { ItemFormValues } from "@/components/items/item-form"
 import NewItemPage from "./page"
 
 const createItemMock = vi.hoisted(() => vi.fn())
+const draftCountsMock = vi.hoisted(() => vi.fn())
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
@@ -78,6 +79,10 @@ vi.mock("@/lib/hooks/use-tags", () => ({
   useTags: () => ({ data: [] }),
 }))
 
+vi.mock("@/lib/hooks/use-ai-drafts", () => ({
+  useDraftCounts: () => draftCountsMock(),
+}))
+
 vi.mock("@/lib/api/batches", () => ({
   createBatch: vi.fn(),
 }))
@@ -97,6 +102,15 @@ vi.mock("@/lib/api/customization", () => ({
 
 import * as batchApi from "@/lib/api/batches"
 
+const zeroCounts = {
+  pending: 0,
+  processing: 0,
+  ready: 0,
+  failed: 0,
+  accepted: 0,
+  discarded: 0,
+}
+
 function renderPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -113,6 +127,7 @@ function renderPage() {
 describe("NewItemPage", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    draftCountsMock.mockReturnValue({ data: zeroCounts, isLoading: false, isError: false })
   })
 
   it("passes item templates into the item form", async () => {
@@ -193,5 +208,83 @@ describe("NewItemPage read-only viewer (Phase 30)", () => {
 
     expect(await screen.findByRole("button", { name: "submit-item" })).toBeInTheDocument()
     expect(screen.queryByTestId("viewer-notice")).not.toBeInTheDocument()
+  })
+})
+
+describe("NewItemPage AI batch intake entry (Phase 32)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    useAuthStore.setState({
+      accessToken: "jwt",
+      user: { id: "writer-1", is_read_only: false } as never,
+    })
+    draftCountsMock.mockReturnValue({ data: zeroCounts, isLoading: false, isError: false })
+  })
+
+  afterEach(() => {
+    useAuthStore.setState({ accessToken: null, user: null })
+  })
+
+  it("offers the batch intake entry card next to the manual form", async () => {
+    renderPage()
+
+    expect(await screen.findByTestId("batch-entry-card")).toBeInTheDocument()
+    expect(screen.getByText("AI batch intake")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Upload several photos; each one is recognized in turn with category, location, and tag suggestions.",
+      ),
+    ).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Open draft queue" })).toHaveAttribute(
+      "href",
+      "/items/drafts",
+    )
+  })
+
+  it("badges the number of drafts awaiting review", async () => {
+    draftCountsMock.mockReturnValue({
+      data: { ...zeroCounts, pending: 2, processing: 1, ready: 3, failed: 1, accepted: 9 },
+      isLoading: false,
+      isError: false,
+    })
+    renderPage()
+
+    expect(await screen.findByTestId("batch-entry-badge")).toHaveTextContent("7 awaiting review")
+  })
+
+  it("hides the badge when nothing awaits review", async () => {
+    renderPage()
+
+    expect(await screen.findByTestId("batch-entry-card")).toBeInTheDocument()
+    expect(screen.queryByTestId("batch-entry-badge")).not.toBeInTheDocument()
+  })
+
+  it("keeps the entry usable when the counts query fails", async () => {
+    draftCountsMock.mockReturnValue({ data: undefined, isLoading: false, isError: true })
+    renderPage()
+
+    expect(await screen.findByTestId("batch-entry-card")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Open draft queue" })).toBeInTheDocument()
+    expect(screen.queryByTestId("batch-entry-badge")).not.toBeInTheDocument()
+  })
+
+  it("shows a checking hint while the counts load", async () => {
+    draftCountsMock.mockReturnValue({ data: undefined, isLoading: true, isError: false })
+    renderPage()
+
+    expect(await screen.findByTestId("batch-entry-card")).toBeInTheDocument()
+    expect(screen.getByText("Checking…")).toBeInTheDocument()
+    expect(screen.queryByTestId("batch-entry-badge")).not.toBeInTheDocument()
+  })
+
+  it("hides the entry from viewers", async () => {
+    useAuthStore.setState({
+      accessToken: "jwt",
+      user: { id: "viewer-1", is_read_only: true } as never,
+    })
+    renderPage()
+
+    expect(await screen.findByTestId("viewer-notice")).toBeInTheDocument()
+    expect(screen.queryByTestId("batch-entry-card")).not.toBeInTheDocument()
   })
 })

@@ -7,6 +7,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { ViewerNotice } from "@/components/common/viewer-notice"
+import { BatchEntryCard } from "@/components/ai/batch-entry-card"
 import { ItemForm, type ItemFormValues } from "@/components/items/item-form"
 import {
   Breadcrumb,
@@ -138,6 +139,7 @@ export default function NewItemPage() {
         </BreadcrumbList>
       </Breadcrumb>
       <h1 className="text-2xl font-semibold">{t("items.list.new")}</h1>
+      <BatchEntryCard />
       <ItemForm
         defaultValues={empty}
         onSubmit={handleSubmit}
