@@ -106,6 +106,29 @@ const PHASE_32_KEYS = [
   "items.new.batchEntry.cta",
   "items.new.batchEntry.badge",
   "items.new.batchEntry.badgeLoading",
+  // 收據辨識（Phase 33）
+  "ai.receipts.tabPhoto",
+  "ai.receipts.tabReceipt",
+  "ai.receipts.title",
+  "ai.receipts.hint",
+  "ai.receipts.choose",
+  "ai.receipts.aria",
+  "ai.receipts.extracting",
+  "ai.receipts.extractingHint",
+  "ai.receipts.errors.ai_disabled",
+  "ai.receipts.errors.quota_exhausted",
+  "ai.receipts.errors.upstream_error",
+  "ai.receipts.errors.no_items",
+  "ai.receipts.errors.unknown",
+  "ai.receipts.truncated",
+  "ai.receipts.group.unknownMerchant",
+  "ai.receipts.group.unknownDate",
+  "ai.receipts.group.pages",
+  "ai.receipts.group.items",
+  "ai.receipts.group.matched",
+  "ai.receipts.group.mismatch",
+  "ai.receipts.group.noTotal",
+  "ai.receipts.item.subtotal",
 ]
 
 describe("i18n messages", () => {
@@ -129,6 +152,27 @@ describe("i18n messages", () => {
     const missingZh = PHASE_32_KEYS.filter((key) => !zhKeys.includes(key))
 
     expect({ en: missingEn, zhTW: missingZh }).toEqual({ en: [], zhTW: [] })
+  })
+
+  it("has no unused AI keys in the Phase 33 receipt namespace", () => {
+    const sources = [
+      "app/(app)/items/drafts/drafts-client.tsx",
+      "components/ai/draft-upload-zone.tsx",
+      "components/ai/receipt-group-header.tsx",
+      "components/ai/draft-card.tsx",
+    ]
+      .map((relative) => fs.readFileSync(path.resolve(__dirname, "..", "..", relative), "utf8"))
+      .join("\n")
+
+    const receiptKeys = enKeys.filter((key) => key.startsWith("ai.receipts."))
+    const missing = receiptKeys.filter((key) => {
+      const suffix = key.slice("ai.receipts.".length)
+      // 動態鍵（errors.*）以樣板字串組合，改用前綴檢查
+      if (suffix.startsWith("errors.")) return !sources.includes("ai.receipts.errors.")
+      return !sources.includes(key)
+    })
+
+    expect(missing).toEqual([])
   })
 
   it("has no empty translations", () => {

@@ -451,7 +451,6 @@
       },
       "truncated": "Only the first {count} items were imported",
       "group": {
-        "merchant": "Merchant",
         "unknownMerchant": "Unlabeled merchant",
         "unknownDate": "No date",
         "pages": "{count} page(s)",
@@ -461,8 +460,7 @@
         "noTotal": "The receipt has no total"
       },
       "item": {
-        "subtotal": "Line total {amount}",
-        "unitPrice": "Unit price {amount}"
+        "subtotal": "Line total {amount}"
       }
     }
   },

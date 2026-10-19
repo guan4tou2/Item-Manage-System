@@ -451,7 +451,6 @@
       },
       "truncated": "僅匯入前 {count} 個品項",
       "group": {
-        "merchant": "商家",
         "unknownMerchant": "未標示商家",
         "unknownDate": "未標示日期",
         "pages": "{count} 頁",
@@ -461,8 +460,7 @@
         "noTotal": "收據未標示總額"
       },
       "item": {
-        "subtotal": "小計 {amount}",
-        "unitPrice": "單價 {amount}"
+        "subtotal": "小計 {amount}"
       }
     }
   },
