@@ -1,4 +1,5 @@
 from __future__ import annotations
+from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
@@ -44,3 +45,53 @@ class ClassificationSuggestRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1, max_length=200)
+
+
+# --- Phase 33：收據抽取 ------------------------------------------------------
+
+
+class ReceiptItem(BaseModel):
+    """收據上的單一品項（金額已由伺服器補齊）。"""
+
+    name: str
+    quantity: int
+    unit_price: Optional[Decimal]
+    subtotal: Optional[Decimal]
+
+
+class ReceiptExtraction(BaseModel):
+    """LLM 抽取結果（尚未落地成草稿）。"""
+
+    merchant: Optional[str]
+    purchased_at: Optional[str]
+    currency: Optional[str]
+    total: Optional[Decimal]
+    items: list[ReceiptItem]
+
+
+class ReceiptCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    image_ids: list[UUID] = Field(min_length=1, max_length=10)
+
+
+class ReceiptSnapshot(BaseModel):
+    """收據中繼資料快照（存於每個品項草稿的 payload）。"""
+
+    merchant: Optional[str]
+    purchased_at: Optional[str]
+    currency: Optional[str]
+    total: Optional[Decimal]
+    item_total: Optional[Decimal]
+    discrepancy: Optional[Decimal]
+    page_count: int
+    truncated: bool
+
+
+class ReceiptItemSnapshot(BaseModel):
+    """品項在收據上的位置與金額（存於該品項草稿的 payload）。"""
+
+    index: int
+    quantity: int
+    unit_price: Optional[Decimal]
+    subtotal: Optional[Decimal]

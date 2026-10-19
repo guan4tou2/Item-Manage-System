@@ -98,3 +98,11 @@ class DraftDiscardSkipped(BaseModel):
 class DraftDiscardResponse(BaseModel):
     discarded: int
     skipped: list[DraftDiscardSkipped]
+
+
+class ReceiptCreateResponse(BaseModel):
+    """`POST /api/ai/receipts` 回應（Phase 33）。"""
+
+    receipt_id: UUID
+    truncated: bool
+    created: list[DraftRead]

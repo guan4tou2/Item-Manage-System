@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import date
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -34,6 +37,184 @@ Example:
 
 class AiUpstreamError(Exception):
     """Gemini 呼叫失敗（SDK 缺失、連線錯誤、空回應、非 JSON）。"""
+
+
+# --- Phase 33：收據辨識 ------------------------------------------------------
+
+#: 單次收據品項上限（超出截斷並回報 `truncated`）
+MAX_RECEIPT_ITEMS = 50
+
+_RECEIPT_PROMPT = """You are a receipt parsing assistant for a home item management app.
+The images are pages of ONE shopping receipt (possibly multiple pages of the same purchase).
+Merge all pages into a single receipt and return STRICT JSON (no prose, no markdown fences):
+
+{
+  "merchant": string or null,
+  "purchased_at": "YYYY-MM-DD" or null,
+  "currency": ISO 4217 code or null,
+  "total": decimal string or null,
+  "items": [
+    {"name": string, "quantity": integer, "unit_price": decimal string or null, "subtotal": decimal string or null}
+  ]
+}
+
+Rules:
+- Item names in Traditional Chinese (zh-TW), <= 60 chars, no line numbers or SKU codes.
+- Amounts are plain decimal strings with 2 decimals (e.g. "62.00"); never include currency symbols or thousands separators.
+- "total" is the receipt grand total; "subtotal" is the line total for that item.
+- If a field is unreadable, use null. Do not invent items, quantities or prices.
+- One entry per purchased line (merge duplicate lines of the same product only if clearly identical).
+"""
+
+
+class ReceiptItem(BaseModel):
+    """收據單一品項（金額已由伺服器補齊）。"""
+
+    name: str
+    quantity: int
+    unit_price: Optional[Decimal]
+    subtotal: Optional[Decimal]
+
+
+class ReceiptExtraction(BaseModel):
+    """LLM 抽取結果（尚未落地成草稿）。"""
+
+    merchant: Optional[str]
+    purchased_at: Optional[str]
+    currency: Optional[str]
+    total: Optional[Decimal]
+    items: list[ReceiptItem]
+
+
+def _decimal_or_none(value: Any) -> Optional[Decimal]:
+    """寬鬆轉 Decimal（去貨幣符號／千分位）；不可解析 → None。"""
+    if value is None:
+        return None
+    if isinstance(value, Decimal):
+        return value
+    if isinstance(value, (int, float)):
+        return Decimal(str(value))
+    text = str(value).strip()
+    if not text:
+        return None
+    for symbol in ("NT$", "US$", "HK$", "CN¥", "$", "€", "¥", ","):
+        text = text.replace(symbol, "")
+    text = text.strip()
+    try:
+        return Decimal(text)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _iso_date_or_none(value: Any) -> Optional[str]:
+    """僅接受 `YYYY-MM-DD`；其餘 → None（單一欄位壞掉不整批失敗）。"""
+    if not value:
+        return None
+    text = str(value).strip()
+    try:
+        return date.fromisoformat(text).isoformat()
+    except ValueError:
+        return None
+
+
+def _int_quantity(value: Any) -> int:
+    try:
+        quantity = int(value)
+    except (TypeError, ValueError):
+        return 1
+    return quantity if quantity > 0 else 1
+
+
+def parse_receipt_response(text: str) -> ReceiptExtraction:
+    """解析 LLM 回應並補齊金額（決定性規則，見計畫 D3）。
+
+    - 單價缺、小計有 → 單價＝小計／數量（2 位四捨五入）
+    - 小計缺、單價有 → 小計＝單價×數量
+    - 兩者皆缺 → 皆為 None
+    - 兩者都有 → 保留原值（不一致由對帳提示呈現）
+    """
+    try:
+        payload = json.loads((text or "").strip())
+    except json.JSONDecodeError as exc:
+        raise AiUpstreamError("receipt AI returned invalid JSON") from exc
+    if not isinstance(payload, dict):
+        raise AiUpstreamError("receipt AI returned non-object JSON")
+
+    raw_items = payload.get("items")
+    if not isinstance(raw_items, list):
+        raise AiUpstreamError("receipt AI returned no items")
+
+    items: list[ReceiptItem] = []
+    for raw in raw_items:
+        if not isinstance(raw, dict):
+            continue
+        name = str(raw.get("name") or "").strip()
+        if not name:
+            continue
+        quantity = _int_quantity(raw.get("quantity"))
+        unit_price = _decimal_or_none(raw.get("unit_price"))
+        subtotal = _decimal_or_none(raw.get("subtotal"))
+        if unit_price is None and subtotal is not None:
+            unit_price = (subtotal / quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        elif subtotal is None and unit_price is not None:
+            subtotal = (unit_price * quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        items.append(
+            ReceiptItem(
+                name=name[:200],
+                quantity=quantity,
+                unit_price=unit_price,
+                subtotal=subtotal,
+            )
+        )
+        if len(items) >= MAX_RECEIPT_ITEMS:
+            break
+
+    if not items:
+        raise AiUpstreamError("receipt AI returned no usable items")
+
+    currency = payload.get("currency")
+    return ReceiptExtraction(
+        merchant=(str(payload["merchant"]).strip()[:200] if payload.get("merchant") else None),
+        purchased_at=_iso_date_or_none(payload.get("purchased_at")),
+        currency=(str(currency).strip().upper()[:3] if currency else None),
+        total=_decimal_or_none(payload.get("total")),
+        items=items,
+    )
+
+
+async def call_gemini_receipt(
+    pages: list[tuple[Path, str]],
+) -> ReceiptExtraction:
+    """多頁收據一次送出（同一請求、每頁一個 Part）；失敗一律 `AiUpstreamError`。"""
+    try:
+        from google import genai
+        from google.genai import types as genai_types
+    except ImportError as exc:
+        raise AiUpstreamError(f"AI SDK not installed: {exc}") from exc
+
+    settings = get_settings()
+    client = genai.Client(api_key=settings.gemini_api_key)
+
+    parts: list[Any] = [_RECEIPT_PROMPT]
+    for path, mime_type in pages:
+        parts.append(
+            genai_types.Part.from_bytes(data=path.read_bytes(), mime_type=mime_type)
+        )
+
+    try:
+        result = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=parts,
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.0,
+            ),
+        )
+    except Exception as exc:
+        logger.warning("gemini receipt call failed", exc_info=True)
+        raise AiUpstreamError(f"upstream AI error: {exc}") from exc
+
+    return parse_receipt_response(result.text or "")
 
 
 async def call_gemini_suggest(
