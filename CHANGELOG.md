@@ -6,6 +6,18 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+### 本輪迭代完成（Phase 22–34，2026-10-19）
+
+`docs/plans/2026-10-15-next-iteration-roadmap.md` 排定的 **13 個 phase 全數上線**（M1 到期與提醒 3／3、M2 輸入與結構 2／2、M3 治理與協作 5／5、M4 AI 深化 3／3）。逐 phase 變更見下方 `alpha.22`–`alpha.34`；整體狀態、驗證基線、已知限制與後續候選整理於 [`docs/progress-2026-10-19.md`](docs/progress-2026-10-19.md)。
+
+- **測試規模**：API 912 → **1086**（＋ golden eval 28）、Web 560／111 檔 → **717／128 檔**、e2e 22 spec／68 情境 → **25 spec／79 情境**
+- **Migration**：`0025 (head)`（`0019`–`0025` 皆於本輪新增）
+- **既有缺陷修正**（非計畫內、走查發現）：
+  - `<img src="/api/images/{id}">` 一律 401 破圖（自 Phase 1 起全站物品詳情／表單預覽／掃碼候選都看不到照片）→ `AuthImage`（`apiFetch` → blob URL）＋e2e `naturalWidth > 0` 守門
+  - AI 搜尋結果數漏出原始 i18n 鍵 → `ai.search.resultCount`＋回歸測試
+- **已知限制**：AI 成功路徑無法 e2e 覆蓋（`.env` 無 `GEMINI_API_KEY`）；`AuthImage` 無 blob 快取；AI 搜尋不分頁（上限 50）；問答為單輪；收據品項上限 50；`main` 尚未 push（local-only 流程）
+- **後續候選**（未排程，建議優先序）：① `AI_MODE=stub` 讓 AI 成功路徑進 e2e ② 位置 QR 標籤 ③ 稽核查詢 UI ④ 週報 ⑤ 標籤列印加條碼 ⑥ 批次成本 ⑦ 分享唯讀連結 ⑧ 樓層平面圖互動 ⑨ Background Sync ⑩ v1 目錄下線 ⑪ `AuthImage` blob 快取
+
 ## [2.0.0-alpha.34] — Phase 34：AI 自然語言搜尋＋物品問答
 
 - **既有搜尋 API 擴充**（皆 optional，省略時行為不變）：`GET /api/items` 新增 `loan=borrowed|overdue`（未歸還／未歸還且已過歸還日；未填歸還日不算逾期）、`min_quantity`／`max_quantity`（含邊界、負數 422）、`sort` 擴充 `name_asc`／`created_desc`
