@@ -22,6 +22,16 @@ class TestPreferencesRead:
             is False
         )
 
+    def test_ai_data_sharing_defaults_false(self):
+        """Phase 34：送出物品摘要至 Gemini 預設關閉（opt-in）。"""
+        assert PreferencesRead().ai_data_sharing_enabled is False
+
+    def test_ai_data_sharing_can_be_enabled(self):
+        assert (
+            PreferencesRead(ai_data_sharing_enabled=True).ai_data_sharing_enabled
+            is True
+        )
+
     def test_accepts_valid_theme(self):
         prefs = PreferencesRead(theme="dark")
         assert prefs.theme == "dark"

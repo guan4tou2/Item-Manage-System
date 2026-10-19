@@ -36,6 +36,7 @@ class TestGetPreferences:
             "currency": "TWD",
             "viewer_notice_dismissed": False,
             "report_monthly_enabled": True,
+            "ai_data_sharing_enabled": False,
         }
 
 
@@ -66,6 +67,28 @@ class TestPutPreferences:
         assert resp.status_code == 200
         assert resp.json()["report_monthly_enabled"] is False
         assert resp.json()["language"] == "zh-TW"
+
+    async def test_updates_ai_data_sharing_enabled(self, client, auth_headers):
+        """Phase 34：AI 資料分享開關（預設關）。"""
+        initial = await client.get("/api/users/me/preferences", headers=auth_headers)
+        assert initial.json()["ai_data_sharing_enabled"] is False
+
+        resp = await client.put(
+            "/api/users/me/preferences",
+            headers=auth_headers,
+            json={"ai_data_sharing_enabled": True},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["ai_data_sharing_enabled"] is True
+        # 不影響其他偏好
+        assert resp.json()["report_monthly_enabled"] is True
+
+        off = await client.put(
+            "/api/users/me/preferences",
+            headers=auth_headers,
+            json={"ai_data_sharing_enabled": False},
+        )
+        assert off.json()["ai_data_sharing_enabled"] is False
 
     async def test_updates_language(self, client, auth_headers):
         resp = await client.put(
