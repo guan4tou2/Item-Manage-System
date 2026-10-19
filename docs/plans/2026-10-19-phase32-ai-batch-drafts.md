@@ -1,7 +1,7 @@
 # Phase 32 — AI 批次入庫＋智慧分類建議
 
 - **日期**：2026-10-19
-- **狀態**：規劃完成，待執行
+- **狀態**：已完成（T1.1–T3.3 全部落地；TDD 紅綠、全套驗證與視覺走查見文末 Final Verification）
 - **依據**：`docs/plans/2026-10-15-next-iteration-roadmap.md` §六 Phase 32、§5.2（設定／入口）、§5.3（導覽契約）、§5.4（互動狀態契約）、§5.6（AI 標記）、§九風險 3（Gemini 成本／配額）
 - **依賴**：Phase 25（條碼，選配）、Phase 27（成本欄位，accept 可帶 `cost`）
 - **規模**：M–L（API 約 8 端點＋規則引擎＋配額；Web 新頁面與共用元件；e2e 新 spec）
@@ -399,21 +399,35 @@ ai_usage
 - `docs/v2-roadmap.md`：Phase 32 ✅＋測試規模更新；`docs/scheduling.md` 不動（無新 job，於 `docs/ai.md` 交叉註明）
 - 本計畫 Final Verification 實測記錄＋收尾環境註記
 
+### T3.3 圖片顯示修正（視覺走查發現；既有全站缺陷，經確認後併入本 phase）
+
+- **問題**：`GET /api/images/{id}` 只接受 Bearer（`refresh_token` cookie 僅限 `/api/auth`），`<img src>` 帶不了 token → 一律 401 → 破圖；自 Phase 1 起全站如此（物品詳情、物品表單預覽、掃碼候選、Phase 32 草稿卡同寫法）
+- RED：`components/common/auth-image.test.tsx`（Bearer 取圖＋object URL、失敗/未登入 fallback、載入中 placeholder、卸載與換圖撤銷 URL）；`components/scan/barcode-candidates.test.tsx` 縮圖改斷言 blob URL
+- GREEN：`components/common/auth-image.tsx`（`apiFetch` → `blob` → `URL.createObjectURL`；卸載／`imageId` 變更時 `revokeObjectURL`）＋套用 4 個使用點（`items/[id]`／`item-form` 預覽／`scan` 候選／草稿卡）；`lib/api/images.ts` 移除已無使用的 `imageUrl`；`vitest.setup.ts` 補 jsdom 的 object URL shim
+- e2e：`tests/ai-drafts.spec.ts` 追加縮圖 `naturalWidth > 0` 守門（回歸即失敗）
+- 視覺走查複驗：草稿卡縮圖、物品詳情圖片於 1440×900／390×844 皆正常
+
 ---
 
-## Final Verification（收尾時填實測）
+## Final Verification（收尾時填實測；2026-10-19）
 
-- [ ] API：`uv run pytest -q` → ___ passed
-- [ ] Web：`pnpm vitest run` → ___ passed（___ 檔）；`pnpm typecheck` → 0 error
-- [ ] api-types 重生成零 diff
-- [ ] Migration 0024 up／down／up（Postgres 容器）
-- [ ] e2e：重建 image 後 `pnpm exec playwright test` → ___ spec／___ passed
-- [ ] 視覺走查：桌機 1440×900＋行動 390×844（`/items/new` 入口卡；`/items/drafts` 上傳區、四態卡（含失敗重試與手動填寫）、批量條、空狀態）——人工檢視無破版
+- [x] API：`uv run pytest -q` → **984 passed**（基線 912；2:46）
+- [x] Web：`pnpm vitest run` → **649 passed（121 檔）**（基線 560／111 檔）；`pnpm typecheck` → **0 error**
+- [x] api-types 重生成零 diff（`uv run python scripts/export_openapi.py` ＋ `node generate.mjs`；`git status packages/api-types` 空）
+- [x] Migration 0024 up／down／up（Postgres 容器：`0024 (head)` → `downgrade 0023` → `upgrade head` → `0024 (head)`）
+- [x] e2e：重建 image 後 `pnpm exec playwright test --workers=2` → **23 spec／71 passed**（預設 workers 於高負載機器會出現 UI timeout flake，見註記；`tests/ai-drafts.spec.ts` 3 情境於預設並行下亦穩定通過）
+- [x] 視覺走查：桌機 1440×900＋行動 390×844（`/items/new` 入口卡與徽章；`/items/drafts` 上傳區、四態卡（failure／manual／ready／processing）、批量條、空狀態、接受 toast；物品詳情頁圖片）——無破版；走查發現之既有破圖缺陷已修（T3.3）並複驗
 - [ ] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
 
-### 收尾環境註記（2026-10-19 起填）
+### 收尾環境註記（2026-10-19）
 
-- （待填：worktree 名稱、stack 狀態、e2e 前置與資料種子、無 key 路徑說明）
+- Worktree：`.claude/worktrees/phase32-ai-batch-drafts`（分支 `claude/phase32-ai-batch-drafts`，base＝main 計畫 commit `d75880e`）
+- Stack：compose 專案 `ims-v2`（postgres／redis／api／web／nginx／worker）；e2e 前 `docker compose up -d --build`（T3.3 後再重建 web image）；入口 `http://localhost`
+- `.env`：`GEMINI_API_KEY=` 空 → 本機與 e2e 預設走 no-key 失敗路徑（`ai_disabled`）；`AI_DAILY_QUOTA` 未設（預設 50）；`DATABASE_URL` 指向 compose `postgres:5432`
+- 資料種子：e2e 每次註冊新使用者隔離；`tests/ai-drafts.spec.ts` 以 API 種分類「廚房用品」＋物品「咖啡濾杯」建立歷史，使「依歷史建議」可斷言
+- 視覺走查以臨時 Playwright 腳本執行（走查後刪除，未入版控）：`ready`／`processing` 卡片以 DB 直插草稿列取得四態畫面
+- 全套 e2e：預設 workers 下三次複跑分別出現 2／2／3 件**互不相同**的 UI timeout 失敗（collaboration `接受` 按鈕、items-crud 標籤篩選、locations-tree 建樹、reports 月報 job），單獨重跑皆通過；`--workers=2` 全套 71 passed → 判定為機器高負載（load average ≈30／10 核，另有 Syrtis／playwright-mcp 等程序）造成的環境性 flake，非 Phase 32 功能回歸；未修改任何既有測試
+- 無 key 路徑：上傳 → `failed`（`ai_disabled`）→「依歷史建議」仍可套用本人歷史分類 → 手動接受建立物品；歷史規則引擎與手動完成皆不依賴 LLM
 
 ## 測試基線（main，Phase 31 完成）
 

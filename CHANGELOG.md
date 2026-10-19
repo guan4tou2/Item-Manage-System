@@ -6,6 +6,21 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.32] — Phase 32：AI 批次入庫（草稿佇列＋智慧分類建議）
+
+- **DB**：新增 `ai_draft_items`（Alembic `0024`；`status` CHECK `pending/processing/ready/failed/accepted/discarded`、`payload` JSON 快照、`error_code`、`item_id` 回連建立的物品、索引 `(owner_id, status)`）與 `ai_usage`（`UNIQUE(user_id, day)`，per-user 每日 LLM 計次；`day` 為 Asia/Taipei 當地日期）
+- **伺服器端狀態機**（不引入背景 worker；`POST /{id}/process` 於請求內完成）：非終態皆可進入（`processing` 可重入＝卡住復原），終態 `409`；一律 `200` 回最終狀態；失敗以代碼寫入 `error_code`（`ai_disabled`／`quota_exhausted`／`upstream_error`／`image_missing`）；`failed → accepted` 允許（展開「手動填寫」直接完成＝人工補齊），`pending`／`processing` → accept `409`
+- **端點**：`POST /api/ai/drafts`（1–10 張；同圖活動草稿去重回 `skipped_image_ids`）、`GET /api/ai/drafts`（省略 `status` → 活動四態、`created_at DESC`、六態 `counts`）、`POST /{id}/process`、`POST /{id}/accept`（`ACCEPTABLE_STATUSES=(ready, failed)`；以 `items_service.create_item` 建立物品，成功後才回寫草稿狀態與 `item_id`）、`POST /{id}/discard`、`POST /api/ai/drafts/discard`（批量 1–50：逐筆隔離，終態／不存在入 `skipped`，不整批失敗）；`/api/ai/drafts` 全端點掛 `WriterGuardRoute`（viewer `403` 於路由依賴階段）
+- **智慧分類建議**（`POST /api/ai/suggest-classification`，唯讀、不消耗配額、不掛 guard）：以**本人歷史資料**的純規則引擎生成——NFKC＋lower 分詞（拉丁／數字 ≥2、CJK bigram）、與歷史物品名稱 token 交集評分、`(score, item_count)` 聚合、`score → item_count → id/name` 決定性排序；僅掃本人未刪除物品（`LIMIT 2000` 護欄），**LLM 不可用／配額耗盡時仍可運作**
+- **配額**（`AI_DAILY_QUOTA`，預設 50、`<=0` 不設限）：per-user、Asia/Taipei 換日、**計次於嘗試**（呼叫前扣並 commit，上游失敗亦計）；耗盡時既有 `suggest-from-image` → `429`、批次流程以 `quota_exhausted` 進失敗態（行為變更，見 `docs/ai.md`）
+- **Web ＞ 佇列 `/items/drafts`**：上傳區（拖放／多檔、單次上限 10 並提示略過張數、單檔失敗列內重試、建立失敗區塊重試不清空已上傳清單）、逐張序列處理迴圈（`pending` 自動續行、`processing` 不自動重送、業務失敗不中斷、傳輸錯誤停止＋「繼續處理」、已嘗試集合防重送）、四態草稿卡（AI 欄位 `AiMark`、歷史徽章「依歷史：{名稱}」、「依歷史建議」按鈕、`failed` 展開手動填寫、接受／丟棄僅本卡 loading）、批量條（全選／取消、「全部接受」僅 `ready` 其餘跳過、「全部丟棄」走批量端點）；四態頁面契約（skeleton ×3／空狀態引導／清單錯誤重試）；viewer 顯示 `ViewerNotice` 且不發出草稿查詢
+- **入口**：`/items/new` 頁首「AI 批次入庫」卡＋「N 筆待審核」徽章（`activeDraftTotal` 僅計活動四態；計數失敗僅少徽章、不擋動線）；**不新增首層導覽**（計畫 D9），佇列頁提供「改為手動新增」互達
+- i18n：`ai.mark.tooltip`＋`ai.drafts.*`（59 鍵）＋`items.new.batchEntry.*`（5 鍵）（zh-TW／en 鍵集與行數一致 1398）；新增 `lib/i18n/messages.test.ts` 對帳（鍵集一致／行數一致／Phase 32 齊全／無空字串）
+- **修正（視覺走查發現的既有全站缺陷）**：`GET /api/images/{id}` 只接受 Bearer，`<img src>` 帶不了 token（自 Phase 1 起物品詳情／物品表單預覽／掃碼候選一律破圖）→ 新增 `components/common/auth-image.tsx`（`apiFetch` 取 blob → object URL；卸載與換圖時撤銷；失敗／未登入顯示 fallback、載入中顯示 placeholder），套用上述四處＋草稿卡；`lib/api/images.ts` 移除已無使用的 `imageUrl`；e2e 追加縮圖 `naturalWidth > 0` 守門
+- 新增 72 個 API 測試（912 → 984）；新增 89 個 web 測試（560 → 649，111 → 121 檔）；e2e 22 → 23 spec（68 → 71 情境；新增「無 key：上傳→失敗→依歷史建議→手動接受入庫」「批量丟棄回空狀態」「入口卡徽章」）
+- **Migration 0024**（`ai_draft_items`＋`ai_usage`；Postgres up／down／up 驗證）；api-types 重生成（`/api/ai/drafts` 系＋`/api/ai/suggest-classification`；既有契約零變動）
+- 文件：新增 [`docs/ai.md`](docs/ai.md)（設定／狀態機／端點／規則引擎／狀態契約／疑難排解）
+
 ## [2.0.0-alpha.31] — Phase 31：定期報表（月報）
 
 - **DB**：新增 `reports` 表（Alembic `0023`；`UNIQUE(user_id, period)`、`payload` JSON 快照、`generated_at`）；月報是**不可變快照**，生成後物品異動不回寫
