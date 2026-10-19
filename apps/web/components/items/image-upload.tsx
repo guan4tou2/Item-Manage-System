@@ -2,8 +2,9 @@
 import { useRef, useState } from "react"
 import { useTranslations } from "next-intl"
 
+import { AuthImage } from "@/components/common/auth-image"
 import { Button } from "@/components/ui/button"
-import { imageUrl, uploadImage } from "@/lib/api/images"
+import { uploadImage } from "@/lib/api/images"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 interface Props {
@@ -31,11 +32,11 @@ export function ImageUpload({ imageId, onChange }: Props) {
   return (
     <div className="space-y-2">
       {imageId ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imageUrl(imageId)}
+        <AuthImage
+          imageId={imageId}
           alt=""
           className="h-40 w-40 rounded border object-cover"
+          placeholder={<div className="h-40 w-40 animate-pulse rounded border bg-muted" />}
         />
       ) : (
         <div className="flex h-40 w-40 items-center justify-center rounded border border-dashed text-xs text-muted-foreground">

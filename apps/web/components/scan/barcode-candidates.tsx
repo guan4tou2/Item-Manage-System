@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { Package } from "lucide-react"
 
-import { imageUrl } from "@/lib/api/images"
+import { AuthImage } from "@/components/common/auth-image"
 import type { BarcodeLocalMatch } from "@/lib/api/barcodes"
 
 interface Props {
@@ -29,11 +29,18 @@ export function BarcodeCandidates({ matches }: Props) {
               className="flex items-center gap-3 rounded p-2 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
             >
               {match.image_id ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={imageUrl(match.image_id)}
+                <AuthImage
+                  imageId={match.image_id}
                   alt=""
                   className="h-10 w-10 shrink-0 rounded object-cover"
+                  fallback={
+                    <span
+                      aria-hidden
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded bg-muted text-muted-foreground"
+                    >
+                      <Package className="h-5 w-5" />
+                    </span>
+                  }
                 />
               ) : (
                 <span

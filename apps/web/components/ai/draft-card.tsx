@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { AiMark } from "@/components/ai/ai-mark"
+import { AuthImage } from "@/components/common/auth-image"
 import { CategorySelect } from "@/components/categories/category-select"
 import { LocationSelect } from "@/components/locations/location-select"
 import { TagMultiSelect } from "@/components/items/tag-multi-select"
@@ -19,7 +20,6 @@ import { Textarea } from "@/components/ui/textarea"
 import type { DraftAcceptRequest, DraftRead, DraftStatus } from "@/lib/api/ai-drafts"
 import { getApiErrorDetail } from "@/lib/api/client"
 import type { CategoryTreeNode } from "@/lib/api/categories"
-import { imageUrl } from "@/lib/api/images"
 import type { LocationRead } from "@/lib/api/locations"
 import {
   acceptBodyFrom,
@@ -324,11 +324,15 @@ export function DraftCard({
         ) : null}
 
         {draft.image_id ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imageUrl(draft.image_id)}
+          <AuthImage
+            imageId={draft.image_id}
             alt={t("ai.drafts.card.photoAlt")}
             className="size-20 shrink-0 rounded-md border object-cover"
+            fallback={
+              <div className="flex size-20 shrink-0 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">
+                {t("ai.drafts.card.photoAlt")}
+              </div>
+            }
           />
         ) : (
           <div className="flex size-20 shrink-0 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">

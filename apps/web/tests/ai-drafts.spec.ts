@@ -96,6 +96,11 @@ test("無 API key：上傳→失敗→依歷史建議→手動接受入庫", asy
   })
   await expect(cards(page).nth(0).getByRole("alert")).toContainText("AI 未設定")
 
+  // 縮圖須帶 Bearer（AuthImage）：naturalWidth > 0 證明不是破圖
+  const thumb = cards(page).nth(0).locator("img")
+  await expect(thumb).toBeVisible()
+  expect(await thumb.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0)
+
   // 第 1 張：展開手動填寫 → 命名 → 依歷史建議 → 套用分類 → 接受
   const first = cards(page).nth(0)
   await first.getByRole("button", { name: "手動填寫" }).click()

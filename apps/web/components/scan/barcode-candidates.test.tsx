@@ -7,8 +7,17 @@ import type { BarcodeLocalMatch } from "@/lib/api/barcodes"
 
 import { BarcodeCandidates } from "./barcode-candidates"
 
-vi.mock("@/lib/api/images", () => ({
-  imageUrl: (id: string) => `/api/images/${id}`,
+vi.mock("@/lib/auth/use-auth", () => ({
+  useAccessToken: () => "jwt",
+}))
+
+vi.mock("@/lib/api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api/client")>()),
+  apiFetch: vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    blob: async () => new Blob(["png"], { type: "image/png" }),
+  })),
 }))
 
 const Provider = ({ children }: { children: React.ReactNode }) => (
@@ -35,7 +44,7 @@ const matches: BarcodeLocalMatch[] = [
 ]
 
 describe("BarcodeCandidates", () => {
-  it("renders count, names, location paths, quantities, and thumbnails", () => {
+  it("renders count, names, location paths, quantities, and thumbnails", async () => {
     render(<BarcodeCandidates matches={matches} />, { wrapper: Provider })
 
     expect(screen.getByText("2 matching items")).toBeInTheDocument()
@@ -43,7 +52,8 @@ describe("BarcodeCandidates", () => {
     expect(screen.getByText("1F / Kitchen / Top shelf")).toBeInTheDocument()
     expect(screen.getByText("Qty 2")).toBeInTheDocument()
     expect(screen.getByText("Qty 1")).toBeInTheDocument()
-    expect(screen.getByAltText("")).toHaveAttribute("src", "/api/images/img-1")
+    // 縮圖需 Bearer：經 AuthImage 轉 object URL 呈現
+    expect(await screen.findByAltText("")).toHaveAttribute("src", "blob:mock")
     // 無位置 → fallback 文案
     expect(screen.getByText("No location set")).toBeInTheDocument()
   })

@@ -11,6 +11,7 @@ import { EditableOnly } from "@/components/common/editable-only"
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog"
 import { FavoriteButton } from "@/components/items/favorite-button"
 import { ItemCustomValuesDetail } from "@/components/items/item-custom-values-detail"
+import { AuthImage } from "@/components/common/auth-image"
 import { LoanCard } from "@/components/collaboration/loan-card"
 import { NewTransferDialog } from "@/components/collaboration/new-transfer-dialog"
 import { ReadonlyBadge } from "@/components/collaboration/readonly-badge"
@@ -26,7 +27,6 @@ import {
   listItemCustomValues,
   type ItemCustomValueRead,
 } from "@/lib/api/customization"
-import { imageUrl } from "@/lib/api/images"
 import type { ItemRead } from "@/lib/api/items"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { useAccessToken } from "@/lib/auth/use-auth"
@@ -193,9 +193,8 @@ export default function ItemDetailPage() {
       </div>
 
       {i.image_id ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imageUrl(i.image_id)}
+        <AuthImage
+          imageId={i.image_id}
           alt={i.name}
           className="max-h-64 max-w-full rounded border object-contain"
         />

@@ -20,6 +20,5 @@ export async function uploadImage(file: File, accessToken: string | null): Promi
   return res.json()
 }
 
-export function imageUrl(imageId: string): string {
-  return `/api/images/${imageId}`
-}
+// 顯示既有圖片請用 `components/common/auth-image.tsx`（`GET /api/images/{id}` 需 Bearer，
+// `<img src>` 帶不了 token，故以 apiFetch 取 blob 後轉 object URL）。
