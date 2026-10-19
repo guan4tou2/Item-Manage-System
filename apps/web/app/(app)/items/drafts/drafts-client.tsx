@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { DraftBulkBar } from "@/components/ai/draft-bulk-bar"
 import { DraftCard } from "@/components/ai/draft-card"
 import { DraftUploadZone } from "@/components/ai/draft-upload-zone"
+import { ReceiptGroupHeader } from "@/components/ai/receipt-group-header"
 import { ViewerNotice } from "@/components/common/viewer-notice"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,6 +17,7 @@ import type { DraftAcceptRequest, DraftRead } from "@/lib/api/ai-drafts"
 import type { CategoryTreeNode } from "@/lib/api/categories"
 import type { LocationRead } from "@/lib/api/locations"
 import { fallbackAcceptBody } from "@/lib/ai/draft-values"
+import { groupDrafts } from "@/lib/ai/receipts"
 import { useReadOnly } from "@/lib/auth/use-readonly"
 import {
   useAcceptDraft,
@@ -62,6 +64,7 @@ function DraftsQueue() {
   const discardMany = useDiscardDrafts()
 
   const items = useMemo(() => drafts.data?.items ?? [], [drafts.data])
+  const groups = useMemo(() => groupDrafts(items), [items])
   const categoryTree: CategoryTreeNode[] = categories.data ?? []
   const locationNodes: LocationRead[] = locations.data ?? []
   const tagNames = useMemo(() => (tags.data ?? []).map((tag) => tag.name), [tags.data])
@@ -274,24 +277,31 @@ function DraftsQueue() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {items.map((draft: DraftRead) => (
-            <DraftCard
-              key={draft.id}
-              draft={draft}
-              categories={categoryTree}
-              locations={locationNodes}
-              tagSuggestions={tagNames}
-              statusOverride={processingId === draft.id ? "processing" : undefined}
-              selected={selected.has(draft.id)}
-              onSelectedChange={(next) => toggleSelection(draft.id, next)}
-              processing={processingId === draft.id}
-              accepting={acceptingId === draft.id || bulk !== null}
-              discarding={discardingId === draft.id || bulkDiscarding}
-              onProcess={(id) => void handleProcess(id)}
-              onAccept={(id, body) => void handleAccept(id, body)}
-              onDiscard={(id) => void handleDiscard(id)}
-              onValuesChange={handleValuesChange}
-            />
+          {groups.map((group) => (
+            <div key={group.receiptId ?? `single-${group.drafts[0]?.id}`} className="space-y-3">
+              {group.receiptId !== null ? (
+                <ReceiptGroupHeader snapshot={group.snapshot} itemCount={group.drafts.length} />
+              ) : null}
+              {group.drafts.map((draft: DraftRead) => (
+                <DraftCard
+                  key={draft.id}
+                  draft={draft}
+                  categories={categoryTree}
+                  locations={locationNodes}
+                  tagSuggestions={tagNames}
+                  statusOverride={processingId === draft.id ? "processing" : undefined}
+                  selected={selected.has(draft.id)}
+                  onSelectedChange={(next) => toggleSelection(draft.id, next)}
+                  processing={processingId === draft.id}
+                  accepting={acceptingId === draft.id || bulk !== null}
+                  discarding={discardingId === draft.id || bulkDiscarding}
+                  onProcess={(id) => void handleProcess(id)}
+                  onAccept={(id, body) => void handleAccept(id, body)}
+                  onDiscard={(id) => void handleDiscard(id)}
+                  onValuesChange={handleValuesChange}
+                />
+              ))}
+            </div>
           ))}
         </div>
       )}

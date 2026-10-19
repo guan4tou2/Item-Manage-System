@@ -609,3 +609,66 @@ describe("DraftsClient 收據模式（Phase 33）", () => {
     expect(receiptApi.createReceipt).not.toHaveBeenCalled()
   })
 })
+
+describe("DraftsClient 收據群組（Phase 33）", () => {
+  function receiptDraft(id: string, index: number, name: string): DraftRead {
+    const base = draft({ status: "ready" })
+    return {
+      ...base,
+      id,
+      source: "receipt",
+      receipt_id: "receipt-1",
+      payload: {
+        version: 1,
+        ai: { name, description: null, category_suggestion: null, tag_suggestions: [] },
+        history: { category: null, location: null, tags: [] },
+        receipt: {
+          merchant: "PX Mart",
+          purchased_at: "2026-10-18",
+          currency: "TWD",
+          total: "300.00",
+          item_total: "300.00",
+          discrepancy: "0.00",
+          page_count: 2,
+          truncated: false,
+        },
+        receipt_item: { index, quantity: 1, unit_price: "100.00", subtotal: "100.00" },
+      },
+    } as DraftRead
+  }
+
+  it("groups receipt items under one header, ordered by line index", async () => {
+    vi.mocked(aiApi.listDrafts).mockResolvedValue(
+      listOf([receiptDraft("r2", 1, "Milk"), receiptDraft("r1", 0, "Eggs")]),
+    )
+
+    renderClient()
+
+    const header = await screen.findByTestId("receipt-group-header")
+    expect(within(header).getByText("PX Mart")).toBeInTheDocument()
+    expect(within(header).getByText("Matches the receipt total")).toBeInTheDocument()
+
+    const names = screen.getAllByLabelText(/^Name$/).map((input) => (input as HTMLInputElement).value)
+    expect(names).toEqual(["Eggs", "Milk"])
+  })
+
+  it("shows a per-item line total on receipt cards", async () => {
+    vi.mocked(aiApi.listDrafts).mockResolvedValue(listOf([receiptDraft("r1", 0, "Eggs")]))
+
+    renderClient()
+
+    expect(await screen.findByText("Line total NT$100")).toBeInTheDocument()
+  })
+
+  it("keeps photo drafts outside the receipt group", async () => {
+    vi.mocked(aiApi.listDrafts).mockResolvedValue(
+      listOf([draft({ status: "ready" }), receiptDraft("r1", 0, "Eggs")]),
+    )
+
+    renderClient()
+
+    await screen.findByTestId("receipt-group-header")
+    expect(screen.getAllByTestId(/^draft-card-/)).toHaveLength(2)
+    expect(screen.getAllByTestId("receipt-group-header")).toHaveLength(1)
+  })
+})

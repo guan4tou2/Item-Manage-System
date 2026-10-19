@@ -2,7 +2,7 @@
 
 import { Loader2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { toast } from "sonner"
 
 import { AiMark } from "@/components/ai/ai-mark"
@@ -21,6 +21,7 @@ import type { DraftAcceptRequest, DraftRead, DraftStatus } from "@/lib/api/ai-dr
 import { getApiErrorDetail } from "@/lib/api/client"
 import type { CategoryTreeNode } from "@/lib/api/categories"
 import type { LocationRead } from "@/lib/api/locations"
+import { formatCurrency } from "@/lib/format/currency"
 import {
   acceptBodyFrom,
   seedDraftHistory,
@@ -73,6 +74,7 @@ export function DraftCard({
   onValuesChange,
 }: Props) {
   const t = useTranslations()
+  const locale = useLocale()
   const suggest = useSuggestClassification()
 
   const [values, setValues] = useState<DraftValues>(() => seedDraftValues(draft, categories))
@@ -101,6 +103,7 @@ export function DraftCard({
   }, [draft.id, values])
 
   const ai = draft.payload.ai
+  const receiptItem = draft.payload.receipt_item ?? null
   const displayName = ai?.name?.trim() || t("ai.drafts.card.untitled")
   const nameFilled = values.name.trim() !== ""
 
@@ -349,6 +352,17 @@ export function DraftCard({
             >
               {t(`ai.drafts.status.${status}`)}
             </span>
+            {receiptItem?.subtotal ? (
+              <span className="text-xs text-muted-foreground">
+                {t("ai.receipts.item.subtotal", {
+                  amount: formatCurrency(
+                    receiptItem.subtotal,
+                    draft.payload.receipt?.currency ?? "TWD",
+                    locale,
+                  ),
+                })}
+              </span>
+            ) : null}
           </div>
 
           {status === "processing" ? (
