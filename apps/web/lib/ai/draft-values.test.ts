@@ -179,3 +179,75 @@ describe("fallbackAcceptBody", () => {
     expect(body).toMatchObject({ name: "Mug", category_id: 4, quantity: 1, cost: null })
   })
 })
+
+describe("seedDraftValues — 收據品項（Phase 33）", () => {
+  function receiptDraft(overrides: {
+    quantity?: number
+    unitPrice?: string | null
+    subtotal?: string | null
+  }): DraftRead {
+    const base = draft({
+      version: 1,
+      ai: {
+        name: "鮮乳",
+        description: null,
+        category_suggestion: null,
+        tag_suggestions: [],
+      },
+      history: { category: null, location: null, tags: [] },
+      receipt: {
+        merchant: "全聯",
+        purchased_at: "2026-10-18",
+        currency: "TWD",
+        total: "124.00",
+        item_total: "124.00",
+        discrepancy: "0.00",
+        page_count: 1,
+        truncated: false,
+      },
+      receipt_item: {
+        index: 0,
+        quantity: overrides.quantity ?? 2,
+        unit_price: overrides.unitPrice === undefined ? "62.00" : overrides.unitPrice,
+        subtotal: overrides.subtotal === undefined ? "124.00" : overrides.subtotal,
+      },
+    })
+    return { ...base, source: "receipt", receipt_id: "receipt-1" }
+  }
+
+  it("seeds quantity and cost from the receipt line", () => {
+    const values = seedDraftValues(receiptDraft({}), categories)
+
+    expect(values).toMatchObject({ name: "鮮乳", quantity: 2, cost: "62.00" })
+  })
+
+  it("leaves cost empty when the unit price is unknown", () => {
+    const values = seedDraftValues(
+      receiptDraft({ unitPrice: null, subtotal: null }),
+      categories,
+    )
+
+    expect(values.quantity).toBe(2)
+    expect(values.cost).toBe("")
+  })
+
+  it("keeps photo draft defaults unchanged", () => {
+    const values = seedDraftValues(
+      draft({
+        version: 1,
+        ai: { name: "Mug", description: null, category_suggestion: null, tag_suggestions: [] },
+        history: { category: null, location: null, tags: [] },
+      }),
+      categories,
+    )
+
+    expect(values.quantity).toBe(1)
+    expect(values.cost).toBe("")
+  })
+
+  it("accept body carries the receipt quantity and cost", () => {
+    const body = fallbackAcceptBody(receiptDraft({}), categories)
+
+    expect(body).toMatchObject({ name: "鮮乳", quantity: 2, cost: "62.00" })
+  })
+})

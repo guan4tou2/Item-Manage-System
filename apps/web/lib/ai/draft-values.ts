@@ -25,6 +25,8 @@ export const EMPTY_HISTORY: HistorySource = { category: null, location: null, ta
 /**
  * 建議預設：分類／位置／標籤以本人歷史優先；
  * 歷史缺分類時退回 AI 建議的「完整同名分類」精確匹配；皆無則留空。
+ *
+ * 收據品項（Phase 33）：數量與成本帶入收據行（單價缺 → 成本留空可手動填）。
  */
 export function seedDraftValues(
   draft: DraftRead,
@@ -35,6 +37,7 @@ export function seedDraftValues(
   const suggestion = ai?.category_suggestion?.trim()
   const categoryId =
     history.category?.id ?? (suggestion ? findCategoryByName(categories, suggestion) : null)
+  const receiptItem = draft.payload.receipt_item ?? null
 
   return {
     name: ai?.name ?? "",
@@ -42,8 +45,8 @@ export function seedDraftValues(
     categoryId,
     locationId: history.location?.id ?? null,
     tags: history.tags.map((tag) => tag.name),
-    quantity: 1,
-    cost: "",
+    quantity: receiptItem?.quantity ?? 1,
+    cost: receiptItem?.unit_price ?? "",
   }
 }
 

@@ -79,8 +79,8 @@ describe("groupDrafts", () => {
     const groups = groupDrafts([third, first, second])
 
     expect(groups).toHaveLength(1)
-    expect(groups[0].receiptId).toBe("receipt-a")
-    expect(groups[0].drafts.map((item) => item.id)).toEqual(["r1", "r2", "r3"])
+    expect(groups[0]!.receiptId).toBe("receipt-a")
+    expect(groups[0]!.drafts.map((item) => item.id)).toEqual(["r1", "r2", "r3"])
   })
 
   it("keeps mixed photo and receipt drafts in their original order", () => {
@@ -97,7 +97,7 @@ describe("groupDrafts", () => {
       null,
       "receipt-b",
     ])
-    expect(groups[1].drafts[0].id).toBe("r1")
+    expect(groups[1]!.drafts[0]!.id).toBe("r1")
   })
 
   it("merges non-adjacent drafts of the same receipt at the first position", () => {
@@ -108,9 +108,9 @@ describe("groupDrafts", () => {
     const groups = groupDrafts([receipt1, photo, receipt2])
 
     expect(groups).toHaveLength(2)
-    expect(groups[0].receiptId).toBe("receipt-a")
-    expect(groups[0].drafts.map((item) => item.id)).toEqual(["r1", "r2"])
-    expect(groups[1].receiptId).toBeNull()
+    expect(groups[0]!.receiptId).toBe("receipt-a")
+    expect(groups[0]!.drafts.map((item) => item.id)).toEqual(["r1", "r2"])
+    expect(groups[1]!.receiptId).toBeNull()
   })
 
   it("takes the snapshot from the first draft of the group", () => {
@@ -124,8 +124,8 @@ describe("groupDrafts", () => {
 
     const groups = groupDrafts([withoutSnapshot, withSnapshot])
 
-    expect(groups[0].snapshot?.merchant).toBe("全聯")
-    expect(groups[0].snapshot?.page_count).toBe(2)
+    expect(groups[0]!.snapshot?.merchant).toBe("全聯")
+    expect(groups[0]!.snapshot?.page_count).toBe(2)
   })
 
   it("returns a null snapshot when no draft carries receipt metadata", () => {
@@ -141,7 +141,7 @@ describe("groupDrafts", () => {
 
     const groups = groupDrafts([first, second])
 
-    expect(groups[0].snapshot).toBeNull()
+    expect(groups[0]!.snapshot).toBeNull()
   })
 })
 
