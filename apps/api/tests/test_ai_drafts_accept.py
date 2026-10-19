@@ -403,3 +403,53 @@ async def test_bulk_discard_validation_and_viewer(client, monkeypatch):
         "/api/ai/drafts/discard", headers=viewer, json={"ids": [str(uuid.uuid4())]}
     )
     assert blocked.status_code == 403
+
+
+# --- Phase 33：收據草稿接受 ------------------------------------------------
+
+
+async def test_accept_receipt_draft_does_not_attach_receipt_photo(client, monkeypatch):
+    """收據照片不是商品照片：建立的物品不帶 image_id。"""
+    _configure(monkeypatch, key="fake-key")
+    _mock_gemini(
+        monkeypatch,
+        '{"merchant":"全聯","purchased_at":"2026-10-18","currency":"TWD","total":"124.00",'
+        '"items":[{"name":"鮮乳","quantity":2,"unit_price":"62.00","subtotal":"124.00"}]}',
+    )
+    auth = await _login(client, "acc_receipt")
+    page = await _upload(client, auth)
+    created = await client.post(
+        "/api/ai/receipts", headers=auth, json={"image_ids": [page]}
+    )
+    draft = created.json()["created"][0]
+    assert draft["image_id"] == page
+
+    r = await client.post(
+        f"/api/ai/drafts/{draft['id']}/accept",
+        headers=auth,
+        json={"name": "鮮乳", "quantity": 2, "cost": "62.00"},
+    )
+
+    assert r.status_code == 200
+    body = r.json()
+    assert body["draft"]["status"] == "accepted"
+    assert body["item"]["image_id"] is None
+    assert body["item"]["quantity"] == 2
+    assert body["item"]["cost"] == "62.00"
+
+
+async def test_accept_photo_draft_still_attaches_image(client, monkeypatch):
+    """照片草稿維持原行為（回歸）。"""
+    _configure(monkeypatch, key=None)
+    auth = await _login(client, "acc_photo_reg")
+    draft = await _draft(client, auth)
+    await client.post(f"/api/ai/drafts/{draft['id']}/process", headers=auth)
+
+    r = await client.post(
+        f"/api/ai/drafts/{draft['id']}/accept",
+        headers=auth,
+        json={"name": "手動物品"},
+    )
+
+    assert r.status_code == 200
+    assert r.json()["item"]["image_id"] == draft["image_id"]

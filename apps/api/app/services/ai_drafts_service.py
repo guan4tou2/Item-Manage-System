@@ -267,6 +267,11 @@ async def process_draft(
 ) -> AiDraftItem:
     """辨識單張草稿：配額 → Gemini → 歷史建議 → `ready`／`failed`（一律 200 回狀態）。"""
     draft = await get_owned(session, owner_id, draft_id)
+    if draft.source == "receipt":
+        # 收據草稿於建立時即抽取完成；重跑 process 會把收據當單品照片再抽取
+        raise HTTPException(
+            status_code=409, detail="receipt drafts are extracted at creation"
+        )
     if draft.status in TERMINAL_STATUSES:
         raise HTTPException(
             status_code=409, detail=f"draft already {draft.status}"
@@ -327,7 +332,8 @@ async def accept_draft(
     """接受草稿 → 以編輯後欄位建立物品（`items_service.create_item` 單一入口）。
 
     - 僅 `ready`／`failed` 可接受；`pending`／`processing`／終態 409
-    - 草稿照片一併綁定到新物品；`item_id` 回寫草稿
+    - 照片草稿的圖片一併綁定到新物品；**收據草稿不綁**（收據照片不是商品照片）
+    - `item_id` 回寫草稿
     """
     draft = await get_owned(session, owner_id, draft_id)
     if draft.status not in ACCEPTABLE_STATUSES:
@@ -345,7 +351,7 @@ async def accept_draft(
             location_id=body.location_id,
             quantity=body.quantity,
             cost=body.cost,
-            image_id=draft.image_id,
+            image_id=None if draft.source == "receipt" else draft.image_id,
             tag_names=body.tag_names,
         ),
     )

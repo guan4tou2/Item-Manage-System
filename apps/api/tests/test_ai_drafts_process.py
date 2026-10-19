@@ -309,3 +309,49 @@ async def test_process_viewer_blocked(client, monkeypatch):
 
     blocked = await client.post(f"/api/ai/drafts/{draft['id']}/process", headers=viewer)
     assert blocked.status_code == 403
+
+
+# --- Phase 33：收據草稿的狀態機邊界 ------------------------------------------
+
+
+async def test_process_receipt_draft_is_409(client, monkeypatch):
+    """收據草稿於建立時即抽取完成 → process 一律 409（不重跑 LLM）。"""
+    from app.models.ai_draft import AiDraftItem
+
+    _configure(monkeypatch, key="fake-key")
+    _mock_gemini(
+        monkeypatch,
+        '{"merchant":"全聯","purchased_at":null,"currency":"TWD","total":"10.00",'
+        '"items":[{"name":"鮮乳","quantity":1,"unit_price":"10.00","subtotal":"10.00"}]}',
+    )
+    auth = await _login(client, "proc_receipt")
+    page = await _upload(client, auth)
+    created = await client.post(
+        "/api/ai/receipts", headers=auth, json={"image_ids": [page]}
+    )
+    draft_id = created.json()["created"][0]["id"]
+
+    r = await client.post(f"/api/ai/drafts/{draft_id}/process", headers=auth)
+
+    assert r.status_code == 409
+    assert "receipt" in r.json()["detail"]
+
+
+async def test_process_receipt_draft_does_not_call_llm(client, monkeypatch):
+    _configure(monkeypatch, key="fake-key")
+    fake_client = _mock_gemini(
+        monkeypatch,
+        '{"merchant":null,"purchased_at":null,"currency":null,"total":null,'
+        '"items":[{"name":"鮮乳","quantity":1,"unit_price":"10.00","subtotal":"10.00"}]}',
+    )
+    auth = await _login(client, "proc_receipt2")
+    page = await _upload(client, auth)
+    created = await client.post(
+        "/api/ai/receipts", headers=auth, json={"image_ids": [page]}
+    )
+    draft_id = created.json()["created"][0]["id"]
+    calls_after_create = fake_client.models.generate_content.call_count
+
+    await client.post(f"/api/ai/drafts/{draft_id}/process", headers=auth)
+
+    assert fake_client.models.generate_content.call_count == calls_after_create
