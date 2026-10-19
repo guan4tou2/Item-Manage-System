@@ -432,6 +432,38 @@
         "bulkDiscarded": "Discarded {count} drafts",
         "bulkSkipped": "Skipped {count} (not ready to review)"
       }
+    },
+    "receipts": {
+      "tabPhoto": "Photos",
+      "tabReceipt": "Receipt",
+      "title": "Scan a receipt",
+      "hint": "Choose all pages of one purchase — up to 10 pages",
+      "choose": "Choose receipt pages",
+      "aria": "Choose receipt pages",
+      "extracting": "Reading the receipt…",
+      "extractingHint": "Extraction may take a few seconds",
+      "errors": {
+        "ai_disabled": "AI is not configured (missing API key); receipts cannot be read",
+        "quota_exhausted": "Today’s AI quota is used up; try again tomorrow",
+        "upstream_error": "The AI service is unavailable, please retry",
+        "no_items": "No items could be read from these pages; try a clearer photo",
+        "unknown": "Could not read the receipt, please retry"
+      },
+      "truncated": "Only the first {count} items were imported",
+      "group": {
+        "merchant": "Merchant",
+        "unknownMerchant": "Unlabeled merchant",
+        "unknownDate": "No date",
+        "pages": "{count} page(s)",
+        "items": "{count} item(s)",
+        "matched": "Matches the receipt total",
+        "mismatch": "Items total {itemTotal}, receipt total {total} (difference {difference})",
+        "noTotal": "The receipt has no total"
+      },
+      "item": {
+        "subtotal": "Line total {amount}",
+        "unitPrice": "Unit price {amount}"
+      }
     }
   },
   "items": {

@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl"
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 import * as aiApi from "@/lib/api/ai-drafts"
+import * as receiptApi from "@/lib/api/ai-receipts"
 import type { DraftListResponse, DraftRead } from "@/lib/api/ai-drafts"
 import { ApiError } from "@/lib/api/client"
 import { uploadImage } from "@/lib/api/images"
@@ -494,5 +495,117 @@ describe("DraftsClient 唯讀", () => {
     expect(screen.getByTestId("viewer-notice")).toBeInTheDocument()
     expect(screen.queryByTestId("draft-upload-zone")).not.toBeInTheDocument()
     expect(vi.mocked(aiApi.listDrafts)).not.toHaveBeenCalled()
+  })
+})
+
+describe("DraftsClient 收據模式（Phase 33）", () => {
+  beforeEach(() => {
+    vi.spyOn(receiptApi, "createReceipt").mockResolvedValue({
+      receipt_id: "receipt-1",
+      truncated: false,
+      created: [],
+    })
+  })
+
+  it("switches between photo and receipt intake", async () => {
+    const user = userEvent.setup()
+
+    renderClient()
+    await waitFor(() => expect(vi.mocked(aiApi.listDrafts)).toHaveBeenCalled())
+
+    // 預設照片模式
+    expect(screen.getByLabelText("Choose photos to intake")).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: "Receipt" }))
+
+    expect(screen.getByLabelText("Choose receipt pages")).toBeInTheDocument()
+    expect(screen.getByText("Choose all pages of one purchase — up to 10 pages")).toBeInTheDocument()
+    expect(screen.queryByLabelText("Choose photos to intake")).not.toBeInTheDocument()
+  })
+
+  it("uploads pages then creates one receipt", async () => {
+    const user = userEvent.setup()
+    vi.mocked(uploadImage)
+      .mockResolvedValueOnce(meta("page-1"))
+      .mockResolvedValueOnce(meta("page-2"))
+
+    renderClient()
+    await user.click(await screen.findByRole("tab", { name: "Receipt" }))
+    await user.upload(screen.getByLabelText("Choose receipt pages"), [
+      photo("page1.png"),
+      photo("page2.png"),
+    ])
+
+    await waitFor(() =>
+      expect(receiptApi.createReceipt).toHaveBeenCalledWith(["page-1", "page-2"], "jwt"),
+    )
+    expect(aiApi.createDrafts).not.toHaveBeenCalled()
+    await waitFor(() => expect(screen.queryByTestId("upload-file-0")).not.toBeInTheDocument())
+  })
+
+  it("shows the extraction error code and retries with the same pages", async () => {
+    const user = userEvent.setup()
+    vi.mocked(uploadImage).mockResolvedValue(meta("page-1"))
+    vi.mocked(receiptApi.createReceipt)
+      .mockRejectedValueOnce(new ApiError(503, { detail: "ai_disabled" }))
+      .mockResolvedValueOnce({ receipt_id: "receipt-1", truncated: false, created: [] })
+
+    renderClient()
+    await user.click(await screen.findByRole("tab", { name: "Receipt" }))
+    await user.upload(screen.getByLabelText("Choose receipt pages"), [photo("page1.png")])
+
+    expect(
+      await screen.findByText("AI is not configured (missing API key); receipts cannot be read"),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole("button", { name: "Retry" }))
+
+    await waitFor(() => expect(receiptApi.createReceipt).toHaveBeenCalledTimes(2))
+    expect(receiptApi.createReceipt).toHaveBeenLastCalledWith(["page-1"], "jwt")
+  })
+
+  it("maps quota and upstream errors to their messages", async () => {
+    const user = userEvent.setup()
+    vi.mocked(uploadImage).mockResolvedValue(meta("page-1"))
+    vi.mocked(receiptApi.createReceipt).mockRejectedValueOnce(
+      new ApiError(429, { detail: "quota_exhausted" }),
+    )
+
+    renderClient()
+    await user.click(await screen.findByRole("tab", { name: "Receipt" }))
+    await user.upload(screen.getByLabelText("Choose receipt pages"), [photo("page1.png")])
+
+    expect(await screen.findByText("Today’s AI quota is used up; try again tomorrow")).toBeInTheDocument()
+  })
+
+  it("reports truncated receipts", async () => {
+    const user = userEvent.setup()
+    vi.mocked(uploadImage).mockResolvedValue(meta("page-1"))
+    vi.mocked(receiptApi.createReceipt).mockResolvedValue({
+      receipt_id: "receipt-1",
+      truncated: true,
+      created: [],
+    })
+
+    renderClient()
+    await user.click(await screen.findByRole("tab", { name: "Receipt" }))
+    await user.upload(screen.getByLabelText("Choose receipt pages"), [photo("page1.png")])
+
+    await waitFor(() =>
+      expect(toast.info).toHaveBeenCalledWith("Only the first 50 items were imported"),
+    )
+  })
+
+  it("keeps the receipt tab usable after a failed page upload", async () => {
+    const user = userEvent.setup()
+    vi.mocked(uploadImage).mockRejectedValueOnce(new Error("boom"))
+
+    renderClient()
+    await user.click(await screen.findByRole("tab", { name: "Receipt" }))
+    await user.upload(screen.getByLabelText("Choose receipt pages"), [photo("page1.png")])
+
+    const row = await screen.findByTestId("upload-file-0")
+    expect(within(row).getByText("Upload failed")).toBeInTheDocument()
+    expect(receiptApi.createReceipt).not.toHaveBeenCalled()
   })
 })

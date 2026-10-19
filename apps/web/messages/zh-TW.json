@@ -432,6 +432,38 @@
         "bulkDiscarded": "已丟棄 {count} 筆草稿",
         "bulkSkipped": "已跳過 {count} 筆（非辨識完成）"
       }
+    },
+    "receipts": {
+      "tabPhoto": "照片",
+      "tabReceipt": "收據",
+      "title": "收據辨識",
+      "hint": "選擇同一次採購的所有頁面；一次最多 10 頁",
+      "choose": "選擇收據頁面",
+      "aria": "選擇收據頁面",
+      "extracting": "辨識收據中…",
+      "extractingHint": "抽取品項需要幾秒鐘",
+      "errors": {
+        "ai_disabled": "AI 未設定（缺少 API 金鑰）；無法辨識收據",
+        "quota_exhausted": "今日 AI 額度已用完；請隔日再試",
+        "upstream_error": "AI 服務暫時無法使用，請稍後重試",
+        "no_items": "這些頁面讀不到品項；請改拍清晰一點的照片",
+        "unknown": "無法辨識收據，請重試"
+      },
+      "truncated": "僅匯入前 {count} 個品項",
+      "group": {
+        "merchant": "商家",
+        "unknownMerchant": "未標示商家",
+        "unknownDate": "未標示日期",
+        "pages": "{count} 頁",
+        "items": "{count} 個品項",
+        "matched": "與收據總額相符",
+        "mismatch": "品項合計 {itemTotal}，收據總額 {total}（差額 {difference}）",
+        "noTotal": "收據未標示總額"
+      },
+      "item": {
+        "subtotal": "小計 {amount}",
+        "unitPrice": "單價 {amount}"
+      }
     }
   },
   "items": {
