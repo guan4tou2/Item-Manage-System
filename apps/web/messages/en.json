@@ -352,6 +352,11 @@
     "userMenu": "User menu",
     "mobileNavigationDescription": "Main application navigation links"
   },
+  "ai": {
+    "mark": {
+      "tooltip": "AI-generated, editable"
+    }
+  },
   "items": {
     "list": {
       "searchPlaceholder": "Search items by name or description…",

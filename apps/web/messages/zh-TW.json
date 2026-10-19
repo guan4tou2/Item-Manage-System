@@ -352,6 +352,11 @@
     "userMenu": "使用者選單",
     "mobileNavigationDescription": "主要應用程式導覽連結"
   },
+  "ai": {
+    "mark": {
+      "tooltip": "由 AI 產生，可編輯"
+    }
+  },
   "items": {
     "list": {
       "searchPlaceholder": "搜尋物品名稱或描述…",
