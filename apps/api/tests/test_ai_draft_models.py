@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from uuid import uuid4
 
 import pytest
 from sqlalchemy import select, text
@@ -126,3 +127,57 @@ async def test_ai_usage_same_day_allowed_for_different_users(db_session):
 
     rows = (await db_session.execute(select(AiUsage))).scalars().all()
     assert sorted(row.calls for row in rows) == [2, 3]
+
+
+async def test_receipt_id_defaults_to_null(db_session):
+    """一般照片草稿沒有收據群組鍵（Phase 33）。"""
+    user = await _user(db_session)
+    draft = AiDraftItem(
+        owner_id=user.id,
+        source="batch_photo",
+        payload={"version": 1},
+    )
+    db_session.add(draft)
+    await db_session.commit()
+
+    assert draft.receipt_id is None
+
+
+async def test_receipt_drafts_share_group_key(db_session):
+    """同一次收據的多個品項共用 `receipt_id`，且可各自獨立。"""
+    user = await _user(db_session)
+    receipt_id = uuid4()
+    db_session.add_all(
+        [
+            AiDraftItem(
+                owner_id=user.id,
+                source="receipt",
+                receipt_id=receipt_id,
+                status="ready",
+                payload={"version": 1},
+            )
+            for _ in range(3)
+        ]
+    )
+    await db_session.commit()
+
+    rows = (
+        await db_session.execute(
+            select(AiDraftItem).where(AiDraftItem.owner_id == user.id)
+        )
+    ).scalars().all()
+    assert len(rows) == 3
+    assert {row.receipt_id for row in rows} == {receipt_id}
+
+
+async def test_receipt_drafts_have_owner_receipt_index(db_session):
+    """群組查詢索引存在（migration 0025）。"""
+    rows = (
+        await db_session.execute(
+            text(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='index' AND name='ix_ai_draft_items_owner_receipt'"
+            )
+        )
+    ).all()
+    assert len(rows) == 1

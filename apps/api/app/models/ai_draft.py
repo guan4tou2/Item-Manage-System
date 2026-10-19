@@ -14,11 +14,12 @@ from app.models.user import GUID
 
 
 class AiDraftItem(Base):
-    """AI 入庫草稿（Phase 32）。
+    """AI 入庫草稿（Phase 32；Phase 33 擴充收據群組）。
 
     狀態機：`pending → processing → ready | failed`，終態 `accepted | discarded`。
-    `payload` 為 `DraftPayload`（version=1：`ai` ＋ `history` 建議）。
-    `source=receipt` 為 Phase 33 預留。
+    `payload` 為 `DraftPayload`（version=1：`ai` ＋ `history` 建議；收據另有
+    `receipt`／`receipt_item` 快照）。
+    `source='receipt'` 的每列＝一個收據品項，同次收據以 `receipt_id` 群組（無 FK）。
     """
 
     __tablename__ = "ai_draft_items"
@@ -32,6 +33,7 @@ class AiDraftItem(Base):
             name="ck_ai_draft_items_status",
         ),
         Index("ix_ai_draft_items_owner_status", "owner_id", "status"),
+        Index("ix_ai_draft_items_owner_receipt", "owner_id", "receipt_id"),
     )
 
     id: Mapped[UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
@@ -39,6 +41,7 @@ class AiDraftItem(Base):
         GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     source: Mapped[str] = mapped_column(String(20), nullable=False)
+    receipt_id: Mapped[Optional[UUID]] = mapped_column(GUID(), nullable=True)
     image_id: Mapped[Optional[UUID]] = mapped_column(
         GUID(), ForeignKey("images.id", ondelete="SET NULL"), nullable=True
     )
