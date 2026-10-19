@@ -55,12 +55,13 @@
 | 31 | 定期報表（月報） | ✅ | `reports`（`UNIQUE(user_id, period)`、JSON 快照）＋migration 0023；`report.monthly` job 生成上一個完整月（Asia/Taipei；冪等、空月建列不通知、逐使用者隔離）；指標口徑（可見範圍、期間界、quantity_logs delta、借還與逾期、30 天到期、估值月初重建）；`GET /api/reports`／`{id}`（僅本人；他人 404）；`preferences.report_monthly_enabled`；站內 `report_ready`＋雙語 Email（fail-soft、純文字 fallback）；Web `/reports` 清單與詳情、`/settings/reports` 開關、桌面統計下拉＋行動二層群組導覽 |
 | 32 | AI 批次入庫＋智慧分類建議 | ✅ | `ai_draft_items`＋`ai_usage`（migration 0024）；伺服器端狀態機（非終態可重入、終態 409、錯誤碼化）＋逐張序列處理（不引入背景 worker）；`/api/ai/drafts` 建立／清單／process／accept／discard／批量 discard（writer guard、僅本人）；`suggest-classification` 純規則引擎（分詞／交集評分／決定性排序；僅本人資料、不耗配額）；`AI_DAILY_QUOTA` per-user 每日配額（既有 `suggest-from-image` 額度耗盡轉 429）；Web `/items/drafts` 佇列（上傳區＋四態卡＋批量條＋四態頁面契約）、`AiMark` 記號、`/items/new` 入口卡與待審核徽章（不入首層導覽）；`AuthImage`（既有全站 `<img>` 無 Bearer 破圖之修正）；`docs/ai.md` |
 | 33 | AI 收據辨識 | ✅ | `ai_draft_items.receipt_id` 群組鍵＋索引（migration 0025）；`POST /api/ai/receipts` 多頁一次抽取（單一請求、一次配額、失敗不落地）；金額補齊規則（缺單價／缺小計／皆缺／不一致）；每品項一列 `ready` 草稿＋`receipt`／`receipt_item` 快照；對帳（品項合計 vs 收據總額，差額警示不阻擋）；`process` 對收據 409、`accept` 不綁收據照片；同圖去重限定 `batch_photo`；`suggest_for_names` 批次化（與逐次呼叫等價）；Web 上傳區照片／收據 Tabs、佇列分組與群組標頭、卡片小計與數量／成本預填；`docs/ai.md` 收據章節 |
+| 34 | AI 自然語言搜尋＋物品問答 | ✅ | `GET /api/items` 擴充 `loan`／`min_quantity`／`max_quantity`／`sort(name_asc,created_desc)`；`POST /api/ai/search`（LLM → 白名單 filters → 名稱解析 → 既有搜尋；`applied`／`unresolved`；fallback 一律 200：`ai_disabled`／`quota_exhausted`／`upstream_error`／`unparsed`，未呼叫 LLM 不扣配額）；`POST /api/ai/ask`（`item_ids` 或分詞上下文、`[#n]` 引用映射、`grounded=false`、403／503／429／502）；偏好 `ai_data_sharing_enabled`（預設關，未開啟 403；僅送摘要）；`<<<DATA>>>` 注入防護＋白名單＋引用邊界；golden eval 24 句（mock 進 CI、`EVAL_LIVE=1` 手動）；Web AI 搜尋列與「理解為」chip、問答面板、設定開關；`docs/ai.md` 搜尋／問答章節 |
 
 ## 測試規模
 
-- API 測試：1021 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）
-- Web 測試：686 passed（125 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：24 spec／75 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
+- API 測試：1086 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
+- Web 測試：716 passed（128 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：25 spec／79 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 快速啟動（v2）

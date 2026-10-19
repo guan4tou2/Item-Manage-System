@@ -1,7 +1,7 @@
 # Phase 34 — AI 自然語言搜尋＋物品問答
 
 - **日期**：2026-10-19
-- **狀態**：規劃完成，待執行
+- **狀態**：已完成（T1.1–T3.2 全部落地；TDD 紅綠、golden eval、全套驗證與視覺走查見文末 Final Verification）
 - **依據**：`docs/plans/2026-10-15-next-iteration-roadmap.md` §六 Phase 34、§5.4（互動狀態契約）、§5.6（AI 標記／金額格式）、§九風險 3（Gemini 成本／配額）
 - **依賴**：Phase 32（`AiMark`、`ai_quota`、AI 設定與錯誤碼慣例）、Phase 22（到期視圖與 `expiry` 篩選）、Phase 27（`formatCurrency`）
 - **規模**：L（API 2 端點＋filters 轉譯純函式＋注入防護＋golden eval；Web 搜尋列 AI 模式、理解 chip、問答面板、opt-in 設定；e2e 1 spec）
@@ -353,19 +353,25 @@ LLM 只允許輸出以下欄位，其餘一律丟棄（**不做自由 SQL／任�
 
 ---
 
-## Final Verification（收尾時填實測）
+## Final Verification（收尾時填實測；2026-10-19）
 
-- [ ] API：`uv run pytest -q` → ___ passed
-- [ ] Web：`pnpm vitest run` → ___ passed（___ 檔）；`pnpm typecheck` → 0 error
-- [ ] api-types 重生成零 diff（既有契約）
-- [ ] golden eval（mock 模式）→ ___ 句全數通過
-- [ ] e2e：重建 image 後 `pnpm exec playwright test --workers=2` → ___ spec／___ passed
-- [ ] 視覺走查：桌機 1440×900＋行動 390×844（AI 搜尋切換、理解 chip（含未解析）、fallback 提示、問答面板（有引用／資料不足）、設定開關）——人工檢視無破版
+- [x] API：`uv run pytest -q` → **1086 passed**（基線 1021；4:28）
+- [x] Web：`pnpm vitest run` → **716 passed（128 檔）**（基線 686／125 檔）；`pnpm typecheck` → **0 error**
+- [x] api-types 重生成：新增 2 端點與 schema；`sort` 列舉擴充（僅 2 行 schema 展開差異，無破壞性移除）
+- [x] golden eval（mock 模式）：`uv run pytest evals/ -q` → **28 passed、1 skipped**（24 句＋注入＋資料集檢查；live 模式未設 key 自動 skip）
+- [x] e2e：重建 image 後 `pnpm exec playwright test --workers=2` → **25 spec／79 passed**（基線 24／75）
+- [x] 視覺走查：桌機 1440×900＋行動 390×844（AI 模式輸入、fallback 提示＋chip＋結果數、問答面板、未 opt-in 引導、設定開關）——無破版；走查發現結果數漏出原始 i18n 鍵已修（`ai.search.resultCount`）並補回歸測試
 - [ ] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
 
-### 收尾環境註記（2026-10-19 起填）
+### 收尾環境註記（2026-10-19）
 
-- （待填：worktree 名稱、stack 狀態、e2e 前置、無 key 路徑、eval 執行方式）
+- Worktree：`.claude/worktrees/phase34-ai-search`；base＝main 計畫 commit `98ac35b`
+- Stack：compose 專案 `ims-v2`；e2e 前 `docker compose up -d --build`；入口 `http://localhost`
+- `.env`：`GEMINI_API_KEY=` 空 → e2e 走 fallback／錯誤路徑；`AI_DAILY_QUOTA` 未設（預設 50）
+- **成功路徑無法用 e2e 覆蓋**（無 key）：以 API 測試（mock Gemini，含白名單、fallback 四態、引用映射、注入）＋元件測試（chip／問答面板）＋golden eval（mock）＋視覺走查驗證
+- 走查以臨時 Playwright 腳本（走查後刪除）：以 API 開啟 opt-in 並種分類／位置／到期物品，再截圖 AI 模式、fallback、問答、opt-in 引導與設定頁
+- 無 migration；偏好 `ai_data_sharing_enabled` 沿用既有 JSON 欄位（`extra="allow"`）
+- e2e 定位注意：`搜尋` 與 `AI 搜尋` 子字串衝突 → 以 `exact: true` 比對
 
 ## 測試基線（main，Phase 33 完成）
 
