@@ -1,9 +1,14 @@
 from functools import lru_cache
+from typing import Literal
+
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 _DEFAULT_JWT_SECRET = "change-me-in-production-please"
+
+#: AI 執行模式（Phase 35）：`live` 走真實 Gemini；`stub` 走確定性 stub 供應器。
+AiMode = Literal["live", "stub"]
 
 
 class Settings(BaseSettings):
@@ -23,6 +28,8 @@ class Settings(BaseSettings):
     # Public web base URL (used for encoding QR codes and deep links)
     public_web_url: str = Field(default="http://localhost:3000")
     gemini_api_key: str = Field(default="")
+    # Phase 35：AI 模式開關（live/stub）；非 dev 環境不得啟用 stub
+    ai_mode: AiMode = Field(default="live")
     # AI 每日配額（per-user，Asia/Taipei 換日；<= 0 表示不設限）
     ai_daily_quota: int = Field(default=50)
     # Email (SMTP)
@@ -46,6 +53,16 @@ class Settings(BaseSettings):
             raise ValueError(
                 "JWT_SECRET must be set explicitly outside dev "
                 "(generate with `openssl rand -hex 32`)"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _ensure_stub_only_in_dev(self) -> "Settings":
+        """Phase 35 D1：非 dev 環境不得啟用 stub（避免正式環境誤回假資料）。"""
+        if self.environment != "dev" and self.ai_mode == "stub":
+            raise ValueError(
+                "AI_MODE=stub is only allowed in dev "
+                "(stub responses are not real AI results)"
             )
         return self
 
