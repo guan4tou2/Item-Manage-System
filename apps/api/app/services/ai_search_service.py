@@ -40,6 +40,7 @@ from app.services import (
     items_service,
     preferences_service,
 )
+from app.services.ai_mode import ai_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -247,7 +248,7 @@ async def search(session: AsyncSession, owner_id: UUID, query: str) -> SearchRes
     catalog = await _catalog(session, owner_id)
     settings = get_settings()
 
-    if not settings.gemini_api_key:
+    if not ai_enabled(settings):
         return await _fallback(session, owner_id, query, catalog, "ai_disabled")
 
     if not await ai_quota.consume(session, owner_id):
@@ -293,7 +294,7 @@ async def ask(
         raise HTTPException(status_code=403, detail="ai_opt_in_required")
 
     settings = get_settings()
-    if not settings.gemini_api_key:
+    if not ai_enabled(settings):
         raise HTTPException(status_code=503, detail="ai_disabled")
 
     context = await _ask_context(session, owner_id, question, item_ids)

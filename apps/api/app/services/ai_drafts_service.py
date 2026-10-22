@@ -26,6 +26,7 @@ from app.models.ai_draft import AiDraftItem
 from app.schemas.ai_draft import DraftAccept
 from app.schemas.item import ItemCreate, ItemRead
 from app.services import ai_quota, ai_service, classification_service, items_service
+from app.services.ai_mode import ai_enabled
 from app.services.images_service import get_visible as get_visible_image
 
 logger = logging.getLogger(__name__)
@@ -122,7 +123,7 @@ async def create_receipt_drafts(
             raise HTTPException(status_code=404, detail="image not found")
         images.append(image)
 
-    if not settings.gemini_api_key:
+    if not ai_enabled(settings):
         raise HTTPException(status_code=503, detail="ai_disabled")
 
     if not await ai_quota.consume(session, owner_id):
@@ -295,7 +296,7 @@ async def process_draft(
 
     if not image_ok:
         error_code = "image_missing"
-    elif not settings.gemini_api_key:
+    elif not ai_enabled(settings):
         error_code = "ai_disabled"
     elif not await ai_quota.consume(session, owner_id):
         error_code = "quota_exhausted"

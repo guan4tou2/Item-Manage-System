@@ -14,7 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.schemas.ai import AiSuggestResponse
-from app.services import ai_quota
+from app.services import ai_quota, ai_stub
+from app.services.ai_mode import ai_enabled, is_stub
 from app.services.images_service import get_visible as get_visible_image
 
 logger = logging.getLogger(__name__)
@@ -186,6 +187,10 @@ async def call_gemini_receipt(
     pages: list[tuple[Path, str]],
 ) -> ReceiptExtraction:
     """多頁收據一次送出（同一請求、每頁一個 Part）；失敗一律 `AiUpstreamError`。"""
+    if is_stub():
+        # Phase 35 D2/D3：stub 回原始 JSON 文字 → 仍走同一個解析函式
+        return parse_receipt_response(ai_stub.receipt_text())
+
     try:
         from google import genai
         from google.genai import types as genai_types
@@ -270,6 +275,12 @@ async def call_gemini_search_filters(
 
     `catalog` 為 `ai_search_filters.Catalog`（本人分類／位置／標籤目錄）。
     """
+    if is_stub():
+        # Phase 35 D2/D3/D4：stub 回原始 JSON 文字 → 仍走同一個解析函式
+        return parse_search_filters_response(
+            ai_stub.search_filters_text(query, catalog)
+        )
+
     try:
         from google import genai
         from google.genai import types as genai_types
@@ -322,6 +333,28 @@ async def call_gemini_search_filters(
     return parse_search_filters_response(result.text or "")
 
 
+def parse_suggest_response(text: str) -> AiSuggestResponse:
+    """解析建議回應（嚴格 JSON；非 JSON／空 → `AiUpstreamError`）。
+
+    live 與 stub 模式共用（Phase 35 D2/D3）：stub 回應仍走此解析路徑。
+    """
+    stripped = (text or "").strip()
+    if not stripped:
+        raise AiUpstreamError("empty AI response")
+    try:
+        payload = json.loads(stripped)
+    except json.JSONDecodeError as exc:
+        logger.warning("gemini returned non-JSON: %s", stripped[:200])
+        raise AiUpstreamError("AI returned invalid JSON") from exc
+
+    return AiSuggestResponse(
+        name=str(payload.get("name") or "未命名物品")[:200],
+        description=(payload.get("description") or None),
+        category_suggestion=(payload.get("category_suggestion") or None),
+        tag_suggestions=[str(t)[:40] for t in (payload.get("tag_suggestions") or [])[:5]],
+    )
+
+
 async def call_gemini_suggest(
     image_path: Path, mime_type: str, hint: Optional[str] = None
 ) -> AiSuggestResponse:
@@ -329,6 +362,10 @@ async def call_gemini_suggest(
 
     呼叫端負責：`GEMINI_API_KEY` 檢查與配額扣次。
     """
+    if is_stub():
+        # Phase 35 D2/D3：stub 回原始 JSON 文字 → 仍走同一個解析函式
+        return parse_suggest_response(ai_stub.suggest_text())
+
     try:
         from google import genai
         from google.genai import types as genai_types
@@ -358,20 +395,7 @@ async def call_gemini_suggest(
         raise AiUpstreamError(f"upstream AI error: {exc}") from exc
 
     text = (result.text or "").strip()
-    if not text:
-        raise AiUpstreamError("empty AI response")
-    try:
-        payload = json.loads(text)
-    except json.JSONDecodeError as exc:
-        logger.warning("gemini returned non-JSON: %s", text[:200])
-        raise AiUpstreamError("AI returned invalid JSON") from exc
-
-    return AiSuggestResponse(
-        name=str(payload.get("name") or "未命名物品")[:200],
-        description=(payload.get("description") or None),
-        category_suggestion=(payload.get("category_suggestion") or None),
-        tag_suggestions=[str(t)[:40] for t in (payload.get("tag_suggestions") or [])[:5]],
-    )
+    return parse_suggest_response(text)
 
 
 async def suggest_from_image(
@@ -381,7 +405,7 @@ async def suggest_from_image(
     hint: Optional[str] = None,
 ) -> AiSuggestResponse:
     settings = get_settings()
-    if not settings.gemini_api_key:
+    if not ai_enabled(settings):
         raise HTTPException(status_code=503, detail="AI disabled (GEMINI_API_KEY not set)")
 
     image = await get_visible_image(session, viewer_id, image_id)
@@ -439,6 +463,10 @@ def parse_ask_response(text: str) -> tuple[str, bool]:
 
 async def call_gemini_ask(question: str, context: list[dict[str, Any]]) -> tuple[str, bool]:
     """以物品摘要為唯一資料來源回答（純 LLM 呼叫；呼叫端負責 key／配額）。"""
+    if is_stub():
+        # Phase 35 D2/D3/D5：stub 回原始 JSON 文字 → 仍走同一個解析函式
+        return parse_ask_response(ai_stub.ask_text(question, context))
+
     try:
         from google import genai
         from google.genai import types as genai_types
