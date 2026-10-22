@@ -5,7 +5,6 @@ import secrets
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import delete as sa_delete
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +12,7 @@ from app.db.base import _utcnow
 from app.models.favorite_audit_token import ApiToken
 from app.models.user import User
 from app.schemas.api_token import ApiTokenCreate, ApiTokenCreated, ApiTokenRead
+from app.services import audit_service
 
 
 TOKEN_PREFIX = "ims_pat_"
@@ -36,6 +36,14 @@ async def create_token(
     session.add(t)
     await session.commit()
     await session.refresh(t)
+    await audit_service.log(
+        session,
+        user_id=user_id,
+        action="token.created",
+        resource_type="api_token",
+        resource_id=str(t.id),
+        meta={"name": t.name},
+    )
     return ApiTokenCreated(
         id=t.id, name=t.name, last_used_at=t.last_used_at,
         created_at=t.created_at, token=raw,
@@ -45,11 +53,23 @@ async def create_token(
 async def delete_token(
     session: AsyncSession, user_id: UUID, token_id: UUID
 ) -> None:
-    stmt = sa_delete(ApiToken).where(ApiToken.id == token_id, ApiToken.user_id == user_id)
-    result = await session.execute(stmt)
-    await session.commit()
-    if (result.rowcount or 0) == 0:
+    stmt = select(ApiToken).where(
+        ApiToken.id == token_id, ApiToken.user_id == user_id
+    )
+    token = (await session.execute(stmt)).scalar_one_or_none()
+    if token is None:
         raise HTTPException(status_code=404, detail="token not found")
+    name = token.name
+    await session.delete(token)
+    await session.commit()
+    await audit_service.log(
+        session,
+        user_id=user_id,
+        action="token.deleted",
+        resource_type="api_token",
+        resource_id=str(token_id),
+        meta={"name": name},
+    )
 
 
 async def resolve_user_by_token(

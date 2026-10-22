@@ -11,13 +11,14 @@ import io
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import Text, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.base import _utcnow
 from app.models.favorite_audit_token import AuditLog
 from app.models.user import User
 
@@ -31,6 +32,9 @@ DEFAULT_EXPORT_MAX_ROWS = 10_000
 
 #: LIKE 轉義字元（`%`／`_`／`\` 由使用者輸入轉義，避免變成萬用字元）
 _LIKE_ESCAPE = "\\"
+
+#: 登入失敗的去重時間窗（同一帳號在此期間只記第一筆，避免匿名灌寫）
+LOGIN_FAILURE_DEDUP_WINDOW = timedelta(minutes=10)
 
 
 async def log(
@@ -55,6 +59,43 @@ async def log(
         await session.commit()
     except Exception:
         logger.warning("audit log insert failed", exc_info=True)
+
+
+async def log_login_failure(
+    session: AsyncSession, *, user_id: UUID, username: str
+) -> bool:
+    """記錄登入失敗，但同一帳號在時間窗內只記一次。
+
+    只應在「帳號存在」時呼叫：陌生帳號不寫，避免匿名灌寫與帳號列舉訊號。
+    回傳是否真的寫入；去重查詢失敗時寧可不寫，也不影響登入流程。
+    """
+    try:
+        cutoff = _utcnow() - LOGIN_FAILURE_DEDUP_WINDOW
+        recent = (
+            await session.execute(
+                select(AuditLog.id)
+                .where(
+                    AuditLog.action == "auth.login_failed",
+                    AuditLog.resource_id == str(user_id),
+                    AuditLog.created_at >= cutoff,
+                )
+                .limit(1)
+            )
+        ).first()
+    except Exception:
+        logger.warning("login failure dedupe query failed", exc_info=True)
+        return False
+    if recent is not None:
+        return False
+    await log(
+        session,
+        user_id=user_id,
+        action="auth.login_failed",
+        resource_type="user",
+        resource_id=str(user_id),
+        meta={"username": username},
+    )
+    return True
 
 
 @dataclass(frozen=True)

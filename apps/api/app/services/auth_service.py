@@ -65,3 +65,7 @@ class AuthService:
 
     async def get_user_by_id(self, user_id: UUID) -> User | None:
         return await self.repo.get_by_id(user_id)
+
+    async def get_user_by_username(self, username: str) -> User | None:
+        """登入失敗後判斷帳號是否存在（僅供稽核使用，不對外揭露）。"""
+        return await self.repo.get_by_username(username)

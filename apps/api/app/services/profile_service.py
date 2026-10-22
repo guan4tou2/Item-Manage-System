@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth.password import hash_password, verify_password
 from app.models.user import User
 from app.schemas.user import PasswordChange, UserProfileUpdate
+from app.services import audit_service
 
 
 async def update_profile(
@@ -39,6 +40,14 @@ async def change_password(
         raise HTTPException(status_code=422, detail="current_password incorrect")
     user.password_hash = hash_password(body.new_password)
     await session.commit()
+    # 只記「發生了變更」，不記任何密碼欄位（明文／雜湊皆不可）
+    await audit_service.log(
+        session,
+        user_id=user.id,
+        action="user.password_changed",
+        resource_type="user",
+        resource_id=str(user.id),
+    )
 
 
 async def count_admins(session: AsyncSession) -> int:

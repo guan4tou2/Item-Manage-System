@@ -23,6 +23,7 @@ from app.schemas.item import (
     ItemUpdate,
 )
 from app.services import (
+    audit_service,
     barcode_service,
     item_history_service,
     notifications_service,
@@ -394,6 +395,15 @@ async def bulk_delete_items(
     for item in items:
         item.is_deleted = True
     await session.commit()
+    # 一次批次操作只留一筆摘要（避免 100 筆事件洗版）；不記名稱以免單列膨脹
+    await audit_service.log(
+        session,
+        user_id=owner_id,
+        action="item.bulk_deleted",
+        resource_type="item",
+        resource_id=None,
+        meta={"count": len(items), "item_ids": [str(item.id) for item in items]},
+    )
     for item in items:
         await webhooks_service.dispatch(
             session, owner_id, "item.deleted",
@@ -407,6 +417,15 @@ async def delete_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> N
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
     await items_repository.soft_delete(session, item)
+    # 刪除後名稱就查不到了，留在稽核；webhook 之前寫，避免等外部 HTTP
+    await audit_service.log(
+        session,
+        user_id=owner_id,
+        action="item.deleted",
+        resource_type="item",
+        resource_id=str(item.id),
+        meta={"name": item.name},
+    )
     await webhooks_service.dispatch(
         session, owner_id, "item.deleted",
         {"id": str(item.id), "name": item.name},

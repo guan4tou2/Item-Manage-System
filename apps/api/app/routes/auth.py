@@ -13,7 +13,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.schemas.user import UserPublic
-from app.services import notifications_service, visibility_service
+from app.services import audit_service, notifications_service, visibility_service
 from app.services.auth_service import (
     AuthService,
     EmailAlreadyExists,
@@ -74,10 +74,24 @@ async def login(
     try:
         user = await service.authenticate(username=payload.username, password=payload.password)
     except InvalidCredentials:
+        # 只記「既有帳號」的失敗（陌生帳號不寫，避免匿名灌寫／列舉訊號）；
+        # 同一帳號在時間窗內只記一筆（見 audit_service.log_login_failure）。
+        existing = await service.get_user_by_username(payload.username)
+        if existing is not None:
+            await audit_service.log_login_failure(
+                session, user_id=existing.id, username=existing.username
+            )
         raise HTTPException(status_code=401, detail="invalid credentials")
     access = service.issue_access_token(user)
     refresh = service.issue_refresh_token(user)
     _set_refresh_cookie(response, refresh)
+    await audit_service.log(
+        session,
+        user_id=user.id,
+        action="auth.login",
+        resource_type="user",
+        resource_id=str(user.id),
+    )
     return TokenResponse(
         access_token=access, user=await visibility_service.user_public(session, user)
     )
