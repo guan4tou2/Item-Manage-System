@@ -612,7 +612,9 @@
       "empty": "請先在物品頁選取要列印標籤的物品。",
       "backToItems": "返回物品",
       "skipped": "已略過 {count} 張標籤",
-      "notFound": "找不到可列印的標籤"
+      "notFound": "找不到可列印的標籤",
+      "downloadPdf": "下載 PDF",
+      "downloadFailed": "PDF 下載失敗，請稍後再試。"
     },
     "filter": {
       "onlyThisLevel": "僅此層"

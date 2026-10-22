@@ -60,3 +60,30 @@ export async function getBulkItemLabelBundles(
     skippedCount: settled.length - items.length,
   }
 }
+
+export interface ItemLabelsPdf {
+  blob: Blob
+  filename: string
+}
+
+/**
+ * Phase 41：伺服器端 A4 標籤 PDF。
+ *
+ * 以 fetch 帶 Bearer（不能直接用 `<a href>`），檔名以 `Content-Disposition` 為準。
+ */
+export async function getItemLabelsPdf(
+  itemIds: string[],
+  accessToken: string | null,
+): Promise<ItemLabelsPdf> {
+  const params = new URLSearchParams()
+  for (const itemId of Array.from(new Set(itemIds.filter(Boolean)))) {
+    params.append("ids", itemId)
+  }
+  const res = await apiFetch(`/items/labels.pdf?${params.toString()}`, { accessToken })
+  const disposition = res.headers.get("content-disposition") ?? ""
+  const match = /filename="([^"]+)"/.exec(disposition)
+  return {
+    blob: await res.blob(),
+    filename: match?.[1] ?? "item-labels.pdf",
+  }
+}

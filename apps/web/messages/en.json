@@ -612,7 +612,9 @@
       "empty": "Select items from the items page to print labels.",
       "backToItems": "Back to items",
       "skipped": "{count} label skipped",
-      "notFound": "No printable labels found"
+      "notFound": "No printable labels found",
+      "downloadPdf": "Download PDF",
+      "downloadFailed": "Failed to download the PDF. Please try again."
     },
     "filter": {
       "onlyThisLevel": "This level only"

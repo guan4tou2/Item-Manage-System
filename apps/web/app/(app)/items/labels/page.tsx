@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { ArrowLeft, Printer } from "lucide-react"
+import { ArrowLeft, FileDown, Printer } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -10,7 +10,7 @@ import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { LabelBarcode } from "@/components/items/label-barcode"
-import { getBulkItemLabelBundles } from "@/lib/api/labels"
+import { getBulkItemLabelBundles, getItemLabelsPdf } from "@/lib/api/labels"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 function uniqueIdsFromQuery(queryString: string): string[] {
@@ -33,6 +33,8 @@ export default function BulkItemLabelsPage() {
     staleTime: 60_000,
   })
   const [qrUrls, setQrUrls] = useState<Record<string, string>>({})
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfFailed, setPdfFailed] = useState(false)
 
   useEffect(() => {
     if (!labels.data) {
@@ -73,6 +75,27 @@ export default function BulkItemLabelsPage() {
   const printableItems = labels.data?.items ?? []
   const skippedCount = labels.data?.skippedCount ?? 0
 
+  async function handleDownloadPdf() {
+    if (!token || printableItems.length === 0) return
+    setPdfFailed(false)
+    setPdfLoading(true)
+    try {
+      const { blob, filename } = await getItemLabelsPdf(ids, token)
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = filename
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch {
+      setPdfFailed(true)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   return (
     <section className="space-y-6 p-6 print:space-y-0 print:p-0">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -89,12 +112,27 @@ export default function BulkItemLabelsPage() {
               {t("items.labels.backToItems")}
             </Link>
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleDownloadPdf}
+            disabled={printableItems.length === 0 || pdfLoading}
+          >
+            <FileDown className="h-4 w-4" />
+            {t("items.labels.downloadPdf")}
+          </Button>
           <Button type="button" onClick={() => window.print()} disabled={printableItems.length === 0}>
             <Printer className="h-4 w-4" />
             {t("items.detail.print")}
           </Button>
         </div>
       </div>
+
+      {pdfFailed ? (
+        <p className="text-sm text-destructive print:hidden">
+          {t("items.labels.downloadFailed")}
+        </p>
+      ) : null}
 
       {skippedCount > 0 ? (
         <p className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground print:hidden">
@@ -111,7 +149,7 @@ export default function BulkItemLabelsPage() {
             return (
               <div
                 key={item.itemId}
-                className="box-border flex h-[4cm] w-[6cm] break-inside-avoid flex-col items-center justify-center gap-2 rounded border border-black/20 bg-white p-2 text-center text-black print:inline-flex print:rounded-none print:border print:border-black/20"
+                className="box-border flex min-h-[4cm] w-[6cm] break-inside-avoid flex-col items-center justify-center gap-1.5 rounded border border-black/20 bg-white p-2 text-center text-black print:inline-flex print:rounded-none print:border print:border-black/20"
               >
                 {qrUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
