@@ -185,6 +185,43 @@ const PHASE_32_KEYS = [
 ]
 
 describe("i18n messages", () => {
+  it("covers the Phase 36 location label surface in both locales", () => {
+    const phase36Keys = [
+      "locations.labels.title",
+      "locations.labels.summary",
+      "locations.labels.pickerTitle",
+      "locations.labels.pickerHint",
+      "locations.labels.empty",
+      "locations.labels.backToLocations",
+      "locations.labels.skipped",
+      "locations.labels.notFound",
+      "locations.labels.itemCount",
+      "locations.tree.printLabel",
+      "locations.tree.printLabels",
+    ]
+    const missingEn = phase36Keys.filter((key) => !enKeys.includes(key))
+    const missingZh = phase36Keys.filter((key) => !zhKeys.includes(key))
+    expect({ missingEn, missingZh }).toEqual({ missingEn: [], missingZh: [] })
+  })
+
+  it("has no unused keys in the Phase 36 location label namespaces", () => {
+    const sources = [
+      "app/(app)/locations/labels/page.tsx",
+      "components/taxonomy/locations-panel.tsx",
+      "components/taxonomy/location-tree-node.tsx",
+    ]
+      .map((relative) => fs.readFileSync(path.resolve(__dirname, "..", "..", relative), "utf8"))
+      .join("\n")
+
+    const keys = enKeys.filter(
+      (key) =>
+        key.startsWith("locations.labels.") ||
+        key === "locations.tree.printLabel" ||
+        key === "locations.tree.printLabels",
+    )
+    const missing = keys.filter((key) => !sources.includes(key))
+    expect(missing).toEqual([])
+  })
   it("keeps zh-TW and en in lockstep (same key set)", () => {
     expect(zhKeys).toEqual(enKeys)
   })

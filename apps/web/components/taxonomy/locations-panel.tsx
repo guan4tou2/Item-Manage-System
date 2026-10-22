@@ -1,6 +1,7 @@
 "use client"
 
-import { Plus, Search } from "lucide-react"
+import { Plus, Printer, Search } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -51,6 +52,7 @@ function errorCode(error: unknown): string | undefined {
 /** `/locations` 樹管理（§5.4／§5.7）：桌機拖放、行動 ⋯ 搬移、鍵盤操作、刪除限制。 */
 export function LocationsPanel() {
   const t = useTranslations()
+  const router = useRouter()
   const readOnly = useReadOnly()
   const token = useAccessToken()
   const isMobile = useIsMobile()
@@ -336,6 +338,14 @@ export function LocationsPanel() {
             {t("locations.tree.addRoot")}
           </Button>
         </EditableOnly>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/locations/labels")}
+        >
+          <Printer className="mr-2 h-4 w-4" />
+          {t("locations.tree.printLabels")}
+        </Button>
       </div>
 
       {!readOnly && addingChildOf === null && addingParent === null ? (
@@ -437,6 +447,7 @@ export function LocationsPanel() {
               }}
               onDelete={() => requestDelete(node)}
               onMoveRequest={() => setMoveTarget(node)}
+              onPrintLabel={() => router.push(`/locations/labels?ids=${node.id}`)}
               onDragStart={() => {
                 setDragId(node.id)
                 setFocusedId(node.id)

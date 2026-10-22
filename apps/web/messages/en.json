@@ -243,6 +243,17 @@
     }
   },
   "locations": {
+    "labels": {
+      "title": "Print location labels",
+      "summary": "{count} labels ready",
+      "pickerTitle": "Choose the locations to label",
+      "pickerHint": "Tick shelves, boxes or rooms to generate printable QR labels.",
+      "empty": "No locations yet — create one on the Locations page first.",
+      "backToLocations": "Back to locations",
+      "skipped": "{count} label skipped",
+      "notFound": "No printable labels found",
+      "itemCount": "{count} items"
+    },
     "kind": {
       "floor": "Floor",
       "room": "Room",
@@ -261,6 +272,8 @@
       "moveTo": "Move to…",
       "delete": "Delete",
       "addRoot": "Add top-level location",
+      "printLabel": "Print label",
+      "printLabels": "Print location labels",
       "newRootLabel": "New location name",
       "namePlaceholder": "e.g. 1F, Kitchen, Top shelf",
       "searchPlaceholder": "Search locations (full paths shown)",

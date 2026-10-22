@@ -196,6 +196,56 @@ describe("QrScannerView（QR 零回歸＋相機狀態）", () => {
   })
 })
 
+describe("QrScannerView（位置深連結：Phase 36）", () => {
+  beforeEach(() => {
+    push.mockReset()
+    engineMocks.create.mockReset()
+    engineMocks.stop.mockReset()
+    engineMocks.create.mockResolvedValue({ stop: engineMocks.stop })
+    lookupMocks.use.mockReset()
+    lookupMocks.use.mockReturnValue(idleLookup())
+    lookupMocks.refetch.mockReset()
+    installMediaDevices()
+  })
+
+  afterEach(() => {
+    removeMediaDevices()
+  })
+
+  it("scans a location label and navigates to that location's item list", async () => {
+    render(<QrScannerView />, { wrapper: Provider })
+    const onDecode = await onDecodeCallback()
+
+    act(() => onDecode("https://ims.example/items?location=8"))
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/items?location=8"))
+    expect(engineMocks.stop).toHaveBeenCalled()
+    expect(lookupMocks.use).toHaveBeenLastCalledWith(null)
+  })
+
+  it("manual input of a location deep link navigates to the location's item list", async () => {
+    render(<QrScannerView />, { wrapper: Provider })
+
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "https://ims.example/items?location=8" },
+    })
+    fireEvent.submit(screen.getByRole("textbox").closest("form") as HTMLFormElement)
+
+    expect(push).toHaveBeenCalledWith("/items?location=8")
+  })
+
+  it("item deep links still navigate to the item page", async () => {
+    render(<QrScannerView />, { wrapper: Provider })
+    const onDecode = await onDecodeCallback()
+
+    act(() => onDecode(`https://ims.example/items/${VALID_UUID}`))
+
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(`/items/${VALID_UUID}`),
+    )
+  })
+})
+
 describe("QrScannerView（條碼內查／外查分流）", () => {
   beforeEach(() => {
     push.mockReset()

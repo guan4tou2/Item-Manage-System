@@ -42,6 +42,9 @@ vi.mock("@/lib/api/items", () => ({
 
 vi.mock("@/lib/hooks/use-is-mobile", () => ({ useIsMobile: () => false }))
 
+const navMocks = vi.hoisted(() => ({ push: vi.fn() }))
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: navMocks.push }) }))
+
 vi.mock("@/lib/auth/use-auth", () => ({ useAccessToken: () => "jwt" }))
 
 vi.mock("sonner", () => ({
@@ -130,9 +133,31 @@ beforeEach(() => {
   })
 })
 
-describe("LocationsPanel（樹管理）", () => {
-  it("renders roots collapsed and expands on demand", async () => {
+describe("LocationsPanel（位置標籤入口：Phase 36）", () => {
+  it("節點選單可列印該位置標籤", async () => {
     const user = userEvent.setup()
+    renderPanel()
+    await user.click(within(screen.getByTestId("location-node-1")).getByRole("button", { name: "Expand" }))
+
+    const kitchen = screen.getByTestId("location-node-2")
+    await user.click(within(kitchen).getByRole("button", { name: /More actions for Kitchen/ }))
+    await user.click(await screen.findByRole("menuitem", { name: "Print label" }))
+
+    expect(navMocks.push).toHaveBeenCalledWith("/locations/labels?ids=2")
+  })
+
+  it("頁首有列印位置標籤入口（勾選模式）", async () => {
+    const user = userEvent.setup()
+    renderPanel()
+
+    await user.click(screen.getByRole("button", { name: "Print location labels" }))
+
+    expect(navMocks.push).toHaveBeenCalledWith("/locations/labels")
+  })
+})
+
+describe("LocationsPanel（樹管理）", () => {
+  it("renders roots collapsed and expands on demand", async () => {    const user = userEvent.setup()
     renderPanel()
 
     expect(screen.getByText("1F")).toBeInTheDocument()

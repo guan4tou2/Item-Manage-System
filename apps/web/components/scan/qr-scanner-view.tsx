@@ -10,6 +10,10 @@ import { Label } from "@/components/ui/label"
 import { useBarcodeLookup } from "@/lib/hooks/use-barcode-lookup"
 import { canonicalizeBarcode, isBarcodeLike } from "@/lib/scan/barcode"
 import { createBarcodeEngine, type BarcodeEngine } from "@/lib/scan/barcode-engine"
+import {
+  extractLocationIdFromPayload,
+  locationItemsPath,
+} from "@/lib/scan/location-link"
 
 import { BarcodeCandidates } from "./barcode-candidates"
 import { BarcodeExternalCard } from "./barcode-external-card"
@@ -83,6 +87,14 @@ export function QrScannerView() {
         router.push(`/items/${id}` as never)
         return
       }
+      // Phase 36：位置標籤（/items?location={id}）→ 該位置的物品清單
+      const locationId = extractLocationIdFromPayload(payload)
+      if (locationId) {
+        stopEngine()
+        setStatus("idle")
+        router.push(locationItemsPath(locationId) as never)
+        return
+      }
       if (isBarcodeLike(payload)) {
         startLookup(payload)
       }
@@ -138,6 +150,12 @@ export function QrScannerView() {
     const id = extractItemIdFromPayload(value)
     if (id) {
       router.push(`/items/${id}` as never)
+      return
+    }
+    // Phase 36：位置深連結 → 該位置的物品清單
+    const locationId = extractLocationIdFromPayload(value)
+    if (locationId) {
+      router.push(locationItemsPath(locationId) as never)
       return
     }
     if (isBarcodeLike(value)) {

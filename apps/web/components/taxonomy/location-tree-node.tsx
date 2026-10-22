@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, ChevronRight, MoreHorizontal, Plus, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronRight, MoreHorizontal, Plus, Printer, Trash2 } from "lucide-react"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
@@ -40,6 +40,8 @@ export interface TreeNodeRowProps {
   onAddChild: () => void
   onDelete: () => void
   onMoveRequest: () => void
+  /** Phase 36：列印此位置的 QR 標籤 */
+  onPrintLabel: () => void
   onDragStart: () => void
   onDragOver: (event: React.DragEvent) => void
   onDrop: () => void
@@ -69,6 +71,7 @@ export function TreeNodeRow({
   onAddChild,
   onDelete,
   onMoveRequest,
+  onPrintLabel,
   onDragStart,
   onDragOver,
   onDrop,
@@ -199,6 +202,10 @@ export function TreeNodeRow({
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onStartEdit}>
             {t("locations.tree.rename")}
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onPrintLabel}>
+            <Printer className="mr-2 h-4 w-4" />
+            {t("locations.tree.printLabel")}
           </DropdownMenuItem>
           {isMobile ? (
             <DropdownMenuItem onSelect={onMoveRequest}>

@@ -243,6 +243,17 @@
     }
   },
   "locations": {
+    "labels": {
+      "title": "列印位置標籤",
+      "summary": "可列印 {count} 張標籤",
+      "pickerTitle": "選擇要貼標籤的位置",
+      "pickerHint": "勾選櫃子、箱子或房間，即可產生可貼的 QR 標籤。",
+      "empty": "尚未建立位置，請先到「位置」頁建立。",
+      "backToLocations": "返回位置",
+      "skipped": "已略過 {count} 張標籤",
+      "notFound": "找不到可列印的標籤",
+      "itemCount": "{count} 件"
+    },
     "kind": {
       "floor": "樓層",
       "room": "房間",
@@ -261,6 +272,8 @@
       "moveTo": "搬移至…",
       "delete": "刪除",
       "addRoot": "新增最上層位置",
+      "printLabel": "列印標籤",
+      "printLabels": "列印位置標籤",
       "newRootLabel": "新位置名稱",
       "namePlaceholder": "例：1F、廚房、上櫃",
       "searchPlaceholder": "搜尋位置（顯示完整路徑）",
