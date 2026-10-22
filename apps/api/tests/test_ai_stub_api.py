@@ -127,8 +127,13 @@ async def test_stub_receipt_creates_ready_drafts(client, auth, monkeypatch):
     assert all(row["status"] == "ready" for row in body["created"])
     snapshot = body["created"][0]["payload"]["receipt"]
     assert snapshot["merchant"] == "測試商店"
-    # 對帳相符：總額 == 品項合計（差額 0）
-    assert snapshot["total"] == snapshot["item_total"]
+    # Phase 38：算術驗證 → 相符（Σ品項小計 − 折扣 + 稅 + 運費 == 收據總額）
+    assert snapshot["item_total"] == "140.00"
+    assert snapshot["discount"] == "10.00"
+    assert snapshot["tax"] == "5.00"
+    assert snapshot["calculated_total"] == "135.00"
+    assert snapshot["total"] == "135.00"
+    assert snapshot["balance_status"] == "balanced"
     assert snapshot["discrepancy"] == "0.00"
 
 

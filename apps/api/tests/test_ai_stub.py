@@ -56,13 +56,23 @@ def test_suggest_text_is_valid_json_with_expected_fields():
 
 def test_receipt_text_parses_and_totals_match():
     from app.services.ai_service import parse_receipt_response
+    from app.services.receipt_balance import compute_balance
 
     extraction = parse_receipt_response(receipt_text())
     assert extraction.merchant == "測試商店"
     assert extraction.currency == "TWD"
     assert len(extraction.items) == 2
-    item_total = sum(item.subtotal for item in extraction.items)
-    assert item_total == extraction.total
+    # Phase 38：算術驗證（Σ品項小計 − 折扣 + 稅 + 運費 == 收據總額）
+    balance = compute_balance(
+        total=extraction.total,
+        items=[{"subtotal": i.subtotal, "unit_price": i.unit_price, "quantity": i.quantity} for i in extraction.items],
+        discount=extraction.discount,
+        tax=extraction.tax,
+        shipping=extraction.shipping,
+        currency=extraction.currency,
+    )
+    assert balance.status == "balanced"
+    assert balance.calculated_total == extraction.total
 
 
 # --- 問答 ---------------------------------------------------------------

@@ -97,6 +97,23 @@ class ReceiptSnapshot(BaseModel):
     discrepancy: Optional[Decimal]
     page_count: int
     truncated: bool
+    # --- Phase 38：算術驗證與旗標（純新增；舊快照缺值 → None／unknown）---
+    #: 價稅前品項合計（模型讀到的 subtotal）
+    subtotal: Optional[Decimal] = None
+    #: 收據層級折扣
+    discount: Optional[Decimal] = None
+    #: 稅額
+    tax: Optional[Decimal] = None
+    #: 運費／服務費
+    shipping: Optional[Decimal] = None
+    #: 算術值（Σ品項小計 − 折扣 + 稅 + 運費）
+    calculated_total: Optional[Decimal] = None
+    #: 對帳狀態：balanced／discrepancy／incomplete／unknown
+    balance_status: Optional[Literal["balanced", "discrepancy", "incomplete", "unknown"]] = None
+    #: 缺價（無法計算金額）的品項數
+    missing_price_count: int = 0
+    #: AI 自述讀不確定的欄位路徑
+    uncertain_fields: list[str] = []
 
 
 class ReceiptItemSnapshot(BaseModel):

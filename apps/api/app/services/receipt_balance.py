@@ -116,7 +116,18 @@ def compute_balance(
         calculated += shipping
     calculated = calculated.quantize(CENTS)
 
-    if total is None or missing_price_count > 0 or currency_unknown:
+    if total is None:
+        return BalanceResult(
+            status="incomplete",
+            calculated_total=calculated,
+            discrepancy=None,
+            missing_price_count=missing_price_count,
+            currency_unknown=currency_unknown,
+            item_total=item_total,
+        )
+
+    if missing_price_count > 0:
+        # 還有算不出金額的品項 → 差額會誤導，不呈現數字
         return BalanceResult(
             status="incomplete",
             calculated_total=calculated,
@@ -128,6 +139,16 @@ def compute_balance(
 
     discrepancy = _money(total - calculated)
     balanced = abs(discrepancy) < BALANCE_EPSILON
+    if currency_unknown:
+        # 金額可算但幣別未知 → 仍不可判斷（差額數字可參考）
+        return BalanceResult(
+            status="incomplete",
+            calculated_total=calculated,
+            discrepancy=discrepancy,
+            missing_price_count=0,
+            currency_unknown=True,
+            item_total=item_total,
+        )
     return BalanceResult(
         status="balanced" if balanced else "discrepancy",
         calculated_total=calculated,

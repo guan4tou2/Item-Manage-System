@@ -445,6 +445,82 @@ async def test_create_receipt_creates_ready_item_drafts(client, auth, monkeypatc
     }
 
 
+async def test_create_receipt_snapshot_includes_balance_evidence(
+    client, auth, monkeypatch
+):
+    """Phase 38：快照含算術驗證結果與旗標。"""
+    payload = _receipt_payload()
+    payload.update(
+        {
+            "subtotal": "323.00",
+            "discount": "23.00",
+            "tax": "0.00",
+            "shipping": "950.00",
+            "total": "1250.00",
+            "uncertain_fields": ["total"],
+        }
+    )
+    await _enable_ai(monkeypatch, payload)
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    assert r.status_code == 201
+    receipt = r.json()["created"][0]["payload"]["receipt"]
+    # Σ品項小計 323 − 折扣 23 + 稅 0 + 運費 950 = 1250 → 與收據總額相符
+    assert receipt["item_total"] == "323.00"
+    assert receipt["discount"] == "23.00"
+    assert receipt["shipping"] == "950.00"
+    assert receipt["calculated_total"] == "1250.00"
+    assert receipt["balance_status"] == "balanced"
+    assert receipt["missing_price_count"] == 0
+    assert receipt["uncertain_fields"] == ["total"]
+
+
+async def test_create_receipt_marks_discrepancy(client, auth, monkeypatch):
+    await _enable_ai(monkeypatch, _receipt_payload())
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    receipt = r.json()["created"][0]["payload"]["receipt"]
+    # 舊格式（無折扣／稅／運費）→ 算術值＝品項合計 323，與總額 1250 不符
+    assert receipt["calculated_total"] == "323.00"
+    assert receipt["balance_status"] == "discrepancy"
+
+
+async def test_create_receipt_unknown_currency_is_xxx(client, auth, monkeypatch):
+    """幣別讀不到 → XXX（不猜測）且狀態為 incomplete。"""
+    payload = _receipt_payload()
+    payload["currency"] = None
+    await _enable_ai(monkeypatch, payload)
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    receipt = r.json()["created"][0]["payload"]["receipt"]
+    assert receipt["currency"] == "XXX"
+    assert receipt["balance_status"] == "incomplete"
+
+
+async def test_create_receipt_counts_missing_price_items(client, auth, monkeypatch):
+    """缺價品項 → 計入 missing_price_count 且不可判斷。"""
+    payload = _receipt_payload(
+        items=[
+            {"name": "鮮乳", "quantity": 2, "unit_price": "62.00", "subtotal": "124.00"},
+            {"name": "神秘品項", "quantity": 1},
+        ]
+    )
+    await _enable_ai(monkeypatch, payload)
+    page = await _upload(client, auth)
+
+    r = await client.post("/api/ai/receipts", headers=auth, json={"image_ids": [page]})
+
+    receipt = r.json()["created"][0]["payload"]["receipt"]
+    assert receipt["missing_price_count"] == 1
+    assert receipt["balance_status"] == "incomplete"
+
+
 async def test_create_receipt_uses_history_rules(client, auth, monkeypatch):
     """分類建議沿用 Phase 32 歷史規則（批次化）。"""
     await _enable_ai(monkeypatch, _receipt_payload())

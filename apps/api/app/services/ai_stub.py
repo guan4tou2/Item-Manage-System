@@ -42,26 +42,35 @@ def suggest_text() -> str:
 
 # --- 收據（頁面 → 品項） -----------------------------------------------
 
-#: stub 收據（固定值；`total` == 品項小計合計 → 對帳相符）
+#: stub 收據（固定值；`total` == 品項小計合計 − 折扣 + 稅 + 運費 → 對帳相符）
 STUB_RECEIPT: dict[str, Any] = {
     "merchant": "測試商店",
     "purchased_at": "2026-01-01",
     "currency": "TWD",
-    "total": "150.00",
+    "subtotal": "140.00",
+    "discount": "10.00",
+    "tax": "5.00",
+    "shipping": "0.00",
+    "total": "135.00",
     "items": [
         {
             "name": "測試品項甲",
             "quantity": 2,
             "unit_price": "50.00",
             "subtotal": "100.00",
+            "discount": "0.00",
+            "tax": "0.00",
         },
         {
             "name": "測試品項乙",
             "quantity": 1,
-            "unit_price": "50.00",
-            "subtotal": "50.00",
+            "unit_price": "40.00",
+            "subtotal": "40.00",
+            "discount": "0.00",
+            "tax": "0.00",
         },
     ],
+    "uncertain_fields": [],
 }
 
 

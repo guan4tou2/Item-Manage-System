@@ -26,6 +26,7 @@ from app.models.ai_draft import AiDraftItem
 from app.schemas.ai_draft import DraftAccept
 from app.schemas.item import ItemCreate, ItemRead
 from app.services import ai_quota, ai_service, classification_service, items_service
+from app.services import receipt_balance
 from app.services.ai_mode import ai_enabled
 from app.services.images_service import get_visible as get_visible_image
 
@@ -154,19 +155,45 @@ async def create_receipt_drafts(
         Decimal("0"),
     )
     item_total = item_total.quantize(Decimal("0.01")) if extraction.items else None
-    discrepancy = (
-        (extraction.total - item_total).quantize(Decimal("0.01"))
-        if extraction.total is not None and item_total is not None
-        else None
+
+    # Phase 38 D2/D3：算術驗證（Σ品項小計 − 折扣 + 稅 + 運費 == 收據總額）
+    balance = receipt_balance.compute_balance(
+        total=extraction.total,
+        items=[
+            {
+                "subtotal": item.subtotal,
+                "unit_price": item.unit_price,
+                "quantity": item.quantity,
+            }
+            for item in extraction.items
+        ],
+        discount=extraction.discount,
+        tax=extraction.tax,
+        shipping=extraction.shipping,
+        currency=extraction.currency,
     )
+    # 差額改以「收據總額 − 算術值」為準（無折扣／稅／運費時與舊行為一致）
+    discrepancy = balance.discrepancy
+    # 幣別未知 → 以 XXX 表示（不猜測；itemly 同款）
+    currency = extraction.currency or receipt_balance.UNKNOWN_CURRENCY
+
     receipt_id = uuid4()
     receipt_snapshot = {
         "merchant": extraction.merchant,
         "purchased_at": extraction.purchased_at,
-        "currency": extraction.currency,
+        "currency": currency,
         "total": _decimal_str(extraction.total),
         "item_total": _decimal_str(item_total),
         "discrepancy": _decimal_str(discrepancy),
+        # --- Phase 38：算術驗證與旗標 ---
+        "subtotal": _decimal_str(extraction.subtotal),
+        "discount": _decimal_str(extraction.discount),
+        "tax": _decimal_str(extraction.tax),
+        "shipping": _decimal_str(extraction.shipping),
+        "calculated_total": _decimal_str(balance.calculated_total),
+        "balance_status": balance.status,
+        "missing_price_count": balance.missing_price_count,
+        "uncertain_fields": list(extraction.uncertain_fields),
         "page_count": len(pages),
         "truncated": truncated,
     }
