@@ -222,6 +222,52 @@ describe("i18n messages", () => {
     const missing = keys.filter((key) => !sources.includes(key))
     expect(missing).toEqual([])
   })
+  it("covers the Phase 39 audit query surface in both locales", () => {
+    const phase39Keys = [
+      "settings.audit.loading",
+      "settings.audit.empty",
+      "settings.audit.colTime",
+      "settings.audit.colUser",
+      "settings.audit.colAction",
+      "settings.audit.colResource",
+      "settings.audit.colMeta",
+      "settings.audit.search",
+      "settings.audit.searchPlaceholder",
+      "settings.audit.action",
+      "settings.audit.allActions",
+      "settings.audit.resourceType",
+      "settings.audit.allResourceTypes",
+      "settings.audit.from",
+      "settings.audit.to",
+      "settings.audit.clear",
+      "settings.audit.total",
+      "settings.audit.page",
+      "settings.audit.prev",
+      "settings.audit.next",
+      "settings.audit.export",
+      "settings.audit.exporting",
+      "settings.audit.exportFailed",
+      "settings.audit.details",
+      "settings.audit.hideDetails",
+      "settings.audit.noMatches",
+      "settings.audit.loadFailed",
+      "settings.audit.retry",
+    ]
+    const missingEn = phase39Keys.filter((key) => !enKeys.includes(key))
+    const missingZh = phase39Keys.filter((key) => !zhKeys.includes(key))
+    expect({ missingEn, missingZh }).toEqual({ missingEn: [], missingZh: [] })
+  })
+
+  it("has no unused keys in the Phase 39 audit namespace", () => {
+    const sources = ["components/settings/audit-log-panel.tsx"]
+      .map((relative) => fs.readFileSync(path.resolve(__dirname, "..", "..", relative), "utf8"))
+      .join("\n")
+
+    const keys = enKeys.filter((key) => key.startsWith("settings.audit."))
+    const missing = keys.filter((key) => !sources.includes(key))
+    expect(missing).toEqual([])
+  })
+
   it("keeps zh-TW and en in lockstep (same key set)", () => {
     expect(zhKeys).toEqual(enKeys)
   })
