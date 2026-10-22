@@ -1,7 +1,7 @@
 # Phase 35 — AI stub 模式（可測的 AI 成功路徑）
 
-- **日期**：2026-10-21
-- **狀態**：計畫中（TDD 任務與驗證見下文；Final Verification 收尾時填實測）
+- **日期**：2026-10-21（收尾 2026-10-22）
+- **狀態**：已完成（T1.1–T3.1 全部落地；TDD 紅綠、全套驗證與視覺走查見文末 Final Verification）
 - **依據**：`docs/progress-2026-10-19.md` §六 後續候選 #1（「AI stub 模式（技術債）：`AI_MODE=stub` 環境開關，讓 e2e 能驗證 AI 成功路徑（收據品項／搜尋 chip／問答引用），補上最大測試缺口」）＋ `docs/v2-roadmap.md` 下一輪候選 #1
 - **依賴**：Phase 32（草稿狀態機）、Phase 33（收據抽取）、Phase 34（NL 搜尋／問答）
 - **規模**：S–M（API：設定開關＋stub 供應器＋規則轉譯器＋1 個唯讀端點；Web：**無**功能變更；e2e：1 個新 spec＋Playwright 專案分流）
@@ -258,17 +258,27 @@ stub 只看 `context`（既有服務已保證是本人可見物品摘要），�
 
 ---
 
-## Final Verification（收尾時填實測）
+## Final Verification（收尾時填實測；2026-10-22）
 
-- [ ] API：`uv run pytest -q` → 實測
-- [ ] Web：`pnpm vitest run` → 實測；`pnpm typecheck` → 0 error
-- [ ] api-types 重生成 → 零破壞性差異
-- [ ] e2e（live）：`pnpm exec playwright test --project=chromium --workers=2` → 實測
-- [ ] e2e（stub）：`AI_MODE=stub docker compose up -d api && pnpm exec playwright test --project=ai-stub --workers=2` → 實測
-- [ ] 視覺走查（1440×900＋390×844）：stub 模式下的收據群組標頭、搜尋 chip、問答引用
-- [ ] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
+- [x] API：`cd apps/api && uv run pytest -q` → **1130 passed**（基線 1086；＋44：模式 7／stub 供應器 19／stub API 12／配額 2／status 端點 4；4:06）
+- [x] API（golden eval）：`uv run pytest evals/ -q` → **28 passed、1 skipped**（live 模式未設 key 自動 skip）
+- [x] Web：`pnpm vitest run` → **717 passed（129 檔）**（基線 717／129 檔，**無變更**——本 phase Web 無功能改動）；`pnpm typecheck` → **0 error**
+- [x] api-types 重生成：`uv run python scripts/export_openapi.py` ＋ `node generate.mjs` → **零 diff**（純新增 `/api/ai/status` 與 `AiStatusRead`，106 行新增、0 刪除）
+- [x] e2e（live，`--project=chromium`）：**79 passed**（25 spec；基線 79 情境，**無回歸**；`--workers=1` 全綠）
+- [x] e2e（stub，`--project=ai-stub`）：**4 passed**（1 spec／4 情境：收據品項→對帳→入庫、搜尋 chip、問答引用、批次入庫）→ **補上 Phase 32–34 最大測試缺口**
+- [x] 視覺走查（1440×900＋390×844，stub 模式）：AI 搜尋「理解為」chip（關鍵字／位置／到期）、1 筆結果、問答面板（回答＋引用連結＋聲明）、收據群組標頭（測試商店 · 2026-01-01 · 1 頁 · 2 個品項 · 與收據總額相符）、品項卡預填名稱／數量／成本 → **無破版**
+- [x] `git status` 乾淨；ff merge main（`b1c3cea..31d1317`，9 個 commit）
 
----
+### 收尾環境註記（2026-10-22）
+
+- Worktree：`.claude/worktrees/phase35-ai-stub`；分支 `feature/phase35-ai-stub`（已 ff merge main）
+- Stack：compose 專案 `ims-v2`；e2e 前 `docker compose up -d --build`（`web` 映像需連網 corepack；`api` 映像重建即可）
+- 模式切換：`AI_MODE=stub docker compose up -d api`（僅重建 api 容器）→ stub；`docker compose up -d api`（不帶變數）→ live
+- `.env`：`GEMINI_API_KEY=` 空；`ENVIRONMENT=dev`（stub 僅允許 dev）
+- **e2e 前置（本機 DB）**：`locations-tree.spec.ts` 的「真實遷移後的位置樹」需 `phase26_demo` 使用者與其位置樹種子；本機 DB 原先無此種子 → 補種後全綠（與本 phase 無關）
+- **e2e flake 觀察**：`--workers=2` 於本機高負載下仍會出現 UI timeout 型 flake（`locations-tree`／`ai-search` 各一，單檔重跑皆通過）；`--workers=1` 全綠（79/79）
+- 無 migration；偏好沿用既有 JSON 欄位（`ai_data_sharing_enabled`）
+- 走查以臨時 Playwright 腳本執行（走查後已刪除）
 
 ## 測試基線（main，Phase 34 完成）
 
