@@ -410,9 +410,14 @@ export function AuditLogPanel() {
                   {resourceLabel(row)}
                 </p>
                 {row.meta && (
-                  <pre className="mt-2 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
-                    {JSON.stringify(row.meta, null, 2)}
-                  </pre>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs text-muted-foreground">
+                      {t("settings.audit.colMeta")}
+                    </summary>
+                    <pre className="mt-1 max-h-40 overflow-auto rounded bg-muted p-2 text-xs">
+                      {JSON.stringify(row.meta, null, 2)}
+                    </pre>
+                  </details>
                 )}
               </li>
             ))}

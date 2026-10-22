@@ -216,6 +216,17 @@ def iso_utc(value: datetime) -> str:
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+#: 試算表公式起首字元（CSV injection／CWE-1236）
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _csv_cell(value: str) -> str:
+    """以單引號前綴中和試算表公式，避免匯出檔在 Excel 被執行。"""
+    if value.startswith(_FORMULA_PREFIXES):
+        return f"'{value}"
+    return value
+
+
 def build_csv(rows: list[AuditRow]) -> str:
     """把查詢結果轉為 CSV 文字（不含 BOM；由路由加上）。"""
     buffer = io.StringIO()
@@ -223,17 +234,16 @@ def build_csv(rows: list[AuditRow]) -> str:
     writer.writerow(CSV_COLUMNS)
     for row in rows:
         log = row.log
-        writer.writerow(
-            [
-                iso_utc(log.created_at),
-                row.user_email or "",
-                str(log.user_id) if log.user_id else "",
-                log.action,
-                log.resource_type,
-                log.resource_id or "",
-                json.dumps(log.meta, ensure_ascii=False, separators=(",", ":"))
-                if log.meta
-                else "",
-            ]
-        )
+        cells = [
+            iso_utc(log.created_at),
+            row.user_email or "",
+            str(log.user_id) if log.user_id else "",
+            log.action,
+            log.resource_type,
+            log.resource_id or "",
+            json.dumps(log.meta, ensure_ascii=False, separators=(",", ":"))
+            if log.meta
+            else "",
+        ]
+        writer.writerow([_csv_cell(cell) for cell in cells])
     return buffer.getvalue()

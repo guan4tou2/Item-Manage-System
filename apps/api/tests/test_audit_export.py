@@ -107,6 +107,23 @@ async def test_export_escapes_commas_quotes_and_newlines(client, admin_auth, db_
     assert json.loads(row[6]) == tricky
 
 
+async def test_export_neutralises_spreadsheet_formulas(client, admin_auth, db_session):
+    """CSV injection（CWE-1236）：以 = + - @ 開頭的欄位加單引號，避免 Excel 執行公式。"""
+    await _seed(
+        db_session,
+        action="test.formula",
+        resource_type="x",
+        resource_id="=cmd|' /C calc'!A0",
+        meta={"note": "+1"},
+    )
+
+    text = (await client.get("/api/admin/audit-logs/export.csv", headers=admin_auth)).text
+    row = next(r for r in _rows(text)[1:] if r[3] == "test.formula")
+
+    assert row[5].startswith("'=cmd")
+    assert json.loads(row[6].lstrip("'")) == {"note": "+1"}
+
+
 async def test_export_applies_filters(client, admin_auth, db_session):
     await _seed(db_session, action="test.keep", resource_type="x")
     await _seed(db_session, action="test.drop", resource_type="y")

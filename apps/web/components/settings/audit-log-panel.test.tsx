@@ -192,7 +192,8 @@ describe("AuditLogPanel", () => {
     mockApi(() => envelope({ items: [{ ...row, meta: { role: "editor", n: 2 } }] }))
     renderPanel()
 
-    await user.click(await screen.findByRole("button", { name: "Details" }))
+    const table = await screen.findByTestId("audit-table")
+    await user.click(within(table).getByRole("button", { name: "Details" }))
 
     const pre = await screen.findByTestId("audit-meta-json")
     expect(pre.textContent).toContain('"role": "editor"')
@@ -202,7 +203,8 @@ describe("AuditLogPanel", () => {
     renderPanel()
 
     await findInTable("item.create")
-    expect(screen.queryByRole("button", { name: "Details" })).not.toBeInTheDocument()
+    const table = await screen.findByTestId("audit-table")
+    expect(within(table).queryByRole("button", { name: "Details" })).not.toBeInTheDocument()
   })
 
   it("exports the current filters as csv", async () => {

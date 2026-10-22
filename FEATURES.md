@@ -137,11 +137,14 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ---
 
-## 🔑 API Tokens + 稽核（Phase 1）
+## 🔑 API Tokens + 稽核（Phase 1；查詢台 Phase 39）
 
 - Personal Access Tokens 前綴 `ims_pat_`，SHA-256 雜湊存放
 - 原始 token 只在建立當下出現一次
-- `audit_logs` 表記錄：token create / delete、密碼變更、群組權限變更、bootstrap admin 等敏感動作
+- `audit_logs` 目前記錄 **5 種 action**：`group.member_added`／`group.member_role_changed`／`group.member_removed`／`admin.user.set_active`／`backup.import`（更廣的覆蓋範圍列為後續候選）
+- `GET /api/admin/audit-logs`：篩選 `action`／`resource_type`／`user_id`／`q`（涵蓋 action／resource_type／resource_id／meta）／`created_from`／`created_to`；**分頁信封** `{items,total,limit,offset,facets}`；`user_email` 由 LEFT JOIN 取得
+- `GET /api/admin/audit-logs/export.csv`：套用相同篩選、UTF-8 BOM、上限 10,000 列
+- `/settings/audit` 查詢台：動作／資源類型下拉（選項來自 facets）、關鍵字 300ms debounce、日期起訖、分頁、`meta` 展開、CSV 匯出；行動版卡片
 
 ---
 

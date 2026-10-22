@@ -60,6 +60,7 @@
 | 36 | 位置 QR 標籤 | ✅ | `GET /api/locations/{id}/qr.png`＋`/label`（純新增；含子孫物品數；他人位置 404）；深連結 `/items?location={id}`（沿用既有物品列表位置篩選，含子孫 → 不新增目的地頁）；掃碼分流 `item → location → 條碼 → 名稱`（手動輸入同）；列印頁 `/locations/labels`（`?ids=` 直接產生／無 ids 列出位置供勾選一次印多個）；位置樹節點選單「列印標籤」＋頁首入口；`locations.labels.*` i18n 9 鍵 |
 | 37 | 標籤列印加印條碼 | ✅ | 物品標籤加印 **Code128 條碼圖**（`bwip-js` 產生 SVG，動態載入；單張／批量標籤與物品詳情頁）；條碼數字仍以文字呈現；**可編碼性自行驗證**（僅可列印 ASCII；`bwip-js` 對中文不報錯但會產生亂碼條碼 → 擋掉並退回純文字，標籤仍可列印）；QR 內容改以 `zxing-cpp` **真值解碼**驗證（取代近似比對）；補上倉庫缺失的 `LICENSE` 檔（README 已宣稱 MIT） |
 | 38 | 收據證據鏈 | ✅ | 移植 itemly（MIT）驗證語意：`calculated_total = Σ品項小計 − 折扣 + 稅 + 運費`；對帳四態（balanced／discrepancy／incomplete／unknown）；抽取擴充 subtotal／discount／tax／shipping＋品項 discount／tax；`uncertain_fields`（AI 自述不確定，白名單過濾）；幣別未知 → `XXX`；缺價品項 → 待補價數；群組標頭顯示算術拆解與旗標（舊快照相容）；`ReceiptSnapshot` 純新增 8 欄位（api-types 零破壞性） |
+| 39 | 稽核查詢 UI | ✅ | `GET /api/admin/audit-logs` 改分頁信封（`items`／`total`／`limit`／`offset`／`facets`；`limit` 預設 50、上限 500）；篩選 `action`／`resource_type`／`user_id`／`q`（涵蓋 action／resource_type／resource_id／meta，LIKE 萬用字元轉義）／`created_from`／`created_to`（含頭不含尾、顛倒 → 422）；`user_email` 以 LEFT JOIN 取得；facets 為全域（每維度前 50，count desc → value asc）；`GET /api/admin/audit-logs/export.csv`（UTF-8 BOM、csv 轉義、上限 10,000 列）；Web 查詢台（debounce／當地日界 → UTC／分頁／meta 展開／CSV 下載／行動卡片／錯誤重試）；**無 migration** |
 
 ## 測試規模
 
@@ -76,19 +77,18 @@ Phase 22–38 已全部上線；整體狀態、驗證基線與已知限制見 [`
 
 | # | 項目 | 說明 | 粗估 |
 |---|------|------|------|
-| 1 | 稽核查詢 UI | 後端 audit 資料已在，只缺查詢／篩選頁（**Phase 39 進行中**） | S–M |
-| 2 | 週報 | 重用月報 job 與 payload 渲染（`report.weekly`） | S–M |
-| 3 | 伺服器端標籤 PDF | 以 `reportlab` 產 A4 貼紙 PDF（含 QR＋條碼），供標籤機／一次印大量；瀏覽器列印頁已可用 | S–M |
-| 4 | 稽核覆蓋擴充 | 目前僅 5 種 action（群組成員、停用帳號、備份匯入）；補登入失敗／物品刪除／權杖建立撤銷／密碼變更 | S–M |
-| 5 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
-| 6 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
-| 7 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
-| 8 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
-| 9 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
-| 10 | v1 目錄下線 | 打 `v1-final` tag 後移除 `app/`、`templates/`、`static/`、`run_worker.py` | S |
-| 11 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
+| 1 | 週報 | 重用月報 job 與 payload 渲染（`report.weekly`） | S–M |
+| 2 | 伺服器端標籤 PDF | 以 `reportlab` 產 A4 貼紙 PDF（含 QR＋條碼），供標籤機／一次印大量；瀏覽器列印頁已可用 | S–M |
+| 3 | 稽核覆蓋擴充 | 目前僅 5 種 action（群組成員、停用帳號、備份匯入）；補登入失敗／物品刪除／權杖建立撤銷／密碼變更 | S–M |
+| 4 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
+| 5 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
+| 6 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
+| 7 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
+| 8 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
+| 9 | v1 目錄下線 | 打 `v1-final` tag 後移除 `app/`、`templates/`、`static/`、`run_worker.py` | S |
+| 10 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
 
-> 建議節奏：#1–#3 都是 S–M 且彼此獨立，可一項一 phase；#4 是 #1 的自然延伸（有頁面卻只有 5 種事件會顯得空）；#5、#6 需設計決策，建議單獨開 phase 並先寫決策段；#9 成本最高，建議最後或另開里程碑；#10、#11 可合併成一個「收尾清理」phase。
+> 建議節奏：#1–#3 都是 S–M 且彼此獨立，可一項一 phase；**#3 是 Phase 39 的自然延伸**（查詢台已可用，但只有 5 種事件會顯得空）；#4、#5 需設計決策，建議單獨開 phase 並先寫決策段；#8 成本最高，建議最後或另開里程碑；#9、#10 可合併成一個「收尾清理」phase。
 
 ## 快速啟動（v2）
 
