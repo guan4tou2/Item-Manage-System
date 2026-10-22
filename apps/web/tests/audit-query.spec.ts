@@ -87,6 +87,10 @@ test("admin filters, searches, and exports audit logs", async ({ page, request }
 
   // 依動作篩選
   await page.getByRole("combobox", { name: "動作" }).click()
+  // Phase 40：新事件（登入）不需改 UI，會自動出現在 facets 下拉
+  await expect(
+    page.getByRole("option", { name: "auth.login", exact: true }),
+  ).toBeVisible()
   await page.getByRole("option", { name: "admin.user.set_active", exact: true }).click()
   const actionCells = table.locator("tbody tr td:nth-child(3)")
   await expect(actionCells.first()).toHaveText("admin.user.set_active")
