@@ -6,9 +6,12 @@
 """
 from __future__ import annotations
 
+import csv
+import io
+import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import UUID
 
@@ -192,3 +195,45 @@ async def export_rows(
 ) -> list[AuditRow]:
     """CSV 匯出用：套用相同篩選，最多 `max_rows` 列（`created_at DESC`）。"""
     return await _rows(session, _conditions(query), limit=max_rows)
+
+
+#: CSV 欄位順序（與文件、測試一致）
+CSV_COLUMNS = (
+    "created_at",
+    "user_email",
+    "user_id",
+    "action",
+    "resource_type",
+    "resource_id",
+    "meta",
+)
+
+
+def iso_utc(value: datetime) -> str:
+    """統一時區格式（naive 視為 UTC）→ `...Z`。"""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def build_csv(rows: list[AuditRow]) -> str:
+    """把查詢結果轉為 CSV 文字（不含 BOM；由路由加上）。"""
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\n")
+    writer.writerow(CSV_COLUMNS)
+    for row in rows:
+        log = row.log
+        writer.writerow(
+            [
+                iso_utc(log.created_at),
+                row.user_email or "",
+                str(log.user_id) if log.user_id else "",
+                log.action,
+                log.resource_type,
+                log.resource_id or "",
+                json.dumps(log.meta, ensure_ascii=False, separators=(",", ":"))
+                if log.meta
+                else "",
+            ]
+        )
+    return buffer.getvalue()
