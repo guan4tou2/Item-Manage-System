@@ -57,28 +57,29 @@
 | 33 | AI 收據辨識 | ✅ | `ai_draft_items.receipt_id` 群組鍵＋索引（migration 0025）；`POST /api/ai/receipts` 多頁一次抽取（單一請求、一次配額、失敗不落地）；金額補齊規則（缺單價／缺小計／皆缺／不一致）；每品項一列 `ready` 草稿＋`receipt`／`receipt_item` 快照；對帳（品項合計 vs 收據總額，差額警示不阻擋）；`process` 對收據 409、`accept` 不綁收據照片；同圖去重限定 `batch_photo`；`suggest_for_names` 批次化（與逐次呼叫等價）；Web 上傳區照片／收據 Tabs、佇列分組與群組標頭、卡片小計與數量／成本預填；`docs/ai.md` 收據章節 |
 | 34 | AI 自然語言搜尋＋物品問答 | ✅ | `GET /api/items` 擴充 `loan`／`min_quantity`／`max_quantity`／`sort(name_asc,created_desc)`；`POST /api/ai/search`（LLM → 白名單 filters → 名稱解析 → 既有搜尋；`applied`／`unresolved`；fallback 一律 200：`ai_disabled`／`quota_exhausted`／`upstream_error`／`unparsed`，未呼叫 LLM 不扣配額）；`POST /api/ai/ask`（`item_ids` 或分詞上下文、`[#n]` 引用映射、`grounded=false`、403／503／429／502）；偏好 `ai_data_sharing_enabled`（預設關，未開啟 403；僅送摘要）；`<<<DATA>>>` 注入防護＋白名單＋引用邊界；golden eval 24 句（mock 進 CI、`EVAL_LIVE=1` 手動）；Web AI 搜尋列與「理解為」chip、問答面板、設定開關；`docs/ai.md` 搜尋／問答章節 |
 | 35 | AI stub 模式（可測的 AI 成功路徑） | ✅ | `AI_MODE=live|stub`（非 dev 環境啟用 stub 啟動即失敗）；攔截點在 LLM 唯一出口（`ai_service` 四個 `call_gemini_*`）且 stub 回**原始 JSON 文字** → 解析／白名單／名稱解析／對帳／引用映射路徑完全相同；stub 供應器（建議／收據／問答／搜尋確定性規則轉譯器）；`ai_enabled()` 統一啟用判定（取代五處 key 檢查）；stub 不需 key、不消耗配額、**不豁免** opt-in；`GET /api/ai/status`（純新增唯讀端點）；Playwright 專案 `ai-stub`＋4 情境（收據品項→對帳→入庫、搜尋 chip、問答引用、批次入庫）→ 補上 Phase 32–34 最大測試缺口；一併修正問答上下文選取非決定性（`PYTHONHASHSEED` 相關 flake）；`docs/ai.md` stub 章節 |
+| 38 | 收據證據鏈 | ✅ | 移植 itemly（MIT）驗證語意：`calculated_total = Σ品項小計 − 折扣 + 稅 + 運費`；對帳四態（balanced／discrepancy／incomplete／unknown）；抽取擴充 subtotal／discount／tax／shipping＋品項 discount／tax；`uncertain_fields`（AI 自述不確定，白名單過濾）；幣別未知 → `XXX`；缺價品項 → 待補價數；群組標頭顯示算術拆解與旗標（舊快照相容）；`ReceiptSnapshot` 純新增 8 欄位（api-types 零破壞性） |
 | 37 | 標籤列印加印條碼 | ✅ | 物品標籤加印 **Code128 條碼圖**（`bwip-js` 產生 SVG，動態載入；單張／批量標籤與物品詳情頁）；條碼數字仍以文字呈現；**可編碼性自行驗證**（僅可列印 ASCII；`bwip-js` 對中文不報錯但會產生亂碼條碼 → 擋掉並退回純文字，標籤仍可列印）；QR 內容改以 `zxing-cpp` **真值解碼**驗證（取代近似比對）；補上倉庫缺失的 `LICENSE` 檔（README 已宣稱 MIT） |
 | 36 | 位置 QR 標籤 | ✅ | `GET /api/locations/{id}/qr.png`＋`/label`（純新增；含子孫物品數；他人位置 404）；深連結 `/items?location={id}`（沿用既有物品列表位置篩選，含子孫 → 不新增目的地頁）；掃碼分流 `item → location → 條碼 → 名稱`（手動輸入同）；列印頁 `/locations/labels`（`?ids=` 直接產生／無 ids 列出位置供勾選一次印多個）；位置樹節點選單「列印標籤」＋頁首入口；`locations.labels.*` i18n 9 鍵 |
 
 ## 測試規模
 
-- API 測試：1141 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
-- Web 測試：742 passed（132 檔；vitest + @testing-library/react + jsdom）
+- API 測試：1161 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
+- Web 測試：740 passed（132 檔；vitest + @testing-library/react + jsdom）
 - Playwright e2e：**28 spec／89 情境**（`chromium` 專案 27 spec／85 情境：登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／**位置 QR 標籤**／**標籤條碼**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 下一輪（未排程）
 
-Phase 22–37 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-10-22.md`](progress-2026-10-22.md)。
+Phase 22–38 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-10-22.md`](progress-2026-10-22.md)。
 
 候選項目（依建議優先序，粗估含測試與 i18n）：
 
 | # | 項目 | 說明 | 粗估 |
 |---|------|------|------|
-| 1 | 收據證據鏈（借鑑 itemly） | 收據三態（平衡／差額／缺價待補）＋行項算術檢查（折扣／稅／押金／運費）＋抽取不確定性標記＋「未平衡收據只能存草稿」；強化 Phase 33 的對帳語意 | M |
-| 2 | 稽核查詢 UI | 後端 audit 資料已在，只缺查詢／篩選頁 | S–M |
-| 3 | 週報 | 重用月報 job 與 payload 渲染（`report.weekly`） | S–M |
-| 4 | 伺服器端標籤 PDF | 以 `reportlab` 產 A4 貼紙 PDF（含 QR＋條碼），供標籤機／一次印大量；瀏覽器列印頁已可用 | S–M |
+| 1 | 稽核查詢 UI | 後端 audit 資料已在，只缺查詢／篩選頁 | S–M |
+| 2 | 週報 | 重用月報 job 與 payload 渲染（`report.weekly`） | S–M |
+| 3 | 伺服器端標籤 PDF | 以 `reportlab` 產 A4 貼紙 PDF（含 QR＋條碼），供標籤機／一次印大量；瀏覽器列印頁已可用 | S–M |
+| 4 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
 | 5 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
 | 6 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
 | 7 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |

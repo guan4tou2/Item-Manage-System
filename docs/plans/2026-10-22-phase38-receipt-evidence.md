@@ -1,7 +1,7 @@
 # Phase 38 — 收據證據鏈（算術驗證＋缺價待補＋幣別待確認＋不確定欄位）
 
 - **日期**：2026-10-22
-- **狀態**：計畫中（TDD 任務與驗證見下文；Final Verification 收尾時填實測）
+- **狀態**：已完成（T1.1–T3.2 全部落地；TDD 紅綠、全套驗證與視覺走查見文末 Final Verification）
 - **依據**：`docs/progress-2026-10-22.md` §六 後續候選 #1（「收據證據鏈（借鑑 itemly）：收據三態（平衡／差額／缺價待補）＋行項算術檢查（折扣／稅／押金／運費）＋抽取不確定性標記＋『未平衡收據只能存草稿』；強化 Phase 33 的對帳語意」）
 - **移植來源**：[itemly](https://github.com/Kamitoad/itemly)（MIT；`shared/receipt.ts`、`shared/receipt-validation.ts`、`shared/currency.ts`）——本 phase 移植其**驗證語意**，程式碼改寫為 Python／TypeScript 原生
 - **規模**：M（API：抽取欄位擴充＋算術驗證＋快照擴充；Web：群組標頭升級；e2e：收據對帳情境；**有 API 契約變更** → api-types 重生成）
@@ -229,14 +229,23 @@ balance_status:
 
 ---
 
-## Final Verification（收尾時填實測）
+## Final Verification（收尾時填實測；2026-10-22）
 
-- [ ] API：`uv run pytest -q` → 實測
-- [ ] Web：`pnpm vitest run` ＋ `pnpm typecheck` → 實測
-- [ ] api-types 重生成 → 零破壞性差異（純新增欄位）
-- [ ] e2e（live／stub 兩種模式）→ 實測
-- [ ] 視覺走查（1440×900＋390×844）：收據群組標頭四態
+- [x] API：`cd apps/api && uv run pytest -q` → **1161 passed**（基線 1141；＋20）；golden eval **28 passed／1 skipped**
+- [x] Web：`pnpm vitest run` → **740 passed（132 檔）**；`pnpm typecheck` → **0 error**
+- [x] api-types：重生成 → **零破壞性**（107 行新增、0 刪除；`ReceiptSnapshot` 新欄位皆為選填 → 舊快照相容）
+- [x] e2e（live，`--project=chromium`）：**85 passed**（無回歸）
+- [x] e2e（stub，`--project=ai-stub`）：**4 passed**（收據情境新增「算術拆解」斷言）
+- [x] 視覺走查（1440×900＋390×844）：收據群組標頭顯示「與收據總額相符」＋算術拆解（品項合計 140 − 折扣 10 + 稅 5 + 運費 0 = 應付 135）→ 無破版
 - [ ] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
+
+### 收尾環境註記（2026-10-22）
+
+- Worktree：`.claude/worktrees/phase38-receipt-evidence`；分支 `feature/phase38-receipt-evidence`
+- Stack：compose 專案 `ims-v2`；`AI_MODE=stub` 只重建 api 容器
+- 移植來源：itemly（MIT）`shared/receipt.ts`／`receipt-validation.ts`／`currency.ts`——移植**語意**（四態、算術驗證、`XXX` 幣別、不確定欄位），程式碼為 Python／TypeScript 原生改寫
+- 取捨紀錄：**不移植**「未平衡收據不得確認」的強制阻擋（逐品項接受模型＋Phase 33 決策）；**不移植**逐欄位 provenance（成本高、無 UI 消費）
+- 走查以臨時 Playwright 腳本執行（走查後已刪除）
 
 ---
 

@@ -108,6 +108,8 @@ test("收據成功路徑：抽取品項 → 對帳相符 → 接受入庫", asyn
   await expect(header).toContainText("1 頁")
   await expect(header).toContainText("2 個品項")
   await expect(header).toContainText("與收據總額相符")
+  // Phase 38：算術拆解（品項合計 140 − 折扣 10 + 稅 5 + 運費 0 = 應付 135）
+  await expect(header).toContainText("算術：品項合計 NT$140 − 折扣 NT$10 + 稅 NT$5 + 運費 NT$0 = 應付 NT$135")
 
   // 每個品項一列 ready 草稿，且帶入名稱／數量／成本
   await expect(cards(page)).toHaveCount(2)
