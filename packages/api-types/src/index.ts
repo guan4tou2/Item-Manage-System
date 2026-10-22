@@ -4243,6 +4243,22 @@ export interface components {
             page_count: number;
             /** Truncated */
             truncated: boolean;
+            /** Subtotal */
+            subtotal?: string | null;
+            /** Discount */
+            discount?: string | null;
+            /** Tax */
+            tax?: string | null;
+            /** Shipping */
+            shipping?: string | null;
+            /** Calculated Total */
+            calculated_total?: string | null;
+            /** Balance Status */
+            balance_status?: ("balanced" | "discrepancy" | "incomplete" | "unknown") | null;
+            /** Missing Price Count */
+            missing_price_count?: number | null;
+            /** Uncertain Fields */
+            uncertain_fields?: string[] | null;
         };
         /** RegisterRequest */
         RegisterRequest: {

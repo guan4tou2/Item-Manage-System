@@ -470,7 +470,11 @@
         "items": "{count} 個品項",
         "matched": "與收據總額相符",
         "mismatch": "品項合計 {itemTotal}，收據總額 {total}（差額 {difference}）",
-        "noTotal": "收據未標示總額"
+        "noTotal": "收據未標示總額",
+        "breakdown": "算術：品項合計 {itemTotal} − 折扣 {discount} + 稅 {tax} + 運費 {shipping} = 應付 {calculated}",
+        "missingPrice": "{count} 項待補價",
+        "currencyUnknown": "幣別待確認",
+        "uncertain": "{count} 個欄位待確認"
       },
       "item": {
         "subtotal": "小計 {amount}"

@@ -265,6 +265,30 @@ describe("i18n messages", () => {
     expect(missing).toEqual([])
   })
 
+  it("covers the Phase 38 receipt balance surface in both locales", () => {
+    const phase38Keys = [
+      "ai.receipts.group.breakdown",
+      "ai.receipts.group.missingPrice",
+      "ai.receipts.group.currencyUnknown",
+      "ai.receipts.group.uncertain",
+    ]
+    const missingEn = phase38Keys.filter((key) => !enKeys.includes(key))
+    const missingZh = phase38Keys.filter((key) => !zhKeys.includes(key))
+    expect({ missingEn, missingZh }).toEqual({ missingEn: [], missingZh: [] })
+  })
+
+  it("has no unused keys in the Phase 38 receipt balance namespace", () => {
+    const sources = [
+      "components/ai/receipt-group-header.tsx",
+    ]
+      .map((relative) => fs.readFileSync(path.resolve(__dirname, "..", "..", relative), "utf8"))
+      .join("\n")
+
+    const keys = enKeys.filter((key) => key.startsWith("ai.receipts.group."))
+    const missing = keys.filter((key) => !sources.includes(key))
+    expect(missing).toEqual([])
+  })
+
   it("has no unused keys in the Phase 34 AI search/ask namespaces", () => {
     const sources = [
       "components/items/ai-search-bar.tsx",

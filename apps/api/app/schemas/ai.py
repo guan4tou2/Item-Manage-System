@@ -110,10 +110,10 @@ class ReceiptSnapshot(BaseModel):
     calculated_total: Optional[Decimal] = None
     #: 對帳狀態：balanced／discrepancy／incomplete／unknown
     balance_status: Optional[Literal["balanced", "discrepancy", "incomplete", "unknown"]] = None
-    #: 缺價（無法計算金額）的品項數
-    missing_price_count: int = 0
-    #: AI 自述讀不確定的欄位路徑
-    uncertain_fields: list[str] = []
+    #: 缺價（無法計算金額）的品項數（舊快照缺此鍵 → 視為 0）
+    missing_price_count: Optional[int] = None
+    #: AI 自述讀不確定的欄位路徑（舊快照缺此鍵 → 視為空）
+    uncertain_fields: Optional[list[str]] = None
 
 
 class ReceiptItemSnapshot(BaseModel):

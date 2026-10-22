@@ -470,7 +470,11 @@
         "items": "{count} item(s)",
         "matched": "Matches the receipt total",
         "mismatch": "Items total {itemTotal}, receipt total {total} (difference {difference})",
-        "noTotal": "The receipt has no total"
+        "noTotal": "The receipt has no total",
+        "breakdown": "Math: items {itemTotal} − discount {discount} + tax {tax} + shipping {shipping} = due {calculated}",
+        "missingPrice": "{count} item(s) need a price",
+        "currencyUnknown": "Currency to confirm",
+        "uncertain": "{count} field(s) to confirm"
       },
       "item": {
         "subtotal": "Line total {amount}"
