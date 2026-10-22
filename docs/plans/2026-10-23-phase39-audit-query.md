@@ -1,7 +1,7 @@
 # Phase 39 — 稽核查詢 UI（篩選、分頁、詳情、CSV 匯出）
 
 - **日期**：2026-10-23
-- **狀態**：計畫中（TDD 任務與驗證見下文；Final Verification 收尾時填實測）
+- **狀態**：✅ 已完成（2026-10-23；實測見 Final Verification）
 - **依據**：`docs/v2-roadmap.md` 下一輪候選 #1（「稽核查詢 UI：後端 audit 資料已在，只缺查詢／篩選頁」）
 - **規模**：S–M（API：查詢服務擴充＋列舉值＋CSV；Web：查詢台；e2e：1 spec）
 - **契約變更**：`GET /api/admin/audit-logs` 由 `list[AuditLogRead]` 改為**分頁信封**（見 D1）
@@ -243,14 +243,26 @@ created_at,user_email,user_id,action,resource_type,resource_id,meta
 
 ---
 
-## Final Verification（收尾時填實測）
+## 實作結果（與計畫差異）
 
-- [ ] API：`uv run pytest -q` → 實測
-- [ ] Web：`pnpm vitest run` ＋ `pnpm typecheck` → 實測
-- [ ] api-types 重生成 → 差異僅預期項目（新增 Page／facets；列表回應變更）
-- [ ] e2e（chromium）→ 實測
-- [ ] 視覺走查（1440×900＋390×844）：篩選列、表格、展開 meta、分頁、行動卡片
-- [ ] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
+| 項目 | 計畫 | 實作 |
+|------|------|------|
+| facets 上限 | 50 | 同（`MAX_FACET_VALUES`） |
+| 匯出上限 | 10,000 | 同；路由以 `max_rows=audit_service.DEFAULT_EXPORT_MAX_ROWS` 於呼叫時解析，測試可 monkeypatch |
+| CSV 安全 | 未列 | **追加** CSV injection 中和（`=`／`+`／`-`／`@`／Tab／CR 起首加 `'`，CWE-1236）＋測試 |
+| 行動版 meta | 卡片直接顯示 | **走查後改為 `<details>` 預設收合**（50 列 × JSON 會讓頁面過長） |
+| 既有測試 | 「追加」 | `test_audit_log.py` 改寫（舊 list 契約）；`test_group_roles` 改讀 `items`（唯一受影響的測試消費端） |
+| 元件測試範圍 | — | 表格與行動卡片文字重複 → 以 `within(table)` 限定；Radix Select 需 per-file pointer-capture polyfill |
+
+## Final Verification（2026-10-23 實測）
+
+- [x] API：`uv run pytest -q` → **1192 passed**
+- [x] Web：`pnpm vitest run` → **765 passed（132 檔）**；`pnpm typecheck` → **0 error**
+- [x] api-types：重生成**零 diff**（`AuditLogPage`／facets／`user_email` 已於 T1.4 commit；列表回應的破壞性變更已記錄）
+- [x] e2e（chromium，`--workers=1`）→ **87 passed**（新增 `audit-query.spec.ts` 2 情境，全套與單檔重跑皆綠）
+- [x] PostgreSQL 實測：`q=is_active`（meta）命中；`q=100%`（LIKE 轉義）0 筆
+- [x] 視覺走查 1440×900＋390×844：篩選列、表格、meta 展開（收起）、篩選後分頁（1/1）、行動卡片與收合 meta
+- [x] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
 
 ---
 

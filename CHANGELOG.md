@@ -14,9 +14,9 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 - **關鍵字 `q`** 涵蓋 `action`／`resource_type`／`resource_id`／`meta`（`cast(meta, Text)`；SQLite 與 PostgreSQL 皆實測），`%`／`_`／`\` 會轉義，避免使用者輸入變成萬用字元
 - **日期區間**：`created_from`／`created_to` 為 ISO datetime、**含頭不含尾**；`from >= to` → `422 invalid_date_range`；前端以「當地日界 → UTC」換算，避免 UTC 時差造成「今天看不到今天」
 - **facets 為全域**（不受列表篩選影響）：每個維度取前 50，`count desc → value asc`；代價是每次列表多 2 個聚合查詢（此資料量可接受）
-- **CSV 匯出**：`GET /api/admin/audit-logs/export.csv` 套用相同篩選；UTF-8 **BOM**（Excel 繁中不亂碼）、標準 `csv` 模組轉義（逗號／引號／換行）、`Content-Disposition: attachment; filename="audit-logs-YYYYMMDD.csv"`、上限 **10,000 列**
+- **CSV 匯出**：`GET /api/admin/audit-logs/export.csv` 套用相同篩選；UTF-8 **BOM**（Excel 繁中不亂碼）、標準 `csv` 模組轉義（逗號／引號／換行）、`Content-Disposition: attachment; filename="audit-logs-YYYYMMDD.csv"`、上限 **10,000 列**；另中和試算表公式（`=`／`+`／`-`／`@` 起首加 `'`，CWE-1236）
 - **明確不做**：稽核覆蓋擴充（目前僅 5 種 action，列為候選 #4／Phase 40）、即時 tail、稽核明細頁；**無 migration**（沿用既有索引）
-- 測試：API 1161 → **1191 passed**（查詢服務 14、列表端點 10、CSV 7）；Web 752 → **765 passed**（面板 12、i18n 2）；e2e 85 → **87 passed**（篩選／搜尋／匯出、非管理員守衛）
+- 測試：API 1161 → **1192 passed**（查詢服務 14、列表端點 10、CSV 8）；Web 752 → **765 passed**（面板 12、i18n 2）；e2e 85 → **87 passed**（篩選／搜尋／匯出、非管理員守衛）
 
 ## [2.0.0-alpha.38] — Phase 38：收據證據鏈（算術驗證＋缺價待補＋幣別待確認＋不確定欄位）
 
