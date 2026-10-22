@@ -64,7 +64,7 @@
 ## 測試規模
 
 - API 測試：1161 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
-- Web 測試：740 passed（132 檔；vitest + @testing-library/react + jsdom）
+- Web 測試：752 passed（132 檔；vitest + @testing-library/react + jsdom）
 - Playwright e2e：**28 spec／89 情境**（`chromium` 專案 27 spec／85 情境：登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／**位置 QR 標籤**／**標籤條碼**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 

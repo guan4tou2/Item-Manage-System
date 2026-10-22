@@ -232,7 +232,7 @@ balance_status:
 ## Final Verification（收尾時填實測；2026-10-22）
 
 - [x] API：`cd apps/api && uv run pytest -q` → **1161 passed**（基線 1141；＋20）；golden eval **28 passed／1 skipped**
-- [x] Web：`pnpm vitest run` → **740 passed（132 檔）**；`pnpm typecheck` → **0 error**
+- [x] Web：`pnpm vitest run` → **752 passed（132 檔）**；`pnpm typecheck` → **0 error**
 - [x] api-types：重生成 → **零破壞性**（107 行新增、0 刪除；`ReceiptSnapshot` 新欄位皆為選填 → 舊快照相容）
 - [x] e2e（live，`--project=chromium`）：**85 passed**（無回歸）
 - [x] e2e（stub，`--project=ai-stub`）：**4 passed**（收據情境新增「算術拆解」斷言）
