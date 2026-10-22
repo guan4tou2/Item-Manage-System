@@ -137,13 +137,27 @@
 
 ---
 
-## Final Verification（收尾時填實測）
+## Final Verification（收尾時填實測；2026-10-22）
 
-- [ ] API：`uv run pytest -q` → 實測（含 QR 真值解碼）
-- [ ] Web：`pnpm vitest run` ＋ `pnpm typecheck` → 實測
-- [ ] e2e：`pnpm exec playwright test --project=chromium --workers=1` → 實測
-- [ ] 視覺走查（1440×900＋390×844）：單張／批量物品標籤的條碼圖與版面
+- [x] API：`cd apps/api && uv run pytest -q` → **1141 passed**（基線 1139；＋2：QR 真值解碼斷言）
+- [x] API（golden eval）：`uv run pytest evals/ -q` → **28 passed、1 skipped**
+- [x] Web：`pnpm vitest run` → **742 passed（132 檔）**（基線 734／131 檔，＋8）；`pnpm typecheck` → **0 error**
+- [x] api-types：**無契約變更**（未新增端點／欄位）→ 不需重生成
+- [x] e2e（live，`--project=chromium`）：**85 passed**（27 spec；基線 82，＋3）
+- [x] e2e（stub，`--project=ai-stub`）：**4 passed**（Phase 35 情境不受影響）
+- [x] 視覺走查（1440×900＋390×844）：單張標籤（QR＋名稱＋#id·x2＋**Code128 條碼圖**＋數字）、批量標籤、物品詳情頁條碼區塊 → 無破版；標籤卡未被條碼擠出 4cm（沿用 Phase 36 的 `min-h-[4cm]`）
 - [ ] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
+
+### 收尾環境註記（2026-10-22）
+
+- Worktree：`.claude/worktrees/phase37-label-barcode`；分支 `feature/phase37-label-barcode`
+- Stack：compose 專案 `ims-v2`；**`web` 映像建置需連網**（npm registry；遇過 DNS ENOTFOUND，重試即過）
+- 工具選型紀錄：
+  - `jsbarcode` 需 **canvas** 量測文字 → jsdom 與部分環境不可用 → 改用 **`bwip-js`**（純字串輸出、jsdom 可測）
+  - `bwip-js` 對中文**不報錯**而是產生內容不符的條碼 → 需自行驗證可編碼性（僅可列印 ASCII）
+  - `zxing-cpp` 為 wheel（無 zbar／OpenCV 系統相依）→ 適合作為測試端 QR 真值解碼
+- 走查以臨時 Playwright 腳本執行（走查後已刪除）
+- 定位注意：`getByText` 為子字串比對（條碼值與物品名稱可能同時命中 → 用 `exact: true`）
 
 ---
 
