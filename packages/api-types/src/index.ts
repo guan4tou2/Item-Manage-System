@@ -1334,8 +1334,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Audit Logs */
+        /**
+         * List Audit Logs
+         * @description 稽核查詢（Phase 39）：篩選＋分頁＋全域列舉值。
+         */
         get: operations["list_audit_logs_api_admin_audit_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/audit-logs/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Audit Logs
+         * @description 以當前篩選匯出 CSV（UTF-8 BOM；上限 `DEFAULT_EXPORT_MAX_ROWS` 列）。
+         */
+        get: operations["export_audit_logs_api_admin_audit_logs_export_csv_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2455,6 +2478,41 @@ export interface components {
             /** Grounded */
             grounded: boolean;
         };
+        /**
+         * AuditFacetValue
+         * @description 列舉值與出現次數（供篩選下拉）。
+         */
+        AuditFacetValue: {
+            /** Value */
+            value: string;
+            /** Count */
+            count: number;
+        };
+        /**
+         * AuditFacets
+         * @description 全域列舉值（不受列表篩選影響）。
+         */
+        AuditFacets: {
+            /** Actions */
+            actions: components["schemas"]["AuditFacetValue"][];
+            /** Resource Types */
+            resource_types: components["schemas"]["AuditFacetValue"][];
+        };
+        /**
+         * AuditLogPage
+         * @description 稽核列表分頁信封（Phase 39）。
+         */
+        AuditLogPage: {
+            /** Items */
+            items: components["schemas"]["AuditLogRead"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            facets: components["schemas"]["AuditFacets"];
+        };
         /** AuditLogRead */
         AuditLogRead: {
             /**
@@ -2477,6 +2535,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** User Email */
+            user_email?: string | null;
         };
         /**
          * BackupImportEntitySummary
@@ -7900,6 +7960,10 @@ export interface operations {
                 offset?: number;
                 action?: string | null;
                 resource_type?: string | null;
+                user_id?: string | null;
+                q?: string | null;
+                created_from?: string | null;
+                created_to?: string | null;
             };
             header?: never;
             path?: never;
@@ -7913,7 +7977,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuditLogRead"][];
+                    "application/json": components["schemas"]["AuditLogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_audit_logs_api_admin_audit_logs_export_csv_get: {
+        parameters: {
+            query?: {
+                action?: string | null;
+                resource_type?: string | null;
+                user_id?: string | null;
+                q?: string | null;
+                created_from?: string | null;
+                created_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

@@ -4829,6 +4829,7 @@
           "admin"
         ],
         "summary": "List Audit Logs",
+        "description": "稽核查詢（Phase 39）：篩選＋分頁＋全域列舉值。",
         "operationId": "list_audit_logs_api_admin_audit_logs_get",
         "security": [
           {
@@ -4844,7 +4845,7 @@
               "type": "integer",
               "maximum": 500,
               "minimum": 1,
-              "default": 100,
+              "default": 50,
               "title": "Limit"
             }
           },
@@ -4866,7 +4867,8 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 80
                 },
                 {
                   "type": "null"
@@ -4882,13 +4884,82 @@
             "schema": {
               "anyOf": [
                 {
-                  "type": "string"
+                  "type": "string",
+                  "maxLength": 40
                 },
                 {
                   "type": "null"
                 }
               ],
               "title": "Resource Type"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created From"
+            }
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created To"
             }
           }
         ],
@@ -4898,12 +4969,147 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AuditLogRead"
-                  },
-                  "title": "Response List Audit Logs Api Admin Audit Logs Get"
+                  "$ref": "#/components/schemas/AuditLogPage"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/audit-logs/export.csv": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Export Audit Logs",
+        "description": "以當前篩選匯出 CSV（UTF-8 BOM；上限 `DEFAULT_EXPORT_MAX_ROWS` 列）。",
+        "operationId": "export_audit_logs_api_admin_audit_logs_export_csv_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "action",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action"
+            }
+          },
+          {
+            "name": "resource_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Resource Type"
+            }
+          },
+          {
+            "name": "user_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created From"
+            }
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -8455,6 +8661,86 @@
         ],
         "title": "AskResponse"
       },
+      "AuditFacetValue": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "count"
+        ],
+        "title": "AuditFacetValue",
+        "description": "列舉值與出現次數（供篩選下拉）。"
+      },
+      "AuditFacets": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/AuditFacetValue"
+            },
+            "type": "array",
+            "title": "Actions"
+          },
+          "resource_types": {
+            "items": {
+              "$ref": "#/components/schemas/AuditFacetValue"
+            },
+            "type": "array",
+            "title": "Resource Types"
+          }
+        },
+        "type": "object",
+        "required": [
+          "actions",
+          "resource_types"
+        ],
+        "title": "AuditFacets",
+        "description": "全域列舉值（不受列表篩選影響）。"
+      },
+      "AuditLogPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AuditLogRead"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "facets": {
+            "$ref": "#/components/schemas/AuditFacets"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset",
+          "facets"
+        ],
+        "title": "AuditLogPage",
+        "description": "稽核列表分頁信封（Phase 39）。"
+      },
       "AuditLogRead": {
         "properties": {
           "id": {
@@ -8508,6 +8794,17 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "user_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Email"
           }
         },
         "type": "object",
