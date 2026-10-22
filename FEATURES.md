@@ -35,6 +35,12 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 - 物品詳細頁「下載標籤」按鈕
 - `/items/labels` 列印預覽頁，A4 多格佈局
 
+### 伺服器端標籤 PDF（Phase 41）
+- `GET /api/items/labels.pdf?ids=…&start=0`：A4 3×7＝21 張（63.5 × 38.1 mm），每張含 QR（既有深連結）、Code128、名稱（2 行內截斷）、短 id／數量、條碼數字
+- `start` 0–20 可跳過前 N 格，重用印過一半的貼紙；`ids` 去重後 1–100 筆；任一筆不可見 → 404（全有全無）
+- 內嵌 Noto Sans TC 子集（OFL 1.1），PDF 只嵌實際用到的字形；`reportlab` + `python-barcode`，無系統字型／poppler 相依
+- `/items/labels` 頁「下載 PDF」按鈕，檔名 `item-labels-YYYYMMDD.pdf`；既有「列印」保留
+
 ### 掃描（Phase 15）
 - `/scan` 路由 + 全域導航「掃碼」入口
 - 動態 import [`qr-scanner`](https://github.com/nimiq/qr-scanner) 不進 server bundle

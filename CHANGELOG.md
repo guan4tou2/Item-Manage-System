@@ -6,6 +6,19 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.41] — Phase 41：伺服器端標籤 PDF（A4 貼紙、QR＋Code128）
+
+- **新的列印路徑**：`GET /api/items/labels.pdf?ids=…&start=0` → 一份 A4 PDF（3 欄 × 7 列＝21 張、63.5 × 38.1 mm），直接送標籤機或一般印表機；批量標籤頁新增「下載 PDF」按鈕，既有瀏覽器列印保留
+- **版面固定、不靠瀏覽器縮放**：左右邊界 9.75 mm、上下 15.15 mm、欄列距 0、淺灰裁切線；`start=0..20` 可跳過前 N 格，**重用印過一半的貼紙**
+- **每張內容與既有 QR 同口徑**：QR 深連結（`public_web_url` + `/items/{id}`）、名稱（CJK 2 行內截斷）、短 id／數量、Code128 圖與條碼數字；無條碼或不可編碼（非 ASCII）只省略條碼圖，整批不失敗
+- **全有全無**：任一 id 不存在／已軟刪／非本人 → `404`；`ids` 去重後 1–100 筆、`start` 0–20，超出 → `422`；回應 `Content-Disposition: attachment; filename="item-labels-YYYYMMDD.pdf"`、`Cache-Control: private, no-store`
+- **依賴**：`reportlab==5.1.0`（BSD-3）、`python-barcode==0.16.1`（MIT）；**不使用 reportlab 5.x 內建 barcode widget**（`QrCodeWidget` 等 API 與 4.x 文件不相容）
+- **字型內嵌**：內附 Noto Sans TC 子集（OFL 1.1，約 6.6 MB），PDF 只嵌入實際用到的字形（字型子集約 20 KB／份）。實測 reportlab CID 字型（MSung-Light／STSong-Light）在 PDFium 下會缺「舊、電、風、臺、灣、櫃」等繁中字 → 改內嵌，確保 Docker／Linux／印表機結果一致
+- **真值驗證**：`pypdfium2` raster PDF 後以 `zxing-cpp` 解 QR 與 Code128，斷言內容等於深連結／條碼值；另斷言 `/FontFile2`（字型確實內嵌）、頁數、A4 尺寸與文字內容
+- **附帶修正**：批量標籤預覽卡片原本固定 `4cm` 高，內容遠超高度 → 名稱／短 id 被 flex 壓成 0 高度（畫面上看不到）；改 `min-h-[4cm]` 讓文字恢復可見（列印仍維持 6 cm 寬卡片）
+- **明確不做**：位置標籤 PDF、版型自訂、物品照片、非同步 job → **無 migration**
+- 測試：API 1206 → **1219 passed**；Web 765 → **769 passed（132 檔）**；typecheck 0 error；api-types 新增 1 個 path（另有 router 順序造成的 path 排序變動）；e2e chromium 87 → **88 passed**（`--workers=1`）；PostgreSQL 以 live stack 實測下載
+
 ## [2.0.0-alpha.40] — Phase 40：稽核覆蓋擴充（登入、物品刪除、權杖、密碼）
 
 - **7 個新 action，總數 5 → 12**：`auth.login`、`auth.login_failed`、`item.deleted`、`item.bulk_deleted`、`token.created`、`token.deleted`、`user.password_changed`；查詢台、篩選、CSV 全部**零改動**（facets 動態產生，新事件自動出現）

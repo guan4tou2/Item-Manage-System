@@ -33,6 +33,7 @@ Phase 36／37 已有**瀏覽器列印頁**（單張／批量物品標籤、地�
   - `get_owned_many(session, owner_id, item_ids) -> list[Item]`（`IN` 查詢，過濾軟刪）
 - `apps/api/app/routes/labels.py`
   - `GET /api/items/labels.pdf`（`ids` 重複參數、1–100 筆；`start` 0–20）
+- 字型資產：`apps/api/app/assets/fonts/NotoSansTC-Regular.ttf`（OFL 1.1）＋ `OFL.txt`／`README.md`
 - 依賴：`reportlab==5.1.0`、`python-barcode==0.16.1`（執行期）；`pypdfium2==5.14.0`（測試）
 
 ### Web
@@ -103,14 +104,17 @@ GET /api/items/labels.pdf?ids=<uuid>&ids=<uuid>&start=0
 - 名稱／數量／條碼值皆取自既有 `ItemLabel` 語意；PDF 與瀏覽器列印頁看到的是同一組資料，不新增第二套口徑
 - 不新增 location path 欄位：與現有標籤一致，避免版面擁擠
 
-### D4 技術選型：reportlab＋既有 qrcode＋python-barcode
+### D4 技術選型：reportlab＋內嵌 Noto Sans TC＋既有 qrcode＋python-barcode
 
 - **reportlab**（BSD-3）：A4 版面、向量裁切線、文字與圖片定位；成熟、無系統相依（wheel）
 - **qrcode**（既有執行期依賴）：沿用 `labels_service.render_qr_png()` 同一個函式，QR 口徑不分叉
 - **python-barcode**（MIT）：Code128 → PNG；`ImageWriter` 可關閉人類可讀文字、指定 module 寬度／DPI
 - **不使用 reportlab 內建 barcode widget**：reportlab 5.x 的 `QrCodeWidget`／`Code128` API 與 4.x 文件不一致（`QrCodeWidget` 已不是可加入 `Drawing` 的 Shape），改用成熟獨立套件可避免版本綁定
-- **字型**：reportlab `UnicodeCIDFont("MSung-Light")`（繁中 CID 字型，**不需**在 repo 或 Docker 放字型檔）。實測 `pypdf` 可正確擷取「舊電風扇 臺灣 櫃子」等繁中文字
-  - 限制：CID 字型不嵌入 PDF，極少數環境可能以替代字型列印；瀏覽器列印頁仍是備援（見「已知限制」）
+- **字型：內嵌 Noto Sans TC 子集**（OFL 1.1，`app/assets/fonts/NotoSansTC-Regular.ttf`，約 6.6 MB）
+  - 以 `fontTools` 固定 `wght=400`、保留全部 cmap 字元（20,745 個，含繁中、簡中、日文假名、拉丁），移除 reportlab 不需要的排版表
+  - reportlab 會**只嵌入實際用到的字形子集**（單張標籤 PDF 約 20 KB），不會把 6.6 MB 全部塞進每份 PDF
+  - **為何不用 reportlab 內建 CID 字型（STSong-Light／MSung-Light）**：CID 字型不嵌入，交由檢視器替換；實測 PDFium 對「舊、電、風、臺、灣、櫃、無、碼」等繁中字直接缺字，Docker／Linux 或標籤機的結果不可控。內嵌 TTF 才能保證各環境一致
+  - 限制：Noto Sans TC 未涵蓋的極少數字元（部分日文新字體漢字、emoji）會顯示缺字框；瀏覽器列印頁仍可作為備援
 
 ### D5 Code128 可編碼性與長度
 
@@ -145,13 +149,15 @@ GET /api/items/labels.pdf?ids=<uuid>&ids=<uuid>&start=0
 - `getItemLabelsPdf()` 用 `fetch` 帶 Bearer（與其他 API 相同），**不能用** `<a href>` 直接連（無 Authorization）
 - 從 `Content-Disposition` 解析檔名；失敗則退回 `item-labels.pdf`
 - 下載用暫存 object URL，點擊後 revoke；下載中按鈕 disabled，失敗顯示 `items.labels.downloadFailed`
-- 既有「列印」按鈕與版面不動（`print:` 樣式不受影響）
+- 「下載 PDF」按鈕只加在 header；既有「列印」按鈕與 `print:` 樣式不動
+- **附帶修正（實作時發現）**：批量預覽卡片原本固定 `h-[4cm]`，內容（QR 2.65cm＋名稱＋短 id＋條碼＋數字）遠超過 4cm，flex 把名稱與 id 壓成 0 高度 → 畫面上看不到文字。改為 `min-h-[4cm]`（卡片隨內容長高），名稱與短 id 恢復可見；列印仍維持 6cm 寬卡片
 
 ### D10 依賴與供應鏈
 
 - `reportlab==5.1.0`、`python-barcode==0.16.1`（執行期，wheel、純 Python／Pillow）
 - `pypdfium2==5.14.0`（**測試 only**，wheel、無系統 poppler 需求）
-- 三者授權皆為寬鬆授權（BSD／MIT／Apache-2.0），符合專案 MIT
+- 內附 `NotoSansTC-Regular.ttf`（OFL 1.1；來源與子集化步驟見 `apps/api/app/assets/fonts/README.md`）
+- 授權皆為寬鬆授權（BSD／MIT／Apache-2.0／OFL），符合專案 MIT
 
 ---
 
@@ -248,7 +254,8 @@ Cache-Control: private, no-store
 
 | 風險 | 影響 | 對策 |
 |---|---|---|
-| CID 字型未嵌入，特定印表機缺字 | 標籤中文變空白 | 已用 PDFium 實測繁中；保留瀏覽器列印頁；文件標明限制；未來可改嵌入 Noto Sans TC 子集 |
+| 標籤中文缺字 | 名稱空白或豆腐框 | 內嵌 Noto Sans TC（OFL）子集，不依賴系統字型；PDF 只嵌用到的字形（約 20 KB／張） |
+| 字型檔體積 | repo 增加約 6.6 MB | 只保留一個字重與 reportlab 需要的表；PDF 端仍為子集嵌入 |
 | 條碼太長／太密掃不到 | 標籤機讀不到 | schema 上限 32 字、等比縮放、數字另以文字呈現；測試以真值解碼驗證 |
 | 貼紙對位不準（printer margin） | 內容偏出標籤 | 固定 21 格＋淺灰裁切線；`start` 支援重用；文件說明以 100% 比例列印 |
 | 100 筆同步產生太慢 | 請求 timeout | 單一查詢＋圖片小；實測建立上限；必要時未來改非同步 job |
@@ -260,19 +267,37 @@ Cache-Control: private, no-store
 
 ## 實作結果（與計畫差異）
 
-（完成後補）
+- **端點與語意照計畫落地**：`GET /api/items/labels.pdf`（`ids` 重複參數、去重後 1–100；`start` 0–20）；任一筆不可見 → 404（全有全無）；`get_owned_many()` 以單一 `IN` 查詢避免 N+1；`Cache-Control: private, no-store`。
+- **字型方案在實作中改為「內嵌 Noto Sans TC 子集」**：原計畫用 reportlab CID `MSung-Light`，但實測 PDFium 對「舊、電、風、臺、灣、櫃、無、碼」等繁中字直接缺字（CID 不嵌入，交由檢視器替換）。改內附 `NotoSansTC-Regular.ttf`（OFL 1.1，約 6.6 MB；`wght=400`、保留 20,745 個 cmap 字元），reportlab 只嵌實際用到的字形（字型子集約 20 KB／份）。來源、授權與重製步驟見 `apps/api/app/assets/fonts/README.md`。
+- **reportlab 5.x barcode widget 不採用**：`QrCodeWidget` 已不是可加入 `Drawing` 的 Shape、`Code128` 變成 Flowable，與 4.x 文件不相容。QR 沿用既有 `qrcode`，Code128 用 `python-barcode` 產 PNG，再以 `ImageReader` 畫入 PDF。
+- **路由順序**：`/api/items/labels.pdf` 會被 items router 的 `GET /api/items/{item_id}` 先匹配（UUID 驗證 → 422）。已把 `labels.router` 移到 `items.router` 之前（`app/main.py`，附註解）。
+- **OpenAPI**：`response_class=Response` 讓 200 只宣告 `application/pdf`（不再多一個空的 `application/json`）；api-types 新增 1 個 path，另有 router 順序造成的 path 排序變動（非語意變更）。
+- **Web 附帶修正**：批量標籤預覽卡片原本固定 `h-[4cm]`，但 QR 2.65cm＋名稱＋短 id＋條碼＋數字遠超 4cm，flex 將名稱／短 id 壓成 0 高度（畫面看不到文字）。改 `min-h-[4cm]` 後恢復可見；下載 PDF 按鈕與錯誤訊息一併加入。
+- **測試**：API 新增 13 個案例（原 1206 → 1219）；Web 新增 4 個（原 765 → 769）；e2e 新增 1 個（原 87 → 88）。PDF 測試會在 raster 後以 zxing 真值解碼 QR／Code128，並斷言 `/FontFile2` 確認字型內嵌。
 
 ---
 
 ## Final Verification
 
-（完成後補）
+| 項目 | 結果 |
+|---|---|
+| API 測試 | **1219 passed**（`uv run pytest -q`，3 分 27 秒） |
+| API golden eval | **28 passed／1 skipped**（`uv run pytest evals/ -q`） |
+| Web 測試 | **769 passed（132 檔）**（`pnpm vitest run`） |
+| Web 型別 | **0 error**（`pnpm typecheck`） |
+| E2E（live） | **28 spec／88 情境 passed**（chromium、`--workers=1`；docker compose live stack） |
+| api-types | 新增 `/api/items/labels.pdf`；path 排序變動為 router 順序所致 |
+| Migration | `0025 (head)`；本 phase 無 migration |
+| PostgreSQL | live stack 實測：登入 → 建物品 → 批量標籤頁 → 下載 PDF（nginx → API → PG），檔名與 `%PDF` 正確 |
+| 字型 | `test_label_pdf.py` 斷言 `/FontFile2`；PDF 於 PDFium raster 後繁中文字可讀（視覺檢查 A4 樣張） |
+| 條碼真值 | QR 解出 `public_web_url + /items/{id}`；Code128 解出 barcode 值 |
 
 ---
 
-## 測試基線（main，Phase 40 完成）
+## 測試基線（main，Phase 41 完成）
 
-- API：**1206 passed**；Web：**765 passed（132 檔）**；typecheck 0 error
-- e2e：chromium **87 passed**（`--workers=1`）；ai-stub 4
+- API：**1219 passed**；Web：**769 passed（132 檔）**；typecheck 0 error
+- e2e：chromium **88 passed**（`--workers=1`）；ai-stub 4
 - Migration：`0025 (head)`；本 phase **無 migration**
 - Phase 40 稽核 action：12 種
+- 新增端點：`GET /api/items/labels.pdf`（`ids` 1–100、`start` 0–20）
