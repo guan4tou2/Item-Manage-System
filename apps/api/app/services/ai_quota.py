@@ -15,12 +15,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.clock import today_taipei
 from app.config import get_settings
 from app.models.ai_usage import AiUsage
+from app.services.ai_mode import is_stub
 
 
 async def consume(
     session: AsyncSession, user_id: UUID, *, today: date | None = None
 ) -> bool:
     """記一次嘗試並回傳是否仍在配額內；`today` 供測試注入。"""
+    if is_stub():
+        # Phase 35 D6：stub 無上游成本，不寫入 ai_usage（e2e 連跑不受每日額度限制）
+        return True
     quota = get_settings().ai_daily_quota
     if quota <= 0:
         return True
