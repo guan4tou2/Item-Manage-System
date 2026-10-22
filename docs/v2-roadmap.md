@@ -62,16 +62,18 @@
 | 38 | 收據證據鏈 | ✅ | 移植 itemly（MIT）驗證語意：`calculated_total = Σ品項小計 − 折扣 + 稅 + 運費`；對帳四態（balanced／discrepancy／incomplete／unknown）；抽取擴充 subtotal／discount／tax／shipping＋品項 discount／tax；`uncertain_fields`（AI 自述不確定，白名單過濾）；幣別未知 → `XXX`；缺價品項 → 待補價數；群組標頭顯示算術拆解與旗標（舊快照相容）；`ReceiptSnapshot` 純新增 8 欄位（api-types 零破壞性） |
 | 39 | 稽核查詢 UI | ✅ | `GET /api/admin/audit-logs` 改分頁信封（`items`／`total`／`limit`／`offset`／`facets`；`limit` 預設 50、上限 500）；篩選 `action`／`resource_type`／`user_id`／`q`（涵蓋 action／resource_type／resource_id／meta，LIKE 萬用字元轉義）／`created_from`／`created_to`（含頭不含尾、顛倒 → 422）；`user_email` 以 LEFT JOIN 取得；facets 為全域（每維度前 50，count desc → value asc）；`GET /api/admin/audit-logs/export.csv`（UTF-8 BOM、csv 轉義、上限 10,000 列）；Web 查詢台（debounce／當地日界 → UTC／分頁／meta 展開／CSV 下載／行動卡片／錯誤重試）；**無 migration** |
 
+| 40 | 稽核覆蓋擴充 | ✅ | 新增 7 種 action（共 12 種）：`auth.login`／`auth.login_failed`（只記既有帳號、同一帳號 10 分鐘去重；陌生帳號不寫）／`item.deleted`（meta 記名稱）／`item.bulk_deleted`（1 筆摘要、`count`＋`item_ids`）／`token.created`／`token.deleted`（只記 name，不記原文或雜湊）／`user.password_changed`；呼叫點一律在主寫入 commit 後、webhook 前；`backup.export` 明確不納入；無 migration、無 Web 改動（facets 自動出現新值） |
+
 ## 測試規模
 
-- API 測試：1161 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
-- Web 測試：752 passed（132 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：**28 spec／89 情境**（`chromium` 專案 27 spec／85 情境：登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／**位置 QR 標籤**／**標籤條碼**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
+- API 測試：1206 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
+- Web 測試：765 passed（132 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：**29 spec／91 情境**（`chromium` 專案 28 spec／87 情境：登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／位置 QR 標籤／標籤條碼／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／**稽核查詢台**／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 下一輪（未排程）
 
-Phase 22–38 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-10-22.md`](progress-2026-10-22.md)。
+Phase 22–40 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-10-23.md`](progress-2026-10-23.md)。
 
 候選項目（依建議優先序，粗估含測試與 i18n）：
 
@@ -79,16 +81,16 @@ Phase 22–38 已全部上線；整體狀態、驗證基線與已知限制見 [`
 |---|------|------|------|
 | 1 | 週報 | 重用月報 job 與 payload 渲染（`report.weekly`） | S–M |
 | 2 | 伺服器端標籤 PDF | 以 `reportlab` 產 A4 貼紙 PDF（含 QR＋條碼），供標籤機／一次印大量；瀏覽器列印頁已可用 | S–M |
-| 3 | 稽核覆蓋擴充 | 目前僅 5 種 action（群組成員、停用帳號、備份匯入）；補登入失敗／物品刪除／權杖建立撤銷／密碼變更 | S–M |
-| 4 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
-| 5 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
-| 6 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
-| 7 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
-| 8 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
-| 9 | v1 目錄下線 | 打 `v1-final` tag 後移除 `app/`、`templates/`、`static/`、`run_worker.py` | S |
-| 10 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
+| 3 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
+| 4 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
+| 5 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
+| 6 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
+| 7 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
+| 8 | v1 目錄下線 | 打 `v1-final` tag 後移除 `app/`、`templates/`、`static/`、`run_worker.py` | S |
+| 9 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
+| 10 | 登入防暴力破解 | 帳號鎖定／指數退避／CAPTCHA（目前僅稽核去重，無 rate limit） | S–M |
 
-> 建議節奏：#1–#3 都是 S–M 且彼此獨立，可一項一 phase；**#3 是 Phase 39 的自然延伸**（查詢台已可用，但只有 5 種事件會顯得空）；#4、#5 需設計決策，建議單獨開 phase 並先寫決策段；#8 成本最高，建議最後或另開里程碑；#9、#10 可合併成一個「收尾清理」phase。
+> 建議節奏：#1、#2 都是 S–M 且彼此獨立，可一項一 phase；#3、#4 需設計決策，建議單獨開 phase 並先寫決策段；#7 成本最高，建議最後或另開里程碑；#8、#9 可合併成一個「收尾清理」phase；#10 與 Phase 40 的稽核互補（一個負責「看得到」，一個負責「擋得住」）。
 
 ## 快速啟動（v2）
 

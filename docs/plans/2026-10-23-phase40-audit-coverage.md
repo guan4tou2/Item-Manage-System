@@ -1,7 +1,7 @@
 # Phase 40 — 稽核覆蓋擴充（登入、物品刪除、權杖、密碼）
 
 - **日期**：2026-10-23
-- **狀態**：🚧 進行中
+- **狀態**：✅ 已完成（2026-10-23；實測見 Final Verification）
 - **依據**：`docs/v2-roadmap.md` 下一輪候選 #3（「稽核覆蓋擴充：目前僅 5 種 action」）
 - **規模**：S–M（API：7 個新 action＋1 個節流輔助；**無 migration、無 Web 改動**；e2e：既有 spec 加 1 個斷言）
 - **契約變更**：無（純新增寫入事件；`GET /api/admin/audit-logs` 契約不變，facets 會自然多出新值）
@@ -15,7 +15,7 @@ Phase 39 把稽核查詢台做完了，但資料庫只記得到 **5 種 action**
 | 新 action | 觸發點 | resource_type | meta |
 |---|---|---|---|
 | `auth.login` | 密碼登入成功 | `user` | 無 |
-| `auth.login_failed` | 密碼登入失敗（**僅既有帳號、10 分鐘去重**） | `user` | 無 |
+| `auth.login_failed` | 密碼登入失敗（**僅既有帳號、10 分鐘去重**） | `user` | `{"username": ...}` |
 | `item.deleted` | 單筆軟刪 | `item` | `{"name": ...}` |
 | `item.bulk_deleted` | 批次軟刪 | `item` | `{"count": n, "item_ids": [...]}` |
 | `token.created` | 建立 PAT | `api_token` | `{"name": ...}` |
@@ -267,13 +267,29 @@ POST /api/users/me/change-password
 
 ## 實作結果（與計畫差異）
 
-（完成後補）
+- **登入失敗的 meta 多了 `username`**（計畫原為「無」）：使用者日後改名時仍能回溯「當時嘗試的名稱」；非敏感值，且稽核頁僅管理員可見
+- **`token.deleted` 由 bulk DELETE 改為「先 SELECT 取 name → ORM delete → commit」**：需要名稱才能記錄；不存在／非本人的 token 仍是 404 且不寫稽核
+- **e2e 不新增 spec**：只在既有 `audit-query.spec.ts` 加 1 個斷言（`auth.login` 出現在動作下拉）；沒有新增檔案，chromium 情境數不變
+- **測試數 14**（與測試清單一致）；新增 `test_audit_coverage.py`，其餘測試零修改
+- **`audit_service` 新增 `LOGIN_FAILURE_DEDUP_WINDOW`／`log_login_failure()`**；`log()` 介面與 fail-soft 行為未變
+- **無 migration、無 Web 改動、api-types 零 diff**（OpenAPI schema 未變）
 
 ---
 
-## Final Verification
+## Final Verification（2026-10-23 實測）
 
-（完成後補）
+| 項目 | 結果 |
+|------|------|
+| API 測試 | **1206 passed**（`uv run pytest -q`；含新增 14 個） |
+| API golden eval | 28 passed／1 skipped |
+| Web 測試 | **765 passed（132 檔）**（無改動，回歸確認） |
+| Web typecheck | **0 error** |
+| api-types | **零 diff**（`export_openapi.py` ＋ `gen:types`） |
+| e2e chromium | **87 passed**（`--workers=1`） |
+| e2e ai-stub | 4 passed（沿用） |
+| Migration | `0025 (head)`；本 phase 無 migration |
+| PostgreSQL 實測 | 去重 2 次失敗 → 1 列；`item.deleted`／`token.created`／`token.deleted`／`user.password_changed` meta 正確；token 原文未落地；`meta` 為 JSONB 物件 |
+| fail-soft | 以壞掉的 `AuditLog` 建構子驗證：稽核失敗仍可刪除物品（204） |
 
 ---
 

@@ -141,7 +141,13 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 - Personal Access Tokens 前綴 `ims_pat_`，SHA-256 雜湊存放
 - 原始 token 只在建立當下出現一次
-- `audit_logs` 目前記錄 **5 種 action**：`group.member_added`／`group.member_role_changed`／`group.member_removed`／`admin.user.set_active`／`backup.import`（更廣的覆蓋範圍列為後續候選）
+- `audit_logs` 目前記錄 **12 種 action**（Phase 40 擴充）：
+  - 認證：`auth.login`／`auth.login_failed`（失敗只記既有帳號，同一帳號 10 分鐘內只記一次；陌生帳號不寫）
+  - 物品：`item.deleted`（meta 記名稱）／`item.bulk_deleted`（一次操作 1 列，meta 記 `count` 與 `item_ids`）
+  - 權杖：`token.created`／`token.deleted`（只記 `name`，不記原文或雜湊）
+  - 帳號：`user.password_changed`／`admin.user.set_active`
+  - 群組：`group.member_added`／`group.member_role_changed`／`group.member_removed`
+  - 備份：`backup.import`
 - `GET /api/admin/audit-logs`：篩選 `action`／`resource_type`／`user_id`／`q`（涵蓋 action／resource_type／resource_id／meta）／`created_from`／`created_to`；**分頁信封** `{items,total,limit,offset,facets}`；`user_email` 由 LEFT JOIN 取得
 - `GET /api/admin/audit-logs/export.csv`：套用相同篩選、UTF-8 BOM、上限 10,000 列；公式起首字元會加 `'` 中和（CSV injection）
 - `/settings/audit` 查詢台：動作／資源類型下拉（選項來自 facets）、關鍵字 300ms debounce、日期起訖、分頁、`meta` 展開、CSV 匯出；行動版卡片

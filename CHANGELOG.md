@@ -6,6 +6,18 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.40] — Phase 40：稽核覆蓋擴充（登入、物品刪除、權杖、密碼）
+
+- **7 個新 action，總數 5 → 12**：`auth.login`、`auth.login_failed`、`item.deleted`、`item.bulk_deleted`、`token.created`、`token.deleted`、`user.password_changed`；查詢台、篩選、CSV 全部**零改動**（facets 動態產生，新事件自動出現）
+- **登入事件**：成功登入記 `auth.login`（`/refresh` 不記，避免每 15 分鐘一列）。失敗登入的對外回應一律 `401 invalid credentials`，且**只記既有帳號**；同一帳號 **10 分鐘內只記第一筆**（先查 `action + resource_id + created_at`，查詢失敗寧可不寫）。陌生帳號完全不寫，避免匿名灌寫與帳號列舉訊號
+- **為何不順便做 login rate limit**：本 phase 只確保「稽核寫入不成為新的洪水面」；真正的不存在帳號嘗試仍只付一次 bcrypt／查詢成本。帳號鎖定／CAPTCHA／Redis 滑動視窗列為獨立認證強化候選
+- **物品刪除**：單筆記 `meta.name`（刪除後唯一還看得到名稱的地方）；批次**只寫 1 列摘要** `{"count": n, "item_ids": [...]}`（schema 上限 100 筆），不逐筆寫、不記 names，避免事件洗版與單列膨脹
+- **權杖**：建立／撤銷各記 1 列，meta 只有人類可讀 `name`；**絕不記錄 PAT 原文或 `token_hash`**。撤銷改為先取列（404 不寫稽核）再刪除
+- **密碼變更**：只記「發生了變更」，`meta=null`，不含明文／雜湊／演算法名稱
+- **交易順序**：`audit_service.log()` 會 commit（既有 fail-soft），所有新呼叫點都放在主寫入 commit **之後**、webhook dispatch **之前**；稽核失敗不阻擋刪除／改密碼，另有測試以壞掉的 `AuditLog` 驗證
+- **明確不做**：`backup.export`（本人匯出、高頻噪音，異常量體屬告警而非單列事件）、其他 CRUD 事件、`audit_logs` 表變更（IP／UA 欄位）→ **無 migration**
+- **測試**：API 1192 → **1206 passed**（新增 14 個稽核覆蓋案例，含節流窗外／停用帳號／敏感值序列化比對／fail-soft）；Web 765 passed（無改動）；typecheck 0 error；api-types **零 diff**；e2e chromium **87 passed**（`--workers=1`，僅在既有稽核 spec 加 1 個「`auth.login` 自動出現在下拉」斷言）；PostgreSQL 實測去重、JSONB meta 與無敏感值落地
+
 ## [2.0.0-alpha.39] — Phase 39：稽核查詢 UI（篩選、分頁、詳情、CSV 匯出）
 
 - **`/settings/audit` 從唯讀清單變成查詢台**：動作／資源類型下拉（選項來自資料庫 facets，**不寫死**）、關鍵字（300ms debounce）、日期起訖、清除篩選；總數與頁碼、上／下一頁；列內展開格式化 `meta`；CSV 匯出（伺服器產生檔名）
