@@ -1,7 +1,7 @@
 # Phase 36 — 位置 QR 標籤（貼在櫃子／箱子）
 
 - **日期**：2026-10-22
-- **狀態**：計畫中（TDD 任務與驗證見下文；Final Verification 收尾時填實測）
+- **狀態**：已完成（T1.1–T3.2 全部落地；TDD 紅綠、全套驗證與視覺走查見文末 Final Verification）
 - **依據**：`docs/progress-2026-10-22.md` §六 後續候選 #1（「位置 QR 標籤：掃碼 → 該位置物品清單（貼櫃子／箱子）；平面圖欄位與掃碼流程已在」）
 - **依賴**：Phase 13（QR 標籤產生與列印頁）、Phase 25（多格式掃碼引擎與條碼內查）、Phase 26（多層位置樹）
 - **規模**：S（API：2 個純新增端點；Web：列印頁＋位置樹入口＋掃碼辨識；e2e：1 spec）
@@ -214,14 +214,24 @@ Phase 13 已為**物品**提供 QR 標籤（深連結 `/items/{uuid}` → 物品
 
 ---
 
-## Final Verification（收尾時填實測）
+## Final Verification（收尾時填實測；2026-10-22）
 
-- [ ] API：`uv run pytest -q` → 實測
-- [ ] Web：`pnpm vitest run` ＋ `pnpm typecheck` → 實測
-- [ ] api-types 重生成 → 零破壞性差異
-- [ ] e2e：`pnpm exec playwright test --workers=1` → 實測
-- [ ] 視覺走查（1440×900＋390×844）：位置標籤列印頁、位置樹選單、掃碼導向
+- [x] API：`cd apps/api && uv run pytest -q` → **1139 passed**（基線 1130；＋9：位置標籤端點；3:21）
+- [x] API（golden eval）：`uv run pytest evals/ -q` → **28 passed、1 skipped**
+- [x] Web：`pnpm vitest run` → **734 passed（131 檔）**（基線 717／129 檔，＋17）；`pnpm typecheck` → **0 error**
+- [x] api-types 重生成 → **零破壞性差異**（純新增 258 行：2 端點＋`LocationLabel`）
+- [x] e2e（live，`--project=chromium`）：**82 passed**（26 spec；基線 79，＋3）
+- [x] e2e（stub，`--project=ai-stub`）：**4 passed**（Phase 35 情境不受本 phase 影響）
+- [x] 視覺走查（1440×900＋390×844）：位置標籤列印頁（QR＋名稱＋路徑＋含子孫件數）、勾選模式、位置樹選單、掃碼導向該位置清單 → 走查發現**標籤卡固定 4cm 高度裁切文字**，已改為 `min-h-[4cm]` 並複驗
 - [ ] `git status` 乾淨；ff merge main；worktree／分支／stack 清理
+
+### 收尾環境註記（2026-10-22）
+
+- Worktree：`.claude/worktrees/phase36-location-labels`；分支 `feature/phase36-location-labels`
+- Stack：compose 專案 `ims-v2`；`web` 映像建置需連網（corepack）；`api` 映像可離線重建
+- 無 migration；位置標籤由位置推導（id／名稱／路徑／物品數），不新增資料
+- 走查以臨時 Playwright 腳本執行（走查後已刪除）
+- 定位注意：`getByTestId` 為**完全匹配**（前綴需用 CSS 選擇器）；手動輸入框的 `Label` 無 `htmlFor` → 以 `getByRole("textbox")` 定位
 
 ---
 

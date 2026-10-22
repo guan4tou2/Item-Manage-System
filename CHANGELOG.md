@@ -6,6 +6,19 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.36] — Phase 36：位置 QR 標籤（貼在櫃子／箱子）
+
+- **位置也可貼 QR 標籤**：掃描後直接開啟**該位置（含子孫）的物品清單**——貼在房間門口也會列出櫃子裡的東西
+- **API（純新增 2 端點）**：`GET /api/locations/{id}/qr.png`（QR PNG，內容為 `/items?location={id}` 深連結）與 `GET /api/locations/{id}/label`（名稱／完整路徑／**含子孫**物品數／深連結）；他人或不存在的位置一律 `404`（不洩漏存在性）
+- **深連結沿用既有物品列表位置篩選**（`location_scope` 預設 `subtree`）→ **不新增目的地頁**，直接複用篩選面板、搜尋與批次勾選
+- **掃碼分流順序**（`item → location → 條碼 → 名稱`）：新增 `extractLocationIdFromPayload`（`/items?location={id}`）；手動輸入走同一分流；與物品深連結（`/items/{uuid}`）不衝突
+- **列印頁** `/locations/labels`：`?ids=1,2` 直接產生標籤；**無 `ids` 時列出位置供勾選**（一次印多個櫃子／箱子）；版面沿用物品標籤頁（6cm 格、QR 2.65cm、`print:` CSS）
+- **入口**：位置管理頁節點「⋯」選單「列印標籤」（單一位置）＋頁首「列印位置標籤」（勾選模式）
+- **i18n**：`locations.labels.*`（9 鍵）＋`locations.tree.printLabel(s)`（2 鍵）（zh-TW／en 鍵集與行數一致）
+- **無 migration**；api-types 重生成（**純新增**：`/api/locations/{location_id}/label`、`/api/locations/{location_id}/qr.png`、`LocationLabel`，258 行新增、0 刪除）
+- 視覺走查發現並修正：標籤卡固定 4cm 高度容納 3 行文字會被裁切 → 改為內容驅動高度（`min-h-[4cm]`）
+- 文件：[`User_Manual_zh-TW.md`](User_Manual_zh-TW.md) 新增「位置 QR 標籤」章節（列印與掃描動線、位置改名不需重印）
+
 ## [2.0.0-alpha.35] — Phase 35：AI stub 模式（可測的 AI 成功路徑）
 
 - **`AI_MODE` 環境開關**（`live` 預設／`stub`）：`stub` 模式下**所有** LLM 呼叫改由確定性的 stub 供應器回應——不連外網、**不需 `GEMINI_API_KEY`**、**不消耗 AI 配額**；非 dev 環境啟用 stub **啟動即失敗**（避免正式環境誤回假資料）
