@@ -86,6 +86,7 @@ def create_app() -> FastAPI:
     app.include_router(webhooks.router)
     app.include_router(jobs.router)
     app.include_router(labels.router)
+    app.include_router(labels.location_router)
     app.include_router(barcodes.router)
     return app
 

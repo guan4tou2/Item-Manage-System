@@ -2215,6 +2215,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/locations/{location_id}/qr.png": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Location Qr Png
+         * @description 位置 QR（Phase 36）：內容為該位置（含子孫）的物品清單深連結。
+         */
+        get: operations["location_qr_png_api_locations__location_id__qr_png_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/locations/{location_id}/label": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Location Label
+         * @description 位置標籤資料（Phase 36）：名稱／完整路徑／含子孫物品數／深連結。
+         */
+        get: operations["location_label_api_locations__location_id__label_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/barcodes/{code}": {
         parameters: {
             query?: never;
@@ -3772,6 +3812,22 @@ export interface components {
             sort_order: number;
             /** Floor Plan Image Id */
             floor_plan_image_id?: string | null;
+        };
+        /**
+         * LocationLabel
+         * @description 位置標籤資料（Phase 36）：貼在櫃子／箱子的 QR 標籤。
+         */
+        LocationLabel: {
+            /** Location Id */
+            location_id: number;
+            /** Name */
+            name: string;
+            /** Path */
+            path: string;
+            /** Item Count */
+            item_count: number;
+            /** Deep Link */
+            deep_link: string;
         };
         /** LocationPath */
         LocationPath: {
@@ -9756,6 +9812,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemLabel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    location_qr_png_api_locations__location_id__qr_png_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "image/png": unknown;
+                };
+            };
+            /** @description Location not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    location_label_api_locations__location_id__label_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                location_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationLabel"];
                 };
             };
             /** @description Validation Error */

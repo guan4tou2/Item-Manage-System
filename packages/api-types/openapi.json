@@ -7789,6 +7789,104 @@
         }
       }
     },
+    "/api/locations/{location_id}/qr.png": {
+      "get": {
+        "tags": [
+          "labels"
+        ],
+        "summary": "Location Qr Png",
+        "description": "位置 QR（Phase 36）：內容為該位置（含子孫）的物品清單深連結。",
+        "operationId": "location_qr_png_api_locations__location_id__qr_png_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Location Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "image/png": {}
+            }
+          },
+          "404": {
+            "description": "Location not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/locations/{location_id}/label": {
+      "get": {
+        "tags": [
+          "labels"
+        ],
+        "summary": "Location Label",
+        "description": "位置標籤資料（Phase 36）：名稱／完整路徑／含子孫物品數／深連結。",
+        "operationId": "location_label_api_locations__location_id__label_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "location_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Location Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocationLabel"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/barcodes/{code}": {
       "get": {
         "tags": [
@@ -12279,6 +12377,40 @@
           "name"
         ],
         "title": "LocationCreate"
+      },
+      "LocationLabel": {
+        "properties": {
+          "location_id": {
+            "type": "integer",
+            "title": "Location Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "path": {
+            "type": "string",
+            "title": "Path"
+          },
+          "item_count": {
+            "type": "integer",
+            "title": "Item Count"
+          },
+          "deep_link": {
+            "type": "string",
+            "title": "Deep Link"
+          }
+        },
+        "type": "object",
+        "required": [
+          "location_id",
+          "name",
+          "path",
+          "item_count",
+          "deep_link"
+        ],
+        "title": "LocationLabel",
+        "description": "位置標籤資料（Phase 36）：貼在櫃子／箱子的 QR 標籤。"
       },
       "LocationPath": {
         "properties": {

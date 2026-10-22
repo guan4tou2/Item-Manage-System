@@ -85,6 +85,20 @@ def _soonest_expiry_subquery():
     )
 
 
+async def count_items_in_locations(
+    session: AsyncSession, owner_id: UUID, location_ids: list[int]
+) -> int:
+    """指定位置（含多個）下的未刪除物品數（Phase 36 位置標籤用）。"""
+    if not location_ids:
+        return 0
+    stmt = select(func.count(Item.id)).where(
+        Item.owner_id == owner_id,
+        Item.is_deleted.is_(False),
+        Item.location_id.in_(location_ids),
+    )
+    return int((await session.execute(stmt)).scalar_one())
+
+
 async def list_by_barcode(
     session: AsyncSession, owner_id: UUID, code: str
 ) -> list[Item]:
