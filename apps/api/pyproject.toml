@@ -29,7 +29,9 @@ test = [
     "pytest==8.3.3",
     "pytest-asyncio==0.24.0",
     "pytest-cov==5.0.0",
-    "aiosqlite==0.20.0"
+    "aiosqlite==0.20.0",
+    # Phase 37：QR 內容真值解碼（wheel，無系統相依）
+    "zxing-cpp==3.1.1"
 ]
 
 [build-system]

@@ -42,3 +42,22 @@ async def client(test_engine):
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def decode_qr():
+    """QR PNG 位元組 → 解碼文字（Phase 37：zxing-cpp 真值解碼）。
+
+    回傳 `None` 代表無法解碼（測試應據此斷言失敗，而非靜默通過）。
+    """
+
+    def _decode(png: bytes) -> str | None:
+        import io
+
+        import zxingcpp
+        from PIL import Image
+
+        result = zxingcpp.read_barcode(Image.open(io.BytesIO(png)))
+        return result.text if result else None
+
+    return _decode

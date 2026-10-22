@@ -111,20 +111,24 @@ async def test_location_qr_png_returns_png(client, auth):
     assert len(r.content) > 200
 
 
-async def test_location_qr_png_encodes_deep_link(client, auth):
+async def test_location_qr_png_encodes_deep_link(client, auth, decode_qr):
     """QR 內容 = 位置深連結（掃碼器可辨識 → 導向該位置物品清單）。
 
-    環境無 QR 解碼器（cv2／pyzbar），故以兩點驗證：
-    1. 深連結 builder 產出預期 payload
-    2. 不同位置的 QR 影像不同（payload 確含位置 id）
+    以 zxing-cpp **實際解碼**斷言內容（非近似比對）。
     """
     from app.services import labels_service
 
     location = await _create_location(client, auth, "藥箱")
-    assert labels_service.location_deep_link(location["id"]).endswith(
-        f"/items?location={location['id']}"
-    )
+    r = await client.get(f"/api/locations/{location['id']}/qr.png", headers=auth)
+    assert r.status_code == 200
 
+    assert decode_qr(r.content) == labels_service.location_deep_link(location["id"])
+    assert decode_qr(r.content).endswith(f"/items?location={location['id']}")
+
+
+async def test_location_qr_png_differs_per_location(client, auth):
+    """不同位置 → 不同 QR（payload 含位置 id）。"""
+    location = await _create_location(client, auth, "藥箱")
     other = await _create_location(client, auth, "冰箱")
     first_png = (
         await client.get(f"/api/locations/{location['id']}/qr.png", headers=auth)

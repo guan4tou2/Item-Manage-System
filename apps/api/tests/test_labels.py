@@ -50,6 +50,16 @@ async def test_qr_png_404_for_unknown_item(client, auth):
     assert r.status_code == 404
 
 
+async def test_qr_png_encodes_item_deep_link(client, auth, decode_qr):
+    """QR 內容 = 物品深連結（Phase 37：zxing-cpp 真值解碼）。"""
+    from app.services.labels_service import _deep_link_for
+
+    item = await _create_item(client, auth)
+    r = await client.get(f"/api/items/{item['id']}/qr.png", headers=auth)
+    assert r.status_code == 200
+    assert decode_qr(r.content) == _deep_link_for(item["id"])
+
+
 async def test_qr_png_404_for_other_owner(client, auth):
     item = await _create_item(client, auth)
     # register a second user
