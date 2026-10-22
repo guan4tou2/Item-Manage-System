@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from datetime import date
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
@@ -53,19 +54,53 @@ Merge all pages into a single receipt and return STRICT JSON (no prose, no markd
   "merchant": string or null,
   "purchased_at": "YYYY-MM-DD" or null,
   "currency": ISO 4217 code or null,
+  "subtotal": decimal string or null,
+  "discount": decimal string or null,
+  "tax": decimal string or null,
+  "shipping": decimal string or null,
   "total": decimal string or null,
   "items": [
-    {"name": string, "quantity": integer, "unit_price": decimal string or null, "subtotal": decimal string or null}
-  ]
+    {"name": string, "quantity": integer, "unit_price": decimal string or null,
+     "subtotal": decimal string or null, "discount": decimal string or null, "tax": decimal string or null}
+  ],
+  "uncertain_fields": [string]
 }
 
 Rules:
 - Item names in Traditional Chinese (zh-TW), <= 60 chars, no line numbers or SKU codes.
 - Amounts are plain decimal strings with 2 decimals (e.g. "62.00"); never include currency symbols or thousands separators.
-- "total" is the receipt grand total; "subtotal" is the line total for that item.
+- Amount semantics (receipt level): "subtotal" = sum of item subtotals before discounts/tax;
+  "discount" = receipt-level discount (coupon/basket); "tax" = total tax; "shipping" = shipping/handling fee.
+- Amount semantics (item level): "subtotal" = the line total as printed; "discount" = discount on that line;
+  "tax" = tax on that line.
+- "total" is the receipt grand total (what was actually paid).
 - If a field is unreadable, use null. Do not invent items, quantities or prices.
 - One entry per purchased line (merge duplicate lines of the same product only if clearly identical).
+- "uncertain_fields" lists the field paths you were NOT sure about (e.g. "total", "currency",
+  "items[2].quantity"); use [] when everything is clear. Never invent uncertainties either.
 """
+
+#: 收據層級欄位（`uncertain_fields` 僅接受這些路徑形態）
+_RECEIPT_FIELD_PATHS = frozenset(
+    {
+        "merchant",
+        "purchased_at",
+        "currency",
+        "subtotal",
+        "discount",
+        "tax",
+        "shipping",
+        "total",
+    }
+)
+
+#: 不確定欄位數上限（避免模型輸出過長）
+MAX_UNCERTAIN_FIELDS = 20
+
+#: 行項不確定欄位路徑：`items[3].quantity`
+_ITEM_FIELD_PATH_RE = re.compile(
+    r"^items\[(\d+)\]\.(name|quantity|unit_price|subtotal|discount|tax)$"
+)
 
 
 class ReceiptItem(BaseModel):
@@ -75,6 +110,8 @@ class ReceiptItem(BaseModel):
     quantity: int
     unit_price: Optional[Decimal]
     subtotal: Optional[Decimal]
+    discount: Optional[Decimal] = None
+    tax: Optional[Decimal] = None
 
 
 class ReceiptExtraction(BaseModel):
@@ -84,7 +121,38 @@ class ReceiptExtraction(BaseModel):
     purchased_at: Optional[str]
     currency: Optional[str]
     total: Optional[Decimal]
+    subtotal: Optional[Decimal] = None
+    discount: Optional[Decimal] = None
+    tax: Optional[Decimal] = None
+    shipping: Optional[Decimal] = None
     items: list[ReceiptItem]
+    uncertain_fields: list[str] = []
+
+
+def _clean_uncertain_fields(value: Any) -> list[str]:
+    """白名單過濾不確定欄位路徑（只留已知形態、去重、上限）。"""
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in value:
+        if not isinstance(raw, str):
+            continue
+        path = raw.strip()
+        if path in _RECEIPT_FIELD_PATHS:
+            key = path
+        else:
+            match = _ITEM_FIELD_PATH_RE.match(path)
+            if not match:
+                continue
+            key = path
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(key)
+        if len(out) >= MAX_UNCERTAIN_FIELDS:
+            break
+    return out
 
 
 def _decimal_or_none(value: Any) -> Optional[Decimal]:
@@ -165,6 +233,8 @@ def parse_receipt_response(text: str) -> ReceiptExtraction:
                 quantity=quantity,
                 unit_price=unit_price,
                 subtotal=subtotal,
+                discount=_decimal_or_none(raw.get("discount")),
+                tax=_decimal_or_none(raw.get("tax")),
             )
         )
         if len(items) >= MAX_RECEIPT_ITEMS:
@@ -179,7 +249,12 @@ def parse_receipt_response(text: str) -> ReceiptExtraction:
         purchased_at=_iso_date_or_none(payload.get("purchased_at")),
         currency=(str(currency).strip().upper()[:3] if currency else None),
         total=_decimal_or_none(payload.get("total")),
+        subtotal=_decimal_or_none(payload.get("subtotal")),
+        discount=_decimal_or_none(payload.get("discount")),
+        tax=_decimal_or_none(payload.get("tax")),
+        shipping=_decimal_or_none(payload.get("shipping")),
         items=items,
+        uncertain_fields=_clean_uncertain_fields(payload.get("uncertain_fields")),
     )
 
 

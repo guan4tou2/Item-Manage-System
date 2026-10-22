@@ -86,6 +86,104 @@ def _receipt_payload(items=None) -> dict:
     }
 
 
+# --- Phase 38：抽取擴充（折扣／稅／運費／不確定欄位）--------------------
+
+
+def test_parse_receipt_reads_receipt_level_amounts():
+    """收據層級：subtotal／discount／tax／shipping（Phase 38）。"""
+    from app.services import ai_service
+
+    payload = _receipt_payload()
+    payload.update(
+        {
+            "subtotal": "323.00",
+            "discount": "20.00",
+            "tax": "16.15",
+            "shipping": "30.00",
+        }
+    )
+
+    result = ai_service.parse_receipt_response(json.dumps(payload))
+
+    assert result.subtotal == Decimal("323.00")
+    assert result.discount == Decimal("20.00")
+    assert result.tax == Decimal("16.15")
+    assert result.shipping == Decimal("30.00")
+
+
+def test_parse_receipt_reads_item_level_amounts():
+    from app.services import ai_service
+
+    payload = _receipt_payload(
+        items=[
+            {
+                "name": "鮮乳",
+                "quantity": 2,
+                "unit_price": "62.00",
+                "subtotal": "124.00",
+                "discount": "10.00",
+                "tax": "5.00",
+            }
+        ]
+    )
+
+    result = ai_service.parse_receipt_response(json.dumps(payload))
+
+    assert result.items[0].discount == Decimal("10.00")
+    assert result.items[0].tax == Decimal("5.00")
+
+
+def test_parse_receipt_missing_new_fields_are_none():
+    """舊格式回應（無新欄位）仍可解析 → 向後相容。"""
+    from app.services import ai_service
+
+    result = ai_service.parse_receipt_response(json.dumps(_receipt_payload()))
+
+    assert result.subtotal is None
+    assert result.discount is None
+    assert result.tax is None
+    assert result.shipping is None
+    assert result.uncertain_fields == []
+    assert result.items[0].discount is None
+
+
+def test_parse_receipt_filters_unknown_uncertain_fields():
+    """不確定欄位只接受白名單路徑（D5）。"""
+    from app.services import ai_service
+
+    payload = _receipt_payload()
+    payload["uncertain_fields"] = [
+        "total",
+        "currency",
+        "items[0].quantity",
+        "items[0].unit_price",
+        "items[0].bogus",
+        "items[x].name",
+        "secret_field",
+        "total",  # 重複
+    ]
+
+    result = ai_service.parse_receipt_response(json.dumps(payload))
+
+    assert result.uncertain_fields == [
+        "total",
+        "currency",
+        "items[0].quantity",
+        "items[0].unit_price",
+    ]
+
+
+def test_parse_receipt_uncertain_fields_ignores_non_list():
+    from app.services import ai_service
+
+    payload = _receipt_payload()
+    payload["uncertain_fields"] = "total"
+
+    result = ai_service.parse_receipt_response(json.dumps(payload))
+
+    assert result.uncertain_fields == []
+
+
 # --- 抽取層：解析與金額補齊 ------------------------------------------------
 
 
