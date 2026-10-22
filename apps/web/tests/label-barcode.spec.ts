@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test"
 
+import fs from "node:fs/promises"
+
 /**
  * Phase 37 標籤條碼 e2e：
  * - 物品標籤列印頁顯示 Code128 條碼圖（可被掃描器讀取）＋ 條碼數字
@@ -87,4 +89,22 @@ test("不可編碼的條碼：標籤仍可列印（退回純文字）", async ({
 
   await expect(page.getByText("中文條碼", { exact: true })).toBeVisible()
   await expect(page.getByTestId("label-barcode")).toHaveCount(0)
+})
+
+test("批量標籤：下載伺服器端 PDF（Phase 41）", async ({ page, request }) => {
+  const token = await signIn(request, page)
+  const itemId = await seedItem(request, token, "PDF 標籤物品", "4710085200016")
+
+  await page.goto(`/items/labels?ids=${itemId}`)
+  await expect(page.getByText("PDF 標籤物品")).toBeVisible()
+
+  const downloadPromise = page.waitForEvent("download")
+  await page.getByRole("button", { name: "下載 PDF" }).click()
+  const download = await downloadPromise
+
+  expect(download.suggestedFilename()).toMatch(/^item-labels-\d{8}\.pdf$/)
+  const path = await download.path()
+  expect(path).not.toBeNull()
+  const bytes = await fs.readFile(path as string)
+  expect(bytes.subarray(0, 4).toString()).toBe("%PDF")
 })

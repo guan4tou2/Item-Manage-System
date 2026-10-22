@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, fireEvent } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -20,6 +20,7 @@ vi.mock("@/lib/auth/use-auth", () => ({
 
 vi.mock("@/lib/api/labels", () => ({
   getBulkItemLabelBundles: vi.fn(),
+  getItemLabelsPdf: vi.fn(),
 }))
 
 function renderPage() {
@@ -89,5 +90,39 @@ describe("BulkItemLabelsPage", () => {
 
     const holder = await screen.findByTestId("label-barcode")
     await waitFor(() => expect(holder.querySelector("svg")).not.toBeNull())
+  })
+
+  it("downloads the server-side label PDF (Phase 41)", async () => {
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {})
+    vi.mocked(labelsApi.getItemLabelsPdf).mockResolvedValue({
+      blob: new Blob(["%PDF"], { type: "application/pdf" }),
+      filename: "item-labels-20261023.pdf",
+    })
+    renderPage()
+
+    await screen.findByText("Router")
+    fireEvent.click(screen.getByRole("button", { name: "Download PDF" }))
+
+    await waitFor(() => {
+      expect(labelsApi.getItemLabelsPdf).toHaveBeenCalledWith(
+        ["item-1", "missing"],
+        "jwt",
+      )
+    })
+    expect(click).toHaveBeenCalled()
+  })
+
+  it("shows an error when the PDF download fails (Phase 41)", async () => {
+    vi.mocked(labelsApi.getItemLabelsPdf).mockRejectedValue(new Error("boom"))
+    renderPage()
+
+    await screen.findByText("Router")
+    fireEvent.click(screen.getByRole("button", { name: "Download PDF" }))
+
+    expect(
+      await screen.findByText("Failed to download the PDF. Please try again."),
+    ).toBeInTheDocument()
   })
 })
