@@ -36,7 +36,6 @@ from app.services import (
     ai_quota,
     ai_service,
     ai_search_filters,
-    classification_service,
     items_service,
     preferences_service,
 )
@@ -160,6 +159,54 @@ async def _fallback(
 ASK_CONTEXT_LIMIT = 20
 #: 資料不足時的固定回答（伺服器提供，避免空字串）
 INSUFFICIENT_ANSWER = "目前資料中找不到足夠資訊回答這個問題。"
+#: 上下文候選關鍵字上限（避免過多 DB 查詢）
+MAX_CONTEXT_QUERIES = 12
+#: 以非文字字元切出詞塊（標點等；`\w` 在 Unicode 下包含 CJK 與拉丁）
+_WORD_SPLIT_RE = re.compile(r"[^\w]+", re.UNICODE)
+#: 拉丁／數字整詞（長度 ≥ 2）
+_LATIN_WORD_RE = re.compile(r"[A-Za-z0-9]{2,}")
+#: CJK（含日文假名）區段判定
+_CJK_RE = re.compile(r"[\u3400-\u9fff\u3040-\u30ff]")
+
+
+def _context_queries(question: str) -> list[str]:
+    """問題 → 候選搜尋關鍵字（**決定性**：依出現位置排序）。
+
+    舊實作以 `set` 的迭代順序挑選 3 個 bigram，結果受 `PYTHONHASHSEED` 影響
+    （同一問題在不同行程可能命中不同物品）。改以「位置」為唯一排序依據：
+
+    1. CJK 詞塊的長度 3 連續片段（依位置）
+    2. 拉丁／數字整詞
+    3. CJK 詞塊的長度 2 片段（依位置）
+    """
+    text = (question or "").strip()
+    if not text:
+        return []
+
+    cjk_blocks = [
+        block for block in _WORD_SPLIT_RE.split(text) if _CJK_RE.search(block)
+    ]
+
+    queries: list[str] = []
+    seen: set[str] = set()
+
+    def _add(value: str) -> None:
+        if value and value not in seen:
+            seen.add(value)
+            queries.append(value)
+
+    for block in cjk_blocks:
+        if len(block) >= 3:
+            for offset in range(len(block) - 2):
+                _add(block[offset : offset + 3])
+    for match in _LATIN_WORD_RE.finditer(text):
+        _add(match.group())
+    for block in cjk_blocks:
+        if len(block) >= 2:
+            for offset in range(len(block) - 1):
+                _add(block[offset : offset + 2])
+
+    return queries[:MAX_CONTEXT_QUERIES]
 
 
 async def _ask_context(
@@ -178,16 +225,14 @@ async def _ask_context(
                 # 不存在或非本人可見 → 丟棄（不洩漏存在性）
                 continue
     else:
-        # 無指定物品：以問題的關鍵詞（分詞取最長者，最多 3 個）逐一搜尋並去重；
+        # 無指定物品：以問題的關鍵詞（決定性候選清單）逐一搜尋並去重；
         # 整句 ILIKE 幾乎不會命中，故不以整句查詢。
-        tokens = sorted(
-            classification_service.tokenize(question), key=len, reverse=True
-        )[:3]
-        if not tokens:
-            tokens = [question]
+        queries = _context_queries(question)
+        if not queries:
+            queries = [question]
         seen: set[str] = set()
         items = []
-        for token in tokens:
+        for token in queries:
             result = await _run_search(session, owner_id, {"q": token})
             for item in result.items:
                 if str(item.id) in seen:
