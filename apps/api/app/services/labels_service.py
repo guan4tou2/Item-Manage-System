@@ -71,6 +71,10 @@ async def get_item_label(
     session: AsyncSession, owner_id: UUID, item_id: UUID
 ) -> dict:
     item = await _get_owned_item(session, owner_id, item_id)
+    return _item_label_dict(item)
+
+
+def _item_label_dict(item) -> dict:
     return {
         "item_id": str(item.id),
         "name": item.name,
@@ -78,6 +82,21 @@ async def get_item_label(
         "deep_link": _deep_link_for(item.id),
         "barcode": item.barcode,
     }
+
+
+async def get_item_labels_bulk(
+    session: AsyncSession, owner_id: UUID, item_ids: list[UUID]
+) -> list[dict]:
+    """Phase 41：一次取多筆標籤資料（保留請求順序；缺任何一筆 → 404）。
+
+    與單張標籤同一口徑；標籤 PDF 端點使用。
+    """
+    unique_ids = list(dict.fromkeys(item_ids))
+    items = await items_repository.get_owned_many(session, owner_id, unique_ids)
+    by_id = {item.id: item for item in items}
+    if len(by_id) != len(unique_ids):
+        raise HTTPException(status_code=404, detail="item not found")
+    return [_item_label_dict(by_id[item_id]) for item_id in unique_ids]
 
 
 # --- Phase 36：位置 QR 標籤 -------------------------------------------------

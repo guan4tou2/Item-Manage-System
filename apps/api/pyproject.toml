@@ -21,7 +21,11 @@ dependencies = [
     "fastapi-mail==1.4.1",
     "google-genai>=1.0",
     "pywebpush==2.0.0",
-    "qrcode[pil]>=7.4"
+    "qrcode[pil]>=7.4",
+    # Phase 41：伺服器端標籤 PDF（BSD-3；純 wheel）
+    "reportlab==5.1.0",
+    # Phase 41：Code128 條碼圖（MIT）
+    "python-barcode==0.16.1",
 ]
 
 [project.optional-dependencies]
@@ -31,7 +35,9 @@ test = [
     "pytest-cov==5.0.0",
     "aiosqlite==0.20.0",
     # Phase 37：QR 內容真值解碼（wheel，無系統相依）
-    "zxing-cpp==3.1.1"
+    "zxing-cpp==3.1.1",
+    # Phase 41：PDF raster 後做條碼真值解碼（wheel，無系統 poppler）
+    "pypdfium2==5.14.0",
 ]
 
 [build-system]

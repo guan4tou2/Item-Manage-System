@@ -60,6 +60,8 @@ def create_app() -> FastAPI:
     app.include_router(categories.router)
     app.include_router(locations.router)
     app.include_router(tags.router)
+    # Phase 41：`/api/items/labels.pdf` 必須早於 items 的 `/{item_id}`（否則會被 UUID 驗證吃掉）
+    app.include_router(labels.router)
     app.include_router(items_bulk.router)
     app.include_router(items.router)
     app.include_router(batches.router)
@@ -85,7 +87,6 @@ def create_app() -> FastAPI:
     app.include_router(backup.router)
     app.include_router(webhooks.router)
     app.include_router(jobs.router)
-    app.include_router(labels.router)
     app.include_router(labels.location_router)
     app.include_router(barcodes.router)
     return app

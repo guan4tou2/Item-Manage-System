@@ -58,6 +58,22 @@ async def get_owned(
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
+async def get_owned_many(
+    session: AsyncSession,
+    owner_id: UUID,
+    item_ids: list[UUID],
+) -> list[Item]:
+    """一次取多筆本人（未刪除）物品；供標籤 PDF 等批次唯讀場景使用。"""
+    if not item_ids:
+        return []
+    stmt = (
+        _base_query(owner_id)
+        .where(Item.id.in_(item_ids))
+        .options(*_load_options())
+    )
+    return list((await session.execute(stmt)).scalars().all())
+
+
 async def get_visible(
     session: AsyncSession, owner_ids: Iterable[UUID], item_id: UUID
 ) -> Item | None:
