@@ -141,7 +141,7 @@ export default function LocationLabelsPage() {
                     {location.name}
                   </label>
                   <span className="text-xs text-muted-foreground">
-                    {location.path}
+                    {location.path === location.name ? "" : location.path}
                   </span>
                 </li>
               ))}
@@ -171,7 +171,7 @@ export default function LocationLabelsPage() {
               <div
                 key={key}
                 data-testid={`location-label-${bundle.locationId}`}
-                className="box-border flex h-[4cm] w-[6cm] break-inside-avoid flex-col items-center justify-center gap-2 rounded border border-black/20 bg-white p-2 text-center text-black print:inline-flex print:rounded-none print:border print:border-black/20"
+                className="box-border flex min-h-[4cm] w-[6cm] break-inside-avoid flex-col items-center justify-center gap-1.5 rounded border border-black/20 bg-white p-2 text-center text-black print:inline-flex print:rounded-none print:border print:border-black/20"
               >
                 {qrUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
