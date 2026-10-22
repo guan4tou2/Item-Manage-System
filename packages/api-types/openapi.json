@@ -5051,6 +5051,33 @@
         }
       }
     },
+    "/api/ai/status": {
+      "get": {
+        "tags": [
+          "ai"
+        ],
+        "summary": "Ai Status",
+        "description": "AI 執行模式與啟用狀態（Phase 35；唯讀）。\n\n供部署者自我檢查（是否誤開 stub）與 e2e 偵測目前模式。",
+        "operationId": "ai_status_api_ai_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiStatusRead"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/ai/suggest-from-image": {
       "post": {
         "tags": [
@@ -7938,6 +7965,30 @@
           "summary"
         ],
         "title": "ActivityEntry"
+      },
+      "AiStatusRead": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "live",
+              "stub"
+            ],
+            "title": "Mode"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mode",
+          "enabled"
+        ],
+        "title": "AiStatusRead",
+        "description": "AI 執行模式與啟用狀態（Phase 35；唯讀）。"
       },
       "AiSuggestRequest": {
         "properties": {

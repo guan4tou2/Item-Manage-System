@@ -1,6 +1,6 @@
 from __future__ import annotations
 from decimal import Decimal
-from typing import Optional
+from typing import Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,6 +9,17 @@ from pydantic import BaseModel, ConfigDict, Field
 class AiSuggestRequest(BaseModel):
     image_id: UUID
     hint: Optional[str] = Field(default=None, max_length=200)
+
+
+class AiStatusRead(BaseModel):
+    """AI 執行模式與啟用狀態（Phase 35；唯讀）。"""
+
+    model_config = ConfigDict(extra="forbid")
+
+    #: `live` 走真實 Gemini；`stub` 走確定性 stub 供應器
+    mode: Literal["live", "stub"]
+    #: AI 功能（建議／收據／搜尋／問答）目前是否可用
+    enabled: bool
 
 
 class AiSuggestResponse(BaseModel):

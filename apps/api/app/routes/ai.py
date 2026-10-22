@@ -3,18 +3,31 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.ai import (
+    AiStatusRead,
     AiSuggestRequest,
     AiSuggestResponse,
     ClassificationSuggestRequest,
     HistorySuggestions,
 )
 from app.services import ai_service, classification_service
+from app.services.ai_mode import ai_enabled
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
+
+
+@router.get("/status", response_model=AiStatusRead)
+async def ai_status(user: User = Depends(get_current_user)) -> AiStatusRead:
+    """AI 執行模式與啟用狀態（Phase 35；唯讀）。
+
+    供部署者自我檢查（是否誤開 stub）與 e2e 偵測目前模式。
+    """
+    settings = get_settings()
+    return AiStatusRead(mode=settings.ai_mode, enabled=ai_enabled(settings))
 
 
 @router.post("/suggest-from-image", response_model=AiSuggestResponse)

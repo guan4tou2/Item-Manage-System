@@ -1379,6 +1379,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ai Status
+         * @description AI 執行模式與啟用狀態（Phase 35；唯讀）。
+         *
+         *     供部署者自我檢查（是否誤開 stub）與 e2e 偵測目前模式。
+         */
+        get: operations["ai_status_api_ai_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/suggest-from-image": {
         parameters: {
             query?: never;
@@ -2268,6 +2290,19 @@ export interface components {
             item_name?: string | null;
             /** Summary */
             summary: string;
+        };
+        /**
+         * AiStatusRead
+         * @description AI 執行模式與啟用狀態（Phase 35；唯讀）。
+         */
+        AiStatusRead: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "live" | "stub";
+            /** Enabled */
+            enabled: boolean;
         };
         /** AiSuggestRequest */
         AiSuggestRequest: {
@@ -7909,6 +7944,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ai_status_api_ai_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiStatusRead"];
                 };
             };
         };
