@@ -166,7 +166,7 @@ async def test_role_change_writes_audit_logs(client, owner_auth, editor_auth, se
         await client.get(
             "/api/admin/audit-logs", headers=owner_auth, params={"resource_type": "group"}
         )
-    ).json()
+    ).json()["items"]
 
     def rows(action: str) -> list[dict]:
         return [r for r in logs if r["action"] == action]
