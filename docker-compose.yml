@@ -35,6 +35,8 @@ services:
     env_file: .env
     environment:
       MEDIA_DIR: /app/media
+      # Phase 35：AI 模式（live/stub）；可用 shell 變數覆寫（AI_MODE=stub docker compose up -d api）
+      AI_MODE: ${AI_MODE:-live}
     command: >
       sh -c "alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000"
