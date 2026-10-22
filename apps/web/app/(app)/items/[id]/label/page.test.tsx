@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -48,6 +48,13 @@ describe("ItemLabelPage", () => {
     expect(screen.getByText("Camera")).toBeInTheDocument()
     expect(screen.getByText("4710085200016")).toBeInTheDocument()
     expect(screen.getByRole("img", { name: "QR code for Camera" })).toBeInTheDocument()
+  })
+
+  it("prints a Code128 barcode image above the digits (Phase 37)", async () => {
+    render(<ItemLabelPage />, { wrapper: Provider })
+
+    const holder = await screen.findByTestId("label-barcode")
+    await waitFor(() => expect(holder.querySelector("svg")).not.toBeNull())
   })
 
   it("omits the barcode line when the item has none", () => {

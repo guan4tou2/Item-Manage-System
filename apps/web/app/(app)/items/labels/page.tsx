@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { LabelBarcode } from "@/components/items/label-barcode"
 import { getBulkItemLabelBundles } from "@/lib/api/labels"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
@@ -129,9 +130,13 @@ export default function BulkItemLabelsPage() {
                   #{item.label.item_id.slice(0, 8)} · x{item.label.quantity}
                 </div>
                 {item.label.barcode ? (
-                  <div className="w-full truncate font-mono text-[0.6rem]">
-                    {item.label.barcode}
-                  </div>
+                  <>
+                    {/* Phase 37：條碼圖（Code128）；不可編碼時只留下方文字 */}
+                    <LabelBarcode value={item.label.barcode} />
+                    <div className="w-full truncate font-mono text-[0.6rem]">
+                      {item.label.barcode}
+                    </div>
+                  </>
                 ) : null}
               </div>
             )

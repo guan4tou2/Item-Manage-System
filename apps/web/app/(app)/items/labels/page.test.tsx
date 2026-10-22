@@ -83,4 +83,11 @@ describe("BulkItemLabelsPage", () => {
       )
     })
   })
+
+  it("prints a Code128 barcode image on each label (Phase 37)", async () => {
+    renderPage()
+
+    const holder = await screen.findByTestId("label-barcode")
+    await waitFor(() => expect(holder.querySelector("svg")).not.toBeNull())
+  })
 })

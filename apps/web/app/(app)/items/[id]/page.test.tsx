@@ -172,6 +172,13 @@ describe("ItemDetailPage", () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("4710085200016"))
   })
 
+  it("shows a Code128 barcode image next to the barcode value (Phase 37)", async () => {
+    renderPage()
+
+    const holder = await screen.findByTestId("label-barcode")
+    await waitFor(() => expect(holder.querySelector("svg")).not.toBeNull())
+  })
+
   it("shows the location breadcrumb truncated in the middle", async () => {
     renderPage()
 

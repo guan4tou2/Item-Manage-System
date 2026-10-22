@@ -11,6 +11,7 @@ import { EditableOnly } from "@/components/common/editable-only"
 import { DeleteItemDialog } from "@/components/items/delete-item-dialog"
 import { FavoriteButton } from "@/components/items/favorite-button"
 import { ItemCustomValuesDetail } from "@/components/items/item-custom-values-detail"
+import { LabelBarcode } from "@/components/items/label-barcode"
 import { AuthImage } from "@/components/common/auth-image"
 import { LoanCard } from "@/components/collaboration/loan-card"
 import { NewTransferDialog } from "@/components/collaboration/new-transfer-dialog"
@@ -221,6 +222,8 @@ export default function ItemDetailPage() {
                 <Copy className="h-4 w-4" />
               </Button>
             </dd>
+            {/* Phase 37：條碼圖（Code128）；不可編碼時只留下方文字 */}
+            <LabelBarcode value={i.barcode} />
           </div>
         ) : null}
         <div>

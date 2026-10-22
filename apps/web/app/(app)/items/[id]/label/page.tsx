@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { LabelBarcode } from "@/components/items/label-barcode"
 import { useItemLabel, useItemQrObjectUrl } from "@/lib/hooks/use-label"
 
 export default function ItemLabelPage() {
@@ -65,9 +66,13 @@ export default function ItemLabelPage() {
           #{data.item_id.slice(0, 8)} · x{data.quantity}
         </div>
         {data.barcode ? (
-          <div className="w-full truncate font-mono text-[0.6rem]">
-            {data.barcode}
-          </div>
+          <>
+            {/* Phase 37：條碼圖（Code128）；不可編碼時只留下方文字 */}
+            <LabelBarcode value={data.barcode} />
+            <div className="w-full truncate font-mono text-[0.6rem]">
+              {data.barcode}
+            </div>
+          </>
         ) : null}
       </div>
     </section>

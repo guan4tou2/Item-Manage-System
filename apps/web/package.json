@@ -39,6 +39,7 @@
     "@tanstack/react-query": "5.59.0",
     "@zxing/browser": "^0.2.1",
     "@zxing/library": "^0.23.0",
+    "bwip-js": "4.11.4",
     "class-variance-authority": "0.7.0",
     "clsx": "2.1.1",
     "cmdk": "^1.1.1",
