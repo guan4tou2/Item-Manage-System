@@ -56,35 +56,35 @@
 | 32 | AI 批次入庫＋智慧分類建議 | ✅ | `ai_draft_items`＋`ai_usage`（migration 0024）；伺服器端狀態機（非終態可重入、終態 409、錯誤碼化）＋逐張序列處理（不引入背景 worker）；`/api/ai/drafts` 建立／清單／process／accept／discard／批量 discard（writer guard、僅本人）；`suggest-classification` 純規則引擎（分詞／交集評分／決定性排序；僅本人資料、不耗配額）；`AI_DAILY_QUOTA` per-user 每日配額（既有 `suggest-from-image` 額度耗盡轉 429）；Web `/items/drafts` 佇列（上傳區＋四態卡＋批量條＋四態頁面契約）、`AiMark` 記號、`/items/new` 入口卡與待審核徽章（不入首層導覽）；`AuthImage`（既有全站 `<img>` 無 Bearer 破圖之修正）；`docs/ai.md` |
 | 33 | AI 收據辨識 | ✅ | `ai_draft_items.receipt_id` 群組鍵＋索引（migration 0025）；`POST /api/ai/receipts` 多頁一次抽取（單一請求、一次配額、失敗不落地）；金額補齊規則（缺單價／缺小計／皆缺／不一致）；每品項一列 `ready` 草稿＋`receipt`／`receipt_item` 快照；對帳（品項合計 vs 收據總額，差額警示不阻擋）；`process` 對收據 409、`accept` 不綁收據照片；同圖去重限定 `batch_photo`；`suggest_for_names` 批次化（與逐次呼叫等價）；Web 上傳區照片／收據 Tabs、佇列分組與群組標頭、卡片小計與數量／成本預填；`docs/ai.md` 收據章節 |
 | 34 | AI 自然語言搜尋＋物品問答 | ✅ | `GET /api/items` 擴充 `loan`／`min_quantity`／`max_quantity`／`sort(name_asc,created_desc)`；`POST /api/ai/search`（LLM → 白名單 filters → 名稱解析 → 既有搜尋；`applied`／`unresolved`；fallback 一律 200：`ai_disabled`／`quota_exhausted`／`upstream_error`／`unparsed`，未呼叫 LLM 不扣配額）；`POST /api/ai/ask`（`item_ids` 或分詞上下文、`[#n]` 引用映射、`grounded=false`、403／503／429／502）；偏好 `ai_data_sharing_enabled`（預設關，未開啟 403；僅送摘要）；`<<<DATA>>>` 注入防護＋白名單＋引用邊界；golden eval 24 句（mock 進 CI、`EVAL_LIVE=1` 手動）；Web AI 搜尋列與「理解為」chip、問答面板、設定開關；`docs/ai.md` 搜尋／問答章節 |
+| 35 | AI stub 模式（可測的 AI 成功路徑） | ✅ | `AI_MODE=live|stub`（非 dev 環境啟用 stub 啟動即失敗）；攔截點在 LLM 唯一出口（`ai_service` 四個 `call_gemini_*`）且 stub 回**原始 JSON 文字** → 解析／白名單／名稱解析／對帳／引用映射路徑完全相同；stub 供應器（建議／收據／問答／搜尋確定性規則轉譯器）；`ai_enabled()` 統一啟用判定（取代五處 key 檢查）；stub 不需 key、不消耗配額、**不豁免** opt-in；`GET /api/ai/status`（純新增唯讀端點）；Playwright 專案 `ai-stub`＋4 情境（收據品項→對帳→入庫、搜尋 chip、問答引用、批次入庫）→ 補上 Phase 32–34 最大測試缺口；一併修正問答上下文選取非決定性（`PYTHONHASHSEED` 相關 flake）；`docs/ai.md` stub 章節 |
 
 ## 測試規模
 
-- API 測試：1086 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
-- Web 測試：717 passed（128 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：25 spec／79 情境（登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程）
+- API 測試：1126 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
+- Web 測試：717 passed（129 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：**26 spec／83 情境**（`chromium` 專案 25 spec／79 情境：登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
 - 兩套測試套件都是每次 phase 推進 main 前必綠條件
 
 ## 下一輪（未排程）
 
-Phase 22–34 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-10-19.md`](progress-2026-10-19.md)。
+Phase 22–35 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-10-19.md`](progress-2026-10-19.md)。
 
 候選項目（依建議優先序，粗估含測試與 i18n）：
 
 | # | 項目 | 說明 | 粗估 |
 |---|------|------|------|
-| 1 | **AI stub 模式** | `AI_MODE=stub` 環境開關，讓 e2e 驗證 AI 成功路徑（收據品項／搜尋 chip／問答引用），補上最大測試缺口 | S–M |
-| 2 | 位置 QR 標籤 | 掃碼 → 該位置物品清單（貼櫃子／箱子）；平面圖欄位與掃碼流程已在 | S |
-| 3 | 稽核查詢 UI | 後端 audit 資料已在，只缺查詢／篩選頁 | S–M |
-| 4 | 週報 | 重用月報 job 與 payload 渲染（`report.weekly`） | S–M |
-| 5 | 標籤列印加印條碼 | Phase 25 stretch；列印頁已有 | S |
-| 6 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
-| 7 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
-| 8 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
-| 9 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
-| 10 | v1 目錄下線 | 打 `v1-final` tag 後移除 `app/`、`templates/`、`static/`、`run_worker.py` | S |
-| 11 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
+| 1 | 位置 QR 標籤 | 掃碼 → 該位置物品清單（貼櫃子／箱子）；平面圖欄位與掃碼流程已在 | S |
+| 2 | 稽核查詢 UI | 後端 audit 資料已在，只缺查詢／篩選頁 | S–M |
+| 3 | 週報 | 重用月報 job 與 payload 渲染（`report.weekly`） | S–M |
+| 4 | 標籤列印加印條碼 | Phase 25 stretch；列印頁已有 | S |
+| 5 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
+| 6 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
+| 7 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
+| 8 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
+| 9 | v1 目錄下線 | 打 `v1-final` tag 後移除 `app/`、`templates/`、`static/`、`run_worker.py` | S |
+| 10 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
 
-> 建議節奏：先做 #1（把三個 AI phase 的成功路徑納入 e2e，之後任何 AI 改動都有網），再做 #2–#4（皆 S–M、可獨立驗收）；#6、#7 需設計決策，建議單獨開 phase 並先寫決策段；#9 成本最高，建議最後或另開里程碑。
+> 建議節奏：接著做 #1–#3（皆 S–M、可獨立驗收、家庭場景立即有感）；#5、#6 需設計決策，建議單獨開 phase 並先寫決策段；#8 成本最高，建議最後或另開里程碑。
 
 ## 快速啟動（v2）
 

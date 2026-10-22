@@ -1,7 +1,7 @@
 # AI 功能（Gemini 辨識＋批次入庫＋收據辨識＋智慧分類建議）
 
-本文件說明 Phase 3 起的 AI 辨識端點、Phase 32 的「AI 批次入庫（草稿佇列）」與「智慧分類建議」，以及 Phase 33 的「AI 收據辨識」。
-相關程式：`apps/api/app/services/ai_service.py`、`ai_drafts_service.py`、`ai_quota.py`、`classification_service.py`；
+本文件說明 Phase 3 起的 AI 辨識端點、Phase 32 的「AI 批次入庫（草稿佇列）」與「智慧分類建議」，以及 Phase 33 的「AI 收據辨識」、Phase 34 的「自然語言搜尋＋物品問答」與 Phase 35 的「AI stub 模式」。
+相關程式：`apps/api/app/services/ai_service.py`、`ai_stub.py`、`ai_drafts_service.py`、`ai_quota.py`、`ai_mode.py`、`classification_service.py`；
 Web：`apps/web/app/(app)/items/drafts/`、`apps/web/components/ai/`。
 
 ## 設定
@@ -10,6 +10,7 @@ Web：`apps/web/app/(app)/items/drafts/`、`apps/web/components/ai/`。
 |----------|------|------|
 | `GEMINI_API_KEY` | 空字串 | 未設定＝**AI 停用**。影像辨識一律失敗（`error_code=ai_disabled`）；歷史規則與手動填寫不受影響 |
 | `AI_DAILY_QUOTA` | `50` | 每位使用者每日 LLM 呼叫上限（Asia/Taipei 換日）；`<= 0` 表示不設限 |
+| `AI_MODE` | `live` | `live`＝走真實 Gemini（需 `GEMINI_API_KEY`）；`stub`＝走確定性 stub 供應器（見「AI stub 模式」章節） |
 
 - 兩者皆由 `apps/api/app/config.py`（`Settings`）讀取；`.env` 會被 compose 的 `api`／`worker` 服務載入。
 - 沒有新增排程 job：草稿處理一律由使用者請求觸發（前端逐張序列送出），故 `docs/scheduling.md` 不需變更。
@@ -50,6 +51,7 @@ pending ──process──▶ processing ──▶ ready ──accept──▶ 
 | 方法／路徑 | 語義 |
 |-----------|------|
 | `POST /api/ai/suggest-from-image` | Phase 3 既有：單張圖片 LLM 建議（`{image_id, hint?}`）；消耗配額，額度耗盡 → `429` |
+| `GET /api/ai/status` | Phase 35：AI 模式與啟用狀態（唯讀、需登入）→ `200 {mode: "live"\|"stub", enabled: bool}` |
 | `POST /api/ai/suggest-classification` | 智慧分類建議（規則式，唯讀）：`{name}` → `{category, location, tags}`；**不呼叫 LLM、不消耗配額、不掛 writer guard** |
 | `POST /api/ai/drafts` | 批次建立草稿：`{image_ids: [1–10]}` → `201 {created, skipped_image_ids}`；同一圖片已有活動草稿（`pending`／`processing`／`ready`）→ 略過 |
 | `GET /api/ai/drafts` | 清單：`?status=&limit=&offset=`（省略 `status` → 活動四態）；`created_at DESC`；回應含 `total` 與**六態** `counts` |
@@ -190,6 +192,58 @@ EVAL_LIVE=1 uv run pytest evals/ -q -s       # 實際呼叫 Gemini 計分（需 
 - mock 模式驗證轉譯層與白名單；`EVAL_LIVE=1` 印出完全符合率（門檻 70%，未設 key 自動 skip）
 - eval 不在預設 `pytest` 範圍（`testpaths = ["tests"]`），不影響一般測試時間
 
+## AI stub 模式（Phase 35）
+
+`AI_MODE=stub` 會讓**所有** LLM 呼叫改由確定性的 stub 供應器回應（`apps/api/app/services/ai_stub.py`）：
+不連外網、**不需要 `GEMINI_API_KEY`**、**不消耗 AI 配額**。用途是讓「AI 成功路徑」能被自動化測試覆蓋
+（Phase 32–34 的成功路徑先前只能靠 API 測試＋元件測試＋視覺走查驗證）。
+
+### 行為差異（與 live 模式）
+
+| 面向 | `AI_MODE=live` | `AI_MODE=stub` |
+|------|----------------|----------------|
+| LLM 呼叫 | 真實 Gemini | stub 供應器（回原始 JSON 文字） |
+| 需要 `GEMINI_API_KEY` | 是 | 否 |
+| 消耗 `AI_DAILY_QUOTA` | 是（計次於嘗試） | 否（不寫 `ai_usage`） |
+| 解析／白名單／名稱解析／引用映射 | 執行 | **完全相同**（stub 回原始 JSON，走同一條解析路徑） |
+| `ai_data_sharing_enabled` opt-in | 必要 | 必要（**不豁免**） |
+| 正式環境（`ENVIRONMENT != dev`） | 可用 | **啟動即失敗**（避免誤回假資料給使用者） |
+
+### stub 回應內容（固定值）
+
+- **建議**（照片 → 物品欄位）：名稱「測試物品」、描述「AI stub 模式產生的測試描述」、分類建議「測試分類」、標籤「測試標籤」。
+- **收據**：商家「測試商店」、日期 `2026-01-01`、幣別 `TWD`、總額 `150.00`，品項兩筆（「測試品項甲」×2 單價 50、「測試品項乙」×1 單價 50）→ **對帳相符**。
+- **搜尋**：規則式轉譯（`apps/api/app/services/ai_stub.py::translate_search`）——目錄名稱比對（最長匹配）＋關鍵詞規則（到期／借出／最愛／數量／排序）＋殘留關鍵字；只輸出白名單欄位。
+  例：`"廚房裡快過期的感冒藥"`（目錄有位置「廚房」）→ `{location: "廚房", expiry: "expiring_soon", q: "感冒藥"}`。
+- **問答**：以上下文為唯一依據產生「依系統資料，共找到 N 筆相關物品：名稱 [#1]…」→ 引用可被既有映射轉為 `citations`。
+
+### 啟用與自我檢查
+
+```bash
+# 啟用（僅 dev；compose 可用 shell 變數覆寫，只重建 api 容器）
+AI_MODE=stub docker compose up -d api
+
+# 自我檢查目前模式（需登入）
+curl -s http://localhost/api/ai/status -H "Authorization: Bearer $TOKEN"
+# → {"mode":"stub","enabled":true}
+```
+
+`GET /api/ai/status`（唯讀、需登入）回報 `{mode, enabled}`：`mode` 為 `live`／`stub`；`enabled` 表示 AI 功能目前是否可用
+（live 模式＝有 `GEMINI_API_KEY`；stub 模式恆為 true）。
+
+### e2e
+
+```bash
+# live（AI 未設定 → fallback 路徑；既有 spec）
+cd apps/web && pnpm exec playwright test --project=chromium --workers=2
+
+# stub（AI 成功路徑；需先以 AI_MODE=stub 啟動 api）
+cd apps/web && E2E_AI_STUB=1 pnpm exec playwright test --project=ai-stub --workers=2
+```
+
+- `tests/ai-stub.spec.ts`（Playwright 專案 `ai-stub`）涵蓋四條成功路徑：收據品項→對帳→入庫、AI 搜尋「理解為」chip、問答引用連結、批次入庫。
+- spec 開頭以 `GET /api/ai/status` 偵測模式：非 stub 模式會**自動略過**（避免誤在 live stack 上假失敗）。
+
 ## 智慧分類建議（規則引擎）
 
 `app/services/classification_service.py`——純規則、決定性、不呼叫 LLM，因此 LLM 不可用或配額耗盡時仍可運作。
@@ -239,6 +293,8 @@ EVAL_LIVE=1 uv run pytest evals/ -q -s       # 實際呼叫 Gemini 計分（需 
 | 問答回答「資料不足」 | 上下文沒有相關物品（`grounded=false`）。先在清單篩選出目標物品，再用 AI 搜尋結果上的問答面板提問 |
 | 問答回 `429` | 配額耗盡（每次問答計 1 次；`AI_DAILY_QUOTA` 預設 50／日） |
 | 執行 golden eval | `cd apps/api && uv run pytest evals/ -q`（mock）；`EVAL_LIVE=1 uv run pytest evals/ -q -s` 需 `GEMINI_API_KEY` |
+| 想驗證 AI 成功路徑（不需真 key） | `AI_MODE=stub docker compose up -d api`（僅 dev），再跑 `E2E_AI_STUB=1 pnpm exec playwright test --project=ai-stub`；stub 回應為固定值，僅供測試 |
+| 正式環境啟動失敗並提到 `AI_MODE=stub` | 預期行為：stub 僅允許 `ENVIRONMENT=dev`；正式環境請改回 `AI_MODE=live` |
 | e2e／CI 全數失敗 | 預期行為：`.env` 無 key 時走 `ai_disabled` 路徑，`tests/ai-drafts.spec.ts`（照片）、`tests/ai-receipts.spec.ts`（收據）、`tests/ai-search.spec.ts`（搜尋／問答）正是驗證此路徑 |
 
 ## 測試
@@ -246,5 +302,6 @@ EVAL_LIVE=1 uv run pytest evals/ -q -s       # 實際呼叫 Gemini 計分（需 
 - API：`cd apps/api && uv run pytest -q`（草稿狀態機、配額、規則引擎、收據抽取與金額補齊、AI 搜尋轉譯與白名單、問答 grounding 與引用、權限與批量丟棄）。
 - API（golden eval）：`cd apps/api && uv run pytest evals/ -q`（mock；`EVAL_LIVE=1` 才實際呼叫 Gemini）。
 - Web：`cd apps/web && pnpm vitest run`（客戶端／hooks／四態卡／佇列迴圈／收據上傳與分組／對帳／AI 搜尋列與 chip／問答面板／設定開關／i18n 對帳）。
-- E2E：`cd apps/web && pnpm exec playwright test`（`tests/ai-drafts.spec.ts`：照片無 key 失敗路徑、批量丟棄、入口徽章；`tests/ai-receipts.spec.ts`：收據無 key 失敗、重試、模式切換、徽章；`tests/ai-search.spec.ts`：opt-in 引導、fallback、清除、問答不可用）；機器負載高時可加 `--workers=2` 降低 UI timeout 型 flake。
-- **e2e 限制**：CI／本機 `.env` 無 `GEMINI_API_KEY`，收據成功路徑與 AI 搜尋／問答成功路徑（filters chip、引用回答）以 API 測試（mock `google.genai.Client`）＋元件測試＋golden eval＋視覺走查覆蓋。
+- E2E：`cd apps/web && pnpm exec playwright test --project=chromium`（`tests/ai-drafts.spec.ts`：照片無 key 失敗路徑、批量丟棄、入口徽章；`tests/ai-receipts.spec.ts`：收據無 key 失敗、重試、模式切換、徽章；`tests/ai-search.spec.ts`：opt-in 引導、fallback、清除、問答不可用）；機器負載高時可加 `--workers=2` 降低 UI timeout 型 flake。
+- E2E（AI 成功路徑，Phase 35）：`AI_MODE=stub` 啟動 api 後，`E2E_AI_STUB=1 pnpm exec playwright test --project=ai-stub`（`tests/ai-stub.spec.ts`：收據品項→對帳→入庫、搜尋 chip、問答引用、批次入庫）。
+- **e2e 限制**：CI／本機 `.env` 無 `GEMINI_API_KEY` 時，收據成功路徑與 AI 搜尋／問答成功路徑以 **stub 模式的 `ai-stub` 專案**覆蓋（Phase 35 起），另輔以 API 測試（mock `google.genai.Client`）＋元件測試＋golden eval。

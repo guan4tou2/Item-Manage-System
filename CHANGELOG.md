@@ -6,6 +6,20 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.35] — Phase 35：AI stub 模式（可測的 AI 成功路徑）
+
+- **`AI_MODE` 環境開關**（`live` 預設／`stub`）：`stub` 模式下**所有** LLM 呼叫改由確定性的 stub 供應器回應——不連外網、**不需 `GEMINI_API_KEY`**、**不消耗 AI 配額**；非 dev 環境啟用 stub **啟動即失敗**（避免正式環境誤回假資料）
+- **攔截點在 LLM 唯一出口**（`ai_service` 的四個 `call_gemini_*`）：stub 回**原始 JSON 文字**，因此 live 的解析層、白名單驗證、名稱解析、對帳與引用映射路徑**完全相同**被執行（不是繞過驗證的假成功路徑）
+- **stub 供應器**（`apps/api/app/services/ai_stub.py`）：建議（測試物品）、收據（測試商店／2 品項／對帳相符）、問答（依上下文產生可映射的 `[#n]` 引用）、搜尋（**確定性規則轉譯器**：目錄名稱最長匹配＋關鍵詞規則＋殘留關鍵字，只輸出白名單欄位）
+- **統一啟用判定** `ai_enabled()`（`app/services/ai_mode.py`）：取代原本散落五處的 `if not settings.gemini_api_key`；live 模式（無 key）的 fallback／503 行為**完全不變**
+- **新增唯讀端點** `GET /api/ai/status` → `{mode: "live"|"stub", enabled: bool}`（需登入）：部署者自我檢查是否誤開 stub；e2e 據此偵測模式
+- **e2e 涵蓋 AI 成功路徑**（補上 Phase 32–34 最大測試缺口）：新增 Playwright 專案 `ai-stub` 與 `tests/ai-stub.spec.ts` 四情境——收據品項→對帳相符→接受入庫、AI 搜尋「理解為」chip（位置／到期／關鍵字）、問答回答附引用連結、批次辨識完成→接受入庫；spec 內以 `/api/ai/status` 自我防護（非 stub 模式自動略過）
+- **Playwright 專案分流**：`chromium`（既有 live／fallback 路徑）＋ `ai-stub`（僅在 `E2E_AI_STUB=1` 註冊）；compose `api` 服務新增 `AI_MODE: ${AI_MODE:-live}` 供 shell 覆寫
+- **既有缺陷修正**（非計畫內、全套驗證時以不同 `PYTHONHASHSEED` 重現）：問答上下文的關鍵字選取原以 `set` 迭代順序挑 3 個 bigram，同一問題在不同行程可能命中不同物品（`test_ask_without_item_ids_uses_keyword_context` 於 seed=1 失敗）→ 改以「出現位置」為唯一排序依據（CJK 長度 3 片段 → 拉丁整詞 → CJK 長度 2 片段，上限 12 筆）
+- **Web**：無功能變更（成功路徑 UI 於 Phase 32–34 已完成，本期首次被 e2e 實際走過）
+- **無 migration**；api-types 重生成（**純新增**：`/api/ai/status` 與 `AiStatusRead`，106 行新增、0 刪除）
+- 文件：[`docs/ai.md`](docs/ai.md) 新增「AI stub 模式」章節（行為差異對照、stub 回應內容、啟用與自我檢查、e2e 執行方式）與疑難排解 2 列
+
 ### 本輪迭代完成（Phase 22–34，2026-10-19）
 
 `docs/plans/2026-10-15-next-iteration-roadmap.md` 排定的 **13 個 phase 全數上線**（M1 到期與提醒 3／3、M2 輸入與結構 2／2、M3 治理與協作 5／5、M4 AI 深化 3／3）。逐 phase 變更見下方 `alpha.22`–`alpha.34`；整體狀態、驗證基線、已知限制與後續候選整理於 [`docs/progress-2026-10-19.md`](docs/progress-2026-10-19.md)。
