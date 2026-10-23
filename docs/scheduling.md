@@ -1,12 +1,12 @@
 # 排程與到期提醒
 
-IMS v2 的排程採「**外部 cron ＋ 冪等 job 端點**」：應用本身不內建排程器（`apscheduler` 已於 Phase 24 移除），由你既有的排程工具（crontab／systemd timer／GitHub Actions／任何能發 HTTP 的機制）每日呼叫一次端點即可。
+IMS v2 的排程採「**外部 cron ＋ 冪等 job 端點**」：應用本身不內建排程器（`apscheduler` 已於 Phase 24 移除），由你既有的排程工具（crontab／systemd timer／GitHub Actions／任何能發 HTTP 的機制）依下列頻率呼叫對應端點。
 
 - **冪等**：同日重跑不會重複發送提醒；補跑、手動觸發、排程器重試都安全
 - **可觀測**：每次執行寫入 `job_runs`；設定頁「提醒排程」（`/settings/reminders`）顯示上次執行與停跑警示
-- **Jobs**：`expiry-scan`（批次到期掃描與摘要提醒；每日一次）＋ `report.monthly`（月報表；每月 1 日一次）
+- **Jobs**：`expiry-scan`（批次到期掃描與摘要提醒；每日一次）＋ `report.monthly`（月報表；每月 1 日一次）＋ `report.weekly`（週報表；每週一一次）
 
-> 未知名稱一律 404；目前提供的 job 為 `expiry-scan` 與 `report.monthly`。日報級排程請外掛「每日」呼叫，月報請外掛「每月 1 日」呼叫。
+> 未知名稱一律 404；目前提供的 job 為 `expiry-scan`、`report.monthly` 與 `report.weekly`。到期掃描請外掛「每日」、月報請外掛「每月 1 日」、週報請外掛「每週一」呼叫。
 
 ---
 
@@ -42,6 +42,14 @@ export IMS_PAT="ims_pat_xxxxxxxxxxxxxxxx"       # 步驟 1 的 Token
 ```
 
 月報 job 生成**上一個完整月**（台北時區）的報表；漏跑補跑安全（冪等），但請設在每月 1 日以確保當月送達。
+
+### 3c. 設定週報 cron（每週一台北時間 09:00）
+
+```cron
+0 9 * * 1 curl -fsS -X POST "$IMS_BASE_URL/api/jobs/report.weekly/run" -H "Authorization: Bearer $IMS_PAT"
+```
+
+週報 job 生成**上一個完整 ISO 週**（週一 00:00 至週日 24:00，台北時區）；週一執行生成前一週，其他日子補跑也生成「最近一個已結束的完整週」。週報預設**關閉**，使用者需在 `/settings/reports` 開啟「每週摘要」才會收到。
 
 ### 4. 驗證
 
@@ -153,6 +161,15 @@ jobs:
 - `processed`：本次新建的月報列數（每位合格使用者一列）
 - `emitted`：本次實際發出的通知數；空動態月只建列、不通知，故可能小於 `processed`
 
+`report.weekly` 同一端點：
+
+```json
+{ "job": "report.weekly", "status": "succeeded", "processed": 4, "emitted": 3 }
+```
+
+- `processed`：本次新建的週報列數（每位合格使用者一列）
+- `emitted`：本次實際發出的通知數；空週只建列、不通知，故可能小於 `processed`
+
 | 狀態碼 | 情境 |
 |--------|------|
 | 401 | 未帶 Token／Token 無效 |
@@ -175,7 +192,8 @@ jobs:
 }
 ```
 
-- `stale`：從未執行，或最近一次執行開始時間已逾 `stale_after_hours`（26 小時）→ `true`（設定頁據此顯示停跑警示）
+- `stale`：從未執行，或最近一次執行開始時間已逾該 job 的 `stale_after_hours` → `true`（設定頁據此顯示停跑警示）
+- `thresholds.stale_after_hours` 依 job 而不同：`expiry-scan` **26 小時**、`report.weekly` **170 小時**（7 天＋2 小時）、`report.monthly` **770 小時**（約 32 天）；`report.*` 在兩次排程之間不會再被誤判停跑
 - `last_run`：`null` 表示從未執行過
 
 ---
@@ -207,16 +225,29 @@ jobs:
 
 ---
 
+## 行為語義（`report.weekly`）
+
+- **期間**：每次執行生成**上一個完整 ISO 週**（週一 00:00 至週日 24:00，Asia/Taipei）。週一執行 → 前一週；週間補跑仍生成「最近一個已結束的完整週」，不會把進行中的當週算進來；不提供指定週的 backfill
+- **資格**：帳號啟用中、`/settings/reports` 的「每週摘要」開啟（**預設關閉**，opt-in），且至少 1 件可見（未刪除）物品；不符者整週跳過（不建列）
+- **範圍**：與月報相同——本人可見的物品（含同群組共享）；viewer 亦會收到
+- **冪等**：`UNIQUE(user_id, period)`——同一使用者同一週僅一列（key 如 `2026-W42`）；重跑、跨日補跑都不會重複建列或重複發送
+- **空週**：期間內沒有任何動態時仍建立週報列（詳情頁標示「本週無動態」），但**不發通知、不寄 Email**
+- **交付**：站內通知 `report_ready`（標題「週報已生成：`2026 年 10 月 12–18 日`」、deep link 至 `/reports/{id}`）＋Email（zh-TW／en 依使用者偏好語言；純文字 fallback）；Email 尊重「設定 → 通知偏好」的 `report_ready → Email` 與 `/settings/channels` 綁定，寄送失敗不影響站內通知（fail-soft）
+- **與月報獨立**：兩個開關各自生效；同時開啟會各收到一份。`/reports` 清單混合顯示兩種報表，以「週報」徽章與日期範圍區分，排序為 `generated_at` 新到舊
+- **失敗語義**：逐使用者隔離，錯誤記於 `GET status` 的 `last_run.result.errors`；已寫入的週報保留，重跑即可補齊
+
+---
+
 ## 疑難排解
 
 | 症狀 | 可能原因 | 處置 |
 |------|----------|------|
 | `401` | Token 無效、被刪除或未帶 `Authorization` | 於 `/settings/tokens` 重新建立 |
 | `403` | Token 所屬帳號不是管理員 | 以管理員帳號建立 Token（系統首位註冊者可於 `/settings` 取得管理員） |
-| `404` | `job_name` 拼錯 | 目前有 `expiry-scan` 與 `report.monthly` |
-| 月報只建了列、沒有任何通知／Email | 該期間沒有動態（空月只建列不通知） | 開月報詳情頁確認是否標示「本月無動態」 |
-| 月報完全沒有列 | 該使用者月報開關關閉、帳號停用，或沒有任何可見物品 | 於 `/settings/reports` 確認開關（使用者本人可自行切換） |
-| Email 月報的連結網域不對 | `PUBLIC_WEB_URL` 未設（預設 `http://localhost:3000`） | 於 `.env` 設定實際站台網址後重啟 API |
+| `404` | `job_name` 拼錯 | 目前有 `expiry-scan`、`report.monthly` 與 `report.weekly` |
+| 報表只建了列、沒有任何通知／Email | 該期間沒有動態（空月／空週只建列不通知） | 開報表詳情頁確認是否標示「本月無動態」／「本週無動態」 |
+| 報表完全沒有列 | 對應報表開關關閉、帳號停用，或沒有任何可見物品 | 於 `/settings/reports` 確認「每月報表」／「每週摘要」開關（使用者本人可自行切換；週報預設關閉） |
+| Email 報表的連結網域不對 | `PUBLIC_WEB_URL` 未設（預設 `http://localhost:3000`） | 於 `.env` 設定實際站台網址後重啟 API |
 | 站內完全沒有提醒 | 使用者關閉了站內偏好；或該使用者沒有符合門檻的批次 | 檢查 `/settings/notifications` 與物品到期日 |
 | 站內有、Email 沒有 | `expiring_soon`／`expired` 的 Email 預設為關 | 於 `/settings/notifications` 開啟 |
 | Email／LINE／Telegram／推播沒收到 | 管道未綁定 | 於 `/settings/channels` 完成綁定 |

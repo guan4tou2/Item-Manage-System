@@ -96,6 +96,20 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ---
 
+## 🗓 定期報表（Phase 31 月報、Phase 42 週報）
+
+- `reports` 表（`UNIQUE(user_id, period)`、JSON 快照）＋ migration 0023／0026；`period` 支援 `YYYY-MM` 與 `YYYY-Www`，`kind` 區分 `monthly`／`weekly`
+- `report.monthly`：每月 1 日生成上一個完整月（Asia/Taipei）
+- `report.weekly`：每週一生成上一個完整 ISO 週（週一至週日）；`report_weekly_enabled` **預設 false**，需在 `/settings/reports` 開啟「每週摘要」
+- 兩者共用 payload：庫存現況、期間動態（新增／刪除／入出庫／借還／逾期）、30 天內到期與已過期、期初／期末估值、熱門分類／位置、`has_activity`
+- 冪等：同使用者同期間僅一列；空月／空週仍建列但**不通知**；無可見物品不建列；逐使用者錯誤隔離
+- 交付：站內 `report_ready`＋Email（zh-TW／en、fail-soft）；deep link `/reports/{id}`
+- `GET /api/reports`（`generated_at DESC`、回傳 `kind`）／`GET /api/reports/{id}`（僅本人；他人 404）
+- Web `/reports` 清單混合兩種報表（「週報」徽章＋日期範圍）、詳情依 `kind` 切換文案、空狀態分流；`/settings/reports` 兩個獨立開關
+- `GET /api/jobs/{job_name}/status` 的 `thresholds.stale_after_hours`：`expiry-scan` 26h／`report.weekly` 170h／`report.monthly` 770h
+
+---
+
 ## 📋 盤點與庫存（Phase 6）
 
 - `stocktake_sessions` 代表一輪盤點（名稱、建立時間、完成時間）
@@ -218,8 +232,9 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## 🧪 測試
 
-- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。398 passed。
-- **Web**: vitest + @testing-library/react + jsdom。75 passed across 19 files。
+- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1248 passed**；golden eval 28 passed／1 skipped。
+- **Web**: vitest + @testing-library/react + jsdom。**787 passed across 132 files**。
+- **E2E**: Playwright chromium **89 passed**（`--workers=1`）＋ ai-stub 4 passed。
 - **TS**: `tsc --noEmit` 嚴格模式乾淨。
 
 ---

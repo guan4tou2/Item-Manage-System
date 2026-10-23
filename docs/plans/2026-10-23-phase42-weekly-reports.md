@@ -1,7 +1,7 @@
 # Phase 42 — 定期報表（週報）
 
 - **日期**：2026-10-23
-- **狀態**：🚧 進行中
+- **狀態**：✅ 完成（2026-10-23）
 - **依據**：`docs/v2-roadmap.md` 下一輪候選 #1（「週報：重用月報 job 與 payload 渲染（`report.weekly`）」）
 - **前置**：Phase 24（job registry／外部 cron）、Phase 27（估值）、Phase 31（月報）
 - **規模**：M（API：migration＋job＋渲染＋per-job stale；Web：清單／詳情／設定／空狀態；e2e：1 情境）
@@ -379,19 +379,46 @@ reports
 
 ## 實作結果（與計畫差異）
 
-（完成後補）
+**已完成**：
+
+- **Migration 0026**：`reports.period` 7 → 10、新增 `reports.kind`（`varchar(8) NOT NULL DEFAULT 'monthly'`）；`UNIQUE(user_id, period)` 不變。downgrade 先刪 `kind='weekly'` 再縮回 7。
+- **API**：`ReportKind`／`previous_week`／`week_period`／`build_payload(kind=...)`／`generate_weekly`／`report.weekly` job；`report_weekly_enabled` 偏好（預設 false）；`report_render` 依 `payload.kind` 選字庫與日期範圍；`JobSpec.stale_after_hours`（expiry 26／weekly 170／monthly 770）；清單改 `generated_at DESC`、回傳 `kind`。
+- **Web**：`formatPeriodRange`、`ReportCard` 週報徽章＋範圍、`ReportSummary` 週報文案、詳情頁 heading／breadcrumb、`reports-panel.tsx` 雙開關、空狀態三分支、zh-TW／en i18n。
+- **測試**：API 1248 passed、Web 787 passed（132 檔）、typecheck 0 error、e2e 89 passed（`--workers=1`）。
+- **文件**：`CHANGELOG.md` alpha.42、`FEATURES.md`、`docs/scheduling.md`、`docs/v2-roadmap.md`、`docs/progress-2026-10-23.md` 與本計畫。
+
+**與計畫的差異**：
+
+1. **Migration 的 SQLite 驗證改成 PG-only**：計畫原寫「migration up/down 在 SQLite 與 PG 實測」，但既有 migration 0021 的 constraint ALTER 在 SQLite 直接 `NotImplementedError`，無法只為 0026 繞過。改以獨立 PostgreSQL 容器實測 `0025 → 0026 → 0025 → 0026`；SQLite 測試仍以 `create_all` 覆蓋新 schema（可寫入 8 字元 period、`kind` 預設 monthly），但不硬跑 0026 migration。此限制已寫入 CHANGELOG／進度文件。
+2. **i18n key 名稱與計畫草稿不同**：實際使用 `reports.weeklyBadge`、`reports.noActivityWeekly`、`reports.empty.weeklyOnly`／`weeklyOnlyHint`、`reports.detail.headingWeekly`／`activityWeekly`／`expiryWeekly`／`startWeekly`／`endWeekly`、`settings.reports.weeklyTitle`／`weeklyDescription`／`weeklyScheduleNote`／`monthlySavedOn`／`monthlySavedOff`／`weeklySavedOn`／`weeklySavedOff`。語意與計畫一致，只是鍵名更貼近現有 `reports.*` 結構。
+3. **月報不另顯示「月報」徽章**：只有週報加徽章，避免既有月報卡片多一個視覺噪音；月報仍以 `YYYY年M月` 標題區分。計畫原寫「週報／月報徽章」。
+4. **e2e 併入 `tests/reports.spec.ts`**：沒有另開 `reports-weekly.spec.ts`；在同一個 spec 內重用註冊、登入、管理員與 psql 前置，對照月報／週報兩種流程。
+5. **e2e 由 UI 開關啟用週報**：計畫 D9 寫「以 API 開啟」，實際從 `/settings/reports` 點「每週摘要」並斷言 toast，順便覆蓋新設定面板；job 仍由管理員端點真實觸發。
+6. **空狀態連結**：兩者皆關與「只開週報」都提供「前往報表設定」連結；月報預設（含週報也開）維持「第一份月報將於次月 1 日生成」且不顯示連結。計畫只要求分流，未細分連結。
+7. **`ReportPayload.kind` 在 OpenAPI 為 required**：雖有 Pydantic 預設值，產生出的 TypeScript 仍是必填；所有 Web fixture 已同步補 `kind`，typecheck 0 error。
+
+**未做（與計畫一致）**：自訂期間、日報、指定週 backfill、週報專屬指標、CSV／PDF、報表刪除／已讀、`?kind=` 篩選、新通知管道、使用者時區偏好。
 
 ---
 
 ## Final Verification
 
-（完成後補）
+- **API 全套**：`cd apps/api && uv run pytest -q` → **1248 passed**（227.75s）
+- **API golden eval**：`cd apps/api && uv run pytest evals/ -q` → **28 passed／1 skipped**
+- **Web 全套**：`cd apps/web && pnpm vitest run` → **787 passed（132 檔）**
+- **Web 型別**：`pnpm typecheck` → **0 error**
+- **E2E**：`pnpm exec playwright test --project=chromium --workers=1` → **89 passed**；其中 `tests/reports.spec.ts` 4/4（月報生成／月報開關／週報／導覽）
+- **Migration 0026（live stack）**：API 容器啟動時自動 `0025 → 0026`；`alembic current` 為 `0026 (head)`
+- **Migration 0026（獨立 PG 容器）**：空庫 `upgrade head` → `downgrade 0025`（週報列刪除、`period` 縮回 7、`kind` 移除）→ `upgrade head`，全程成功
+- **api-types**：重新產生 `openapi.json` 與 `src/index.ts`；新增 `ReportRead.kind`、`ReportPayload.kind`、`report_weekly_enabled`，無新增 path
+- **Live 驗證**：週報 e2e 以 nginx → API → PostgreSQL 真實路徑完成；月報既有流程與空狀態文案同步回歸
 
 ---
 
-## 測試基線（main，Phase 41 完成）
+## 測試基線（main，Phase 42 完成）
 
-- API：**1219 passed**；Web：**769 passed（132 檔）**；typecheck 0 error
-- e2e：chromium **88 passed**（`--workers=1`）；ai-stub 4
-- Migration：`0025 (head)`
-- Phase 41 新增端點：`GET /api/items/labels.pdf`
+- API：**1248 passed**；golden eval **28 passed／1 skipped**
+- Web：**787 passed（132 檔）**；typecheck 0 error
+- e2e：chromium **89 passed**（`--workers=1`）；ai-stub 4
+- Migration：`0026 (head)`
+- Phase 42 新增：`report.weekly` job、`reports.kind`、`ReportRead.kind`／`ReportPayload.kind`、`report_weekly_enabled`；無新增 API path

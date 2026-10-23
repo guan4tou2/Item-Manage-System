@@ -6,6 +6,20 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.42] — Phase 42：定期報表（週報）
+
+- **新增 `report.weekly` job**：每週一生成**上一個完整 ISO 週**（週一 00:00 至週日 24:00，Asia/Taipei）；重用月報的 `reports` 資料表、`ReportPayload`、`GET /api/reports`、`/reports` UI、`report_ready` 通知與 Email 管線，不複製一套報表系統
+- **Migration 0026**：`reports.period` 由 `varchar(7)` 放寬到 `varchar(10)`（容納 `2026-W42`）；新增 `reports.kind`（`monthly`／`weekly`，`NOT NULL DEFAULT 'monthly'`）；既有列自動視為月報，`UNIQUE(user_id, period)` 不變。**downgrade 會先刪除 `kind='weekly'` 的列**再縮回 7（destructive，僅在確定要放棄週報時使用）
+- **API 契約（additive）**：`ReportRead` 新增 `kind`；`ReportPayload` 新增 `kind`（預設 `monthly`，舊快照自動補值，payload version 維持 1）；偏好新增 `report_weekly_enabled`（**預設 false**，opt-in）；不新增端點、不做 `?kind=` 篩選
+- **清單排序修正**：混合 `YYYY-MM` 與 `YYYY-Www` 的字典序不是時間序 → `GET /api/reports` 改以 `generated_at DESC`（同時間再以 id）排序；`limit`／`offset`／`total` 不變
+- **空週與冪等**：空週仍建列（`has_activity=false`）、不通知、不寄信；`UNIQUE(user_id, period)` 保證重跑不重複；逐使用者 commit／錯誤隔離與月報相同
+- **渲染**：`report_render` 依 `payload.kind` 選字庫——`本週動態`／`到期狀態（週末）`／`週初`／`週末`／`本週無動態`；通知與 Email 標題／日期範圍改用 `period_start`／`period_end`（如 `2026 年 10 月 12–18 日`），HTML 結構與 escape 不變
+- **附帶修正 per-job stale**：`JobSpec` 新增 `stale_after_hours`（預設 26）；`expiry-scan` 26h、`report.weekly` 170h、`report.monthly` 770h。修正月報每月 2 日起被固定 26h 門檻誤判「停跑」的既有 bug；`GET /api/jobs/{name}/status` 回傳對應門檻
+- **Web**：`/reports` 清單混合顯示月報／週報（「週報」徽章＋日期範圍）、詳情頁週報 heading／`本週動態`／`週初`／`週末`、`/settings/reports` 改為「定期報表」雙開關（每月報表＋每週摘要，各自 PUT 對應 key）、空狀態分流（兩者皆關／只開週報／月報預設）；zh-TW／en i18n
+- **明確不做**：自訂期間、日報、指定週／月 backfill、週報專屬指標、CSV／PDF 匯出、報表刪除／已讀、清單 kind 篩選 tabs、使用者時區偏好
+- 測試：API 1219 → **1248 passed**；Web 769 → **787 passed（132 檔）**；typecheck 0 error；e2e chromium 88 → **89 passed**（`--workers=1`）；api-types 新增 `kind`／`report_weekly_enabled` 欄位（無新增 path）；Migration 0026 於獨立 PostgreSQL 容器實測 upgrade → downgrade → upgrade
+- **SQLite migration 驗證限制**：既有 migration 0021 的 constraint ALTER 在 SQLite 直接 `NotImplementedError`，因此 0026 的 up/down 改以 PostgreSQL 實測；SQLite 測試仍以 `create_all` 覆蓋新 schema
+
 ## [2.0.0-alpha.41] — Phase 41：伺服器端標籤 PDF（A4 貼紙、QR＋Code128）
 
 - **新的列印路徑**：`GET /api/items/labels.pdf?ids=…&start=0` → 一份 A4 PDF（3 欄 × 7 列＝21 張、63.5 × 38.1 mm），直接送標籤機或一般印表機；批量標籤頁新增「下載 PDF」按鈕，既有瀏覽器列印保留
