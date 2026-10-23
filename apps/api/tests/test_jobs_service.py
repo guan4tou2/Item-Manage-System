@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
+
 import pytest
 
 from app.clock import today_taipei
@@ -76,3 +79,25 @@ async def test_job_runs_latest_returns_most_recent(db_session):
 
     assert latest is not None
     assert latest.id == second.id
+
+
+def test_is_stale_uses_per_job_threshold():
+    """Phase 42：週報／月報不是日更 job，不能用固定 26 小時判斷。"""
+    started = datetime.now(UTC) - timedelta(hours=100)
+    last = SimpleNamespace(started_at=started)
+
+    assert jobs_service.is_stale(last) is True
+    assert jobs_service.is_stale(last, 170) is False
+    assert jobs_service.is_stale(None, 170) is True
+
+
+def test_is_stale_treats_naive_timestamp_as_utc():
+    started = (datetime.now(UTC) - timedelta(hours=100)).replace(tzinfo=None)
+    last = SimpleNamespace(started_at=started)
+
+    assert jobs_service.is_stale(last, 170) is False
+    assert jobs_service.is_stale(last, 26) is True
+
+
+def test_job_spec_defaults_to_daily_threshold():
+    assert JobSpec("x", lambda *_: None).stale_after_hours == 26

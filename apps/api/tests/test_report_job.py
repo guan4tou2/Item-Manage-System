@@ -20,6 +20,7 @@ from app.services import (
 )
 
 TODAY = date(2026, 10, 18)
+WEEKLY_RUN_DAY = date(2026, 10, 19)
 SEPTEMBER = "2026-09"
 
 
@@ -293,6 +294,138 @@ async def test_report_monthly_job_is_registered_and_runs(db_session):
     row = await jobs_service.run_job(db_session, "report.monthly")
 
     assert row.job_name == "report.monthly"
+    assert row.status == "succeeded"
+    assert isinstance(row.result["processed"], int)
+    assert await db_session.scalar(select(func.count(Report.id))) == 0
+
+
+async def test_generate_weekly_creates_report_and_delivers(db_session, emails):
+    """Phase 42：週報為上一個完整 ISO 週，通知／Email 使用週報用語。"""
+    user = await _user(db_session, "job_weekly")
+    await _item(
+        db_session,
+        user,
+        name="上週新增",
+        quantity=2,
+        cost=Decimal("2.00"),
+        created_at=datetime(2026, 10, 14, tzinfo=UTC),
+    )
+    await _set_prefs(db_session, user, report_weekly_enabled=True)
+    await db_session.commit()
+
+    result = await reports_service.generate_weekly(db_session, WEEKLY_RUN_DAY)
+
+    assert result.processed == 1
+    assert result.emitted == 1
+    assert result.errors == []
+
+    reports = await _reports(db_session, user)
+    assert len(reports) == 1
+    report = reports[0]
+    assert report.kind == "weekly"
+    assert report.period == "2026-W42"
+    assert report.payload["kind"] == "weekly"
+    assert report.payload["period"] == "2026-W42"
+    assert report.payload["period_start"] == "2026-10-12"
+    assert report.payload["period_end"] == "2026-10-18"
+    assert report.payload["has_activity"] is True
+
+    notifications = await _notifications(db_session, user)
+    assert len(notifications) == 1
+    assert notifications[0].type == "report_ready"
+    assert "週報已生成" in notifications[0].title
+    assert "2026 年 10 月 12–18 日" in notifications[0].title
+    assert notifications[0].link == f"/reports/{report.id}"
+
+    assert len(emails) == 1
+    assert "週報已生成" in emails[0]["subject"]
+    assert "本週動態" in emails[0]["html"]
+    assert f"/reports/{report.id}" in emails[0]["body"]
+
+
+async def test_generate_weekly_defaults_off(db_session, emails):
+    """Phase 42：週報預設關閉；未開啟不生成、不寄信。"""
+    user = await _user(db_session, "job_weekly_off")
+    await _item(
+        db_session,
+        user,
+        quantity=1,
+        created_at=datetime(2026, 10, 14, tzinfo=UTC),
+    )
+    await db_session.commit()
+
+    result = await reports_service.generate_weekly(db_session, WEEKLY_RUN_DAY)
+
+    assert result.processed == 0
+    assert await _reports(db_session, user) == []
+    assert emails == []
+
+
+async def test_generate_weekly_is_idempotent(db_session, emails):
+    user = await _user(db_session, "job_weekly_twice")
+    await _item(
+        db_session,
+        user,
+        quantity=1,
+        created_at=datetime(2026, 10, 14, tzinfo=UTC),
+    )
+    await _set_prefs(db_session, user, report_weekly_enabled=True)
+    await db_session.commit()
+
+    first = await reports_service.generate_weekly(db_session, WEEKLY_RUN_DAY)
+    second = await reports_service.generate_weekly(db_session, WEEKLY_RUN_DAY)
+
+    assert first.processed == 1
+    assert second.processed == 0
+    assert second.emitted == 0
+    assert len(await _reports(db_session, user)) == 1
+    assert len(await _notifications(db_session, user)) == 1
+    assert len(emails) == 1
+
+
+async def test_generate_weekly_quiet_week_creates_trace_without_delivery(
+    db_session, emails
+):
+    user = await _user(db_session, "job_weekly_quiet")
+    await _item(
+        db_session,
+        user,
+        quantity=1,
+        created_at=datetime(2026, 8, 1, tzinfo=UTC),
+    )
+    await _set_prefs(db_session, user, report_weekly_enabled=True)
+    await db_session.commit()
+
+    result = await reports_service.generate_weekly(db_session, WEEKLY_RUN_DAY)
+
+    assert result.processed == 1
+    assert result.emitted == 0
+    reports = await _reports(db_session, user)
+    assert len(reports) == 1
+    assert reports[0].payload["has_activity"] is False
+    assert await _notifications(db_session, user) == []
+    assert emails == []
+
+
+async def test_generate_weekly_skips_users_without_items(db_session, emails):
+    user = await _user(db_session, "job_weekly_empty")
+    await _set_prefs(db_session, user, report_weekly_enabled=True)
+    await db_session.commit()
+
+    result = await reports_service.generate_weekly(db_session, WEEKLY_RUN_DAY)
+
+    assert result.processed == 0
+    assert await _reports(db_session, user) == []
+
+
+async def test_report_weekly_job_is_registered_and_runs(db_session):
+    spec = jobs_service.JOBS.get("report.weekly")
+    assert spec is not None
+    assert spec.stale_after_hours == 170
+
+    row = await jobs_service.run_job(db_session, "report.weekly")
+
+    assert row.job_name == "report.weekly"
     assert row.status == "succeeded"
     assert isinstance(row.result["processed"], int)
     assert await db_session.scalar(select(func.count(Report.id))) == 0

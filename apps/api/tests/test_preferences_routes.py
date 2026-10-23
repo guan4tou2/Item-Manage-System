@@ -36,6 +36,7 @@ class TestGetPreferences:
             "currency": "TWD",
             "viewer_notice_dismissed": False,
             "report_monthly_enabled": True,
+            "report_weekly_enabled": False,
             "ai_data_sharing_enabled": False,
         }
 
@@ -67,6 +68,30 @@ class TestPutPreferences:
         assert resp.status_code == 200
         assert resp.json()["report_monthly_enabled"] is False
         assert resp.json()["language"] == "zh-TW"
+
+    async def test_updates_report_weekly_enabled(self, client, auth_headers):
+        """Phase 42：週報預設關閉，可獨立開啟／關閉。"""
+        initial = await client.get(
+            "/api/users/me/preferences", headers=auth_headers
+        )
+        assert initial.json()["report_weekly_enabled"] is False
+
+        enabled = await client.put(
+            "/api/users/me/preferences",
+            headers=auth_headers,
+            json={"report_weekly_enabled": True},
+        )
+        assert enabled.status_code == 200
+        assert enabled.json()["report_weekly_enabled"] is True
+        # 不影響月報
+        assert enabled.json()["report_monthly_enabled"] is True
+
+        disabled = await client.put(
+            "/api/users/me/preferences",
+            headers=auth_headers,
+            json={"report_weekly_enabled": False},
+        )
+        assert disabled.json()["report_weekly_enabled"] is False
 
     async def test_updates_ai_data_sharing_enabled(self, client, auth_headers):
         """Phase 34：AI 資料分享開關（預設關）。"""

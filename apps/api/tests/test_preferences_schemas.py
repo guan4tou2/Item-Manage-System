@@ -22,6 +22,16 @@ class TestPreferencesRead:
             is False
         )
 
+    def test_report_weekly_enabled_defaults_false(self):
+        """Phase 42：週報是 opt-in，預設關閉以免未預期每週寄信。"""
+        assert PreferencesRead().report_weekly_enabled is False
+
+    def test_report_weekly_enabled_can_be_enabled(self):
+        assert (
+            PreferencesRead(report_weekly_enabled=True).report_weekly_enabled
+            is True
+        )
+
     def test_ai_data_sharing_defaults_false(self):
         """Phase 34：送出物品摘要至 Gemini 預設關閉（opt-in）。"""
         assert PreferencesRead().ai_data_sharing_enabled is False
@@ -68,6 +78,13 @@ class TestPreferencesUpdate:
     def test_theme_and_language(self):
         update = PreferencesUpdate(theme="dark", language="en")
         assert update.model_dump(exclude_none=True) == {"theme": "dark", "language": "en"}
+
+    def test_report_weekly_enabled_optional(self):
+        assert PreferencesUpdate().report_weekly_enabled is None
+        update = PreferencesUpdate(report_weekly_enabled=True)
+        assert update.model_dump(exclude_none=True) == {
+            "report_weekly_enabled": True
+        }
 
     def test_allows_extra_keys(self):
         update = PreferencesUpdate(notifications_enabled=True)

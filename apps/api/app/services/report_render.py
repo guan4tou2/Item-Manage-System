@@ -1,18 +1,19 @@
-"""月報伺服器端渲染（Phase 31）。
+"""定期報表伺服器端渲染（Phase 31 月報、Phase 42 週報）。
 
 站內通知文字與 Email（plain text＋HTML）都由同一份 `ReportPayload` 產生；
-語言依收件者 `preferences.language`。HTML 內所有使用者可控字串一律 escape。
+語言依收件者 `preferences.language`，週／月用語依 `payload.kind`。
+HTML 內所有使用者可控字串一律 escape。
 
 Email 契約：zh-TW／en、plain-text fallback、CSV 附件不在本期。
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal, InvalidOperation
 from html import escape
 
 from app.clock import TAIPEI
-from app.schemas.reports import ReportPayload
+from app.schemas.reports import ReportKind, ReportPayload
 
 EM_DASH = "—"
 
@@ -112,19 +113,84 @@ TEXT: dict[str, dict[str, str]] = {
 }
 
 
+WEEKLY_TEXT: dict[str, dict[str, str]] = {
+    "zh-TW": {
+        "title": "週報：{period}",
+        "subject": "週報已生成：{period}",
+        "activity": "本週動態",
+        "expiry": "到期狀態（週末）",
+        "start": "週初",
+        "end": "週末",
+        "noActivity": "本週無動態",
+    },
+    "en": {
+        "title": "Weekly report: {period}",
+        "subject": "Weekly report ready: {period}",
+        "activity": "This week",
+        "expiry": "Expiry at week end",
+        "start": "Start of week",
+        "end": "End of week",
+        "noActivity": "No activity this week",
+    },
+}
+
+
 def _lang(language: str) -> str:
     return language if language in TEXT else "zh-TW"
 
 
-def _t(language: str) -> dict[str, str]:
-    return TEXT[_lang(language)]
+def _t(language: str, kind: ReportKind = "monthly") -> dict[str, str]:
+    lang = _lang(language)
+    if kind == "weekly":
+        return {**TEXT[lang], **WEEKLY_TEXT[lang]}
+    return TEXT[lang]
 
 
-def period_label(period: str, language: str) -> str:
+def _month_label(period: str, language: str) -> str:
     year, month = (int(part) for part in period.split("-"))
     if _lang(language) == "en":
         return f"{MONTHS_EN[month - 1]} {year}"
     return f"{year} 年 {month} 月"
+
+
+def _short_month(month: int) -> str:
+    return MONTHS_EN[month - 1][:3]
+
+
+def _week_label(start: date, end: date, language: str) -> str:
+    """週報日期範圍；同月省略重複年月，跨月／跨年完整標示。"""
+    if _lang(language) == "en":
+        first = f"{_short_month(start.month)} {start.day}"
+        last = f"{_short_month(end.month)} {end.day}"
+        if start.year == end.year:
+            if start.month == end.month:
+                return f"{first}–{end.day}, {start.year}"
+            return f"{first}–{last}, {start.year}"
+        return f"{first}, {start.year}–{last}, {end.year}"
+
+    if start.year == end.year:
+        if start.month == end.month:
+            return f"{start.year} 年 {start.month} 月 {start.day}–{end.day} 日"
+        return (
+            f"{start.year} 年 {start.month} 月 {start.day} 日–"
+            f"{end.month} 月 {end.day} 日"
+        )
+    return (
+        f"{start.year} 年 {start.month} 月 {start.day} 日–"
+        f"{end.year} 年 {end.month} 月 {end.day} 日"
+    )
+
+
+def period_label(payload: ReportPayload | str, language: str) -> str:
+    """月報沿用 `YYYY-MM`；週報優先用 payload 的 period_start／period_end。
+
+    接受字串是為了保留 Phase 31 的呼叫方式（僅月報）。
+    """
+    if isinstance(payload, str):
+        return _month_label(payload, language)
+    if payload.kind == "weekly":
+        return _week_label(payload.period_start, payload.period_end, language)
+    return _month_label(payload.period, language)
 
 
 def money(value: str | None, currency: str, language: str) -> str:  # noqa: ARG001
@@ -154,8 +220,8 @@ def _count_text(t: dict[str, str], count: int) -> str:
 
 def notification_text(payload: ReportPayload, language: str) -> tuple[str, str]:
     """站內通知（與 Email subject 共用）的 title／body。"""
-    t = _t(language)
-    label = period_label(payload.period, language)
+    t = _t(language, payload.kind)
+    label = period_label(payload, language)
     title = t["subject"].format(period=label)
     body = t["notificationBody"].format(
         created=payload.activity.items_created,
@@ -177,8 +243,8 @@ def _bucket_lines(
 
 
 def render_text(payload: ReportPayload, language: str, link: str) -> str:
-    t = _t(language)
-    label = period_label(payload.period, language)
+    t = _t(language, payload.kind)
+    label = period_label(payload, language)
     lines = [t["title"].format(period=label), ""]
     if not payload.has_activity:
         lines += [t["noActivity"], ""]
@@ -271,9 +337,9 @@ def _html_list(title: str, lines: list[str]) -> str:
 
 
 def render_html(payload: ReportPayload, language: str, link: str) -> str:
-    t = _t(language)
+    t = _t(language, payload.kind)
     lang = _lang(language)
-    label = period_label(payload.period, lang)
+    label = period_label(payload, lang)
     title = t["title"].format(period=label)
     colon = "：" if lang == "zh-TW" else ": "
 

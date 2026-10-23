@@ -23,6 +23,7 @@ router = APIRouter(prefix="/api/reports", tags=["reports"])
 def _to_read(row: Report) -> ReportRead:
     return ReportRead(
         id=row.id,
+        kind=row.kind,
         period=row.period,
         generated_at=row.generated_at,
         payload=ReportPayload.model_validate(row.payload),

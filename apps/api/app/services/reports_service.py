@@ -1,8 +1,8 @@
-"""月報生成（Phase 31）。
+"""定期報表生成（Phase 31 月報、Phase 42 週報）。
 
-- 期間固定 Asia/Taipei 的完整月份；時間欄位以 UTC 半開區間查詢
+- 期間固定 Asia/Taipei：月報為完整月份、週報為完整 ISO 週；時間欄位以 UTC 半開區間查詢
 - 可見範圍沿用 `visibility_service.visible_item_owner_ids()`（本人＋同群組）
-- `build_payload` 只讀不寫；job（T1.7）負責冪等落地與交付
+- `build_payload` 只讀不寫；job 負責冪等落地與交付
 """
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ from app.schemas.reports import (
     ReportActivity,
     ReportBucket,
     ReportExpiry,
+    ReportKind,
     ReportPayload,
     ReportTotals,
     ReportValuation,
@@ -44,7 +45,7 @@ TOP_BUCKETS = 3
 
 @dataclass(frozen=True)
 class Period:
-    """一個完整月份（Asia/Taipei）。`end_utc` 為次月 1 日 00:00 TPE 的 UTC。"""
+    """一個完整期間（Asia/Taipei）。`end_utc` 為期間結束後第一秒的 UTC。"""
 
     key: str
     start: date
@@ -73,6 +74,32 @@ def previous_period(today: date) -> Period:
     return period_for(first_of_this_month - timedelta(days=1))
 
 
+def week_period(monday: date) -> Period:
+    """以某個週一取得該 ISO 週（週一至週日）的界線。
+
+    key 的 ISO 年／週以**週一**計算，避免跨年時用週日造成年份歧義。
+    """
+    start = monday - timedelta(days=monday.weekday())
+    end = start + timedelta(days=6)
+    next_start = start + timedelta(days=7)
+    iso = start.isocalendar()
+    return Period(
+        key=f"{iso.year}-W{iso.week:02d}",
+        start=start,
+        end=end,
+        start_utc=datetime.combine(start, time.min, tzinfo=TAIPEI).astimezone(UTC),
+        end_utc=datetime.combine(next_start, time.min, tzinfo=TAIPEI).astimezone(UTC),
+    )
+
+
+def previous_week(today: date) -> Period:
+    """`today` 所屬 ISO 週的上一個完整週（週一至週日）。
+
+    週一執行 → 上週；週日執行 → 再上一週（當週尚未結束）。
+    """
+    return week_period(today - timedelta(days=today.weekday() + 7))
+
+
 def _as_decimal(value) -> Decimal:
     if value is None:
         return Decimal("0")
@@ -92,6 +119,7 @@ async def build_payload(
     period: Period,
     generated_at: datetime,
     currency: str,
+    kind: ReportKind = "monthly",
 ) -> ReportPayload:
     owner_ids = sorted(
         await visibility_service.visible_item_owner_ids(session, user_id)
@@ -179,6 +207,7 @@ async def build_payload(
 
     return ReportPayload(
         version=1,
+        kind=kind,
         period=period.key,
         timezone="Asia/Taipei",
         period_start=period.start,
@@ -201,7 +230,7 @@ async def build_payload(
     )
 
 
-# ---------- job（report.monthly） ----------------------------------------
+# ---------- job（report.monthly／report.weekly） --------------------------
 
 
 async def _deliver_report(
@@ -243,17 +272,21 @@ async def _deliver_report(
     return delivered or notification is not None
 
 
-async def generate_monthly(
-    session: AsyncSession, today: date
+async def _generate(
+    session: AsyncSession,
+    *,
+    today: date,
+    period: Period,
+    kind: ReportKind,
+    enabled_field: str,
 ) -> jobs_service.JobResult:
-    """`report.monthly`：為每位合格使用者生成上一個完整月的報表。
+    """月報／週報共用流程。
 
-    - 資格：is_active ＋ 月報開關開啟 ＋ 至少 1 件可見（未刪除）物品
-    - 空動態月仍建立列（站內留痕），但不通知、不寄信
+    - 資格：is_active ＋ 對應開關開啟 ＋ 至少 1 件可見（未刪除）物品
+    - 空動態期間仍建立列（站內留痕），但不通知、不寄信
     - 已存在同 `(user_id, period)` → 跳過（冪等）
     - 每位使用者獨立 commit；失敗 rollback 並記入 `errors`，不阻斷其他人
     """
-    period = previous_period(today)
     generated_at = datetime.now(UTC)
     result = jobs_service.JobResult()
 
@@ -270,7 +303,7 @@ async def generate_monthly(
             prefs = await preferences_service.get_preferences(
                 session, user_id=user_id
             )
-            if not prefs.report_monthly_enabled:
+            if not getattr(prefs, enabled_field):
                 continue
             owner_ids = await visibility_service.visible_item_owner_ids(
                 session, user_id
@@ -289,11 +322,13 @@ async def generate_monthly(
                 period=period,
                 generated_at=generated_at,
                 currency=prefs.currency,
+                kind=kind,
             )
             row = await reports_repository.create(
                 session,
                 user_id=user_id,
                 period=period.key,
+                kind=kind,
                 payload=payload.model_dump(mode="json"),
                 generated_at=generated_at,
             )
@@ -316,6 +351,43 @@ async def generate_monthly(
     return result
 
 
+async def generate_monthly(
+    session: AsyncSession, today: date
+) -> jobs_service.JobResult:
+    """`report.monthly`：為每位合格使用者生成上一個完整月的報表。"""
+    return await _generate(
+        session,
+        today=today,
+        period=previous_period(today),
+        kind="monthly",
+        enabled_field="report_monthly_enabled",
+    )
+
+
+async def generate_weekly(
+    session: AsyncSession, today: date
+) -> jobs_service.JobResult:
+    """`report.weekly`：生成上一個完整 ISO 週（週一至週日）的報表。"""
+    return await _generate(
+        session,
+        today=today,
+        period=previous_week(today),
+        kind="weekly",
+        enabled_field="report_weekly_enabled",
+    )
+
+
 jobs_service.register(
-    jobs_service.JobSpec(name="report.monthly", run=generate_monthly)
+    jobs_service.JobSpec(
+        name="report.monthly",
+        run=generate_monthly,
+        stale_after_hours=770,
+    )
+)
+jobs_service.register(
+    jobs_service.JobSpec(
+        name="report.weekly",
+        run=generate_weekly,
+        stale_after_hours=170,
+    )
 )

@@ -14,10 +14,12 @@ from app.models.user import GUID
 
 
 class Report(Base):
-    """月報（Phase 31）：每位使用者、每個期間（`YYYY-MM`，Asia/Taipei）一列。
+    """定期報表（Phase 31 月報、Phase 42 週報）：每位使用者、每個期間一列。
 
-    `payload` 為 `ReportPayload`（version=1）；唯一約束 `(user_id, period)` 是
-    job 冪等的最後防線。
+    - 月報 period 為 `YYYY-MM`；週報為 `YYYY-Www`（Asia/Taipei 的 ISO 週）
+    - `kind` 為 `monthly`／`weekly`
+    - `payload` 為 `ReportPayload`（version=1）；唯一約束 `(user_id, period)` 是
+      job 冪等的最後防線（兩種 key 格式不重疊）
     """
 
     __tablename__ = "reports"
@@ -29,7 +31,10 @@ class Report(Base):
     user_id: Mapped[UUID] = mapped_column(
         GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    period: Mapped[str] = mapped_column(String(7), nullable=False)
+    period: Mapped[str] = mapped_column(String(10), nullable=False)
+    kind: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="monthly", server_default="monthly"
+    )
     payload: Mapped[dict[str, Any]] = mapped_column(JSONType, nullable=False)
     generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=_utcnow, nullable=False

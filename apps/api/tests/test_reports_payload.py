@@ -65,6 +65,52 @@ def test_previous_period_uses_immediately_previous_month():
     assert period.key == "2026-09"
 
 
+def test_previous_week_on_monday():
+    """週一執行：上一個完整 ISO 週（週一至週日）。"""
+    period = reports_service.previous_week(date(2026, 10, 19))
+
+    assert (period.key, period.start, period.end) == (
+        "2026-W42",
+        date(2026, 10, 12),
+        date(2026, 10, 18),
+    )
+    # Asia/Taipei = UTC+8：週一 00:00 TPE = 前一日 16:00 UTC
+    assert period.start_utc == datetime(2026, 10, 11, 16, 0, tzinfo=UTC)
+    assert period.end_utc == datetime(2026, 10, 18, 16, 0, tzinfo=UTC)
+
+
+def test_previous_week_on_sunday_does_not_include_current_week():
+    """週日執行：當週尚未結束，仍取再上一個完整週。"""
+    period = reports_service.previous_week(date(2026, 10, 18))
+
+    assert (period.key, period.start, period.end) == (
+        "2026-W41",
+        date(2026, 10, 5),
+        date(2026, 10, 11),
+    )
+
+
+def test_previous_week_iso_year_boundary():
+    period = reports_service.previous_week(date(2026, 1, 1))
+
+    assert (period.key, period.start, period.end) == (
+        "2025-W52",
+        date(2025, 12, 22),
+        date(2025, 12, 28),
+    )
+
+
+def test_previous_week_key_uses_monday_iso_year():
+    """2025-12-29（一）的 ISO 年為 2026 → key 必須是 2026-W01，不是 2025-W53。"""
+    period = reports_service.previous_week(date(2026, 1, 5))
+
+    assert (period.key, period.start, period.end) == (
+        "2026-W01",
+        date(2025, 12, 29),
+        date(2026, 1, 4),
+    )
+
+
 async def test_payload_totals_activity_and_visible_scope(db_session):
     alice = await _user(db_session, "alice")
     bob = await _user(db_session, "bob")
@@ -198,6 +244,7 @@ async def test_payload_totals_activity_and_visible_scope(db_session):
     )
 
     assert payload.period == "2026-09"
+    assert payload.kind == "monthly"
     assert payload.timezone == "Asia/Taipei"
     assert payload.period_start == date(2026, 9, 1)
     assert payload.period_end == date(2026, 9, 30)
@@ -256,6 +303,42 @@ async def test_payload_period_boundary_uses_taipei_midnight(db_session):
     assert payload.totals.item_count == 2
     # 現況包含兩件；期間新增只算 9/30 23:59 TPE 那件
     assert payload.has_activity is True
+    assert inside.created_at is not None
+
+
+async def test_weekly_payload_period_boundary_uses_taipei_midnight(db_session):
+    """Phase 42：週報期間為 [週一 00:00 TPE, 下週一 00:00 TPE)。"""
+    user = await _user(db_session, "weekly_boundary")
+
+    inside = await _item(
+        db_session,
+        user,
+        name="週日最後一分鐘",
+        created_at=datetime(2026, 10, 18, 15, 59, tzinfo=UTC),
+    )
+    await _item(
+        db_session,
+        user,
+        name="週一第一秒",
+        created_at=datetime(2026, 10, 18, 16, 0, tzinfo=UTC),
+    )
+    await db_session.commit()
+
+    payload = await reports_service.build_payload(
+        db_session,
+        user_id=user.id,
+        period=reports_service.previous_week(date(2026, 10, 19)),
+        generated_at=GENERATED_AT,
+        currency="TWD",
+        kind="weekly",
+    )
+
+    assert payload.kind == "weekly"
+    assert payload.period == "2026-W42"
+    assert payload.period_start == date(2026, 10, 12)
+    assert payload.period_end == date(2026, 10, 18)
+    assert payload.activity.items_created == 1
+    assert payload.totals.item_count == 2
     assert inside.created_at is not None
 
 

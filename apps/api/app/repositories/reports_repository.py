@@ -28,8 +28,11 @@ async def create(
     period: str,
     payload: dict[str, Any],
     generated_at: datetime | None = None,
+    kind: str = "monthly",
 ) -> Report:
-    row = Report(user_id=user_id, period=period, payload=payload)
+    row = Report(
+        user_id=user_id, period=period, kind=kind, payload=payload
+    )
     if generated_at is not None:
         row.generated_at = generated_at
     session.add(row)
@@ -61,7 +64,8 @@ async def list_for_user(
     stmt = (
         select(Report)
         .where(Report.user_id == user_id)
-        .order_by(Report.period.desc())
+        # Phase 42：週／月 key 的字典序不是時間序，改以產生時間新到舊
+        .order_by(Report.generated_at.desc(), Report.id.desc())
         .limit(limit)
         .offset(offset)
     )

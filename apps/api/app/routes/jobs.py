@@ -59,7 +59,7 @@ async def job_status(
     return JobStatus(
         job=job_name,
         thresholds=JobThresholds(
-            stale_after_hours=jobs_service.STALE_AFTER_HOURS, **spec.thresholds
+            stale_after_hours=spec.stale_after_hours, **spec.thresholds
         ),
         last_run=(
             JobRunInfo(
@@ -71,5 +71,5 @@ async def job_status(
             if last is not None
             else None
         ),
-        stale=jobs_service.is_stale(last),
+        stale=jobs_service.is_stale(last, spec.stale_after_hours),
     )

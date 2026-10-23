@@ -46,10 +46,63 @@ def _payload(**overrides) -> ReportPayload:
     return ReportPayload(**base)
 
 
+def _weekly_payload(
+    *,
+    start: date = date(2026, 10, 12),
+    end: date = date(2026, 10, 18),
+    period: str = "2026-W42",
+    **overrides,
+) -> ReportPayload:
+    return _payload(
+        kind="weekly",
+        period=period,
+        period_start=start,
+        period_end=end,
+        **overrides,
+    )
+
+
 def test_period_label_bilingual():
     assert report_render.period_label("2026-09", "zh-TW") == "2026 年 9 月"
     assert report_render.period_label("2026-09", "en") == "September 2026"
     assert report_render.period_label("2026-01", "en") == "January 2026"
+
+
+def test_weekly_period_label_bilingual():
+    payload = _weekly_payload()
+
+    assert report_render.period_label(payload, "zh-TW") == "2026 年 10 月 12–18 日"
+    assert report_render.period_label(payload, "en") == "Oct 12–18, 2026"
+
+
+def test_weekly_period_label_cross_month_and_year():
+    cross_month = _weekly_payload(
+        start=date(2025, 12, 29),
+        end=date(2026, 1, 4),
+        period="2026-W01",
+    )
+    cross_year = _weekly_payload(
+        start=date(2025, 9, 29),
+        end=date(2025, 10, 5),
+        period="2025-W40",
+    )
+
+    assert (
+        report_render.period_label(cross_month, "zh-TW")
+        == "2025 年 12 月 29 日–2026 年 1 月 4 日"
+    )
+    assert (
+        report_render.period_label(cross_month, "en")
+        == "Dec 29, 2025–Jan 4, 2026"
+    )
+    assert (
+        report_render.period_label(cross_year, "zh-TW")
+        == "2025 年 9 月 29 日–10 月 5 日"
+    )
+    assert (
+        report_render.period_label(cross_year, "en")
+        == "Sep 29–Oct 5, 2025"
+    )
 
 
 def test_money_matches_web_formatting():
@@ -71,6 +124,20 @@ def test_notification_text_bilingual():
     assert "September 2026" in en_title
     assert "2 added" in en_body
     assert "3 used" in en_body
+
+
+def test_weekly_notification_text_bilingual():
+    payload = _weekly_payload()
+
+    zh_title, zh_body = report_render.notification_text(payload, "zh-TW")
+    assert "週報已生成" in zh_title
+    assert "2026 年 10 月 12–18 日" in zh_title
+    assert "新增 2" in zh_body
+
+    en_title, en_body = report_render.notification_text(payload, "en")
+    assert "Weekly report ready" in en_title
+    assert "Oct 12–18, 2026" in en_title
+    assert "2 added" in en_body
 
 
 def test_render_text_contains_sections_and_link():
@@ -100,6 +167,40 @@ def test_render_text_empty_month_note():
     )
 
     assert "本月無動態" in text
+
+
+def test_render_text_weekly_sections():
+    text = report_render.render_text(_weekly_payload(), "zh-TW", LINK)
+
+    assert "2026 年 10 月 12–18 日" in text
+    assert "本週動態" in text
+    assert "週初" in text
+    assert "週末" in text
+    assert "本月動態" not in text
+    assert "月報" not in text
+    assert LINK in text
+
+
+def test_render_text_weekly_empty_note():
+    text = report_render.render_text(
+        _weekly_payload(has_activity=False), "zh-TW", LINK
+    )
+
+    assert "本週無動態" in text
+
+
+def test_render_html_weekly_bilingual_sections():
+    zh_html = report_render.render_html(_weekly_payload(), "zh-TW", LINK)
+    assert "週報：2026 年 10 月 12–18 日" in zh_html
+    assert "本週動態" in zh_html
+    assert "到期狀態（週末）" in zh_html
+
+    en_html = report_render.render_html(_weekly_payload(), "en", LINK)
+    assert "Weekly report: Oct 12–18, 2026" in en_html
+    assert "This week" in en_html
+    assert "Expiry at week end" in en_html
+    assert "Start of week" in en_html
+    assert "End of week" in en_html
 
 
 def test_render_html_escapes_user_labels():

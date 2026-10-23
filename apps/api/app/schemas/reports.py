@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel
+
+ReportKind = Literal["monthly", "weekly"]
 
 
 class ReportBucket(BaseModel):
@@ -43,9 +46,13 @@ class ReportValuation(BaseModel):
 
 
 class ReportPayload(BaseModel):
-    """月報快照（version=1）；站內詳情與 Email 共用同一份 payload。"""
+    """報表快照（version=1）；站內詳情與 Email 共用同一份 payload。
+
+    `kind` 為 Phase 42 新增；舊快照沒有此欄位時一律視為月報。
+    """
 
     version: int
+    kind: ReportKind = "monthly"
     period: str
     timezone: str
     period_start: date
@@ -63,6 +70,7 @@ class ReportPayload(BaseModel):
 
 class ReportRead(BaseModel):
     id: UUID
+    kind: ReportKind
     period: str
     generated_at: datetime
     payload: ReportPayload

@@ -155,3 +155,32 @@ async def test_report_monthly_job_status_and_run(client, admin_auth):
     assert r.json()["job"] == "report.monthly"
     assert r.json()["status"] == "succeeded"
     assert r.json()["processed"] == 0
+
+
+async def test_report_job_thresholds_are_per_job(client, admin_auth):
+    """Phase 42：月報／週報的 stale 門檻各自放寬（不再固定 26h）。"""
+    monthly = await client.get(
+        "/api/jobs/report.monthly/status", headers=admin_auth
+    )
+    assert monthly.status_code == 200
+    assert monthly.json()["thresholds"]["stale_after_hours"] == 770
+    assert monthly.json()["stale"] is True
+
+    weekly = await client.get(
+        "/api/jobs/report.weekly/status", headers=admin_auth
+    )
+    assert weekly.status_code == 200
+    assert weekly.json()["job"] == "report.weekly"
+    assert weekly.json()["thresholds"]["stale_after_hours"] == 170
+    assert weekly.json()["last_run"] is None
+    assert weekly.json()["stale"] is True
+
+    # 跑完月報後，同一個 job 立即不再 stale（門檻為 770h）
+    run = await client.post(
+        "/api/jobs/report.monthly/run", headers=admin_auth
+    )
+    assert run.status_code == 200
+    refreshed = await client.get(
+        "/api/jobs/report.monthly/status", headers=admin_auth
+    )
+    assert refreshed.json()["stale"] is False

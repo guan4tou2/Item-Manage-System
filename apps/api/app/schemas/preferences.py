@@ -28,6 +28,8 @@ class PreferencesRead(BaseModel):
     viewer_notice_dismissed: bool = False
     #: Phase 31：月報總開關（關閉後不生成、不通知、不寄信）
     report_monthly_enabled: bool = True
+    #: Phase 42：週報總開關；預設關閉（opt-in，避免未預期每週寄信）
+    report_weekly_enabled: bool = False
     #: Phase 34：允許把物品摘要送往 Gemini（AI 搜尋／問答）；預設關閉
     ai_data_sharing_enabled: bool = False
 
@@ -40,6 +42,7 @@ class PreferencesUpdate(BaseModel):
     currency: Currency | None = None
     viewer_notice_dismissed: bool | None = None
     report_monthly_enabled: bool | None = None
+    report_weekly_enabled: bool | None = None
     ai_data_sharing_enabled: bool | None = None
 
     model_config = ConfigDict(extra="allow")

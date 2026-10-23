@@ -51,6 +51,8 @@ class JobSpec:
     name: str
     run: Callable[[AsyncSession, date], Awaitable[JobResult]]
     thresholds: dict[str, object] = field(default_factory=dict)
+    #: 停跑判定門檻；日更 job 預設 26h，週報／月報需各自放寬
+    stale_after_hours: int = STALE_AFTER_HOURS
 
 
 JOBS: dict[str, JobSpec] = {}
@@ -60,14 +62,16 @@ def register(spec: JobSpec) -> None:
     JOBS[spec.name] = spec
 
 
-def is_stale(last: JobRun | None) -> bool:
-    """從未執行、或最近一次開始時間逾 `STALE_AFTER_HOURS` → 停跑。"""
+def is_stale(
+    last: JobRun | None, stale_after_hours: int = STALE_AFTER_HOURS
+) -> bool:
+    """從未執行、或最近一次開始時間逾 `stale_after_hours` → 停跑。"""
     if last is None:
         return True
     started = last.started_at
     if started.tzinfo is None:  # SQLite 回傳 naive；一律視為 UTC
         started = started.replace(tzinfo=UTC)
-    return datetime.now(UTC) - started > timedelta(hours=STALE_AFTER_HOURS)
+    return datetime.now(UTC) - started > timedelta(hours=stale_after_hours)
 
 
 async def run_job(session: AsyncSession, name: str) -> JobRun:

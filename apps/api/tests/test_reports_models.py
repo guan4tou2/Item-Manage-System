@@ -33,6 +33,26 @@ async def test_report_roundtrip_defaults(db_session):
     assert report.id is not None
     assert report.generated_at is not None
     assert report.payload["period"] == "2026-09"
+    # Phase 42：既有列／未指定時預設為月報
+    assert report.kind == "monthly"
+
+
+async def test_report_weekly_period_and_kind_roundtrip(db_session):
+    """Phase 42：period 放寬到 10，可存 ISO 週 key；kind 區分週／月。"""
+    user = await _user(db_session)
+    weekly = Report(
+        user_id=user.id,
+        period="2026-W42",
+        kind="weekly",
+        payload={"version": 1, "kind": "weekly", "period": "2026-W42"},
+    )
+    db_session.add(weekly)
+    await db_session.commit()
+
+    assert weekly.kind == "weekly"
+    assert weekly.period == "2026-W42"
+    assert Report.__table__.c.period.type.length == 10
+    assert Report.__table__.c.kind.type.length == 8
 
 
 async def test_report_unique_per_user_and_period(db_session):
