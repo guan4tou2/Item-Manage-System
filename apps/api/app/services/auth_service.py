@@ -9,6 +9,13 @@ from app.config import get_settings
 from app.models.user import User
 from app.repositories.user_repo import UserRepository
 
+#: 未知帳號也跑一次 Argon2，降低「帳號是否存在」的 timing 差異。
+#: 這是隨機密碼的合法 hash；永遠不會與使用者輸入相符。
+_DUMMY_PASSWORD_HASH = (
+    "$argon2id$v=19$m=65536,t=3,p=4$0LoXQghhjPFeaw0hREiJ0Q"
+    "$jgOC//N5Wp0E1nNoZQwXgmyVYekDhHKIm8d6u1shZ9U"
+)
+
 
 class AuthError(Exception):
     pass
@@ -43,7 +50,11 @@ class AuthService:
 
     async def authenticate(self, *, username: str, password: str) -> User:
         user = await self.repo.get_by_username(username)
-        if user is None or not verify_password(password, user.password_hash):
+        if user is None:
+            # 帳號不存在時仍付一次 Argon2 成本，避免用回應時間列舉帳號。
+            verify_password(password, _DUMMY_PASSWORD_HASH)
+            raise InvalidCredentials()
+        if not verify_password(password, user.password_hash):
             raise InvalidCredentials()
         if not user.is_active:
             raise InvalidCredentials()

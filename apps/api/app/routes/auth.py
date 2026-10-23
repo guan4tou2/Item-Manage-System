@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
@@ -13,7 +13,12 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.schemas.user import UserPublic
-from app.services import audit_service, notifications_service, visibility_service
+from app.services import (
+    audit_service,
+    login_throttle_service,
+    notifications_service,
+    visibility_service,
+)
 from app.services.auth_service import (
     AuthService,
     EmailAlreadyExists,
@@ -22,6 +27,11 @@ from app.services.auth_service import (
 )
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+def _client_ip(request: Request) -> str:
+    """取得來源 IP；uvicorn 的 proxy headers 會把 nginx 後方的真實 IP 放進 client。"""
+    return request.client.host if request.client else "unknown"
 
 
 def _set_refresh_cookie(response: Response, token: str) -> None:
@@ -66,14 +76,36 @@ async def register(
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    responses={429: {"description": "Too many login attempts"}},
+)
 async def login(
-    payload: LoginRequest, response: Response, session: AsyncSession = Depends(get_db)
+    request: Request,
+    payload: LoginRequest,
+    response: Response,
+    session: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
+    ip = _client_ip(request)
+    status = await login_throttle_service.check(
+        session, username=payload.username, ip=ip
+    )
+    if status.blocked:
+        # 不執行密碼驗證；對未知帳號與既有帳號使用同一個回應。
+        raise HTTPException(
+            status_code=429,
+            detail="too many login attempts",
+            headers={"Retry-After": str(status.retry_after_seconds)},
+        )
+
     service = AuthService(session)
     try:
         user = await service.authenticate(username=payload.username, password=payload.password)
     except InvalidCredentials:
+        await login_throttle_service.record_failure(
+            session, username=payload.username, ip=ip
+        )
         # 只記「既有帳號」的失敗（陌生帳號不寫，避免匿名灌寫／列舉訊號）；
         # 同一帳號在時間窗內只記一筆（見 audit_service.log_login_failure）。
         existing = await service.get_user_by_username(payload.username)
@@ -82,6 +114,9 @@ async def login(
                 session, user_id=existing.id, username=existing.username
             )
         raise HTTPException(status_code=401, detail="invalid credentials")
+    await login_throttle_service.reset_account(
+        session, username=payload.username
+    )
     access = service.issue_access_token(user)
     refresh = service.issue_refresh_token(user)
     _set_refresh_cookie(response, refresh)

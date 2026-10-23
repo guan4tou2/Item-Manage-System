@@ -14,6 +14,7 @@ from app.models.item_history import ItemVersion, QuantityLog
 from app.models.job_run import JobRun
 from app.models.list import List, ListEntry
 from app.models.loan import ItemLoan
+from app.models.login_attempt import LoginAttempt
 from app.models.location import Location
 from app.models.notification import Notification
 from app.models.notification_preference import NotificationPreference
@@ -40,6 +41,7 @@ __all__ = [
     "Group",
     "GroupMember",
     "ItemLoan",
+    "LoginAttempt",
     "ItemTransfer",
     "ApiToken",
     "AuditLog",
