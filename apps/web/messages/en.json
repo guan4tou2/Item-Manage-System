@@ -352,6 +352,7 @@
     "submit": "Sign in",
     "submitting": "Signing in…",
     "error": "Invalid credentials",
+    "tooManyAttempts": "Too many login attempts. Please try again later.",
     "backToHome": "Back to home"
   },
   "landing": {

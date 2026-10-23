@@ -30,3 +30,48 @@ test("wrong password shows error", async ({ page }) => {
 
   await expect(page.getByRole("alert").filter({ hasText: "帳號或密碼錯誤" })).toBeVisible()
 })
+
+test("five wrong passwords lock the account even for the right password", async ({
+  page,
+  request,
+}) => {
+  const suffix = unique()
+  const username = `e2e_lock_${suffix}`
+  const password = "secret1234"
+
+  const reg = await request.post("/api/auth/register", {
+    data: {
+      email: `e2e_lock_${suffix}@example.com`,
+      username,
+      password,
+    },
+  })
+  expect(reg.status()).toBe(201)
+
+  await page.goto("/login")
+
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    await page.getByLabel("使用者名稱").fill(username)
+    await page.getByLabel("密碼").fill("wrong-pass")
+    await page.getByRole("button", { name: /登入/ }).click()
+    await expect(
+      page.getByRole("alert").filter({ hasText: "帳號或密碼錯誤" }),
+    ).toBeVisible()
+  }
+
+  await page.getByLabel("使用者名稱").fill(username)
+  await page.getByLabel("密碼").fill("wrong-pass")
+  await page.getByRole("button", { name: /登入/ }).click()
+  await expect(
+    page.getByRole("alert").filter({ hasText: "嘗試次數過多" }),
+  ).toBeVisible()
+
+  // 鎖定期間即使密碼正確也必須被拒絕。
+  await page.getByLabel("使用者名稱").fill(username)
+  await page.getByLabel("密碼").fill(password)
+  await page.getByRole("button", { name: /登入/ }).click()
+  await expect(
+    page.getByRole("alert").filter({ hasText: "嘗試次數過多" }),
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/login$/)
+})

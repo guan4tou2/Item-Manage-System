@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { isApiError } from "@/lib/api/client"
 import { useLogin } from "@/lib/auth/use-auth"
 
 export function LoginForm() {
@@ -27,9 +28,12 @@ export function LoginForm() {
     try {
       await login.mutateAsync({ username, password })
       router.push("/dashboard")
-    } catch {
-      // Coarse-grained for now — refine once we have distinct error copy
-      setError(t("login.error"))
+    } catch (err) {
+      setError(
+        isApiError(err) && err.status === 429
+          ? t("login.tooManyAttempts")
+          : t("login.error"),
+      )
     }
   }
 

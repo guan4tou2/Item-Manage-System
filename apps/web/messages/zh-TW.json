@@ -352,6 +352,7 @@
     "submit": "登入",
     "submitting": "登入中…",
     "error": "帳號或密碼錯誤",
+    "tooManyAttempts": "嘗試次數過多，請稍後再試",
     "backToHome": "返回首頁"
   },
   "landing": {
