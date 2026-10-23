@@ -22,11 +22,12 @@ function Metric({ label, value }: { label: string; value: string | number }) {
   )
 }
 
-/** 月報詳情內容（Phase 31，D9）：庫存現況／動態／到期／估值／熱門分類位置。 */
+/** 報表詳情內容（Phase 31 月報、Phase 42 週報）：庫存現況／動態／到期／估值／熱門分類位置。 */
 export function ReportSummary({ payload, heading }: Props) {
   const t = useTranslations("reports.detail")
   const tReports = useTranslations("reports")
   const locale = useLocale()
+  const isWeekly = payload.kind === "weekly"
   const money = (value: string) =>
     formatCurrency(value, payload.currency, locale)
 
@@ -64,7 +65,9 @@ export function ReportSummary({ payload, heading }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="text-2xl font-semibold">{heading}</h1>
         {!payload.has_activity && (
-          <Badge variant="secondary">{tReports("noActivity")}</Badge>
+          <Badge variant="secondary">
+            {tReports(isWeekly ? "noActivityWeekly" : "noActivity")}
+          </Badge>
         )}
       </div>
 
@@ -81,7 +84,9 @@ export function ReportSummary({ payload, heading }: Props) {
 
         <Card data-testid="report-expiry">
           <CardHeader>
-            <CardTitle className="text-base">{t("expiry")}</CardTitle>
+            <CardTitle className="text-base">
+              {t(isWeekly ? "expiryWeekly" : "expiry")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
             <Metric label={t("expiringSoon")} value={payload.expiry.expiring_soon} />
@@ -91,7 +96,9 @@ export function ReportSummary({ payload, heading }: Props) {
 
         <Card data-testid="report-activity" className="sm:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">{t("activity")}</CardTitle>
+            <CardTitle className="text-base">
+              {t(isWeekly ? "activityWeekly" : "activity")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <Metric label={t("created")} value={payload.activity.items_created} />
@@ -110,8 +117,14 @@ export function ReportSummary({ payload, heading }: Props) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-3 gap-4">
-              <Metric label={t("start")} value={money(payload.valuation.start)} />
-              <Metric label={t("end")} value={money(payload.valuation.end)} />
+              <Metric
+                label={t(isWeekly ? "startWeekly" : "start")}
+                value={money(payload.valuation.start)}
+              />
+              <Metric
+                label={t(isWeekly ? "endWeekly" : "end")}
+                value={money(payload.valuation.end)}
+              />
               <div className="space-y-0.5">
                 <p className="text-muted-foreground text-xs">{t("delta")}</p>
                 <p

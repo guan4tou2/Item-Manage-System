@@ -11,6 +11,7 @@ import { ReportSummary } from "./report-summary"
 function makePayload(overrides: Partial<ReportPayload> = {}): ReportPayload {
   return {
     version: 1,
+    kind: "monthly",
     period: "2026-09",
     timezone: "Asia/Taipei",
     period_start: "2026-09-01",
@@ -42,6 +43,18 @@ function makePayload(overrides: Partial<ReportPayload> = {}): ReportPayload {
     has_activity: true,
     ...overrides,
   }
+}
+
+function makeWeeklyPayload(
+  overrides: Partial<ReportPayload> = {},
+): ReportPayload {
+  return makePayload({
+    kind: "weekly",
+    period: "2026-W42",
+    period_start: "2026-10-12",
+    period_end: "2026-10-18",
+    ...overrides,
+  })
 }
 
 function renderSummary(payload: ReportPayload, locale = "en", heading = "September 2026 report") {
@@ -152,5 +165,61 @@ describe("ReportSummary", () => {
     expect(screen.getByRole("heading", { name: "2026年9月月報" })).toBeInTheDocument()
     expect(screen.getByTestId("report-valuation")).toHaveTextContent("庫存估值")
     expect(screen.getByTestId("report-top-categories")).toHaveTextContent("未分類")
+  })
+
+  it("uses weekly copy for a weekly payload", () => {
+    renderSummary(
+      makeWeeklyPayload(),
+      "en",
+      "Weekly report: Oct 12–18, 2026",
+    )
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Weekly report: Oct 12–18, 2026",
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByTestId("report-activity")).toHaveTextContent("This week")
+    expect(screen.getByTestId("report-expiry")).toHaveTextContent(
+      "Expiry at week end",
+    )
+    expect(screen.getByTestId("report-valuation")).toHaveTextContent(
+      "Start of week",
+    )
+    expect(screen.getByTestId("report-valuation")).toHaveTextContent(
+      "End of week",
+    )
+    expect(screen.getByTestId("report-activity")).not.toHaveTextContent(
+      "This month",
+    )
+  })
+
+  it("uses weekly copy in zh-TW", () => {
+    renderSummary(
+      makeWeeklyPayload(),
+      "zh-TW",
+      "2026 年 10 月 12–18 日 週報",
+    )
+
+    expect(screen.getByTestId("report-activity")).toHaveTextContent("本週動態")
+    expect(screen.getByTestId("report-expiry")).toHaveTextContent(
+      "到期狀態（週末）",
+    )
+    expect(screen.getByTestId("report-valuation")).toHaveTextContent("週初")
+    expect(screen.getByTestId("report-valuation")).toHaveTextContent("週末")
+    expect(screen.getByTestId("report-activity")).not.toHaveTextContent(
+      "本月動態",
+    )
+  })
+
+  it("badges a week without activity with weekly copy", () => {
+    renderSummary(makeWeeklyPayload({ has_activity: false }))
+
+    expect(
+      screen.getByText(enMessages.reports.noActivityWeekly),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(enMessages.reports.noActivity),
+    ).not.toBeInTheDocument()
   })
 })

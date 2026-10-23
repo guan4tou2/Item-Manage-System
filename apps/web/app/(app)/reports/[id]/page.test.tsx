@@ -27,18 +27,24 @@ vi.mock("@/lib/hooks/use-reports", () => ({
   useReport: () => ({ ...mocks.report, refetch: mocks.refetch }),
 }))
 
-function makeReport(hasActivity = true): ReportRead {
+function makeReport(
+  hasActivity = true,
+  kind: "monthly" | "weekly" = "monthly",
+): ReportRead {
+  const weekly = kind === "weekly"
   return {
     id: "r1",
-    period: "2026-09",
-    generated_at: "2026-10-01T00:05:00Z",
+    kind,
+    period: weekly ? "2026-W42" : "2026-09",
+    generated_at: weekly ? "2026-10-19T00:05:00Z" : "2026-10-01T00:05:00Z",
     payload: {
       version: 1,
-      period: "2026-09",
+      kind,
+      period: weekly ? "2026-W42" : "2026-09",
       timezone: "Asia/Taipei",
-      period_start: "2026-09-01",
-      period_end: "2026-09-30",
-      generated_at: "2026-10-01T00:05:00Z",
+      period_start: weekly ? "2026-10-12" : "2026-09-01",
+      period_end: weekly ? "2026-10-18" : "2026-09-30",
+      generated_at: weekly ? "2026-10-19T00:05:00Z" : "2026-10-01T00:05:00Z",
       currency: "TWD",
       totals: { item_count: 3, quantity: 9 },
       activity: {
@@ -109,6 +115,23 @@ describe("ReportDetailPage", () => {
     ).toHaveAttribute("href", "/reports")
   })
 
+  it("renders weekly heading, breadcrumb range and copy", () => {
+    mocks.report.data = makeReport(true, "weekly")
+
+    renderPage()
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Weekly report: Oct 12–18, 2026",
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getByText("Oct 12–18, 2026")).toBeInTheDocument()
+    expect(screen.getByTestId("report-activity")).toHaveTextContent("This week")
+    expect(screen.getByTestId("report-expiry")).toHaveTextContent(
+      "Expiry at week end",
+    )
+  })
+
   it("shows a not-found message with a back link on 404", () => {
     mocks.report = {
       isLoading: false,
@@ -157,5 +180,20 @@ describe("ReportDetailPage", () => {
     renderPage()
 
     expect(screen.getByText(enMessages.reports.noActivity)).toBeInTheDocument()
+  })
+
+  it("badges a week without activity with weekly copy", () => {
+    mocks.report = {
+      isLoading: false,
+      isError: false,
+      error: null,
+      data: makeReport(false, "weekly"),
+    }
+
+    renderPage()
+
+    expect(
+      screen.getByText(enMessages.reports.noActivityWeekly),
+    ).toBeInTheDocument()
   })
 })

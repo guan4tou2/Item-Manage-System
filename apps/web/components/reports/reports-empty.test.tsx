@@ -7,19 +7,22 @@ import zhMessages from "@/messages/zh-TW.json"
 
 import { ReportsEmpty } from "./reports-empty"
 
-function renderEmpty(disabled?: boolean, locale = "en") {
+function renderEmpty(
+  props: { monthlyEnabled?: boolean; weeklyEnabled?: boolean } = {},
+  locale = "en",
+) {
   return render(
     <NextIntlClientProvider
       locale={locale}
       messages={locale === "zh-TW" ? zhMessages : enMessages}
     >
-      <ReportsEmpty disabled={disabled} />
+      <ReportsEmpty {...props} />
     </NextIntlClientProvider>,
   )
 }
 
 describe("ReportsEmpty", () => {
-  it("explains the first report for a fresh account", () => {
+  it("explains the first monthly report for a fresh account", () => {
     renderEmpty()
 
     expect(screen.getByText(enMessages.reports.empty.title)).toBeInTheDocument()
@@ -27,17 +30,35 @@ describe("ReportsEmpty", () => {
     expect(screen.queryByRole("link")).not.toBeInTheDocument()
   })
 
-  it("links to the settings page when monthly reports are disabled", () => {
-    renderEmpty(true)
+  it("keeps the monthly first-report copy when weekly is also enabled", () => {
+    renderEmpty({ monthlyEnabled: true, weeklyEnabled: true })
+
+    expect(screen.getByText(enMessages.reports.empty.firstMonth)).toBeInTheDocument()
+  })
+
+  it("links to settings when both report kinds are disabled", () => {
+    renderEmpty({ monthlyEnabled: false, weeklyEnabled: false })
 
     expect(screen.getByText(enMessages.reports.empty.disabled)).toBeInTheDocument()
     expect(screen.getByText(enMessages.reports.empty.disabledHint)).toBeInTheDocument()
     expect(screen.getByRole("link")).toHaveAttribute("href", "/settings/reports")
   })
 
-  it("renders zh-TW copy", () => {
-    renderEmpty(false, "zh-TW")
+  it("explains the first weekly report when only weekly is enabled", () => {
+    renderEmpty({ monthlyEnabled: false, weeklyEnabled: true })
 
-    expect(screen.getByText("還沒有月報")).toBeInTheDocument()
+    expect(screen.getByText(enMessages.reports.empty.weeklyOnly)).toBeInTheDocument()
+    expect(
+      screen.getByText(enMessages.reports.empty.weeklyOnlyHint),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole("link", { name: enMessages.reports.empty.openSettings }),
+    ).toHaveAttribute("href", "/settings/reports")
+  })
+
+  it("renders zh-TW copy", () => {
+    renderEmpty({}, "zh-TW")
+
+    expect(screen.getByText("還沒有報表")).toBeInTheDocument()
   })
 })

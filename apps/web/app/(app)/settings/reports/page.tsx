@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl"
 
 import { SettingsPageShell } from "@/components/settings/settings-page-shell"
-import { MonthlyReportPanel } from "@/components/settings/monthly-report-panel"
+import { ReportsPanel } from "@/components/settings/reports-panel"
 
 export default function SettingsReportsPage() {
   const t = useTranslations()
@@ -12,7 +12,7 @@ export default function SettingsReportsPage() {
       title={t("settings.index.pages.reports.title")}
       description={t("settings.index.pages.reports.description")}
     >
-      <MonthlyReportPanel />
+      <ReportsPanel />
     </SettingsPageShell>
   )
 }

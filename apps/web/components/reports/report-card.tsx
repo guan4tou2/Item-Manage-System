@@ -8,17 +8,21 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ReportRead } from "@/lib/api/reports"
 import { formatCurrency } from "@/lib/format/currency"
-import { formatPeriod } from "@/lib/format/period"
+import { formatPeriod, formatPeriodRange } from "@/lib/format/period"
 
 interface Props {
   report: ReportRead
 }
 
-/** 報表清單的週期卡（Phase 31，D9）：標題、摘要、產生時間與詳情連結。 */
+/** 報表清單的週期卡（Phase 31 月報、Phase 42 週報）。 */
 export function ReportCard({ report }: Props) {
   const t = useTranslations("reports")
   const locale = useLocale()
   const { payload } = report
+  const isWeekly = report.kind === "weekly"
+  const periodLabel = isWeekly
+    ? formatPeriodRange(payload.period_start, payload.period_end, locale)
+    : formatPeriod(report.period, locale)
   const generatedAt = new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
@@ -33,9 +37,14 @@ export function ReportCard({ report }: Props) {
         <CardContent className="flex items-center justify-between gap-4 py-4">
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">{formatPeriod(report.period, locale)}</p>
+              <p className="font-medium">{periodLabel}</p>
+              {isWeekly && (
+                <Badge variant="outline">{t("weeklyBadge")}</Badge>
+              )}
               {!payload.has_activity && (
-                <Badge variant="secondary">{t("noActivity")}</Badge>
+                <Badge variant="secondary">
+                  {t(isWeekly ? "noActivityWeekly" : "noActivity")}
+                </Badge>
               )}
             </div>
             <p className="text-muted-foreground text-sm" data-testid="report-summary">

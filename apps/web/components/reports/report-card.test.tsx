@@ -8,17 +8,23 @@ import zhMessages from "@/messages/zh-TW.json"
 
 import { ReportCard } from "./report-card"
 
-function makeReport(overrides: Partial<ReportRead["payload"]> = {}): ReportRead {
+function makeReport(
+  overrides: Partial<ReportRead["payload"]> = {},
+  kind: "monthly" | "weekly" = "monthly",
+): ReportRead {
+  const weekly = kind === "weekly"
   return {
     id: "r1",
-    period: "2026-09",
+    kind,
+    period: weekly ? "2026-W42" : "2026-09",
     generated_at: "2026-10-01T00:05:00Z",
     payload: {
       version: 1,
-      period: "2026-09",
+      kind,
+      period: weekly ? "2026-W42" : "2026-09",
       timezone: "Asia/Taipei",
-      period_start: "2026-09-01",
-      period_end: "2026-09-30",
+      period_start: weekly ? "2026-10-12" : "2026-09-01",
+      period_end: weekly ? "2026-10-18" : "2026-09-30",
       generated_at: "2026-10-01T00:05:00Z",
       currency: "TWD",
       totals: { item_count: 42, quantity: 123 },
@@ -44,6 +50,12 @@ function makeReport(overrides: Partial<ReportRead["payload"]> = {}): ReportRead 
       ...overrides,
     },
   }
+}
+
+function makeWeeklyReport(
+  overrides: Partial<ReportRead["payload"]> = {},
+): ReportRead {
+  return makeReport(overrides, "weekly")
 }
 
 function renderCard(report: ReportRead, locale = "en") {
@@ -93,5 +105,39 @@ describe("ReportCard", () => {
     const generated = screen.getByTestId("report-generated-at")
     expect(generated).toHaveTextContent(/Generated/)
     expect(generated).toHaveTextContent(/2026/)
+  })
+
+  it("renders a weekly badge and its date range", () => {
+    renderCard(makeWeeklyReport())
+
+    expect(screen.getByText(enMessages.reports.weeklyBadge)).toBeInTheDocument()
+    expect(screen.getByText("Oct 12–18, 2026")).toBeInTheDocument()
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/reports/r1")
+  })
+
+  it("renders the weekly range in zh-TW", () => {
+    renderCard(makeWeeklyReport(), "zh-TW")
+
+    expect(screen.getByText("2026 年 10 月 12–18 日")).toBeInTheDocument()
+    expect(screen.getByText(zhMessages.reports.weeklyBadge)).toBeInTheDocument()
+  })
+
+  it("badges a week without activity with weekly copy", () => {
+    renderCard(makeWeeklyReport({ has_activity: false }))
+
+    expect(
+      screen.getByText(enMessages.reports.noActivityWeekly),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(enMessages.reports.noActivity),
+    ).not.toBeInTheDocument()
+  })
+
+  it("does not show the weekly badge for a monthly report", () => {
+    renderCard(makeReport())
+
+    expect(
+      screen.queryByText(enMessages.reports.weeklyBadge),
+    ).not.toBeInTheDocument()
   })
 })

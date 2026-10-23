@@ -44,7 +44,12 @@ export default function ReportsPage() {
 
     const items = reports.data?.items ?? []
     if (items.length === 0) {
-      return <ReportsEmpty disabled={prefs.data?.report_monthly_enabled === false} />
+      return (
+        <ReportsEmpty
+          monthlyEnabled={prefs.data?.report_monthly_enabled !== false}
+          weeklyEnabled={prefs.data?.report_weekly_enabled === true}
+        />
+      )
     }
 
     return (

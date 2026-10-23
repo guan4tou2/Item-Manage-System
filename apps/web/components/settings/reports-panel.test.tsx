@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import enMessages from "@/messages/en.json"
 
-import { MonthlyReportPanel } from "./monthly-report-panel"
+import { ReportsPanel } from "./reports-panel"
 
 const mocks = vi.hoisted(() => ({
   mutateAsync: vi.fn(),
@@ -12,8 +12,14 @@ const mocks = vi.hoisted(() => ({
   prefs: {
     isLoading: false,
     isError: false,
-    data: { report_monthly_enabled: true } as
-      | { report_monthly_enabled: boolean }
+    data: {
+      report_monthly_enabled: true,
+      report_weekly_enabled: false,
+    } as
+      | {
+          report_monthly_enabled: boolean
+          report_weekly_enabled: boolean
+        }
       | undefined,
   },
 }))
@@ -40,20 +46,26 @@ const t = enMessages.settings.reports
 function renderPanel() {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <MonthlyReportPanel />
+      <ReportsPanel />
     </NextIntlClientProvider>,
   )
 }
 
-describe("MonthlyReportPanel", () => {
+describe("ReportsPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.prefs = {
       isLoading: false,
       isError: false,
-      data: { report_monthly_enabled: true },
+      data: {
+        report_monthly_enabled: true,
+        report_weekly_enabled: false,
+      },
     }
-    mocks.mutateAsync.mockResolvedValue({ report_monthly_enabled: false })
+    mocks.mutateAsync.mockResolvedValue({
+      report_monthly_enabled: false,
+      report_weekly_enabled: true,
+    })
   })
 
   it("shows the skeleton while loading", () => {
@@ -64,18 +76,24 @@ describe("MonthlyReportPanel", () => {
     expect(screen.getByLabelText(t.loading)).toBeInTheDocument()
   })
 
-  it("renders the toggle as checked by default", () => {
+  it("renders monthly on and weekly off by default", () => {
     renderPanel()
 
     expect(screen.getByRole("switch", { name: t.toggleTitle })).toBeChecked()
-    expect(screen.getByTestId("report-schedule-note")).toHaveTextContent(t.scheduleNote)
+    expect(screen.getByRole("switch", { name: t.weeklyTitle })).not.toBeChecked()
+    expect(screen.getByTestId("report-schedule-note")).toHaveTextContent(
+      t.scheduleNote,
+    )
+    expect(screen.getByTestId("weekly-report-schedule-note")).toHaveTextContent(
+      t.weeklyScheduleNote,
+    )
     expect(screen.getByRole("link", { name: t.historyLink })).toHaveAttribute(
       "href",
       "/reports",
     )
   })
 
-  it("sends the off payload and toasts on success", async () => {
+  it("sends only the monthly key and toasts on success", async () => {
     renderPanel()
 
     fireEvent.click(screen.getByRole("switch", { name: t.toggleTitle }))
@@ -84,28 +102,45 @@ describe("MonthlyReportPanel", () => {
       report_monthly_enabled: false,
     })
     await vi.waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith(t.savedOff)
+      expect(toast.success).toHaveBeenCalledWith(t.monthlySavedOff)
     })
   })
 
-  it("sends the on payload when enabling again", async () => {
+  it("sends only the weekly key and toasts on success", async () => {
+    renderPanel()
+
+    fireEvent.click(screen.getByRole("switch", { name: t.weeklyTitle }))
+
+    expect(mocks.mutateAsync).toHaveBeenCalledWith({
+      report_weekly_enabled: true,
+    })
+    await vi.waitFor(() => {
+      expect(toast.success).toHaveBeenCalledWith(t.weeklySavedOn)
+    })
+  })
+
+  it("toggles weekly off independently from monthly", async () => {
     mocks.prefs = {
       isLoading: false,
       isError: false,
-      data: { report_monthly_enabled: false },
+      data: {
+        report_monthly_enabled: true,
+        report_weekly_enabled: true,
+      },
     }
 
     renderPanel()
 
-    expect(screen.getByRole("switch", { name: t.toggleTitle })).not.toBeChecked()
-    fireEvent.click(screen.getByRole("switch", { name: t.toggleTitle }))
+    expect(screen.getByRole("switch", { name: t.weeklyTitle })).toBeChecked()
+    fireEvent.click(screen.getByRole("switch", { name: t.weeklyTitle }))
 
     expect(mocks.mutateAsync).toHaveBeenCalledWith({
-      report_monthly_enabled: true,
+      report_weekly_enabled: false,
     })
     await vi.waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith(t.savedOn)
+      expect(toast.success).toHaveBeenCalledWith(t.weeklySavedOff)
     })
+    expect(screen.getByRole("switch", { name: t.toggleTitle })).toBeChecked()
   })
 
   it("keeps the previous value and toasts on failure", async () => {
@@ -113,13 +148,13 @@ describe("MonthlyReportPanel", () => {
 
     renderPanel()
 
-    fireEvent.click(screen.getByRole("switch", { name: t.toggleTitle }))
+    fireEvent.click(screen.getByRole("switch", { name: t.weeklyTitle }))
 
     await vi.waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(t.saveFailed)
     })
     expect(toast.success).not.toHaveBeenCalled()
-    expect(screen.getByRole("switch", { name: t.toggleTitle })).toBeChecked()
+    expect(screen.getByRole("switch", { name: t.weeklyTitle })).not.toBeChecked()
   })
 
   it("retries after a load error", () => {

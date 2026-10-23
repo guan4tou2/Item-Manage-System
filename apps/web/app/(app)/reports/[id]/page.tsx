@@ -16,7 +16,8 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiError } from "@/lib/api/client"
-import { formatPeriod } from "@/lib/format/period"
+import type { ReportRead } from "@/lib/api/reports"
+import { formatPeriod, formatPeriodRange } from "@/lib/format/period"
 import { useReport } from "@/lib/hooks/use-reports"
 
 export default function ReportDetailPage() {
@@ -27,6 +28,16 @@ export default function ReportDetailPage() {
   const report = useReport(reportId)
 
   const notFound = report.error instanceof ApiError && report.error.status === 404
+
+  function reportLabel(data: ReportRead): string {
+    return data.kind === "weekly"
+      ? formatPeriodRange(
+          data.payload.period_start,
+          data.payload.period_end,
+          locale,
+        )
+      : formatPeriod(data.period, locale)
+  }
 
   function renderBack() {
     return (
@@ -74,12 +85,15 @@ export default function ReportDetailPage() {
       )
     }
 
+    const data = report.data
+    const isWeekly = data.kind === "weekly"
     return (
       <ReportSummary
-        payload={report.data.payload}
-        heading={t("detail.heading", {
-          period: formatPeriod(report.data.period, locale),
-        })}
+        payload={data.payload}
+        heading={t(
+          isWeekly ? "detail.headingWeekly" : "detail.heading",
+          { period: reportLabel(data) },
+        )}
       />
     )
   }
@@ -96,7 +110,7 @@ export default function ReportDetailPage() {
           <BreadcrumbSeparator />
           <BreadcrumbItem>
             <BreadcrumbPage>
-              {report.data ? formatPeriod(report.data.period, locale) : t("title")}
+              {report.data ? reportLabel(report.data) : t("title")}
             </BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>

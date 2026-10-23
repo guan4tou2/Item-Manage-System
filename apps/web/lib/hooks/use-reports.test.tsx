@@ -26,10 +26,12 @@ function wrapper({ children }: { children: ReactNode }) {
 
 const report: ReportRead = {
   id: "r1",
+  kind: "monthly",
   period: "2026-09",
   generated_at: "2026-10-01T00:05:00Z",
   payload: {
     version: 1,
+    kind: "monthly",
     period: "2026-09",
     timezone: "Asia/Taipei",
     period_start: "2026-09-01",
