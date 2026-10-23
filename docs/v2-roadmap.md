@@ -1,6 +1,6 @@
 # v2 重構路線圖
 
-> **狀態：全部 10 個基礎子專案完成，之後追加 16 個進階 phase（Phase 1–16）也全部上線。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
+> **狀態：基礎子專案與後續 Phase 1–43 已全部上線。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
 
 參見 [`docs/superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md`](superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md) 了解基礎決策。
 
@@ -19,7 +19,7 @@
 | 8 | 管理與設定 | ✅ 完成 |
 | 9 | 行動/PWA 體驗 | ✅ 完成（見下方 Phase 16 polish） |
 
-## 進階 Phase 1–16（v1 功能補齊 + 增強）
+## 進階 Phase 1–43（v1 功能補齊 + 增強）
 
 | Phase | 主題 | 狀態 | 關鍵能力 |
 |-------|------|------|----------|
@@ -64,16 +64,17 @@
 | 40 | 稽核覆蓋擴充 | ✅ | 新增 7 種 action（共 12 種）：`auth.login`／`auth.login_failed`（只記既有帳號、同一帳號 10 分鐘去重；陌生帳號不寫）／`item.deleted`（meta 記名稱）／`item.bulk_deleted`（1 筆摘要、`count`＋`item_ids`）／`token.created`／`token.deleted`（只記 name，不記原文或雜湊）／`user.password_changed`；呼叫點一律在主寫入 commit 後、webhook 前；`backup.export` 明確不納入；無 migration、無 Web 改動（facets 自動出現新值） |
 | 41 | 伺服器端標籤 PDF | ✅ | `GET /api/items/labels.pdf?ids=…&start=0`（純新增）：A4 3×7＝21 張、63.5×38.1 mm、淺灰裁切線；每張 QR（既有深連結）＋Code128＋名稱（2 行截斷）＋短 id／數量；`start` 0–20 可重用部分貼紙；ids 去重 1–100、任一筆不可見 → 404（全有全無）；`reportlab`＋`python-barcode`；內嵌 Noto Sans TC 子集（OFL）→ PDF 只嵌用到的字形；`pypdfium2` raster＋`zxing-cpp` 真值解碼 QR／Code128；Web 批量標籤頁「下載 PDF」；**無 migration** |
 | 42 | 定期報表（週報） | ✅ | `reports.kind`＋`period` 放寬至 10（migration 0026；downgrade 刪週報列後縮回 7）；`report.weekly` 每週一生成上一個完整 ISO 週（Asia/Taipei；冪等、空週建列不通知、逐使用者隔離、無可見物品跳過）；`report_weekly_enabled` 預設 **false**（opt-in）；週報／月報共用 `build_payload`、`ReportPayload`（新增 `kind`，舊快照預設 monthly）、`report_ready`＋Email 管線；`ReportRead.kind`；清單改 `generated_at DESC`；`JobSpec.stale_after_hours`（expiry 26h／weekly 170h／monthly 770h）修正月報誤判停跑；Web 清單徽章＋日期範圍、詳情週報文案、設定雙開關、空狀態分流；**無新增端點** |
+| 43 | 登入防暴力破解 | ✅ | Migration 0027 `login_attempts`；每次失敗寫 account／ip 兩列，`key_hash` 為 HMAC-SHA256（不存原始 username／IP）；只計失敗、成功重置帳號（不清 IP）、被封鎖不再寫入；帳號 5 次/15 分→15 分、10 次/1 時→30 分、15 次/24 時→1 時；IP 10 次/1 分→1 分、30 次/15 分→15 分；`429 too many login attempts`＋`Retry-After`（未知／既有帳號一致）；24h 清理；未知帳號 dummy Argon2 timing 防護；fail-soft；uvicorn proxy headers 取真實 IP；Web 429 文案＋e2e 鎖定流程 |
 
 ## 測試規模
 
-- API 測試：1248 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
-- Web 測試：787 passed（132 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：**29 spec／93 情境**（`chromium` 專案 28 spec／89 情境：登入／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／**週報**／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／位置 QR 標籤／標籤條碼／**標籤 PDF 下載**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／**稽核查詢台**／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
+- API 測試：1272 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
+- Web 測試：790 passed（133 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：**29 spec／94 情境**（`chromium` 專案 28 spec／90 情境：登入／**登入鎖定**／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／**週報**／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／位置 QR 標籤／標籤條碼／**標籤 PDF 下載**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／**稽核查詢台**／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
 
 ## 下一輪（未排程）
 
-Phase 22–42 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-10-23.md`](progress-2026-10-23.md)。
+Phase 22–43 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-10-23.md`](progress-2026-10-23.md)。
 
 候選項目（依建議優先序，粗估含測試與 i18n）：
 
@@ -86,9 +87,8 @@ Phase 22–42 已全部上線；整體狀態、驗證基線與已知限制見 [`
 | 5 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
 | 6 | v1 目錄下線 | 打 `v1-final` tag 後移除 `app/`、`templates/`、`static/`、`run_worker.py` | S |
 | 7 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
-| 8 | 登入防暴力破解 | 帳號鎖定／指數退避／CAPTCHA（目前僅稽核去重，無 rate limit） | S–M |
 
-> 建議節奏：下一棒是 **#8 登入防暴力破解**（使用者指定，與 Phase 40 的稽核互補：一個負責「看得到」，一個負責「擋得住」）；#1、#2 需設計決策，建議單獨開 phase 並先寫決策段；#5 成本最高，建議最後或另開里程碑；#6、#7 可合併成一個「收尾清理」phase。
+> 建議節奏：Phase 43 已完成登入防護；下一輪可從 **#1 收據人工核對** 或 **#2 批次成本** 開始（兩者都需先寫設計決策段）；#5 成本最高，建議最後或另開里程碑；#6、#7 可合併成一個「收尾清理」phase。
 
 ## 快速啟動（v2）
 

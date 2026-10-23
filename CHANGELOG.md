@@ -6,6 +6,21 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.43] — Phase 43：登入防暴力破解
+
+- **新增 `login_attempts`（Migration 0027）**：每次登入失敗寫入 account／ip 兩列；`key_hash` 為 HMAC-SHA256（`jwt_secret`），不保存原始使用者名稱或 IP；`(kind, key_hash, created_at)` 與 `created_at` 索引；每次失敗順便清理 24 小時前紀錄，downgrade 直接刪表（只影響節流紀錄）
+- **帳號分級鎖定**：5 次／15 分 → 15 分；10 次／1 時 → 30 分；15 次／24 時 → 1 時。以 `username.strip()` 精確比對；第 5 次失敗仍回 `401`，第 6 次起回 `429`
+- **來源 IP 分級鎖定**：10 次／1 分 → 1 分；30 次／15 分 → 15 分。Key 為 `request.client.host`；成功登入**不**清除 IP 計數，避免用已知密碼的帳號反覆重置
+- **只計失敗，不計成功與被封鎖的嘗試**：成功登入不新增列，並刪除該帳號的失敗列；被封鎖的請求直接回 `429`、不再寫入，避免攻擊者無限延長受害者鎖定
+- **對外一致**：既有／未知帳號、帳號鎖定／IP 鎖定都回 `429 too many login attempts`＋`Retry-After: <seconds>`；既有 `401 invalid credentials` 不變；被封鎖時不執行密碼驗證
+- **隱私與清理**：不存原始 username／IP；HMAC 以 server secret 計算；24 小時 retention；成功登入只清帳號
+- **Timing 防護**：未知帳號仍對固定 dummy Argon2 hash 驗一次密碼，降低帳號列舉的 timing 差異
+- **Proxy headers**：compose 的 uvicorn 加 `--proxy-headers --forwarded-allow-ips='*'`，讓 nginx 後方的 `request.client.host` 是真實來源；API 仍只 `expose` 對內。**修正**：原本 compose 的折行命令會讓 shell 把 `--proxy-headers` 當成獨立命令，uvicorn 實際沒收到旗標；改單行並加引號後以 `/proc/1/cmdline` 與 live log 驗證
+- **Fail-soft**：節流查詢／寫入／重置失敗只 log warning＋rollback，不讓登入變成 500；DB 正常時登入本身仍會失敗
+- **Web**：`LoginForm` 對 `429` 顯示「嘗試次數過多，請稍後再試」，其餘錯誤維持「帳號或密碼錯誤」；zh-TW／en i18n；單元測試＋e2e（5 次錯密碼→第 6 次鎖定、鎖定期間正確密碼也被拒絕）
+- **明確不做**：CAPTCHA／MFA／WebAuthn、註冊／refresh／忘記密碼 rate limit、管理員解鎖 UI、Redis 滑動視窗、稽核原始 IP／User-Agent、封鎖事件告警
+- 測試：API 1248 → **1272 passed**；Web 787 → **790 passed（133 檔）**；typecheck 0 error；e2e chromium 89 → **90 passed**（`--workers=1`）；golden eval 28 passed／1 skipped；api-types 新增 login `429` response；Migration 0027 於獨立 PostgreSQL 容器實測 upgrade → downgrade → upgrade
+
 ## [2.0.0-alpha.42] — Phase 42：定期報表（週報）
 
 - **新增 `report.weekly` job**：每週一生成**上一個完整 ISO 週**（週一 00:00 至週日 24:00，Asia/Taipei）；重用月報的 `reports` 資料表、`ReportPayload`、`GET /api/reports`、`/reports` UI、`report_ready` 通知與 Email 管線，不複製一套報表系統

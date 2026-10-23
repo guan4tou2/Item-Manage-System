@@ -1,6 +1,6 @@
 # Phase 43：登入防暴力破解（帳號＋來源 IP 分級鎖定）
 
-- **狀態**：🚧 進行中
+- **狀態**：✅ 完成
 - **日期**：2026-10-23
 - **基線**：`main` `d9cc1a3`（Phase 42）；API 1248 passed、Web 787 passed（132 檔）、e2e 89 passed、Migration `0026 (head)`
 - **依賴**：無新套件；使用既有 SQLAlchemy／PostgreSQL（測試為 SQLite）
@@ -247,15 +247,15 @@ Migration `0027_login_attempts.py`：
 
 ## 實作步驟
 
-- [ ] T1：model＋migration 0027＋`models/__init__.py`
-- [ ] T2：`login_throttle_service`（分級、HMAC、清理、fail-soft）
-- [ ] T3：`routes/auth.py` 接入、429＋`Retry-After`、OpenAPI
-- [ ] T4：`auth_service` dummy hash timing 防護
-- [ ] T5：Web 429 文案＋單元測試
-- [ ] T6：e2e 鎖定流程
-- [ ] T7：api-types 重新生成
-- [ ] T8：完整驗證（API、golden eval、Web、typecheck、e2e、PG migration）
-- [ ] T9：文件與計畫收尾
+- [x] T1：model＋migration 0027＋`models/__init__.py`
+- [x] T2：`login_throttle_service`（分級、HMAC、清理、fail-soft）
+- [x] T3：`routes/auth.py` 接入、429＋`Retry-After`、OpenAPI
+- [x] T4：`auth_service` dummy hash timing 防護
+- [x] T5：Web 429 文案＋單元測試
+- [x] T6：e2e 鎖定流程
+- [x] T7：api-types 重新生成
+- [x] T8：完整驗證（API、golden eval、Web、typecheck、e2e、PG migration）
+- [x] T9：文件與計畫收尾
 
 ---
 
@@ -275,21 +275,57 @@ Migration `0027_login_attempts.py`：
 
 ## 驗收條件
 
-- [ ] `POST /api/auth/login` 對同一帳號第 6 次錯誤回 `429`，附 `Retry-After`
-- [ ] 鎖定期間即使密碼正確也回 `429`（不能繞過）
-- [ ] 未知帳號與既有帳號的鎖定行為一致
-- [ ] 成功登入後帳號失敗計數清零
-- [ ] 不同帳號互不影響
-- [ ] IP 分級生效，且成功登入不清除 IP 計數
-- [ ] 所有既有登入／refresh／稽核測試不回歸
-- [ ] Web 顯示「嘗試次數過多」而非「帳號或密碼錯誤」
-- [ ] Migration 0027 在 PostgreSQL up/down 正常
-- [ ] API／Web／typecheck／e2e／golden eval 全綠
+- [x] `POST /api/auth/login` 對同一帳號第 6 次錯誤回 `429`，附 `Retry-After`
+- [x] 鎖定期間即使密碼正確也回 `429`（不能繞過）
+- [x] 未知帳號與既有帳號的鎖定行為一致
+- [x] 成功登入後帳號失敗計數清零
+- [x] 不同帳號互不影響
+- [x] IP 分級生效，且成功登入不清除 IP 計數
+- [x] 所有既有登入／refresh／稽核測試不回歸
+- [x] Web 顯示「嘗試次數過多」而非「帳號或密碼錯誤」
+- [x] Migration 0027 在 PostgreSQL up/down 正常
+- [x] API／Web／typecheck／e2e／golden eval 全綠
 
 ---
 
-## 完成後補
+## 實作結果
 
-- 實作結果（與計畫差異）
-- Final Verification（指令與數字）
-- 測試基線（main，Phase 43 完成）
+### 與計畫的差異
+
+- **實際採 DB-backed row-per-failure**：每次失敗寫 `account`＋`ip` 兩列，沒有可變 counter row，避免 `SELECT ... FOR UPDATE`／upsert 的競態；查詢時以時間窗計算分級。這是計畫 D4 的落地版本。
+- **沒有使用 `slowapi`**：理由與計畫 D10 相同（成功登入也會被計、route key 難以取 username、memory 不跨 worker）。`slowapi` 依賴保留但未使用。
+- **帳號分級實際參數**：5 次/15 分→15 分、10 次/1 時→30 分、15 次/24 時→1 時；IP 10 次/1 分→1 分、30 次/15 分→15 分。
+- **實作時發現 proxy 旗標被 shell 吃掉**：compose 原本的折行命令讓 uvicorn 子程序只收到 `--host/--port`，`--proxy-headers` 被當成另一個命令；改單行並加引號後，`/proc/1/cmdline` 與 live log 都確認 `request.client.host` 是 nginx 轉來的來源 IP。
+- **路由 IP 測試以 monkeypatch `_client_ip`**：ASGITransport 的 client IP 固定，這個測試直接替換來源 IP 函式，驗證 IP 分級與「換 IP 不受影響」；service 測試另有完整 IP 分級案例。
+- **慢速噴射迴歸測試**：鎖定時間改以「時間窗內最新一次失敗」起算。若用第 N 新的失敗起算，10 次分散在 54 分鐘時，30 分鐘鎖定會在達到門檻前就過期；新增測試固定此行為。
+- **Web 測試多 3 個**：429 文案、401 文案、成功導向；e2e 新增 1 個真實鎖定流程。Web 總數 787 → 790（133 檔）。
+- **api-types 只新增 login `429` response**：沒有新增 path，request／response model 不變。
+
+### Final Verification
+
+| 項目 | 結果 | 指令 |
+|------|------|------|
+| API 測試 | **1272 passed** | `cd apps/api && uv run pytest -q` |
+| API golden eval | **28 passed／1 skipped** | `cd apps/api && uv run pytest evals/ -q` |
+| Web 測試 | **790 passed（133 檔）** | `cd apps/web && pnpm vitest run` |
+| Web 型別 | **0 error** | `cd apps/web && pnpm typecheck` |
+| E2E（live） | **90 passed** | `cd apps/web && pnpm exec playwright test --project=chromium --workers=1` |
+| api-types | login `429` 契約 | `uv run python scripts/export_openapi.py` ＋ `pnpm --filter @ims/api-types gen:types` |
+| Migration 0027 | **up → down → up 通過** | 獨立 PostgreSQL 容器 + `alembic upgrade 0027`／`downgrade 0026` |
+| Proxy headers | **live 驗證通過** | `/proc/1/cmdline` 含兩個旗標；API log 顯示 nginx 轉來的來源 IP |
+
+### 測試基線（Phase 43 完成）
+
+- API：**1272 passed**（Phase 42 為 1248，＋24）
+- Web：**790 passed／133 檔**（Phase 42 為 787／132，＋3）
+- E2E chromium：**90 passed**（Phase 42 為 89，＋1）
+- Golden eval：**28 passed／1 skipped**（不變）
+- Migration：**0027 (head)**（Phase 42 為 0026）
+
+### 已知限制
+
+- 帳號鎖定可被用來 DoS；第一級 15 分鐘、最長 1 小時，封鎖請求不延長。
+- 共享 NAT 可能被 IP 分級短暫影響（1 分鐘／15 分鐘）。
+- 節流 DB 異常時 fail-open（log warning），沒有 CAPTCHA／MFA／管理員解鎖 UI。
+- 持續更換來源 IP 的噴射只能減緩；跨帳號大量嘗試仍需上游 WAF／監控。
+- `--forwarded-allow-ips='*'` 只在 API 不直接對外、nginx 會覆寫 forwarded headers 時安全。

@@ -174,6 +174,28 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ---
 
+## 🔐 認證與登入防護（Phase 43）
+
+- `POST /api/auth/login` 只對**失敗**計數；成功登入不新增紀錄，並清除該帳號的失敗列
+- **帳號分級鎖定**（`username.strip()` 精確比對；未知帳號也照樣計數，避免帳號列舉）：
+  - 5 次／15 分鐘 → 鎖 15 分鐘
+  - 10 次／1 小時 → 鎖 30 分鐘
+  - 15 次／24 小時 → 鎖 1 小時
+- **來源 IP 分級鎖定**（`request.client.host`）：
+  - 10 次／1 分鐘 → 鎖 1 分鐘
+  - 30 次／15 分鐘 → 鎖 15 分鐘
+  - 成功登入**不**清除 IP 計數（避免用已知密碼反覆重置）
+- 被鎖時回 `429 too many login attempts`＋`Retry-After: <seconds>`；不執行密碼驗證。既有／未知帳號、帳號／IP 鎖定對外一致；既有錯誤仍為 `401 invalid credentials`
+- 被封鎖的請求**不再寫入**，避免攻擊者持續延長受害者鎖定
+- `login_attempts`（Migration 0027）：每次失敗寫 account／ip 兩列；`key_hash = HMAC-SHA256(jwt_secret, "kind:value")`，不保存原始名稱或 IP；每次失敗清理 24 小時前紀錄
+- 未知帳號仍對固定 dummy Argon2 hash 驗一次密碼，降低 timing 帳號列舉
+- 節流查詢／寫入／重置失敗採 fail-soft（log warning＋rollback），不讓登入變成 500
+- **Proxy 信任邊界**：compose 的 uvicorn 以 `--proxy-headers --forwarded-allow-ips='*'` 取得 nginx 後方真實 IP；API 只 `expose` 對內。若直接暴露 API，必須移除此旗標或限制 proxy IP，否則來源 IP 可被偽造
+- Web 登入表單對 `429` 顯示「嘗試次數過多，請稍後再試」，其餘維持「帳號或密碼錯誤」
+- **不做**：CAPTCHA／MFA／WebAuthn、註冊／refresh／忘記密碼 rate limit、管理員解鎖 UI、Redis 滑動視窗、稽核原始 IP／User-Agent
+
+---
+
 ## 📥 CSV 匯入 / 匯出（Phase 14 + Phase 19）
 
 ### 匯入
@@ -232,9 +254,9 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## 🧪 測試
 
-- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1248 passed**；golden eval 28 passed／1 skipped。
-- **Web**: vitest + @testing-library/react + jsdom。**787 passed across 132 files**。
-- **E2E**: Playwright chromium **89 passed**（`--workers=1`）＋ ai-stub 4 passed。
+- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1272 passed**；golden eval 28 passed／1 skipped。
+- **Web**: vitest + @testing-library/react + jsdom。**790 passed across 133 files**。
+- **E2E**: Playwright chromium **90 passed**（`--workers=1`）＋ ai-stub 4 passed。
 - **TS**: `tsc --noEmit` 嚴格模式乾淨。
 
 ---
