@@ -4204,6 +4204,11 @@ export interface components {
              */
             report_monthly_enabled: boolean;
             /**
+             * Report Weekly Enabled
+             * @default false
+             */
+            report_weekly_enabled: boolean;
+            /**
              * Ai Data Sharing Enabled
              * @default false
              */
@@ -4223,6 +4228,8 @@ export interface components {
             viewer_notice_dismissed?: boolean | null;
             /** Report Monthly Enabled */
             report_monthly_enabled?: boolean | null;
+            /** Report Weekly Enabled */
+            report_weekly_enabled?: boolean | null;
             /** Ai Data Sharing Enabled */
             ai_data_sharing_enabled?: boolean | null;
         } & {
@@ -4404,11 +4411,19 @@ export interface components {
         };
         /**
          * ReportPayload
-         * @description 月報快照（version=1）；站內詳情與 Email 共用同一份 payload。
+         * @description 報表快照（version=1）；站內詳情與 Email 共用同一份 payload。
+         *
+         *     `kind` 為 Phase 42 新增；舊快照沒有此欄位時一律視為月報。
          */
         ReportPayload: {
             /** Version */
             version: number;
+            /**
+             * Kind
+             * @default monthly
+             * @enum {string}
+             */
+            kind: "monthly" | "weekly";
             /** Period */
             period: string;
             /** Timezone */
@@ -4448,6 +4463,11 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "monthly" | "weekly";
             /** Period */
             period: string;
             /**
