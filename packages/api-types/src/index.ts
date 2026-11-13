@@ -86,6 +86,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/logout-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Logout All
+         * @description 登出所有裝置：遞增 session 版本，所有既有 access／refresh token 失效。
+         *
+         *     PAT（`ims_pat_`）不受影響，需另行在權杖管理刪除（Phase 44 D8）。
+         */
+        post: operations["logout_all_api_auth_logout_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/me": {
         parameters: {
             query?: never;
@@ -4173,6 +4195,25 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /**
+         * PasswordChangeResponse
+         * @description Phase 44：改密碼會撤銷所有 session，回應重新簽發目前裝置的 access token
+         *     （refresh cookie 同時重設）。`success` 為既有欄位，保留相容。
+         */
+        PasswordChangeResponse: {
+            /**
+             * Success
+             * @default true
+             */
+            success: boolean;
+            /** Access Token */
+            access_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+        };
         /** PreferencesRead */
         PreferencesRead: {
             /**
@@ -5159,6 +5200,24 @@ export interface operations {
             };
         };
     };
+    logout_all_api_auth_logout_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     me_api_auth_me_get: {
         parameters: {
             query?: never;
@@ -5271,7 +5330,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["PasswordChangeResponse"];
                 };
             };
             /** @description Validation Error */

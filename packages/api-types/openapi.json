@@ -178,6 +178,26 @@
         }
       }
     },
+    "/api/auth/logout-all": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Logout All",
+        "description": "登出所有裝置：遞增 session 版本，所有既有 access／refresh token 失效。\n\nPAT（`ims_pat_`）不受影響，需另行在權杖管理刪除（Phase 44 D8）。",
+        "operationId": "logout_all_api_auth_logout_all_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/auth/me": {
       "get": {
         "tags": [
@@ -323,8 +343,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "title": "Response Change Password Api Users Me Change Password Post"
+                  "$ref": "#/components/schemas/PasswordChangeResponse"
                 }
               }
             }
@@ -13569,6 +13588,30 @@
         ],
         "title": "PasswordChange"
       },
+      "PasswordChangeResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "default": true
+          },
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token"
+        ],
+        "title": "PasswordChangeResponse",
+        "description": "Phase 44：改密碼會撤銷所有 session，回應重新簽發目前裝置的 access token\n（refresh cookie 同時重設）。`success` 為既有欄位，保留相容。"
+      },
       "PreferencesRead": {
         "properties": {
           "theme": {
@@ -15444,6 +15487,7 @@
         "properties": {
           "endpoint": {
             "type": "string",
+            "maxLength": 2000,
             "minLength": 1,
             "title": "Endpoint"
           },
