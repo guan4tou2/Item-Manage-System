@@ -1,175 +1,53 @@
-# ============================================================
-# 物品管理系統 Makefile
-# ============================================================
-#
-# 常用命令:
-#   make install    安裝依賴
-#   make run        啟動應用程式
-#   make setup      初始化資料庫
-#   make docker-up  Docker 啟動
-#   make help       顯示說明
-#
-# ============================================================
-
-.PHONY: help install run setup docker-up docker-down docker-logs docker-build clean test lint check
-
-# 預設目標
+# IMS v2：Python 3.13、Node.js 22、pnpm 9.12.0、uv、Docker Compose
 .DEFAULT_GOAL := help
+.PHONY: help install dev up down logs migrate gen-types test test-api test-web typecheck lint e2e audit
 
-# 顏色定義
-BLUE := \033[34m
-GREEN := \033[32m
-YELLOW := \033[33m
-RED := \033[31m
-NC := \033[0m # No Color
+help: ## 顯示可用指令
+	@awk 'BEGIN {FS = ":.*## "} /^[a-z0-9-]+:.*## / {printf "  %-14s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-# ============================================================
-# 說明
-# ============================================================
+install: ## 依 lockfile 安裝 API 測試依賴與 workspace 依賴
+	cd apps/api && uv sync --frozen --extra test
+	pnpm install --frozen-lockfile
 
-help: ## 顯示此說明
-	@echo ""
-	@echo "$(BLUE)🏠 物品管理系統 - 可用命令$(NC)"
-	@echo "$(BLUE)================================================$(NC)"
-	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2}'
-	@echo ""
+dev: ## 啟動 Web 開發伺服器（API 需另開終端啟動）
+	pnpm --filter @ims/web dev
 
-# ============================================================
-# 本地開發
-# ============================================================
+up: gen-types ## 產生型別並建置、啟動 Compose 服務
+	docker compose up -d --build
 
-install: ## 安裝 Python 依賴
-	@echo "$(BLUE)📦 安裝依賴...$(NC)"
-	@if command -v uv >/dev/null 2>&1; then \
-		echo "使用 uv 安裝..."; \
-		uv venv venv 2>/dev/null || true; \
-		. venv/bin/activate && uv pip install -r requirements.txt; \
-	else \
-		echo "使用 pip 安裝..."; \
-		python3 -m venv venv 2>/dev/null || true; \
-		. venv/bin/activate && pip install -r requirements.txt; \
-	fi
-	@echo "$(GREEN)✓ 安裝完成$(NC)"
+down: ## 停止 Compose 服務（保留 volumes）
+	docker compose down
 
-run: ## 啟動應用程式（本地）
-	@echo "$(BLUE)🚀 啟動應用程式...$(NC)"
-	@. venv/bin/activate && python run.py
+logs: ## 追蹤 Compose 服務日誌
+	docker compose logs -f
 
-setup: ## 初始化資料庫（索引、管理員、範例資料）
-	@echo "$(BLUE)🔧 初始化資料庫...$(NC)"
-	@. venv/bin/activate && python scripts/setup.py all
+migrate: ## 將本機 API 資料庫遷移至 head
+	cd apps/api && .venv/bin/alembic upgrade head
 
-setup-indexes: ## 只建立資料庫索引
-	@. venv/bin/activate && python scripts/setup.py indexes
+gen-types: ## 匯出 OpenAPI 並產生 TypeScript 型別
+	cd apps/api && .venv/bin/python scripts/export_openapi.py > ../../packages/api-types/openapi.json
+	pnpm --filter @ims/api-types gen:types
 
-setup-admin: ## 只建立管理員帳號
-	@. venv/bin/activate && python scripts/setup.py admin
+test: test-api test-web ## 執行 API 與 Web 單元測試
 
-setup-sample: ## 建立範例資料
-	@. venv/bin/activate && python scripts/setup.py sample
+test-api: ## 使用既有 API 虛擬環境執行 pytest
+	cd apps/api && .venv/bin/python -m pytest -q
 
-check: ## 檢查系統狀態
-	@. venv/bin/activate && python scripts/setup.py check
+test-web: ## 執行 Web Vitest 測試
+	pnpm --filter @ims/web test
 
-# ============================================================
-# Docker 操作
-# ============================================================
+typecheck: ## 檢查 workspace TypeScript 型別
+	pnpm typecheck
 
-docker-build: ## 建置 Docker 映像
-	@echo "$(BLUE)🐳 建置 Docker 映像...$(NC)"
-	docker-compose build
+lint: ## 執行 workspace lint（Python lint 待 Phase 46）
+	pnpm lint
 
-docker-up: ## 啟動 Docker 容器
-	@echo "$(BLUE)🐳 啟動 Docker 容器...$(NC)"
-	docker-compose up -d
-	@echo "$(GREEN)✓ 容器已啟動$(NC)"
-	@echo ""
-	@echo "$(YELLOW)🌐 訪問: http://localhost:8080$(NC)"
-	@echo "$(YELLOW)👤 登入: admin / admin$(NC)"
+e2e: ## 執行 Playwright（需已啟動完整服務與安裝瀏覽器）
+	pnpm --filter @ims/web test:e2e
 
-docker-down: ## 停止 Docker 容器
-	@echo "$(BLUE)🐳 停止 Docker 容器...$(NC)"
-	docker-compose down
-
-docker-restart: ## 重啟 Docker 容器
-	@echo "$(BLUE)🐳 重啟 Docker 容器...$(NC)"
-	docker-compose restart
-
-docker-logs: ## 查看 Docker 日誌
-	docker-compose logs -f
-
-docker-logs-app: ## 查看應用程式日誌
-	docker-compose logs -f app
-
-docker-shell: ## 進入應用程式容器
-	docker-compose exec app /bin/sh
-
-docker-mongo: ## 進入 MongoDB shell
-	docker-compose exec mongo mongosh myDB
-
-docker-setup: ## 在 Docker 中初始化資料庫
-	@echo "$(BLUE)🔧 在 Docker 中初始化資料庫...$(NC)"
-	docker-compose exec app python scripts/init_db.py
-
-docker-rebuild: ## 重建並重啟 Docker 容器
-	@echo "$(BLUE)🐳 重建 Docker 容器...$(NC)"
-	docker-compose down
-	docker-compose build --no-cache
-	docker-compose up -d
-	@echo "$(GREEN)✓ 重建完成$(NC)"
-
-# ============================================================
-# 測試與品質
-# ============================================================
-
-test: ## 執行測試（本地）
-	@echo "$(BLUE)🧪 執行測試...$(NC)"
-	@. venv/bin/activate && python -m pytest tests/ -v
-
-test-cov: ## 執行測試並生成覆蓋率報告
-	@echo "$(BLUE)🧪 執行測試並生成覆蓋率...$(NC)"
-	@. venv/bin/activate && python -m pytest tests/ -v --cov=app --cov-report=html --cov-report=term-missing
-	@echo "$(GREEN)✓ 覆蓋率報告: htmlcov/index.html$(NC)"
-
-test-watch: ## 監視模式執行測試
-	@echo "$(BLUE)🧪 監視模式執行測試...$(NC)"
-	@. venv/bin/activate && python -m pytest tests/ -v --cov=app -f
-
-test-docker: ## 在 Docker 中執行測試
-	@echo "$(BLUE)🐳 在 Docker 中執行測試...$(NC)"
-	@./run_tests.sh
-
-test-uv: ## 使用 uv 執行測試（本地）
-	@echo "$(BLUE)⚡ 使用 uv 執行測試...$(NC)"
-	@./run_tests_uv.sh
-
-lint: ## 程式碼檢查
-	@echo "$(BLUE)🔍 程式碼檢查...$(NC)"
-	@. venv/bin/activate && python -m flake8 app/ --max-line-length=100 || true
-
-# ============================================================
-# 清理
-# ============================================================
-
-clean: ## 清理暫存檔案
-	@echo "$(BLUE)🧹 清理暫存檔案...$(NC)"
-	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	find . -type f -name "*.pyo" -delete 2>/dev/null || true
-	find . -type f -name ".DS_Store" -delete 2>/dev/null || true
-	@echo "$(GREEN)✓ 清理完成$(NC)"
-
-clean-all: clean ## 清理所有（包含 venv）
-	@echo "$(RED)⚠️  刪除虛擬環境...$(NC)"
-	rm -rf venv/
-	@echo "$(GREEN)✓ 完全清理完成$(NC)"
-
-# ============================================================
-# 快捷命令
-# ============================================================
-
-dev: install setup run ## 完整開發環境設置並啟動
-
-prod: docker-build docker-up docker-setup ## 生產環境部署
-
+audit: ## 稽核鎖定的 Python 與正式 Node 依賴（需網路）
+	@audit_file=$$(mktemp); trap 'rm -f "$$audit_file"' EXIT; \
+	cd apps/api && uv lock --check && \
+	uv export --extra test --no-hashes --no-emit-project -q > "$$audit_file" && \
+	uvx pip-audit -r "$$audit_file" --no-deps --disable-pip
+	pnpm audit --prod --audit-level=high
