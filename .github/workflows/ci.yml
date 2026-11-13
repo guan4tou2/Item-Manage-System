@@ -82,11 +82,10 @@ jobs:
         working-directory: apps/api
         run: |
           pip install uv
-          uv venv .venv
-          . .venv/bin/activate
-          uv pip install -e ".[test]"
-          uv pip install pip-audit
-          pip-audit
+          # 以 uv.lock 為準：先確認 lock 與 pyproject.toml 同步，再稽核鎖定的版本（結果可重現）
+          uv lock --check
+          uv export --extra test --no-hashes --no-emit-project -q > "$RUNNER_TEMP/requirements-audit.txt"
+          uvx pip-audit -r "$RUNNER_TEMP/requirements-audit.txt" --no-deps --disable-pip
       - uses: pnpm/action-setup@v4
         with:
           version: 9.12.0

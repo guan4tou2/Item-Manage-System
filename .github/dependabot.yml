@@ -1,7 +1,8 @@
 version: 2
 
 updates:
-  - package-ecosystem: "pip"
+  # uv ecosystem：同時更新 pyproject.toml 與 uv.lock（CI 的稽核與 lock 檢查以 uv.lock 為準）
+  - package-ecosystem: "uv"
     directory: "/apps/api"
     schedule:
       interval: "weekly"
