@@ -47,15 +47,18 @@ export const itemFormSchema = z.object({
   quantity: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.coerce
-      .number({ required_error: "quantityRequired", invalid_type_error: "quantityRequired" })
+      .number({ error: "quantityRequired" })
       .int("quantityInteger")
       .min(0, "quantityMin"),
   ),
   notes: z.string().optional(),
   image_id: z.string().nullable().optional(),
   tag_names: z.array(z.string()),
-  custom_values: z.record(customValueSchema).default({}),
+  custom_values: z.record(z.string(), customValueSchema).default({}),
 })
+// zod 4：表單內部狀態是 schema 的輸入型別（quantity 經 preprocess／coerce 前為 unknown），
+// 送出時才是解析後的輸出型別。
+type ItemFormInput = z.input<typeof itemFormSchema>
 export type ItemFormValues = z.infer<typeof itemFormSchema>
 
 interface Props {
@@ -107,7 +110,7 @@ export function ItemForm({
   const [aiBusy, setAiBusy] = useState(false)
   const [appliedTemplate, setAppliedTemplate] = useState<AppliedTemplateState | null>(null)
   const templateButtonRefs = useRef(new Map<number, HTMLButtonElement | null>())
-  const form = useForm<ItemFormValues>({
+  const form = useForm<ItemFormInput, unknown, ItemFormValues>({
     resolver: zodResolver(itemFormSchema),
     defaultValues,
   })
@@ -461,7 +464,7 @@ export function ItemForm({
         <div>
           <Label>{t("items.form.quantity")}</Label>
           <p className="mt-1 rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-            {t("items.form.trackBatchesQuantityHint", { quantity: form.watch("quantity") })}
+            {t("items.form.trackBatchesQuantityHint", { quantity: Number(form.watch("quantity") ?? 0) })}
           </p>
         </div>
       ) : (
