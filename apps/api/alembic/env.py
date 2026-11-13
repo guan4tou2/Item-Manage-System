@@ -7,8 +7,8 @@ from sqlalchemy import pool
 
 from app.config import get_settings
 from app.db.base import Base
-# Import all models so Alembic can autogenerate
-from app.models import user  # noqa: F401
+# 匯入 model 以便 Alembic 自動產生遷移
+from app.models import user  # noqa: F401 — 觸發 ORM model 註冊
 
 config = context.config
 config.set_main_option("sqlalchemy.url", get_settings().database_url)

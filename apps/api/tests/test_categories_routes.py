@@ -83,7 +83,7 @@ class TestCategories:
 
     async def test_delete_clears_children_parent(self, client, auth_headers):
         parent = (await client.post("/api/categories", headers=auth_headers, json={"name": "p"})).json()
-        child = (await client.post("/api/categories", headers=auth_headers,
+        (await client.post("/api/categories", headers=auth_headers,
                                    json={"name": "c", "parent_id": parent["id"]})).json()
         del_resp = await client.delete(f"/api/categories/{parent['id']}", headers=auth_headers)
         assert del_resp.status_code == 204

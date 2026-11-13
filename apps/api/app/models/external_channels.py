@@ -1,7 +1,6 @@
 from __future__ import annotations
 import uuid
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint

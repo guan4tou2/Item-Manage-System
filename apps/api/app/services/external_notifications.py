@@ -118,7 +118,7 @@ def deliver_web_push(sub: WebPushSubscription, title: str, body: str, link: Opti
     if not (s.vapid_private_key and s.vapid_public_key):
         return False
     try:
-        from pywebpush import WebPushException, webpush
+        from pywebpush import webpush
     except ImportError:
         return False
     # Phase 44：endpoint 是使用者提供的 URL，送出前檢查目的地（防 SSRF）。

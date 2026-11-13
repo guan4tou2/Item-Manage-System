@@ -439,7 +439,6 @@ def _norm_export(doc: dict) -> dict:
     """正規化匯出內容：以名稱／路徑取代 id 後逐實體比對。"""
     cats = {c["id"]: c for c in doc["categories"]}
     locs = {l["id"]: l for l in doc["locations"]}
-    tags = {t["id"]: t for t in doc["tags"]}
     whs = {w["id"]: w for w in doc["warehouses"]}
     fields = {f["id"]: f for f in doc["custom_fields"]}
     items = {i["id"]: i for i in doc["items"]}

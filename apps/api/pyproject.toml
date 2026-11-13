@@ -16,9 +16,6 @@ dependencies = [
     "argon2-cffi==25.1.0",
     "python-multipart==0.0.31",
     "httpx==0.28.1",
-    "slowapi==0.1.9",
-    "redis==5.1.0",
-    "structlog==24.4.0",
     "fastapi-mail==1.6.8",
     "google-genai>=1.0",
     "pywebpush==2.0.0",
@@ -39,6 +36,8 @@ test = [
     "zxing-cpp==3.1.1",
     # Phase 41：PDF raster 後做條碼真值解碼（wheel，無系統 poppler）
     "pypdfium2==5.14.0",
+    # Phase 46：lint（CI 只開 F＋E9，見 [tool.ruff]）
+    "ruff==0.17.5",
 ]
 
 [tool.uv]
@@ -70,3 +69,11 @@ pythonpath = ["."]
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+[tool.ruff]
+target-version = "py313"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+# Phase 46 D13：先只抓真正的錯誤（未使用 import／變數、未定義名稱、語法錯誤），不開風格規則
+select = ["F", "E9"]

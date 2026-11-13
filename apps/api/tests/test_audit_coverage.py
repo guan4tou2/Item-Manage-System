@@ -7,7 +7,6 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -68,7 +67,6 @@ def _serialized(row: AuditLog) -> str:
 
 async def test_login_success_is_audited(client, test_engine):
     await _register(client, "login_ok")
-    user = None
     r = await _login(client, "login_ok")
     assert r.status_code == 200
 

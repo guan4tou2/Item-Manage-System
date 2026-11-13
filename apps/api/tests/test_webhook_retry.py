@@ -152,7 +152,7 @@ async def test_process_retries_empty_when_nothing_due(client, auth, monkeypatch)
 
 async def test_process_retries_reattempts_due_delivery(client, auth, db_session, monkeypatch):
     # Initial dispatch fails (503).
-    mock = _mock_httpx(monkeypatch, status=503, text="nope")
+    _mock_httpx(monkeypatch, status=503, text="nope")
     wh = (
         await client.post(
             "/api/webhooks",

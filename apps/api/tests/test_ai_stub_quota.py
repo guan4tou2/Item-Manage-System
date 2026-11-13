@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import struct
 import zlib
-from datetime import date, timedelta
 
 import pytest
 from sqlalchemy import func, select

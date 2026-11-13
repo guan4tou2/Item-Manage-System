@@ -35,7 +35,7 @@ async def _seed_tags(client, auth) -> dict[str, dict]:
         json={"name": "pan", "tag_names": ["kitchen"]},
     )
     # sharp on a third
-    blade = await client.post(
+    await client.post(
         "/api/items",
         headers=auth,
         json={"name": "blade", "tag_names": ["sharp"]},
@@ -266,7 +266,7 @@ async def test_delete_tag_with_items_force(client, auth):
 
 
 async def test_prune_orphans_deletes_only_unused(client, auth):
-    tags = await _seed_tags(client, auth)
+    await _seed_tags(client, auth)
     r = await client.post("/api/tags/prune-orphans", headers=auth)
     assert r.status_code == 200
     assert r.json()["deleted_count"] == 1

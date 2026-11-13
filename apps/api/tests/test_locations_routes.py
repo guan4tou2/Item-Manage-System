@@ -3,10 +3,8 @@ from __future__ import annotations
 import pytest
 from sqlalchemy import select
 
-from app.auth.password import hash_password
 from app.models.item import Item
 from app.models.location import Location
-from app.models.user import User
 
 
 @pytest.fixture

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 
 from app.models.notification import Notification
 

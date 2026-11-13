@@ -322,17 +322,12 @@ def _owned_item_ids(owner_id: UUID):
 
 async def existing_counts(session: AsyncSession, owner_id: UUID) -> dict[str, int]:
     """各實體目前列數（顯示「現有」用）。"""
-    item_ids = _owned_item_ids(owner_id)
     not_deleted_item_ids = select(Item.id).where(
         Item.owner_id == owner_id, Item.is_deleted.is_(False)
     )
 
     async def count(stmt) -> int:
         return int((await session.execute(stmt)).scalar_one())
-
-    own_lists = select(UserList.id).where(UserList.owner_id == owner_id)
-    own_stocktakes = select(Stocktake.id).where(Stocktake.owner_id == owner_id)
-    own_webhooks = select(Webhook.id).where(Webhook.owner_id == owner_id)
 
     return {
         "items": await count(

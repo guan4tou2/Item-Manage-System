@@ -6,7 +6,6 @@ from uuid import UUID
 
 from fastapi import HTTPException, UploadFile
 from sqlalchemy import delete as sa_delete
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings

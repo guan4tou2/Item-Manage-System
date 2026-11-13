@@ -154,7 +154,7 @@ async def test_payload_totals_activity_and_visible_scope(db_session):
         location_id=root.id,
         created_at=datetime(2026, 9, 10, 12, 0, tzinfo=UTC),
     )
-    tools_alive = await _item(
+    await _item(
         db_session,
         alice,
         name="工具",
@@ -163,7 +163,7 @@ async def test_payload_totals_activity_and_visible_scope(db_session):
         location_id=root.id,
         created_at=datetime(2026, 8, 1, tzinfo=UTC),
     )
-    old_deleted = await _item(
+    await _item(
         db_session,
         alice,
         name="本月刪除",
@@ -182,7 +182,7 @@ async def test_payload_totals_activity_and_visible_scope(db_session):
         created_at=datetime(2026, 8, 1, tzinfo=UTC),
         updated_at=datetime(2026, 8, 15, tzinfo=UTC),
     )
-    bob_item = await _item(
+    await _item(
         db_session,
         bob,
         name="鮑伯物品",

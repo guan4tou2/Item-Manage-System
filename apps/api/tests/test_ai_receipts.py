@@ -4,7 +4,6 @@ LLM 一律以 mock `google.genai.Client` 取代（CI 無 key、不呼叫外網�
 """
 from __future__ import annotations
 
-import io
 import json
 import struct
 import zlib

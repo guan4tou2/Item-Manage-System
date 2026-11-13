@@ -21,7 +21,7 @@ async def test_toggle_favorite(client, auth):
 
 async def test_filter_favorite(client, auth):
     a = (await client.post("/api/items", headers=auth, json={"name": "A"})).json()
-    b = (await client.post("/api/items", headers=auth, json={"name": "B"})).json()
+    (await client.post("/api/items", headers=auth, json={"name": "B"})).json()
     await client.post(f"/api/items/{a['id']}/favorite", headers=auth)
     r = await client.get("/api/items?favorite=true", headers=auth)
     names = [i["name"] for i in r.json()["items"]]

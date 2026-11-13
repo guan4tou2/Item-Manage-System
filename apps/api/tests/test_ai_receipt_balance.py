@@ -13,7 +13,6 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-import pytest
 
 from app.services.receipt_balance import (
     UNKNOWN_CURRENCY,

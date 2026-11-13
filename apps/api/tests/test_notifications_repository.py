@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 from app.auth.password import hash_password
-from app.models.notification import Notification
 from app.models.user import User
 from app.repositories import notifications_repository as repo
 

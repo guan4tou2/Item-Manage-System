@@ -316,7 +316,6 @@ async def test_process_viewer_blocked(client, monkeypatch):
 
 async def test_process_receipt_draft_is_409(client, monkeypatch):
     """收據草稿於建立時即抽取完成 → process 一律 409（不重跑 LLM）。"""
-    from app.models.ai_draft import AiDraftItem
 
     _configure(monkeypatch, key="fake-key")
     _mock_gemini(

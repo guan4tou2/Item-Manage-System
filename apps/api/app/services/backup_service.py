@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -10,11 +10,11 @@ from sqlalchemy.orm import selectinload
 
 from app.models.category import Category
 from app.models.customization import CustomField, ItemCustomValue, ItemTemplate, ItemType
-from app.models.group import Group, GroupMember
+from app.models.group import Group
 from app.models.item import Item
 from app.models.item_batch import ItemBatch
 from app.models.item_history import ItemVersion, QuantityLog
-from app.models.list import List as UserList, ListEntry
+from app.models.list import List as UserList
 from app.models.loan import ItemLoan
 from app.models.location import Location
 from app.models.notification_preference import NotificationPreference
@@ -218,7 +218,7 @@ async def export_full(session: AsyncSession, owner_id: UUID) -> dict[str, Any]:
 
     return {
         "format_version": FORMAT_VERSION,
-        "exported_at": datetime.utcnow().isoformat() + "Z",
+        "exported_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
         "owner_id": str(owner_id),
         "preferences": {"currency": currency_from_raw(raw_preferences)},
         "items": items_data,

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import io
 import struct
 import uuid
 import zlib
@@ -58,7 +57,6 @@ async def test_suggest_with_mocked_gemini(client, auth, monkeypatch):
     fake_client = MagicMock()
     fake_client.models.generate_content.return_value = fake_response
 
-    import app.services.ai_service as ai_module
     monkeypatch.setattr("google.genai.Client", lambda api_key: fake_client)
 
     files = {"file": ("x.png", _tiny_png(), "image/png")}

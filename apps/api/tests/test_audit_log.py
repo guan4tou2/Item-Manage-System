@@ -60,7 +60,7 @@ async def test_audit_list_requires_admin(client):
 
 
 async def test_audit_logs_captured_on_deactivate(client, admin_auth):
-    victim = await _register_login(client, "victim")
+    await _register_login(client, "victim")
     users = (await client.get("/api/admin/users", headers=admin_auth)).json()
     target = next(u for u in users if u["username"] == "victim")
     await client.patch(f"/api/admin/users/{target['id']}", headers=admin_auth, json={"is_active": False})

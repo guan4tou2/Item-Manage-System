@@ -10,7 +10,7 @@ os.environ["JWT_SECRET"] = "test-secret-do-not-use-in-prod-hs256-32b"
 from app.db.base import Base  # noqa: E402
 from app.db.session import get_db  # noqa: E402
 from app.main import create_app  # noqa: E402
-import app.models  # noqa: F401, E402 — registers all ORM models with Base.metadata
+import app.models  # noqa: F401, E402 — 將所有 ORM model 註冊至 Base.metadata
 
 
 @pytest.fixture

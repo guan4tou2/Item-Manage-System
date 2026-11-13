@@ -1,5 +1,4 @@
 from __future__ import annotations
-from uuid import uuid4
 import pytest
 from app.auth.password import hash_password
 from app.models.user import User

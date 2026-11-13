@@ -1,6 +1,5 @@
 import pytest
 
-from app.models.tag import Tag
 
 
 @pytest.fixture

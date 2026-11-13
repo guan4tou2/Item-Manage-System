@@ -5,9 +5,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from uuid import uuid4
 
-import pytest
 
 from app.auth.password import hash_password
 from app.models.favorite_audit_token import AuditLog

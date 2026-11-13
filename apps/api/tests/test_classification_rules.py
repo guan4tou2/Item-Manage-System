@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-import pytest
 
 from app.auth.password import hash_password
 from app.models.category import Category
