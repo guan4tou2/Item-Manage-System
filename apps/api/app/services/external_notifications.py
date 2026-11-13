@@ -21,6 +21,7 @@ from app.models.external_channels import (
     WebPushSubscription,
 )
 from app.models.user import User
+from app.services import url_guard
 
 logger = logging.getLogger(__name__)
 
@@ -120,16 +121,31 @@ def deliver_web_push(sub: WebPushSubscription, title: str, body: str, link: Opti
         from pywebpush import WebPushException, webpush
     except ImportError:
         return False
+    # Phase 44：endpoint 是使用者提供的 URL，送出前檢查目的地（防 SSRF）。
+    # 既有資料不做 migration；不合格的訂閱在這裡被擋下。
+    if not url_guard.is_destination_allowed_sync(sub.endpoint):
+        logger.warning("web push destination blocked: subscription_id=%s", sub.id)
+        return False
     try:
-        webpush(
-            subscription_info={
-                "endpoint": sub.endpoint,
-                "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
-            },
-            data=json.dumps({"title": title, "body": body, "url": link or "/"}),
-            vapid_private_key=s.vapid_private_key,
-            vapid_claims={"sub": f"mailto:{s.vapid_email}"},
-        )
+        import requests
+
+        # 不跟隨 redirect：公網 endpoint 仍可能 3xx 轉向內網。
+        http = requests.Session()
+        http.max_redirects = 0
+        try:
+            webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                },
+                data=json.dumps({"title": title, "body": body, "url": link or "/"}),
+                vapid_private_key=s.vapid_private_key,
+                vapid_claims={"sub": f"mailto:{s.vapid_email}"},
+                timeout=10,
+                requests_session=http,
+            )
+        finally:
+            http.close()
         return True
     except Exception:
         logger.warning("web push deliver failed", exc_info=True)

@@ -16,6 +16,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import _utcnow
 from app.models.webhook import Webhook, WebhookDelivery
 from app.schemas.webhook import WebhookCreate, WebhookRead, WebhookUpdate
+from app.services.url_guard import (
+    DESTINATION_NOT_ALLOWED_EXCERPT,
+    IPAddress,
+    UnsafeUrlError,
+    resolve_safe_addresses,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -201,12 +207,51 @@ async def _send_once(
     if webhook.secret:
         headers["X-IMS-Signature"] = _sign(webhook.secret, body_bytes)
     try:
-        async with httpx.AsyncClient(timeout=10) as http:
-            resp = await http.post(webhook.url, content=body_bytes, headers=headers)
-            return resp.status_code, resp.text[:500]
+        parts, host, addrs = await resolve_safe_addresses(webhook.url)
+    except UnsafeUrlError:
+        # 不發請求；excerpt 固定字串，不洩漏解析到的位址。照一般失敗處理
+        # （status_code=None），重試排程與其他網路失敗一致，下次投遞會重新解析。
+        logger.warning("webhook destination blocked: webhook_id=%s", webhook.id)
+        return None, DESTINATION_NOT_ALLOWED_EXCERPT
+    except Exception as exc:
+        logger.warning("webhook resolve failed: %s", exc)
+        return None, f"error: {exc}"[:500]
+
+    # 釘住已驗證的 IP（D11）：連線目標用 IP，Host 標頭與 TLS SNI／憑證驗證仍用原
+    # hostname，避免驗證後 DNS 又換答案（rebinding）。最多嘗試 3 個位址，僅在連線層
+    # 失敗時換下一個（雙棧主機 IPv6 不通的常見情況）。
+    host_header = parts.netloc.rsplit("@", 1)[-1]
+    headers["Host"] = host_header
+    extensions = {"sni_hostname": host} if parts.scheme.lower() == "https" else {}
+    last_exc: Exception | None = None
+    try:
+        # trust_env=False：不吃 HTTP(S)_PROXY，否則連線會繞過釘 IP；
+        # follow_redirects=False：redirect 可能指向內網，一律不跟隨。
+        async with httpx.AsyncClient(
+            timeout=10, follow_redirects=False, trust_env=False
+        ) as http:
+            for addr in addrs[:3]:
+                try:
+                    resp = await http.post(
+                        _pinned_url(parts, addr),
+                        content=body_bytes,
+                        headers=headers,
+                        extensions=extensions,
+                    )
+                    return resp.status_code, resp.text[:500]
+                except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
+                    last_exc = exc
+            raise last_exc  # type: ignore[misc]
     except Exception as exc:
         logger.warning("webhook deliver failed: %s", exc)
         return None, f"error: {exc}"[:500]
+
+
+def _pinned_url(parts, addr: IPAddress) -> str:
+    """把 URL 的 host 換成已驗證的 IP（IPv6 加方括號），保留 port／path／query。"""
+    ip_text = f"[{addr}]" if addr.version == 6 else str(addr)
+    netloc = f"{ip_text}:{parts.port}" if parts.port else ip_text
+    return parts._replace(netloc=netloc, fragment="").geturl()
 
 
 async def _record_attempt(

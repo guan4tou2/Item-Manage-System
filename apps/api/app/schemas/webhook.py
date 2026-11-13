@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.services.url_guard import URL_NOT_ALLOWED_MESSAGE, validate_webhook_url
 
 
 class WebhookCreate(BaseModel):
@@ -11,6 +13,11 @@ class WebhookCreate(BaseModel):
     url: str = Field(min_length=1)
     secret: Optional[str] = Field(default=None, max_length=200)
     events: list[str] = Field(default_factory=list)
+
+    @field_validator("url")
+    @classmethod
+    def _check_url(cls, v: str) -> str:
+        return validate_webhook_url(v)
 
 
 class WebhookUpdate(BaseModel):
@@ -21,6 +28,15 @@ class WebhookUpdate(BaseModel):
     is_active: Optional[bool] = None
 
     model_config = ConfigDict(extra="forbid")
+
+    @field_validator("url")
+    @classmethod
+    def _check_url(cls, v: Optional[str]) -> Optional[str]:
+        # url 為 optional：未提供時此 validator 不會執行；明確傳 null 則視為不合格
+        # （欄位為 NOT NULL，避免落到 DB 才 500）。
+        if v is None:
+            raise ValueError(URL_NOT_ALLOWED_MESSAGE)
+        return validate_webhook_url(v)
 
 
 class WebhookRead(BaseModel):

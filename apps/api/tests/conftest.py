@@ -4,7 +4,8 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
-os.environ["JWT_SECRET"] = "test-secret-do-not-use-in-prod"
+# ≥ 32 bytes：PyJWT 對 HS256 過短金鑰會發 InsecureKeyLengthWarning（RFC 7518 §3.2）
+os.environ["JWT_SECRET"] = "test-secret-do-not-use-in-prod-hs256-32b"
 
 from app.db.base import Base  # noqa: E402
 from app.db.session import get_db  # noqa: E402
@@ -61,3 +62,17 @@ def decode_qr():
         return result.text if result else None
 
     return _decode
+
+
+@pytest.fixture(autouse=True)
+def _stub_webhook_dns(monkeypatch):
+    """Phase 44：webhook 送出前會解析 DNS。測試一律預設把任何 hostname 解析到
+    公網位址，避免打真實 DNS；需要自訂解析結果的測試自行再 monkeypatch。"""
+    import ipaddress
+
+    from app.services import url_guard
+
+    async def _fake_resolve(host, port):
+        return [ipaddress.ip_address("93.184.216.34")]
+
+    monkeypatch.setattr(url_guard, "resolve_host", _fake_resolve)

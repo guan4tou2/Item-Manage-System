@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.services.url_guard import URL_NOT_ALLOWED_MESSAGE, validate_webhook_url
 
 
 class LineLinkSet(BaseModel):
@@ -25,9 +27,18 @@ class ChannelStatus(BaseModel):
 
 
 class WebPushSubscriptionCreate(BaseModel):
-    endpoint: str = Field(min_length=1)
+    endpoint: str = Field(min_length=1, max_length=2000)
     p256dh: str = Field(min_length=1, max_length=200)
     auth: str = Field(min_length=1, max_length=200)
+
+    @field_validator("endpoint")
+    @classmethod
+    def _check_endpoint(cls, v: str) -> str:
+        # Phase 44：endpoint 由瀏覽器的 push service 產生，一律是公網 https；
+        # 伺服器之後會對它發請求，寫入時先擋掉內網／非 https（防 SSRF）。
+        if not v.lower().startswith("https://"):
+            raise ValueError(URL_NOT_ALLOWED_MESSAGE)
+        return validate_webhook_url(v)
 
 
 class WebPushSubscriptionRead(BaseModel):

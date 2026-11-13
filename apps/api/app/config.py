@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     vapid_public_key: str = Field(default="")
     vapid_private_key: str = Field(default="")
     vapid_email: str = Field(default="admin@example.com")
+    # Phase 44 D12：webhook 出站預設只允許公網位址（防 SSRF）；自架要把 webhook
+    # 指向 LAN 服務（Home Assistant／n8n）時由營運者明確開啟。仍只允許 http／https。
+    webhook_allow_private_hosts: bool = Field(default=False)
 
     @model_validator(mode="after")
     def _ensure_production_secret(self) -> "Settings":
