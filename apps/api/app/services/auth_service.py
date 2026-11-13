@@ -33,6 +33,14 @@ class InvalidCredentials(AuthError):
     pass
 
 
+def bump_token_version(user: User) -> None:
+    """遞增 session 版本（不 commit，由呼叫端與其他變更一併提交）。
+
+    PAT（`ims_pat_`）不看此版本，不受影響（Phase 44 D8）。
+    """
+    user.token_version = (user.token_version or 0) + 1
+
+
 class AuthService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -65,6 +73,7 @@ class AuthService:
             subject=str(user.id),
             ttl=timedelta(seconds=self.settings.access_token_ttl_seconds),
             token_type="access",
+            version=user.token_version,
         )
 
     def issue_refresh_token(self, user: User) -> str:
@@ -72,7 +81,13 @@ class AuthService:
             subject=str(user.id),
             ttl=timedelta(seconds=self.settings.refresh_token_ttl_seconds),
             token_type="refresh",
+            version=user.token_version,
         )
+
+    async def revoke_all_sessions(self, user: User) -> None:
+        """遞增 session 版本並 commit；此前簽發的 access／refresh token 全部失效。"""
+        bump_token_version(user)
+        await self.session.commit()
 
     async def get_user_by_id(self, user_id: UUID) -> User | None:
         return await self.repo.get_by_id(user_id)

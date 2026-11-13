@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Boolean, DateTime, JSON, String, text
+from sqlalchemy import Boolean, DateTime, Integer, JSON, String, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -42,6 +42,10 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    #: Phase 44：session 版本；改密碼／登出所有裝置時遞增，使既有 JWT 失效。
+    token_version: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0")
+    )
     preferences: Mapped[dict] = mapped_column(
         JSONB().with_variant(JSON(), "sqlite"),
         nullable=False,

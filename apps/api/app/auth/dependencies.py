@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.jwt import TokenError, decode_token
+from app.auth.jwt import TokenError, decode_token, token_version
 from app.db.session import get_db
 from app.models.user import User
 from app.services.auth_service import AuthService
@@ -33,12 +33,16 @@ async def get_current_user(
     # JWT path
     try:
         payload = decode_token(token, expected_type="access")
+        version = token_version(payload)
     except TokenError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
     service = AuthService(session)
     user = await service.get_user_by_id(UUID(payload["sub"]))
     if user is None or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="user not found")
+    # Phase 44：改密碼／登出所有裝置後版本遞增，舊 token 一律失效。
+    if version != user.token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="token revoked")
     return user
 
 

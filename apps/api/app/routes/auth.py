@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.cookies import clear_refresh_cookie, set_refresh_cookie
 from app.auth.dependencies import get_current_user
-from app.auth.jwt import TokenError, decode_token
-from app.config import get_settings
+from app.auth.jwt import TokenError, decode_token, token_version
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
@@ -34,19 +34,6 @@ def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def _set_refresh_cookie(response: Response, token: str) -> None:
-    settings = get_settings()
-    response.set_cookie(
-        key="refresh_token",
-        value=token,
-        max_age=settings.refresh_token_ttl_seconds,
-        httponly=True,
-        secure=settings.environment != "dev",
-        samesite="lax",
-        path="/api/auth",
-    )
-
-
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     payload: RegisterRequest, response: Response, session: AsyncSession = Depends(get_db)
@@ -70,7 +57,7 @@ async def register(
     )
     access = service.issue_access_token(user)
     refresh = service.issue_refresh_token(user)
-    _set_refresh_cookie(response, refresh)
+    set_refresh_cookie(response, refresh)
     return TokenResponse(
         access_token=access, user=await visibility_service.user_public(session, user)
     )
@@ -119,7 +106,7 @@ async def login(
     )
     access = service.issue_access_token(user)
     refresh = service.issue_refresh_token(user)
-    _set_refresh_cookie(response, refresh)
+    set_refresh_cookie(response, refresh)
     await audit_service.log(
         session,
         user_id=user.id,
@@ -142,6 +129,7 @@ async def refresh(
         raise HTTPException(status_code=401, detail="missing refresh cookie")
     try:
         payload = decode_token(refresh_token, expected_type="refresh")
+        version = token_version(payload)
     except TokenError as exc:
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     from uuid import UUID
@@ -150,15 +138,42 @@ async def refresh(
     user = await service.get_user_by_id(UUID(payload["sub"]))
     if user is None or not user.is_active:
         raise HTTPException(status_code=401, detail="user not found")
+    # Phase 44：撤銷後（改密碼／登出所有裝置）舊 refresh token 不能再換新 token。
+    if version != user.token_version:
+        raise HTTPException(status_code=401, detail="token revoked")
     access = service.issue_access_token(user)
     new_refresh = service.issue_refresh_token(user)
-    _set_refresh_cookie(response, new_refresh)
+    set_refresh_cookie(response, new_refresh)
     return AccessTokenResponse(access_token=access)
 
 
 @router.post("/logout", status_code=204)
 async def logout(response: Response) -> Response:
-    response.delete_cookie("refresh_token", path="/api/auth")
+    clear_refresh_cookie(response)
+    response.status_code = 204
+    return response
+
+
+@router.post("/logout-all", status_code=204)
+async def logout_all(
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> Response:
+    """登出所有裝置：遞增 session 版本，所有既有 access／refresh token 失效。
+
+    PAT（`ims_pat_`）不受影響，需另行在權杖管理刪除（Phase 44 D8）。
+    """
+    await AuthService(session).revoke_all_sessions(current_user)
+    clear_refresh_cookie(response)
+    # 主寫入已 commit，才寫稽核（audit_service.log 為 fail-soft）。
+    await audit_service.log(
+        session,
+        user_id=current_user.id,
+        action="auth.logout_all",
+        resource_type="user",
+        resource_id=str(current_user.id),
+    )
     response.status_code = 204
     return response
 

@@ -11,8 +11,9 @@ dependencies = [
     "sqlalchemy[asyncio]==2.0.35",
     "asyncpg==0.30.0",
     "alembic==1.13.3",
-    "python-jose[cryptography]==3.3.0",
-    "passlib[argon2]==1.7.4",
+    # Phase 44：python-jose → PyJWT、passlib → argon2-cffi（汰換無人維護／有 CVE 的依賴）
+    "pyjwt==2.15.1",
+    "argon2-cffi==25.1.0",
     "python-multipart==0.0.12",
     "httpx==0.27.2",
     "slowapi==0.1.9",

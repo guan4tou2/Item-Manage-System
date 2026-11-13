@@ -5,13 +5,20 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.cookies import set_refresh_cookie
 from app.auth.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.api_token import ApiTokenCreate, ApiTokenCreated, ApiTokenRead
 from app.schemas.preferences import PreferencesRead, PreferencesUpdate
-from app.schemas.user import PasswordChange, UserProfileUpdate, UserPublic
+from app.schemas.user import (
+    PasswordChange,
+    PasswordChangeResponse,
+    UserProfileUpdate,
+    UserPublic,
+)
 from app.services import api_tokens_service, preferences_service, profile_service, visibility_service
+from app.services.auth_service import AuthService
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -34,14 +41,18 @@ async def update_me(
     return await visibility_service.user_public(session, updated)
 
 
-@router.post("/me/change-password")
+@router.post("/me/change-password", response_model=PasswordChangeResponse)
 async def change_password(
     body: PasswordChange,
+    response: Response,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
-) -> dict:
+) -> PasswordChangeResponse:
     await profile_service.change_password(session, user, body)
-    return {"success": True}
+    # 版本已遞增：重新簽發目前裝置的 token，避免改完密碼自己也被登出。
+    service = AuthService(session)
+    set_refresh_cookie(response, service.issue_refresh_token(user))
+    return PasswordChangeResponse(access_token=service.issue_access_token(user))
 
 
 @router.get("/me/preferences", response_model=PreferencesRead)

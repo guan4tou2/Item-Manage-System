@@ -8,6 +8,7 @@ from app.auth.password import hash_password, verify_password
 from app.models.user import User
 from app.schemas.user import PasswordChange, UserProfileUpdate
 from app.services import audit_service
+from app.services.auth_service import bump_token_version
 
 
 async def update_profile(
@@ -39,6 +40,8 @@ async def change_password(
     if not verify_password(body.current_password, user.password_hash):
         raise HTTPException(status_code=422, detail="current_password incorrect")
     user.password_hash = hash_password(body.new_password)
+    # Phase 44：同一筆 commit 遞增 session 版本，其他裝置的 JWT 立即失效。
+    bump_token_version(user)
     await session.commit()
     # 只記「發生了變更」，不記任何密碼欄位（明文／雜湊皆不可）
     await audit_service.log(

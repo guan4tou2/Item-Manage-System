@@ -30,6 +30,15 @@ class PasswordChange(BaseModel):
     new_password: str = Field(min_length=8)
 
 
+class PasswordChangeResponse(BaseModel):
+    """Phase 44：改密碼會撤銷所有 session，回應重新簽發目前裝置的 access token
+    （refresh cookie 同時重設）。`success` 為既有欄位，保留相容。"""
+
+    success: bool = True
+    access_token: str
+    token_type: str = "bearer"
+
+
 class UserAdminUpdate(BaseModel):
     is_active: bool
 
