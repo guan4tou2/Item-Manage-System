@@ -1,6 +1,6 @@
 # v2 重構路線圖
 
-> **狀態：基礎子專案與後續 Phase 1–44 已全部上線。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
+> **狀態：基礎子專案與後續 Phase 1–46 已完成實作。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
 
 參見 [`docs/superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md`](superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md) 了解基礎決策。
 
@@ -19,7 +19,7 @@
 | 8 | 管理與設定 | ✅ 完成 |
 | 9 | 行動/PWA 體驗 | ✅ 完成（見下方 Phase 16 polish） |
 
-## 進階 Phase 1–44（v1 功能補齊 + 增強）
+## 進階 Phase 1–46（v1 功能補齊 + 增強）
 
 | Phase | 主題 | 狀態 | 關鍵能力 |
 |-------|------|------|----------|
@@ -66,31 +66,31 @@
 | 42 | 定期報表（週報） | ✅ | `reports.kind`＋`period` 放寬至 10（migration 0026；downgrade 刪週報列後縮回 7）；`report.weekly` 每週一生成上一個完整 ISO 週（Asia/Taipei；冪等、空週建列不通知、逐使用者隔離、無可見物品跳過）；`report_weekly_enabled` 預設 **false**（opt-in）；週報／月報共用 `build_payload`、`ReportPayload`（新增 `kind`，舊快照預設 monthly）、`report_ready`＋Email 管線；`ReportRead.kind`；清單改 `generated_at DESC`；`JobSpec.stale_after_hours`（expiry 26h／weekly 170h／monthly 770h）修正月報誤判停跑；Web 清單徽章＋日期範圍、詳情週報文案、設定雙開關、空狀態分流；**無新增端點** |
 | 43 | 登入防暴力破解 | ✅ | Migration 0027 `login_attempts`；每次失敗寫 account／ip 兩列，`key_hash` 為 HMAC-SHA256（不存原始 username／IP）；只計失敗、成功重置帳號（不清 IP）、被封鎖不再寫入；帳號 5 次/15 分→15 分、10 次/1 時→30 分、15 次/24 時→1 時；IP 10 次/1 分→1 分、30 次/15 分→15 分；`429 too many login attempts`＋`Retry-After`（未知／既有帳號一致）；24h 清理；未知帳號 dummy Argon2 timing 防護；fail-soft；uvicorn proxy headers 取真實 IP；Web 429 文案＋e2e 鎖定流程 |
 | 44 | 安全收斂（依賴、SSRF、session 撤銷） | ✅ | `next` 15.0.0 → 15.5.29（React2Shell CVE-2025-55182／66478）、`react` 19.3.1、`zustand` 5.1.0；`python-jose` → `pyjwt`、`passlib` → `argon2-cffi`（既有雜湊免遷移）；Migration 0028 `users.token_version`＋token `ver` claim（舊 token 視為 0），改密碼遞增並重新簽發目前裝置 token，新增 `POST /api/auth/logout-all`（稽核 `auth.logout_all`，共 13 種 action）；PAT 不受影響；Web `apiFetch` 401 時 single-flight refresh＋重試一次（修正原本 15 分鐘被踢回登入頁）、「登出所有裝置」區塊；Webhook 出站 URL 防護（寫入時＋送出時兩道、DNS 全部結果須為全域位址、釘 IP、不跟隨 redirect、`WEBHOOK_ALLOW_PRIVATE_HOSTS` 逃生口）；Web Push endpoint 同樣納管；`dependabot.yml`＋CI `audit` job（未實跑）；e2e 未執行 |
+| 45 | v1 下線與發佈管線 | ✅ | 移除 v1，保留 v1-final 快照；release 發佈 API／Web images 與 SBOM；Makefile、pre-commit 與文件對齊 v2；補 ESLint 與依賴稽核修補、uv lockfile 稽核與 Dependabot uv 生態系 |
+| 46 | 部署強化與可觀測 | ✅ 實作 | 非 root 多階段 images、uv.lock、移除 Redis／worker；readiness、request id、JSON／text 日誌；CSP／條件式 HSTS／Permissions-Policy、文件頁開關；ruff／eval／migration／e2e CI；UTC 時間修正。Docker／nginx／e2e／CI 未驗證，計畫狀態維持進行中 |
 
 ## 測試規模
 
-- API 測試：1425 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28（mock 模式）
+- API 測試：1440 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28 passed／1 skipped（mock 模式）
 - Web 測試：805 passed（135 檔；vitest + @testing-library/react + jsdom）
 - Playwright e2e：**30 spec／96 情境**（Phase 44 實跑：chromium 91 passed／1 skipped、ai-stub 4 passed；skip 為依賴舊 dev 庫 `phase26_demo` fixture 的位置樹情境）（`chromium` 專案 29 spec／92 情境：**改密碼與登出所有裝置**／登入／**登入鎖定**／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／**週報**／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／位置 QR 標籤／標籤條碼／**標籤 PDF 下載**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／**稽核查詢台**／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
 
 ## 下一輪（未排程）
 
-Phase 22–44 已全部上線；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-11-14.md`](progress-2026-11-14.md)（Phase 40–43 見 [`docs/progress-2026-10-23.md`](progress-2026-10-23.md)）。
+Phase 22–46 已完成實作；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-11-14-b.md`](progress-2026-11-14-b.md)（Phase 40–43 見 [`docs/progress-2026-10-23.md`](progress-2026-10-23.md)）。
 
 候選項目（依建議優先序，粗估含測試與 i18n）：
 
 | # | 項目 | 說明 | 粗估 |
 |---|------|------|------|
-| 1 | Phase 45 發佈與 v1 下線 | 打 `v1-final` tag 後移除 v1 目錄（`app/`、`templates/`、`static/`、`run_worker.py`）、重寫 `release.yml` 改建 `apps/api`＋`apps/web`、修 Makefile／pre-commit、文件收斂、決定備份遠端（原「v1 目錄下線」併入此項） | M |
-| 2 | Phase 46 部署強化與可觀測 | 非 root 多階段 image＋lockfile、TLS／HSTS／CSP、access token 移出 `localStorage`、readiness 檢查、結構化日誌、e2e／eval／migration／lint 進 CI、補 ESLint 設定、清掉 compose 死設定與未使用依賴 | L |
-| 3 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
-| 4 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
-| 5 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
-| 6 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
-| 7 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
-| 8 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
+| 1 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
+| 2 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
+| 3 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
+| 4 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
+| 5 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
+| 6 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
 
-> 建議節奏：Phase 44 已收掉依賴與 session／SSRF 缺口；下一輪先走 **Phase 45（發佈與 v1 下線）** 與 **Phase 46（部署強化與可觀測）** 兩個收斂 phase，再回到功能候選，可從 **#3 收據人工核對** 或 **#4 批次成本** 開始（兩者都需先寫設計決策段）；#7 成本最高，建議最後或另開里程碑；#8 可併入收尾清理。
+> 建議從 **#1 收據人工核對** 或 **#2 批次成本** 開始，先定案設計決策；#5 Background Sync 成本較高，可另開里程碑；#6 圖片快取可併入收尾。Phase 46 的部署與 CI 實際驗證仍待具備 Docker／網路的環境完成。
 
 ## 快速啟動（v2）
 

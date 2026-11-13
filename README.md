@@ -161,6 +161,8 @@ monorepo (pnpm workspace)
 - OpenAPI JSON：http://localhost:8000/api/openapi.json
 - Repo：[`packages/api-types/openapi.json`](packages/api-types/openapi.json)
 
+文件頁與 `/api/openapi.json` 僅 dev 預設開啟，`API_DOCS_ENABLED` 可覆寫；非 dev 預設關閉。`make gen-types` 的離線 schema 匯出不受影響。部署包含 DB readiness、request id／結構化日誌與 nginx CSP，詳見[部署指南](Deployment_Guide_zh-TW.md)。
+
 主要路由家族：
 
 | 前綴 | 說明 |

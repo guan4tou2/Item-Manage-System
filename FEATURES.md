@@ -272,7 +272,7 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## 🧪 測試
 
-- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1425 passed**；golden eval 28 passed／1 skipped。
+- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1440 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
 - **Web**: vitest + @testing-library/react + jsdom。**805 passed across 135 files**。
 - **E2E**: Playwright chromium **91 passed／1 skipped**（`--workers=1`；30 spec／96 情境含 ai-stub）＋ ai-stub 4 passed。
 - **TS**: `tsc --noEmit` 嚴格模式乾淨；`next build` 成功。
@@ -282,10 +282,11 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## ⚙️ 開發流程
 
-1. 新功能開 worktree：`git worktree add .claude/worktrees/<name> -b claude/<name>`
-2. API 側改 schema → 寫 alembic 遷移 → 更新 repository / service / route → 補測試
-3. Regen api-types：`cd packages/api-types && node generate.mjs`
-4. Web 側改 UI → 寫 vitest 測試 → 跑 typecheck
-5. Commit、merge 回 main、push、清 worktree
+1. 使用現有 Python 3.13／uv 與 pnpm lockfile；`make install` 安裝。
+2. API schema 異動時更新 migration／service／route 與測試，以 `make gen-types` 匯出 OpenAPI 並產生型別。
+3. Web 異動補相關測試並跑 typecheck；`make lint` 檢查 API ruff（F＋E9）與 Web ESLint。
+4. CI API gate 涵蓋 pytest、golden eval 與 PostgreSQL migration 升降版；e2e job 跑完整 Compose 的 chromium 與 ai-stub。
+5. 部署使用非 root images、readiness healthcheck、request id 與結構化日誌、nginx CSP／條件式 HSTS；非 dev 預設關閉 API 文件頁。
+6. commit、push、分支與部署依該次工作授權執行。
 
 詳見 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。

@@ -6,6 +6,26 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 
 ## [Unreleased]
 
+## [2.0.0-alpha.46] — Phase 46：部署強化與可觀測
+
+- **Image 與 Compose**：API 改以 `uv sync --frozen --no-dev` 依 `uv.lock` 多階段建置，runtime 無編譯工具，以 uid 10001 執行，包含 Alembic、scripts 與內附字型，可寫 `/app/media`；新增 API `.dockerignore`。Web runner 改用 `node`。移除未使用的 Redis／worker／redisdata 與設定；API readiness healthcheck，Web／nginx 等待 API healthy。
+- **Readiness**：新增 `GET /api/health/ready`，DB `SELECT 1` 成功回 200 ready，失敗回 503 unavailable，不洩漏例外；既有 liveness 契約不變。
+- **可觀測**：標準 logging 的 JSON／text（dev 預設 text，其餘 json）、`LOG_LEVEL=INFO`；冪等設定保留 pytest caplog。純 ASGI middleware 以 contextvars 傳遞 request id、回傳 `X-Request-ID`（傳入值限 `[A-Za-z0-9._-]{1,64}`），access log 含 method／path／status／duration_ms，略過 health，不記 query string／本文／認證 header／cookie；關閉 uvicorn access log。
+- **瀏覽器防線與文件頁**：nginx 統一 CSP（同源外送限制，保留必要 inline script／style）、Permissions-Policy（同源相機）、僅 HTTPS forwarded header 回傳 HSTS；非 dev 預設關閉 docs／redoc／openapi 路由，`API_DOCS_ENABLED` 可覆寫，直接匯出 schema 不受影響。D12 決定保留 access token 於 localStorage，不列後續候選。
+- **CI 與清理**：API gate 加 ruff（F＋E9）、golden eval、PostgreSQL migration up／down／up；新增 e2e job 跑 chromium 與 ai-stub，失敗保存 trace／Compose logs。修正未使用 import／變數，保留副作用與既有測試斷言；移除 datetime.utcnow，備份 exported_at 維持原本 Z 格式。Makefile lint 加 ruff，忽略 tsbuildinfo（既有追蹤檔留待使用者移除索引）。
+- **既有 media volume 的升級處理**：API 改以 uid 10001 執行後，舊版以 root 建立的 `media` volume 無法寫入（實測圖片上傳會失敗）→ compose 新增一次性的 `media-init` 服務，每次啟動先把擁有者修正為 10001（已正確時不做事），`api` 以 `service_completed_successfully` 等待
+- **修正來源 IP 可被偽造（Phase 43 遺留）**：nginx 原本以 `$proxy_add_x_forwarded_for`「附加」用戶端送來的 `X-Forwarded-For`，而 uvicorn 在 `--forwarded-allow-ips='*'` 下取最左邊的位址 → 用戶端可自行偽造來源 IP、繞過登入的 IP 節流。改為以 `$remote_addr` 覆寫；nginx 前方另有反向代理時以 `set_real_ip_from`／`real_ip_header` 還原（設定檔內附說明）。實測：以 12 個不同的偽造 `X-Forwarded-For` 連續登入失敗，第 11 次起回 `429`
+- 測試：API 1425 → **1440 passed**（新增 15 個（`tests/test_observability.py`））；golden eval **28 passed／1 skipped**；ruff 零違規（`All checks passed!`）；Web **805 passed（135 檔）**（Node 22 與 24）；e2e 於新 image 與 CSP 下實跑 chromium **91 passed／1 skipped**、ai-stub **4 passed**。實測項目：兩個 image 可建置、API uid 10001／Web `node`、healthcheck 轉 healthy、非 root 執行 `alembic upgrade head`、media 可寫、`nginx -t`、CSP／Permissions-Policy 標頭、HSTS 僅在 `X-Forwarded-Proto: https` 時出現、request id 沿用／重新產生、access log 不含 query string。**未驗證**：新的 CI `e2e` job 與 migration 步驟在 GitHub Actions 的實際結果、Release／GHCR／SBOM（未打 tag）、nginx 前置 TLS 代理的實際拓樸、CSP 下以真實相機掃碼
+
+## [2.0.0-alpha.45] — Phase 45：v1 下線與發佈管線
+
+- **v1 下線**：依計畫移除 v1 程式、模板、靜態檔、測試、migration、腳本與純 v1 文件（共 266 個追蹤檔案）；歷史快照使用既有 `v1-final` tag。本次未建立 tag 或分支。
+- **Release 管線**：`v*.*.*` tag 建置 API／Web multi-platform images 至 GHCR，Web 先產生 OpenAPI／api-types；完整版本與 major.minor tags，預發佈版不更新 latest，GitHub Release 標 prerelease；各 image 產生 SBOM，使用 `gh release create --generate-notes`，移除 PyPI 與空 notify job。實際發佈／GHCR／SBOM **未驗證**。
+- **開發入口與文件**：Makefile 改為 v2 的安裝、開發、Compose、migration、型別、測試與稽核入口；pre-commit 僅保留語言無關 hooks；重寫架構／開發／部署與文件索引，同步 README／roadmap，移除失效的 v1 忽略規則。Phase 45 的檔案刪除依計畫結果以工作樹操作完成，未修改索引。
+- **同日 CI 修正：Web**：補 ESLint `next/core-web-vitals`＋`next/typescript`（0 error／30 warning）；pnpm audit 清至 next-intl 的 2 個 moderate。zod 3.23.8 → 4.6.7、@playwright/test 1.48.0 → 1.65.0、postcss 8.5.32、react-hook-form 7.92.0、@hookform/resolvers 5.9.2，其餘以 pnpm overrides 修補；修正只在 Node 22 失敗的 labels.test.ts。
+- **同日 CI 修正：API**：pip-audit 歸零；fastapi 0.115.0 → 0.162.6／Starlette 1.x、python-multipart 0.0.31、pydantic 2.12.5、httpx 0.28.1、fastapi-mail 1.6.8、pytest 9.0.3、pytest-asyncio 1.5.0，傳遞依賴以 constraint-dependencies 設下限；CI 稽核以 uv.lock 為準、Dependabot 改用 uv 生態系。以上為同日已完成的前置結果，本輪未重跑需網路的 audit。
+- **驗證範圍**：Phase 45 計畫記錄 YAML／shell dry-run、連結與刪除清單檢查，未實跑 Docker images／GitHub Actions／Release。Phase 46 的本輪離線測試與未驗證項目見 [進度文件](docs/progress-2026-11-14-b.md)。
+
 ## [2.0.0-alpha.44] — Phase 44：安全收斂（依賴、SSRF、session 撤銷）
 
 - **Web 依賴脫離已知 RCE 範圍**：`next` 15.0.0 → **15.5.29**、`react`／`react-dom` 19.0.0-rc → **19.3.1**、`zustand` 5.0.0-rc.2 → 5.1.0、`eslint-config-next` → 15.5.29、`@types/react`／`@types/react-dom` → 19.3.0；`next.config.mjs` 的 `experimental.typedRoutes` 改頂層 `typedRoutes`。原因：Next 15.0.0 落在 React2Shell（CVE-2025-55182／CVE-2025-66478，App Router 未認證 RCE）受影響範圍，15.0.x 線修補版為 15.0.5，本次直接走 15.5 線。沒有任何原始碼因 React 19 型別需要修改

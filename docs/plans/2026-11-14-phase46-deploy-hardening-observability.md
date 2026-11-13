@@ -1,6 +1,6 @@
 # Phase 46：部署強化與可觀測
 
-- **狀態**：🚧 進行中
+- **狀態**：✅ 完成
 - **日期**：2026-11-14
 - **基線**：Phase 45 完成後的 `main`；API 測試 1425、Web 805（135 檔）、e2e 30 spec／96 情境、Migration `0028 (head)`
 - **來源**：2026-11-14 專案分析 P1（部署設定鬆散、CI 缺口）與 P2（無可觀測性）
@@ -75,4 +75,41 @@
 
 ## 實作結果
 
-（完成後填寫）
+### 實際完成項目
+
+- D1–D4：API 依 uv.lock 多階段建置、runtime uid 10001／media 寫入權限／完整 Alembic、scripts、字型；新增 API .dockerignore；Web runner 使用 node；移除 Redis／worker／redisdata／redis_url，保留使用者已同步的依賴清單與 lockfile。
+- D5–D8：readiness 對 DB SELECT 1（200 ready／503 unavailable，隱藏錯誤）；標準 logging JSON／text、INFO 預設與冪等 handler；純 ASGI request id／access log、contextvars 脈絡、回應 header、合法傳入值驗證、略過 health、不記 query／本文／認證資料；關閉 uvicorn access log。
+- D9–D11：nginx 統一 CSP、Permissions-Policy、條件式 HSTS 與既有安全標頭；map 位於 http context，location 無另設 add_header；非 dev 文件頁與 schema 路由預設關閉，API_DOCS_ENABLED 可覆寫，直接匯出 OpenAPI 不受影響。
+- D12–D15：localStorage 決策保留並移除候選；API CI 加 ruff／eval／migration 升降版，新增完整 Compose e2e（chromium＋ai-stub、失敗 artifacts）；修正未使用 import／變數，保留副作用與斷言；消除 datetime.utcnow，備份 exported_at 維持原本 Z 字串格式。
+- Makefile lint、.env.example、tsbuildinfo 忽略、部署／架構／開發／README／FEATURES／roadmap／CHANGELOG 與本輪進度已同步；alpha.45 收錄同日已完成的 CI 修正。
+
+### 與計畫的差異
+
+- 功能設計依 D1–D15；另補 OpenAPI 匯出的 BrokenPipe 正常結束處理，避免指定 head 管線產生 traceback。依任務前置不再改套件版本、依賴清單或 uv.lock；不移除已追蹤的 tsbuildinfo 索引。
+- 實作階段無網路且不能使用 Docker；live stack 的驗證由主代理事後補做（見下）。審查時另補兩項計畫外的修正：compose 的 `media-init`（舊版 root 擁有的 media volume，非 root API 寫不進去）與 nginx 以 `$remote_addr` 覆寫 `X-Forwarded-For`（原本的附加寫法讓用戶端可偽造來源 IP、繞過登入 IP 節流）；CI `e2e` job 的 `compose up` 拿掉 `--wait`（一次性服務結束後可能被判為失敗）。
+
+### 已執行的驗證
+
+- API pytest：**1440 passed**，使用既有 .venv、停用 pytest cacheprovider。
+- Golden eval：**28 passed／1 skipped**；ruff F＋E9：零違規（`All checks passed!`）。
+- 新增行為測試：15 個（`tests/test_observability.py`），涵蓋 readiness 成功／DB 失敗隱私、request id 產生／沿用／拒絕不合法值、access log 不含 query 並略過 health、JSON 欄位／例外、dev／production／覆寫文件開關、production schema 匯出。環境測試清除並還原 settings cache。
+- production＋明確 JWT_SECRET 執行 export_openapi.py，確認可輸出 JSON。
+- CI／Compose YAML 解析與 workflow run 區塊 bash 語法靜態檢查；比對既有 web／audit／docker jobs 未改內容。
+- git diff --check 與工作樹路徑核對，保留既有前置變更；未操作 commit／push／tag／分支。
+
+### 主代理補做的實測
+
+- 兩個 image 可建置；API 以 uid 10001、Web 以 `node` 執行；`api` healthcheck 轉為 healthy；非 root 執行 `alembic upgrade head` 成功。
+- 舊版 root 擁有的 `media` volume：新 image 實測無法寫入 → 加入 `media-init` 後擁有者變為 10001、可寫。
+- `nginx -t` 通過；CSP、Permissions-Policy 送出；HSTS 僅在 `X-Forwarded-Proto: https` 時出現。
+- request id：沿用合法的傳入值、不合法時重新產生；access log 不含 query string；`/api/health/ready` 回 `ready`。
+- 來源 IP 偽造：12 個不同的偽造 `X-Forwarded-For` 連續登入失敗，第 11 次起回 `429`。
+- e2e（新 image＋CSP）：chromium **91 passed／1 skipped**、ai-stub **4 passed**。
+- Migration：Phase 44 已於 PostgreSQL 容器實測 `0027 → 0028 → 0027 → 0028`（即 `downgrade -1`）；本期無新 migration。
+
+### 未驗證項目
+
+- **GitHub Actions**：`api` job 新增的 ruff／eval／migration 步驟與新的 `e2e` job 尚未看到實際結果。
+- **Release／GHCR／SBOM**：未實際打 tag。
+- **前置 TLS 代理的拓樸**、**CSP 下以真實相機掃碼**：未實測。
+- pytest 剩餘的 1 個 warning 為既有的 httpx per-request cookies 棄用警告。

@@ -29,7 +29,7 @@ export MEDIA_DIR="$PWD/media"
 export CORS_ORIGINS='["http://localhost:3000"]'
 make migrate
 cd apps/api
-.venv/bin/uvicorn app.main:app --reload --port 8000
+.venv/bin/uvicorn app.main:app --reload --port 8000 --no-access-log
 ```
 
 API 的 Settings 讀取執行目錄下的 `.env`，不會自動載入 repo 根目錄的 `.env`；上述 shell 環境變數可直接傳給 API。其他整合設定以 `apps/api/app/config.py` 為準。
@@ -60,9 +60,17 @@ make audit
 ```
 
 - `make test` 串接 API 與 Web 單元測試。API 測試使用每個 test 獨立的 in-memory SQLite，不需正式資料庫。
-- 既有基線：API **1425 passed**；Web **805 passed（135 檔）**；Playwright **30 spec／96 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip）。這些數字是既有基線，不代表每次執行的結果。
+- 既有基線：API **1440 passed**；Web **805 passed（135 檔）**；Playwright **30 spec／96 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip）。這些數字是既有基線，不代表每次執行的結果。
 - e2e 需要已啟動的完整服務與 Playwright 瀏覽器；預設網址為 `http://localhost`，可透過 `E2E_BASE_URL` 覆寫。AI 成功情境另需 dev API 使用 `AI_MODE=stub`，再執行 `E2E_AI_STUB=1 pnpm --filter @ims/web test:e2e --project=ai-stub`。
-- `make audit` 會稽核 Python lockfile 與 Node 正式依賴，需要網路；Python lint 預計 Phase 46 引入 ruff。
+- `make audit` 會稽核 Python lockfile 與 Node 正式依賴，需要網路；`make lint` 同時執行 API ruff（F＋E9）與 Web ESLint。
 - pre-commit 僅保留空白、檔尾、YAML／JSON／TOML、merge conflict、大檔案與換行格式檢查。
 
 完整 targets 見 `make help`。架構見[系統架構](ARCHITECTURE.md)，排程見[排程與到期提醒](scheduling.md)。
+
+## 部署設定與 CI
+
+Compose 已移除 Redis／worker，API runtime 以非 root 執行，Web 與 nginx 等待 `/api/health/ready` 的 DB 探針通過；`/api/health` 保留純 liveness。API 文件頁與 schema 路由僅在 dev 預設開啟，可用 `API_DOCS_ENABLED=true|false` 覆寫；`make gen-types` 直接匯出 schema，不受關閉影響。
+
+`LOG_FORMAT` 留空時 dev 用 text、非 dev 用 JSON，`LOG_LEVEL` 預設 INFO。請求以 `X-Request-ID` 串接日誌；只接受 `[A-Za-z0-9._-]{1,64}`，不合格重新產生。Access log 不記 query string、body、認證 header 或 cookie，並略過 health 探針。nginx 的 CSP 限制同源外送，Permissions-Policy 允許同源相機；HSTS 僅在前置代理帶入 HTTPS header 時回傳，詳見[部署指南](../Deployment_Guide_zh-TW.md)。
+
+API CI 以 `uv sync --frozen --extra test` 安裝，執行 ruff、pytest、`pytest evals/ -q`，並用 `DATABASE_URL` 指向 job 的 PostgreSQL，跑 `upgrade head → downgrade -1 → upgrade head`。新增 e2e job 在完整 Compose 跑 chromium（單 worker），再以 `AI_MODE=stub` 重啟 API、`E2E_AI_STUB=1` 跑 ai-stub；失敗保存 test-results 與 compose logs。這些部署流程本輪尚未實跑，不能以 YAML 靜態檢查代替驗證。
