@@ -2,6 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
+from app.logging_config import configure_logging
+from app.middleware.observability import ObservabilityMiddleware
 from app.routes import (
     admin,
     ai,
@@ -40,12 +42,13 @@ from app.routes import (
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    configure_logging(settings.log_format, settings.log_level)
     app = FastAPI(
         title=settings.app_name,
         version="2.0.0a0",
-        openapi_url="/api/openapi.json",
-        docs_url="/api/docs",
-        redoc_url="/api/redoc",
+        openapi_url="/api/openapi.json" if settings.api_docs_enabled else None,
+        docs_url="/api/docs" if settings.api_docs_enabled else None,
+        redoc_url="/api/redoc" if settings.api_docs_enabled else None,
     )
     app.add_middleware(
         CORSMiddleware,
@@ -54,6 +57,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(ObservabilityMiddleware)
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(users.router)

@@ -17,7 +17,9 @@ class Settings(BaseSettings):
     app_name: str = "IMS v2 API"
     environment: str = Field(default="dev")
     database_url: str = Field(default="postgresql+asyncpg://ims:ims@localhost:5432/ims")
-    redis_url: str = Field(default="redis://localhost:6379/0")
+    log_format: Literal["json", "text"] | None = None
+    log_level: str = "INFO"
+    api_docs_enabled: bool | None = None
     jwt_secret: str = Field(default=_DEFAULT_JWT_SECRET)
     jwt_algorithm: str = "HS256"
     access_token_ttl_seconds: int = 60 * 15
@@ -49,6 +51,14 @@ class Settings(BaseSettings):
     # Phase 44 D12：webhook 出站預設只允許公網位址（防 SSRF）；自架要把 webhook
     # 指向 LAN 服務（Home Assistant／n8n）時由營運者明確開啟。仍只允許 http／https。
     webhook_allow_private_hosts: bool = Field(default=False)
+
+    @model_validator(mode="after")
+    def _environment_defaults(self) -> "Settings":
+        if self.log_format is None:
+            self.log_format = "text" if self.environment == "dev" else "json"
+        if self.api_docs_enabled is None:
+            self.api_docs_enabled = self.environment == "dev"
+        return self
 
     @model_validator(mode="after")
     def _ensure_production_secret(self) -> "Settings":
