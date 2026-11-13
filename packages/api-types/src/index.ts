@@ -2571,7 +2571,9 @@ export interface components {
             /** Resource Id */
             resource_id: string | null;
             /** Meta */
-            meta: Record<string, never> | null;
+            meta: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Created At
              * Format: date-time
@@ -2824,18 +2826,12 @@ export interface components {
         };
         /** Body_bulk_import_items_api_items_bulk_import_post */
         Body_bulk_import_items_api_items_bulk_import_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /** Body_import_data_api_backup_import_post */
         Body_import_data_api_backup_import_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
             /**
              * Mode
@@ -2853,10 +2849,7 @@ export interface components {
         };
         /** Body_upload_image_api_images_post */
         Body_upload_image_api_images_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /**
@@ -3493,7 +3486,9 @@ export interface components {
             /** Name */
             name: string;
             /** Payload */
-            payload: Record<string, never>;
+            payload: {
+                [key: string]: unknown;
+            };
         };
         /** ItemTemplateRead */
         ItemTemplateRead: {
@@ -3502,7 +3497,9 @@ export interface components {
             /** Name */
             name: string;
             /** Payload */
-            payload: Record<string, never>;
+            payload: {
+                [key: string]: unknown;
+            };
             /**
              * Created At
              * Format: date-time
@@ -3514,7 +3511,9 @@ export interface components {
             /** Name */
             name: string;
             /** Payload */
-            payload: Record<string, never>;
+            payload: {
+                [key: string]: unknown;
+            };
         };
         /** ItemTypeCreate */
         ItemTypeCreate: {
@@ -3579,7 +3578,9 @@ export interface components {
             /** User Id */
             user_id: string | null;
             /** Snapshot */
-            snapshot: Record<string, never>;
+            snapshot: {
+                [key: string]: unknown;
+            };
             /**
              * Created At
              * Format: date-time
@@ -4847,6 +4848,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /**
          * ValueStats
@@ -4981,7 +4986,9 @@ export interface components {
             /** Event */
             event: string;
             /** Payload */
-            payload: Record<string, never>;
+            payload: {
+                [key: string]: unknown;
+            };
             /** Status Code */
             status_code: number | null;
             /** Response Excerpt */
@@ -8154,7 +8161,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -9573,7 +9582,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
