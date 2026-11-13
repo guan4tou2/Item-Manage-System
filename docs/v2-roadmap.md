@@ -112,11 +112,11 @@ cd apps/api
 
 ## 與 v1 的關係
 
-v1（Flask + Jinja2）程式碼仍保留於 `app/`、`templates/`、`static/` 等目錄作為唯讀參考。
+v1（Flask + Jinja2）已從目前工作樹下線，歷史快照保留於 `v1-final` tag。
 
-- **不接受新功能**：所有新功能都進 `apps/web` + `apps/api`
-- **沒有資料遷移**：採 Big Bang 切換，v1 使用者需在 v2 重新註冊。v1 的 CSV/JSON 匯出可匯入到 v2（見 Phase 14）
-- **legacy tag**：未來會打 `v1-final` tag 保留 v1 快照，再從 main 移除這些目錄
+- **v2 維護入口**：所有新功能都進 `apps/web`、`apps/api` 與 `packages/`。
+- **帳號與資料**：v1 使用者需在 v2 重新註冊；資料匯入格式以 v2 API 規格與[功能詳述](../FEATURES.md)為準，不提供自動資料庫遷移。
+- **歷史紀錄**：先前 phase 與規劃文字可能引用已下線路徑，保留作為歷史脈絡。
 
 ## 後續候選（尚未排程）
 

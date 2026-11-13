@@ -2,7 +2,7 @@
 
 本專案採用 [Keep a Changelog](https://keepachangelog.com/zh-TW/1.1.0/) 格式與 [Semantic Versioning](https://semver.org/lang/zh-TW/)。
 
-v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 Flask + Jinja2（保留於 `app/`、`templates/` 目錄；參見 [`legacy-v1` 章節](#legacy-v1-保留))。
+v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Flask + Jinja2）已下線，歷史快照保留於 `v1-final` tag；下方歷史條目維持當時紀錄。
 
 ## [Unreleased]
 

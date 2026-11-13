@@ -1,6 +1,6 @@
 # 🏠 物品管理系統 v2
 
-> **v2 全面重寫已完成**：Next.js 15 + FastAPI 0.115 + PostgreSQL 16。v1（Flask + Jinja2）程式碼保留於 `app/`、`templates/` 目錄作為參考，但不再接受新功能。
+> **v2 全面重寫已完成**：Next.js 15 + FastAPI + PostgreSQL 16。v1（Flask + Jinja2）已下線，歷史快照保留於 `v1-final` tag。
 
 家庭與小型團隊的物品管理：記錄放在哪裡、誰借走了、什麼快過期、什麼庫存不足。含相機 QR 掃描、AI 辨識、可安裝 PWA、webhook、LINE/Telegram/Email/Web Push 通知。
 
@@ -8,12 +8,12 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.13+-green.svg)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.162.6-009688.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![API Tests](https://img.shields.io/badge/API%20tests-398%20passed-brightgreen.svg)
-![Web Tests](https://img.shields.io/badge/Web%20tests-75%20passed-brightgreen.svg)
+![API Tests](https://img.shields.io/badge/API%20tests-1425%20passed-brightgreen.svg)
+![Web Tests](https://img.shields.io/badge/Web%20tests-805%20passed-brightgreen.svg)
 
 [功能](#-核心功能) •
 [快速開始](#-快速開始) •
@@ -103,31 +103,16 @@
 git clone https://github.com/guan4tou2/Item-Manage-System.git
 cd Item-Manage-System
 cp .env.example .env       # 視需要填入 GEMINI_API_KEY、SMTP 等
-pnpm install
-docker compose up --build
+make install
+make up
 # → http://localhost/
 ```
 
 首次登入請先註冊（`/signup`），之後可自行啟用管理員：在設定頁按「啟用管理員」按鈕（呼叫 `POST /api/admin/bootstrap`）。
 
-### 本機非 Docker
+### 本機開發（不使用 Docker）
 
-前置需求：Python 3.13、Node 20+、pnpm、PostgreSQL 16（或單獨起 `docker compose up postgres`）。
-
-```bash
-# API
-cd apps/api
-uv venv --python 3.13 .venv
-uv pip install --python .venv/bin/python -e ".[test]"
-.venv/bin/alembic upgrade head
-.venv/bin/uvicorn app.main:app --reload --port 8000
-
-# Web（另一個終端）
-cd apps/web
-pnpm install
-pnpm dev
-# → http://localhost:3000/
-```
+需要 Python 3.13、Node.js 22、pnpm 9.12.0、uv 與可連線的 PostgreSQL 16。API 與 Web 分別啟動；本機的資料庫連線、API base 與環境變數設定請依[開發指南](docs/DEVELOPMENT.md)。Compose 的 PostgreSQL 沒有對主機發佈 port。
 
 ### 必要環境變數
 
@@ -142,7 +127,7 @@ pnpm dev
 | `TELEGRAM_BOT_TOKEN` | （選）Telegram 推播 |
 | `VAPID_PRIVATE_KEY` / `VAPID_PUBLIC_KEY` | （選）Web Push |
 
-參見 [.env.example](.env.example) 取得完整列表。
+常用設定見 [.env.example](.env.example)；完整欄位以 `apps/api/app/config.py` 為準，部署設定見[部署指南](Deployment_Guide_zh-TW.md)。
 
 ---
 
@@ -151,19 +136,20 @@ pnpm dev
 ```
 monorepo (pnpm workspace)
 ├── apps/
-│   ├── api/          FastAPI 0.115 + SQLAlchemy 2.0 async + Pydantic v2 + Alembic
+│   ├── api/          FastAPI 0.162.6 + SQLAlchemy 2.0 async + Pydantic v2 + Alembic
 │   └── web/          Next.js 15 App Router + shadcn/ui + Tailwind + next-intl
 ├── packages/
 │   └── api-types/    OpenAPI schema → TS types (產生器在 generate.mjs)
-├── docs/             技術文件（ARCHITECTURE、API、v2-roadmap、specs/）
-└── app/, templates/  v1 Flask 實作（legacy，唯讀參考）
+├── docs/             架構、開發、排程與路線圖
+├── nginx/            HTTP 反向代理
+└── docker-compose.yml  v2 服務編排
 ```
 
 - **資料庫**：PostgreSQL 16（正式環境）/ SQLite（測試）。跨後端欄位用自訂 `GUID`、`JSONType` decorator 統一抽象
 - **驗證**：JWT access token（15 min）+ httpOnly refresh cookie（7 day）
-- **遷移**：Alembic（目前在 `0014`）
+- **遷移**：Alembic（目前在 `0028`）
 - **OpenAPI**：FastAPI 自動產生，TS 型別由 `packages/api-types` 每次 regen 同步
-- **測試**：pytest-asyncio + FastAPI TestClient（398 passed）、vitest + jsdom（75 passed）
+- **測試**：pytest-asyncio + FastAPI TestClient（1425 passed）、vitest + jsdom（805 passed）
 
 ---
 
@@ -171,8 +157,8 @@ monorepo (pnpm workspace)
 
 完整規格由 FastAPI 自動產生：
 
-- 開發：http://localhost:8000/docs （Swagger UI）
-- OpenAPI JSON：http://localhost:8000/openapi.json
+- 開發：http://localhost:8000/api/docs （Swagger UI）
+- OpenAPI JSON：http://localhost:8000/api/openapi.json
 - Repo：[`packages/api-types/openapi.json`](packages/api-types/openapi.json)
 
 主要路由家族：
@@ -197,15 +183,14 @@ monorepo (pnpm workspace)
 
 | 文件 | 內容 |
 |------|------|
-| [CHANGELOG.md](CHANGELOG.md) | 16 個 v2 phase 的逐項變更 |
+| [CHANGELOG.md](CHANGELOG.md) | 逐 phase 變更 |
 | [FEATURES.md](FEATURES.md) | 每個功能的詳細說明（v2） |
 | [docs/v2-roadmap.md](docs/v2-roadmap.md) | 子專案路線圖與現況 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架構圖、資料流、分層策略 |
-| [docs/API.md](docs/API.md) | API 路由索引（由 OpenAPI 對照） |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | 開發流程、測試、遷移 |
 | [Deployment_Guide_zh-TW.md](Deployment_Guide_zh-TW.md) | 部署指南 |
 | [User_Manual_zh-TW.md](User_Manual_zh-TW.md) | 使用手冊 |
-| [README_EN.md](README_EN.md) | English README |
+| [README_EN.md](README_EN.md) | 專案入口（README_EN） |
 
 ---
 
@@ -213,15 +198,17 @@ monorepo (pnpm workspace)
 
 ```bash
 # API
-cd apps/api && .venv/bin/python -m pytest -q
-# → 398 passed
+make test-api
+# → 1425 passed
 
 # Web
-cd apps/web && pnpm test
-# → 75 passed across 19 files
+make test-web
+# → 805 passed across 135 files
 ```
 
 ---
+
+既有 e2e 基線：**30 spec／96 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip）。
 
 ## 🛠 貢獻
 
