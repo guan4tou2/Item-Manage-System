@@ -30,10 +30,19 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install uv
-      - run: uv venv .venv
-      - run: |
-          . .venv/bin/activate
-          uv pip install -e ".[test]"
+      - run: uv sync --frozen --extra test
+      - name: API lint
+        run: .venv/bin/ruff check .
+      - name: Golden eval
+        run: .venv/bin/python -m pytest evals/ -q
+      - name: Migration 升降版
+        run: |
+          .venv/bin/alembic upgrade head
+          .venv/bin/alembic downgrade -1
+          .venv/bin/alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://ims:ims@localhost:5432/ims_test
+          JWT_SECRET: ci-secret-at-least-32-bytes-for-tests
       - run: |
           . .venv/bin/activate
           pytest -q
@@ -124,3 +133,62 @@ jobs:
           pnpm --filter @ims/api-types gen:types
       - name: Build web image
         run: docker build -t ims-web:ci -f apps/web/Dockerfile .
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: 準備環境與 OpenAPI
+        run: |
+          cp .env.example .env
+          echo "ENABLE_DEV_ROUTES=1" >> .env
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> .env
+          pip install uv
+          cd apps/api
+          uv sync --frozen --extra test
+          .venv/bin/python scripts/export_openapi.py > ../../packages/api-types/openapi.json
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @ims/api-types gen:types
+      - name: 啟動完整服務
+        # 不用 --wait：compose 有一次性的 media-init 服務，結束後 --wait 可能把它判為失敗；改由下一步輪詢 readiness
+        run: docker compose up -d --build
+      - name: 等待 readiness
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost/api/health/ready; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - run: pnpm --filter @ims/web exec playwright install --with-deps chromium
+      - name: Chromium e2e
+        run: pnpm --filter @ims/web exec playwright test --project=chromium --workers=1
+      - name: 重啟 API 為 AI stub
+        run: AI_MODE=stub docker compose up -d --no-deps --force-recreate --wait --wait-timeout 120 api
+      - name: AI stub e2e
+        run: pnpm --filter @ims/web exec playwright test --project=ai-stub --workers=1
+        env:
+          E2E_AI_STUB: "1"
+      - name: 收集 Compose 日誌
+        if: failure()
+        run: docker compose logs --no-color > compose-logs.txt 2>&1
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-failure
+          path: |
+            apps/web/test-results
+            compose-logs.txt
+      - name: 停止服務
+        if: always()
+        run: docker compose down

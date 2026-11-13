@@ -39,7 +39,8 @@ test-web: ## 執行 Web Vitest 測試
 typecheck: ## 檢查 workspace TypeScript 型別
 	pnpm typecheck
 
-lint: ## 執行 workspace lint（Python lint 待 Phase 46）
+lint: ## 執行 API ruff 與 workspace lint
+	cd apps/api && .venv/bin/ruff check .
 	pnpm lint
 
 e2e: ## 執行 Playwright（需已啟動完整服務與安裝瀏覽器）

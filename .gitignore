@@ -66,3 +66,6 @@ apps/api/.pytest_cache/
 .env.local
 .env.*.local
 .gstack/
+
+# TypeScript 增量編譯產物
+*.tsbuildinfo
