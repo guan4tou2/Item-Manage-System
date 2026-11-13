@@ -62,7 +62,7 @@
 
 ## 五、未驗證與已知限制
 
-- **GitHub Actions 的新步驟未確認**：`api` job 的 ruff／eval／migration 與新的 `e2e` job 尚未看到實際結果（Dependabot PR 佔滿執行佇列）；`e2e` job 在 runner 上的啟動時間與穩定度未知。
+- **GitHub Actions 已確認：`main` 上 `api`（含 ruff／golden eval／migration 升降版）、`web`、`audit`、`docker`、`e2e` 五個 job 全數通過（run 43481596981）**；這是 Phase 22 之後 CI 第一次在 `main` 全綠。
 - **Release／GHCR／SBOM 未驗證**：未實際打 `v*.*.*` tag；只做過 workflow 的靜態檢查與版本邏輯 dry-run。
 - **前置 TLS 代理的拓樸未驗證**：HSTS 與 `set_real_ip_from` 的說明依設計撰寫，未在真實的雙層代理環境測過。
 - **CSP 下未以真實相機掃碼**：e2e 走的是掃碼頁的手動輸入與圖片路徑；`Permissions-Policy: camera=(self)` 與 CSP 對實機相機的影響未實測。

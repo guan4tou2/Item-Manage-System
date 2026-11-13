@@ -109,7 +109,7 @@
 
 ### 未驗證項目
 
-- **GitHub Actions**：`api` job 新增的 ruff／eval／migration 步驟與新的 `e2e` job 尚未看到實際結果。
+- （已補驗）GitHub Actions 已確認：`main` 上 `api`（含 ruff／golden eval／migration 升降版）、`web`、`audit`、`docker`、`e2e` 五個 job 全數通過（run 43481596981）。
 - **Release／GHCR／SBOM**：未實際打 tag。
 - **前置 TLS 代理的拓樸**、**CSP 下以真實相機掃碼**：未實測。
 - pytest 剩餘的 1 個 warning 為既有的 httpx per-request cookies 棄用警告。
