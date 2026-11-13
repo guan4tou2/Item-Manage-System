@@ -1,2 +1,0 @@
-# Blueprint package for auth
-
