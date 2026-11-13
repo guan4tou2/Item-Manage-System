@@ -20,7 +20,7 @@ jobs:
         component: [api, web]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         if: matrix.component == 'web'
         with:
           python-version: "3.13"
