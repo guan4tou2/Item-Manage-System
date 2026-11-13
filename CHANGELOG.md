@@ -6,6 +6,28 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`），v1 為 
 
 ## [Unreleased]
 
+## [2.0.0-alpha.44] — Phase 44：安全收斂（依賴、SSRF、session 撤銷）
+
+- **Web 依賴脫離已知 RCE 範圍**：`next` 15.0.0 → **15.5.29**、`react`／`react-dom` 19.0.0-rc → **19.3.1**、`zustand` 5.0.0-rc.2 → 5.1.0、`eslint-config-next` → 15.5.29、`@types/react`／`@types/react-dom` → 19.3.0；`next.config.mjs` 的 `experimental.typedRoutes` 改頂層 `typedRoutes`。原因：Next 15.0.0 落在 React2Shell（CVE-2025-55182／CVE-2025-66478，App Router 未認證 RCE）受影響範圍，15.0.x 線修補版為 15.0.5，本次直接走 15.5 線。沒有任何原始碼因 React 19 型別需要修改
+- **API 認證依賴汰換**：`python-jose[cryptography]==3.3.0` → `pyjwt==2.15.1`（`decode` 明確指定 `algorithms`、要求 `exp`／`sub`）；`passlib[argon2]==1.7.4` → `argon2-cffi==25.1.0`（既有 `$argon2id$` 雜湊免遷移；不合法雜湊改回 `False`，原本 passlib 會丟例外）。`uv.lock` 移除 python-jose、passlib、ecdsa、rsa。測試用 `JWT_SECRET` 加長到 ≥32 bytes（PyJWT 對 HS256 短金鑰發 `InsecureKeyLengthWarning`）
+- **Session 撤銷（Migration 0028）**：`users.token_version INTEGER NOT NULL DEFAULT 0`（downgrade 刪欄）；access／refresh token 新增 `ver` claim，`get_current_user` 與 `/api/auth/refresh` 比對，不符 → `401 token revoked`。無 `ver` 的舊 token 視為 0，升級當下不會把使用者登出
+- **改密碼會撤銷其他裝置**：`POST /api/users/me/change-password` 在同一筆 commit 遞增版本；回應新增 `access_token`、`token_type`（保留 `success`）並重設 refresh cookie，目前裝置不登出
+- **新增 `POST /api/auth/logout-all`**（需登入，204）：遞增版本、清 cookie、稽核 `auth.logout_all`（稽核 action 總數 12 → 13）。`POST /api/auth/logout` 不變（只清 cookie）；PAT 不受版本影響
+- **Web 自動 refresh（修掉既有 bug）**：前端原本從未呼叫 `/auth/refresh`，access token 15 分鐘到期就被踢回登入頁。`apiFetch` 在「401＋請求帶 token＋路徑非 `/auth/*`」時 single-flight 呼叫 refresh 並重試一次；store token 已被別的請求更新則直接沿用、store 已清空則不 refresh；重試後仍 401 才清 store
+- **Web 改密碼與登出所有裝置**：改密碼成功後把新 token 寫回 store 並提示其他裝置已登出；密碼設定頁新增「登出所有裝置」區塊（AlertDialog 確認）；zh-TW／en i18n
+- **Webhook 出站 URL 防護（SSRF）**：新模組 `app/services/url_guard.py`，兩道檢查
+  - 寫入時（不做 DNS）：只收 http／https、必須有 host、拒絕 userinfo、IP 字面值須為全域位址、拒絕 `localhost`／`*.localhost`／`*.local`／`*.internal`、拒絕十進位／八進位／十六進位／省略段 IPv4 寫法 → `422`（`detail[].msg` 含 `webhook_url_not_allowed`）
+  - 送出時：解析 DNS，所有結果都須為全域位址（處理 IPv4-mapped IPv6；另封鎖 `::/96`、NAT64、6to4、Teredo）；被擋 → 不發請求，記失敗 delivery（`status_code=NULL`、excerpt 固定 `error: destination not allowed`），重試照一般失敗排程
+- **釘 IP**：連到已驗證的 IP，`Host` 與 TLS SNI／憑證驗證仍用原 hostname；`follow_redirects=False`、`trust_env=False`；最多試 3 個位址（僅連線層失敗時換下一個）
+- **Web Push endpoint 同樣納管**（審查時發現的第二個入口）：訂閱時要求 `https` 並套同一個 guard（422）；送出前同步解析檢查；`requests` session `max_redirects=0`、timeout 10 秒。pywebpush 自行建連線、無法釘 IP，對 DNS rebinding 只有降低；回應不回傳使用者（blind）
+- **行為變更**：既有指向內網／localhost 的 webhook 會在**下一次投遞被擋下**（不刪資料、無 migration）；自架需要把 webhook 指向 LAN 服務（如 Home Assistant、n8n）的營運者設定 `WEBHOOK_ALLOW_PRIVATE_HOSTS=true`（預設 `false`，`.env.example` 已加；開啟後仍只允許 http／https、不跟隨 redirect）
+- **Web webhook 文案**：建立失敗且為 `webhook_url_not_allowed` 時顯示明確說明
+- **CI**：新增 `.github/dependabot.yml`（pip `/apps/api`、npm `/`、github-actions；每週一；minor／patch 合併成群組 PR）；`ci.yml` 新增獨立 `audit` job（`pip-audit` ＋ `pnpm audit --prod --audit-level=high`，會失敗的 gate；**尚未在 GitHub Actions 實際跑過**，首次執行可能因既有漏洞紅燈）
+- **已知限制**：`/logout` 後該裝置的 access token 最長仍可用 15 分鐘（無 per-session 撤銷與裝置清單）；access token 仍存 `localStorage`、無 CSP（Phase 46）；Webhook 回應本文仍整份讀入後才截 500 字；版本遞增為 ORM 讀取後加 1（非 SQL 原子遞增，並行時可能只加一次，安全效果相同）；PAT 可呼叫 `/logout-all` 與改密碼（改密碼仍須舊密碼），延續「PAT 等同使用者權限」；正式環境 `JWT_SECRET` 少於 32 bytes 時 PyJWT 會發 warning（仍可運作，建議 `openssl rand -hex 32`；dev 預設 secret 為 30 bytes 會觸發）；升級後仍有升級前就存在的 peer 警告（`next-intl@3.21.1`、`next-themes@0.3.0` 未宣告支援 React 19／Next 15；`next@15.5.29` 要 `@playwright/test ^1.51.1`，目前 1.48.0）
+- **`pnpm lint` 無法執行**：repo 從未有 ESLint 設定檔（`next lint` 卡在互動式設定提示），為既有缺口、與升級無關；CI 的 lint 步驟在非互動環境應也會失敗，排入 Phase 46
+- **明確不做**：access token 移出 `localStorage`、CSP／HSTS／TLS（Phase 46）；MFA／WebAuthn、忘記密碼；per-session refresh token 表、重用偵測與裝置管理；v1 目錄下線與 release 管線（Phase 45）；Next 16 升級
+- 測試：API 1272 → **1425 passed**；Web 790 → **805 passed（135 檔）**；typecheck 0 error；`next build` 成功（Next.js 15.5.29、37 個靜態頁）；golden eval 28 passed／1 skipped；api-types 重新產生（新增 path `/api/auth/logout-all`、schema `PasswordChangeResponse`）；Migration 0028 於一次性 PostgreSQL 16 容器實測 `0027 → 0028 → 0027 → 0028`（既有列回填 0、降級後欄位移除）；釘 IP 的 TLS 行為以自簽憑證＋本機 TLS server 實測（SNI 為原 hostname 時 200、為其他 hostname 時 `CERTIFICATE_VERIFY_FAILED`），此測試未納入 pytest（pytest 只驗證傳給 httpx 的 URL／`Host`／`extensions`）。**e2e 未執行**（需完整 docker stack）：`tests/webhooks.spec.ts` 改用 `http://webhook-unreachable.invalid/hook`，新增 `tests/session-security.spec.ts`（2 情境：改密碼後保持登入且舊 token 401、登出所有裝置後導回登入頁），其選擇器未對真實頁面驗證；e2e 基線仍為 Phase 43 的 29 spec／94 情境；e2e 於全新 docker stack 實跑：chromium **91 passed／1 skipped**（`--workers=1`）、ai-stub **4 passed**（新增 `session-security.spec.ts` 2 情境；`locations-tree.spec.ts` 的「真實遷移後的位置樹」依賴舊 dev 庫的 `phase26_demo` 遷移 fixture，全新資料庫不存在 → 改為明確 skip（原本會登入逾時失敗；與本期無關））
+
 ## [2.0.0-alpha.43] — Phase 43：登入防暴力破解
 
 - **新增 `login_attempts`（Migration 0027）**：每次登入失敗寫入 account／ip 兩列；`key_hash` 為 HMAC-SHA256（`jwt_secret`），不保存原始使用者名稱或 IP；`(kind, key_hash, created_at)` 與 `created_at` 索引；每次失敗順便清理 24 小時前紀錄，downgrade 直接刪表（只影響節流紀錄）

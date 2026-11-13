@@ -138,7 +138,7 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ---
 
-## 🔗 Webhooks（Phase 10 + Phase 21）
+## 🔗 Webhooks（Phase 10 + Phase 21 + Phase 44）
 
 - 用戶於設定頁新增 HTTP endpoint + 選擇訂閱事件
 - 支援事件：`item.created` / `item.updated` / `item.deleted`
@@ -155,14 +155,22 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 - `POST /api/webhooks/{id}/deliveries/{delivery_id}/retry`：擁有者手動重試單筆（繞過 backoff）
 - 純函式 `is_success(status_code)`、`backoff_after(attempt)` 可直接單元測試
 
+### 出站 URL 防護（Phase 44）
+- **寫入時**（不做 DNS）：只收 http／https、必須有 host、拒絕 userinfo、IP 字面值須為全域位址、拒絕 `localhost`／`*.localhost`／`*.local`／`*.internal` 與十進位／八進位／十六進位／省略段 IPv4 寫法 → `422`（`detail[].msg` 含 `webhook_url_not_allowed`）
+- **送出時**（每次投遞含重試）：解析 DNS，所有結果都須為全域位址（含 IPv4-mapped IPv6；封鎖 `::/96`、NAT64、6to4、Teredo）；被擋 → 不發請求，記失敗 delivery（`status_code=NULL`、excerpt `error: destination not allowed`）
+- **釘 IP**：連到已驗證的 IP，`Host` 與 TLS SNI／憑證驗證仍用原 hostname；不跟隨 redirect、不讀環境 proxy；最多試 3 個位址
+- `WEBHOOK_ALLOW_PRIVATE_HOSTS`（預設 `false`）：自架把 webhook 指向 LAN 服務時由營運者開啟；仍只允許 http／https、不跟隨 redirect
+- 既有指向內網的 webhook 不刪除，下一次投遞被擋並留下失敗紀錄
+- Web Push 訂閱 endpoint 同樣套用（要求 https、送出前檢查、禁止 redirect）；無法釘 IP，對 DNS rebinding 只有降低
+
 ---
 
 ## 🔑 API Tokens + 稽核（Phase 1；查詢台 Phase 39）
 
 - Personal Access Tokens 前綴 `ims_pat_`，SHA-256 雜湊存放
 - 原始 token 只在建立當下出現一次
-- `audit_logs` 目前記錄 **12 種 action**（Phase 40 擴充）：
-  - 認證：`auth.login`／`auth.login_failed`（失敗只記既有帳號，同一帳號 10 分鐘內只記一次；陌生帳號不寫）
+- `audit_logs` 目前記錄 **13 種 action**（Phase 40 擴充、Phase 44 新增 `auth.logout_all`）：
+  - 認證：`auth.login`／`auth.logout_all`／`auth.login_failed`（失敗只記既有帳號，同一帳號 10 分鐘內只記一次；陌生帳號不寫）
   - 物品：`item.deleted`（meta 記名稱）／`item.bulk_deleted`（一次操作 1 列，meta 記 `count` 與 `item_ids`）
   - 權杖：`token.created`／`token.deleted`（只記 `name`，不記原文或雜湊）
   - 帳號：`user.password_changed`／`admin.user.set_active`
@@ -174,7 +182,7 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ---
 
-## 🔐 認證與登入防護（Phase 43）
+## 🔐 認證與登入防護（Phase 43 + Phase 44）
 
 - `POST /api/auth/login` 只對**失敗**計數；成功登入不新增紀錄，並清除該帳號的失敗列
 - **帳號分級鎖定**（`username.strip()` 精確比對；未知帳號也照樣計數，避免帳號列舉）：
@@ -193,6 +201,16 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 - **Proxy 信任邊界**：compose 的 uvicorn 以 `--proxy-headers --forwarded-allow-ips='*'` 取得 nginx 後方真實 IP；API 只 `expose` 對內。若直接暴露 API，必須移除此旗標或限制 proxy IP，否則來源 IP 可被偽造
 - Web 登入表單對 `429` 顯示「嘗試次數過多，請稍後再試」，其餘維持「帳號或密碼錯誤」
 - **不做**：CAPTCHA／MFA／WebAuthn、註冊／refresh／忘記密碼 rate limit、管理員解鎖 UI、Redis 滑動視窗、稽核原始 IP／User-Agent
+
+### Session 撤銷（Phase 44）
+
+- `users.token_version`（Migration 0028，預設 0）；access／refresh token 帶 `ver` claim，`get_current_user` 與 `/api/auth/refresh` 比對，不符 → `401 token revoked`；無 `ver` 的舊 token 視為 0
+- `POST /api/users/me/change-password` 同一筆 commit 遞增版本，**重新簽發** `access_token`（回應新增 `access_token`、`token_type`，保留 `success`）並重設 refresh cookie → 目前裝置保持登入、其他裝置失效
+- `POST /api/auth/logout-all`（需登入，204）：遞增版本、清 cookie、稽核 `auth.logout_all`；`POST /api/auth/logout` 仍只清目前裝置 cookie（該裝置 access token 最長再活 15 分鐘）
+- Web `apiFetch` 遇 `401`（請求帶 token、路徑非 `/auth/*`）時 single-flight 呼叫 `/auth/refresh` 並重試一次；重試後仍 401 才清 store（修正原本 access token 15 分鐘到期即被踢回登入頁）
+- 設定 → 密碼頁有「登出所有裝置」區塊（AlertDialog 確認）；改密碼成功會提示其他裝置已登出
+- **PAT（`ims_pat_`）不受版本影響**，不因改密碼或登出所有裝置失效
+- 認證依賴：JWT 用 `pyjwt`、密碼雜湊用 `argon2-cffi`（既有 `$argon2id$` 雜湊免遷移）；`JWT_SECRET` 建議 ≥32 bytes（`openssl rand -hex 32`）
 
 ---
 
@@ -254,10 +272,11 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## 🧪 測試
 
-- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1272 passed**；golden eval 28 passed／1 skipped。
-- **Web**: vitest + @testing-library/react + jsdom。**790 passed across 133 files**。
-- **E2E**: Playwright chromium **90 passed**（`--workers=1`）＋ ai-stub 4 passed。
-- **TS**: `tsc --noEmit` 嚴格模式乾淨。
+- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1425 passed**；golden eval 28 passed／1 skipped。
+- **Web**: vitest + @testing-library/react + jsdom。**805 passed across 135 files**。
+- **E2E**: Playwright chromium **91 passed／1 skipped**（`--workers=1`；30 spec／96 情境含 ai-stub）＋ ai-stub 4 passed。
+- **TS**: `tsc --noEmit` 嚴格模式乾淨；`next build` 成功。
+- Phase 44 新增 `session-security.spec.ts`（2 情境）並改寫 `webhooks.spec.ts`，已於全新 docker stack 實跑通過；skip 的 1 個情境是 `locations-tree.spec.ts` 的「真實遷移後的位置樹」依賴舊 dev 庫的 `phase26_demo` 遷移 fixture，全新資料庫不存在 → 改為明確 skip（原本會登入逾時失敗；與本期無關）。
 
 ---
 
