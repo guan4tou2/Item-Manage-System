@@ -25,7 +25,12 @@ describe("labels api client", () => {
         )
       }
       if (url === "/api/items/item-1/qr.png") {
-        return new Response(new Blob(["png"], { type: "image/png" }), { status: 200 })
+        // 以位元組當 body：Node 22 的 fetch 會把 jsdom 的 Blob 當成 Blob-like 並呼叫其不存在的
+        // stream()，導致 res.blob() 失敗（Node 24 不會），測試結果不應取決於 Node 版本。
+        return new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
+          status: 200,
+          headers: { "content-type": "image/png" },
+        })
       }
       return new Response(JSON.stringify({ detail: "not found" }), {
         status: 404,
@@ -39,7 +44,9 @@ describe("labels api client", () => {
     expect(result.items).toHaveLength(1)
     expect(result.items[0]?.itemId).toBe("item-1")
     expect(result.items[0]?.label.name).toBe("Router")
-    expect(result.items[0]?.qrBlob).toBeInstanceOf(Blob)
+    // 不用 instanceof：res.blob() 回傳的是 Node 的 Blob，jsdom 環境的全域 Blob 可能是另一個類別
+    expect(result.items[0]?.qrBlob.size).toBe(4)
+    expect(result.items[0]?.qrBlob.type).toBe("image/png")
   })
 
   it("requests the PDF with repeated ids and parses the filename", async () => {
