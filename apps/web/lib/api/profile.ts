@@ -13,8 +13,10 @@ export async function updateProfile(body: UserProfileUpdate, token: string | nul
   return (await apiFetch("/users/me", { method: "PATCH", accessToken: token, body: JSON.stringify(body) })).json()
 }
 
-export async function changePassword(body: PasswordChangeBody, token: string | null): Promise<void> {
-  await apiFetch("/users/me/change-password", { method: "POST", accessToken: token, body: JSON.stringify(body) })
+export type PasswordChangeResult = paths["/api/users/me/change-password"]["post"]["responses"]["200"]["content"]["application/json"]
+
+export async function changePassword(body: PasswordChangeBody, token: string | null): Promise<PasswordChangeResult> {
+  return (await apiFetch("/users/me/change-password", { method: "POST", accessToken: token, body: JSON.stringify(body) })).json()
 }
 
 export async function bootstrapAdmin(token: string | null): Promise<UserPublic> {

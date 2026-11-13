@@ -26,8 +26,11 @@ export function useUpdateProfile() {
 
 export function useChangePassword() {
   const token = useAccessToken()
+  const setAccessToken = useAuthStore((s) => s.setAccessToken)
   return useMutation({
     mutationFn: (body: api.PasswordChangeBody) => api.changePassword(body, token),
+    // 改密碼會讓所有舊 token 失效：必須把新 access token 寫回 store，否則下一個請求就 401
+    onSuccess: (result) => setAccessToken(result.access_token),
   })
 }
 

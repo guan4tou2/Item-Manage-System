@@ -1151,7 +1151,18 @@
       "mismatch": "兩次輸入的新密碼不一致",
       "save": "變更密碼",
       "saved": "密碼已更新",
-      "wrongCurrent": "目前密碼不正確"
+      "wrongCurrent": "目前密碼不正確",
+      "savedOtherDevices": "其他裝置已登出，目前這台裝置仍保持登入。",
+      "logoutAll": {
+        "title": "登出所有裝置",
+        "description": "登出所有已登入的裝置（包含這台），之後需要重新登入。API 權杖不受影響，請至「API 權杖」管理。",
+        "button": "登出所有裝置",
+        "confirmTitle": "要登出所有裝置嗎？",
+        "confirmBody": "所有登入狀態都會失效，並導回登入頁。",
+        "cancel": "取消",
+        "confirm": "登出",
+        "failed": "無法登出所有裝置，請再試一次。"
+      }
     },
     "preferences": {
       "theme": "主題",
@@ -1386,6 +1397,7 @@
         "actions": "操作"
       },
       "toggleActive": "切換 {name}",
+      "urlNotAllowed": "此網址不被允許：僅支援公開的 http／https 位址，不可為內網、localhost 或含帳號密碼。",
       "tryAgain": "請檢查 endpoint URL 後再試一次。",
       "urlLabel": "Endpoint URL",
       "waiting": "等待觸發"

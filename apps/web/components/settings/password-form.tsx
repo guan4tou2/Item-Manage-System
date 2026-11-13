@@ -20,7 +20,7 @@ export function PasswordForm() {
     if (mismatch || next.length < 8) return
     try {
       await change.mutateAsync({ current_password: current, new_password: next })
-      toast.success(t("settings.password.saved"))
+      toast.success(t("settings.password.saved"), { description: t("settings.password.savedOtherDevices") })
       setCurrent(""); setNext(""); setConfirm("")
     } catch {
       toast.error(t("settings.password.wrongCurrent"))

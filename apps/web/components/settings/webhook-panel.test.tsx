@@ -5,6 +5,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 
 import enMessages from '@/messages/en.json'
 import * as api from '@/lib/api/webhooks'
+import { ApiError } from '@/lib/api/client'
 import { WebhookPanel } from './webhook-panel'
 
 vi.mock('@/lib/auth/use-auth', () => ({
@@ -126,6 +127,34 @@ describe('WebhookPanel', () => {
         'jwt',
       )
     })
+  })
+
+  it('shows the dedicated message when the URL is rejected by SSRF protection', async () => {
+    vi.mocked(api.listWebhooks).mockResolvedValue([])
+    vi.mocked(api.createWebhook).mockRejectedValue(
+      new ApiError(422, { detail: [{ msg: 'Value error, webhook_url_not_allowed', type: 'value_error' }] }),
+    )
+
+    renderPanel()
+
+    fireEvent.change(screen.getByLabelText('Webhook name'), { target: { value: 'Bad' } })
+    fireEvent.change(screen.getByLabelText('Endpoint URL'), { target: { value: 'http://127.0.0.1/hook' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create webhook' }))
+
+    expect(await screen.findByText(enMessages.settings.webhooks.urlNotAllowed)).toBeInTheDocument()
+  })
+
+  it('keeps the generic hint for other create errors', async () => {
+    vi.mocked(api.listWebhooks).mockResolvedValue([])
+    vi.mocked(api.createWebhook).mockRejectedValue(new ApiError(500, { detail: 'boom' }))
+
+    renderPanel()
+
+    fireEvent.change(screen.getByLabelText('Webhook name'), { target: { value: 'Bad' } })
+    fireEvent.change(screen.getByLabelText('Endpoint URL'), { target: { value: 'https://example.com/hook' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create webhook' }))
+
+    expect(await screen.findByText(enMessages.settings.webhooks.tryAgain)).toBeInTheDocument()
   })
 
   it('renders deliveries as a desktop table and mobile cards', async () => {

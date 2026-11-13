@@ -1151,7 +1151,18 @@
       "mismatch": "Passwords do not match",
       "save": "Change password",
       "saved": "Password updated",
-      "wrongCurrent": "Current password is incorrect"
+      "wrongCurrent": "Current password is incorrect",
+      "savedOtherDevices": "Other devices have been signed out; this device stays signed in.",
+      "logoutAll": {
+        "title": "Sign out of all devices",
+        "description": "Sign out every device where you are currently signed in, including this one. You will need to sign in again. API tokens are not affected; manage them under API Tokens.",
+        "button": "Sign out of all devices",
+        "confirmTitle": "Sign out of all devices?",
+        "confirmBody": "All sessions will be revoked and you will be redirected to the sign-in page.",
+        "cancel": "Cancel",
+        "confirm": "Sign out",
+        "failed": "Could not sign out of all devices. Please try again."
+      }
     },
     "preferences": {
       "theme": "Theme",
@@ -1386,6 +1397,7 @@
         "actions": "Actions"
       },
       "toggleActive": "Toggle {name}",
+      "urlNotAllowed": "This URL is not allowed: only public http/https addresses are supported, not private networks, localhost, or URLs containing credentials.",
       "tryAgain": "Check the endpoint URL and try again.",
       "urlLabel": "Endpoint URL",
       "waiting": "Waiting"

@@ -23,14 +23,14 @@ async function loginUi(page: import("@playwright/test").Page, username: string) 
   await page.waitForURL("**/dashboard")
 }
 
-/** 指向必然連線失敗的位址並觸發一次 item.created，產生確定性的失敗 delivery。 */
+/** 指向必然連線失敗的位址（`.invalid` 保證 DNS 解析失敗，建立時合法、送出時為網路錯誤，不依賴外部網路；127.0.0.1 會被 SSRF 防護在建立時拒絕）並觸發一次 item.created，產生確定性的失敗 delivery。 */
 async function seedFailedDelivery(
   request: import("@playwright/test").APIRequestContext,
   token: string,
 ) {
   await request.post("/api/webhooks", {
     headers: { Authorization: `Bearer ${token}` },
-    data: { name: "壞端點", url: "http://127.0.0.1:9/hook", events: ["item.created"] },
+    data: { name: "壞端點", url: "http://webhook-unreachable.invalid/hook", events: ["item.created"] },
   })
   await request.post("/api/items", {
     headers: { Authorization: `Bearer ${token}` },

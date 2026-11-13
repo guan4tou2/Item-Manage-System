@@ -66,7 +66,9 @@ describe("PasswordForm", () => {
         new_password: "newpass123",
       })
     })
-    expect(vi.mocked(toast.success)).toHaveBeenCalledWith(t.saved)
+    expect(vi.mocked(toast.success)).toHaveBeenCalledWith(t.saved, {
+      description: t.savedOtherDevices,
+    })
   })
 
   it("toasts the wrong-current-password error on failure", async () => {

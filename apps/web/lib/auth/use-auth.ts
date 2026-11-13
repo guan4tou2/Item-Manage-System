@@ -32,6 +32,18 @@ export function useLogout() {
   })
 }
 
+/** 登出所有裝置：後端遞增 session 版本並清 refresh cookie；成功後清 store（導頁由呼叫端處理）。 */
+export function useLogoutAll() {
+  const clear = useAuthStore((s) => s.clear)
+  const token = useAuthStore((s) => s.accessToken)
+  return useMutation({
+    mutationFn: async () => {
+      await apiFetch('/auth/logout-all', { method: 'POST', accessToken: token })
+    },
+    onSuccess: () => clear(),
+  })
+}
+
 export function useCurrentUser() {
   return useAuthStore((s) => s.user)
 }

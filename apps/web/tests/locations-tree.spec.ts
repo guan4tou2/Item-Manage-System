@@ -278,6 +278,12 @@ test.describe("行動版搬移（390 寬）", () => {
 
 test("真實遷移後的位置樹在 UI 正確呈現（唯讀）", async ({ page, request }) => {
   // dev 庫的 phase26_demo：遷移前為 1F/廚房/{上櫃,冰箱}、2F/書房、3F
+  // 這份資料來自 Phase 26 一次性遷移，無法由 spec 自行重建；全新的資料庫沒有它 → 明確跳過，
+  // 而不是在登入逾時後以「失敗」呈現。
+  const fixture = await request.post("/api/auth/login", {
+    data: { username: "phase26_demo", password: PASSWORD },
+  })
+  test.skip(!fixture.ok(), "需要 dev 庫的 phase26_demo 遷移 fixture（全新資料庫不存在）")
   await loginUi(page, "phase26_demo")
   await page.goto("/locations")
   await expandAll(page)

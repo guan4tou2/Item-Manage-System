@@ -37,6 +37,7 @@ import {
   type WebhookEvent,
   type WebhookRead,
 } from '@/lib/api/webhooks'
+import { getApiErrorMessages } from '@/lib/api/client'
 import { useAccessToken } from '@/lib/auth/use-auth'
 import { cn } from '@/lib/utils'
 
@@ -462,7 +463,11 @@ export function WebhookPanel() {
             {create.isError ? (
               <Alert variant="destructive">
                 <AlertTitle>{t('settings.webhooks.createFailed')}</AlertTitle>
-                <AlertDescription>{t('settings.webhooks.tryAgain')}</AlertDescription>
+                <AlertDescription>
+                  {getApiErrorMessages(create.error).some((m) => m.includes('webhook_url_not_allowed'))
+                    ? t('settings.webhooks.urlNotAllowed')
+                    : t('settings.webhooks.tryAgain')}
+                </AlertDescription>
               </Alert>
             ) : null}
             <Button
