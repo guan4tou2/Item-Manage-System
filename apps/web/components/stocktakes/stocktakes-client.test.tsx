@@ -98,6 +98,15 @@ const item = {
 const matchedItem = { ...item, id: 'item_2', name: 'Labels', quantity: 5 }
 const overItem = { ...item, id: 'item_3', name: 'Markers', quantity: 1 }
 
+/** 物品下拉在物品清單載入前是停用且沒有選項的；先等選項出現再操作，測試才不依賴查詢回來的時機。 */
+async function readyItemSelect() {
+  const select = await screen.findByLabelText('Item')
+  await waitFor(() => {
+    expect(within(select).getAllByRole('option').length).toBeGreaterThan(1)
+  })
+  return select
+}
+
 describe('StocktakesClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -163,7 +172,7 @@ describe('StocktakesClient', () => {
   it('scans an item with actual quantity', async () => {
     renderClient()
 
-    fireEvent.change(await screen.findByLabelText('Item'), {
+    fireEvent.change(await readyItemSelect(), {
       target: { value: 'item_1' },
     })
     fireEvent.change(screen.getByLabelText('Actual quantity'), {
@@ -183,7 +192,7 @@ describe('StocktakesClient', () => {
   it('clears scan inputs, focuses the next item, and announces readiness', async () => {
     renderClient()
 
-    const itemSelect = await screen.findByLabelText('Item')
+    const itemSelect = await readyItemSelect()
     fireEvent.change(itemSelect, {
       target: { value: 'item_1' },
     })

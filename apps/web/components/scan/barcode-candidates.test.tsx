@@ -53,7 +53,9 @@ describe("BarcodeCandidates", () => {
     expect(screen.getByText("Qty 2")).toBeInTheDocument()
     expect(screen.getByText("Qty 1")).toBeInTheDocument()
     // 縮圖需 Bearer：經 AuthImage 轉 object URL 呈現
-    expect(await screen.findByAltText("")).toHaveAttribute("src", "blob:mock")
+    // 只斷言是 blob URL：實際字串取決於執行環境有沒有原生的 URL.createObjectURL
+    // （有的話 vitest.setup 的替身不會安裝），不該寫死成 "blob:mock"。
+    expect(await screen.findByAltText("")).toHaveAttribute("src", expect.stringMatching(/^blob:/))
     // 無位置 → fallback 文案
     expect(screen.getByText("No location set")).toBeInTheDocument()
   })

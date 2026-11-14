@@ -8,6 +8,6 @@
     "gen:types": "node generate.mjs"
   },
   "devDependencies": {
-    "openapi-typescript": "7.4.1"
+    "openapi-typescript": "7.13.0"
   }
 }

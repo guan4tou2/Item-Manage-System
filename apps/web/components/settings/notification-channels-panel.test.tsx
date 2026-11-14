@@ -96,7 +96,8 @@ describe('NotificationChannelsPanel', () => {
     expect(screen.getByText('LINE')).toBeInTheDocument()
     expect(screen.getByText('Telegram')).toBeInTheDocument()
     expect(screen.getByText('Web Push')).toBeInTheDocument()
-    expect(screen.getAllByText('Server ready')).toHaveLength(3)
+    // 狀態來自查詢；等它出現，不假設在標題渲染時就已經回來
+    expect(await screen.findAllByText('Server ready')).toHaveLength(3)
     expect(screen.getByText('Server missing')).toBeInTheDocument()
     expect(screen.getByText('1 browser linked.')).toBeInTheDocument()
   })
@@ -140,6 +141,8 @@ describe('NotificationChannelsPanel', () => {
   it('registers the current browser for web push', async () => {
     renderPanel()
 
+    // 先等頻道狀態載入：訂閱按鈕的行為取決於伺服器是否已設定 Web Push
+    await screen.findAllByText('Server ready')
     fireEvent.click(await screen.findByRole('button', { name: 'Subscribe this browser' }))
 
     await waitFor(() => {
