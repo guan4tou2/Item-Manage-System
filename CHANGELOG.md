@@ -6,6 +6,28 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 
 ## [Unreleased]
 
+## [2.0.0-alpha.51] — Phase 51：離線新增物品
+
+- **範圍收斂**：已開著 App 時斷線仍可「新增物品」，資料先存在裝置上，連線後自動同步；不做離線編輯／刪除、不做分頁關閉後的背景同步、不做離線上傳圖片或 AI
+- **Migration 0033**：`idempotency_keys` 表（`owner_id` FK users CASCADE、`key` char 36、`item_id` FK items CASCADE、`created_at`）；`UNIQUE(owner_id, key)`；同一交易內寫入 key 與物品；downgrade 刪表
+- **伺服器端冪等**：`POST /api/items` 接受選填 `Idempotency-Key` 標頭（UUID，非 UUID → `422`）。同使用者同 key 重送 → 回傳首次建立的物品（`200`，內容同 `ItemRead`），資料庫只有一筆；並行重送以 unique constraint 收斂；物品已軟刪除 → `410 {"code":"idempotent_item_deleted"}`；沒帶標頭行為不變。每次 keyed 寫入清除 7 天前紀錄
+- **離線佇列**：瀏覽器 IndexedDB（`ims-offline`／`pending-items`），主鍵 `client_id`＝`crypto.randomUUID()`，同時作為 `Idempotency-Key`；記錄 `owner_user_id`、表單 payload、啟用批次與自訂欄位所需資料、`created_at`、`status`（`pending`／`syncing`／`failed`）、`error_code`、`attempts`
+- **進佇列時機**：`navigator.onLine` 為 false，或 fetch 因網路層失敗（丟例外、無 HTTP 回應）→ 存入佇列；拿到 HTTP 回應的 4xx／5xx 不進佇列，維持原錯誤處理
+- **同步時機**：`online` 事件、App 載入時、登入成功後、使用者按「立即同步」；single-flight 逐筆依建立順序重放線上新增流程
+- **失敗分類**：網路層失敗 → 維持 `pending` 下次再試；`401` → 整輪暫停等重新登入；`403`／`404`／`409`／`410`／`422` 等確定性錯誤 → 標 `failed` 並記 `error_code`，使用者可「編輯後重送」或「捨棄」；`5xx` → `attempts` 加一，連續 5 次後標 `failed`；物品已建立但後續步驟（批次、自訂欄位）失敗 → 移出佇列並提示到物品頁補填
+- **離線時不可用的欄位**：圖片上傳與 AI 辨識需要連線，離線時表單入口顯示為不可用並說明原因；已上傳好的 `image_id` 會跟著佇列項目保留
+- **介面**：離線提示列「目前離線——新增的物品會先存在這台裝置」，恢復連線即消失，使用 `aria-live="polite"`；送出後 toast「已存在這台裝置，連線後自動同步」並回到物品清單；清單頁待同步區塊顯示「N 筆待同步」、每筆名稱／時間／狀態與「編輯後重送」「捨棄」；同步成功 toast「已同步 N 筆」；導覽列「物品」旁有待同步數量徽章
+- **IndexedDB 不可用／空間不足**：私密視窗或停用 IndexedDB 時離線送出顯示「這個瀏覽器無法離線保存」；儲存空間不足同樣有明確訊息
+- **登出**：登出不刪除 IndexedDB；一般登出與「登出所有裝置」確認框會先檢查佇列並提示使用者
+- **Service worker**：未更動快取策略；從未開過 App／頁面的離線啟動不保證可用
+- **明確不做**：分頁關閉後背景同步（Background Sync API）、離線編輯／刪除既有物品、離線上傳圖片、離線 AI、預先快取所有頁面、跨裝置同步佇列
+- 測試：API 1524 → **1534 passed**；Web 926 → **975 passed（154 檔）**；typecheck 0 error；lint `next lint --max-warnings 0` 通過。主代理以本機 SQLite 暫時資料庫＋`next dev`、停止 API 行程模擬斷線實際操作：同一 `Idempotency-Key` 連送兩次 `POST /api/items` → 第一次 `201`、第二次 `200`，清單只有一筆；非 UUID key → `422`；開著新增表單停止 API → 送出出現「1 筆待同步」「立即同步」與導覽列徽章；重新啟動 API 按「立即同步」→ toast「已同步 1 筆」、清單出現該物品且只有一筆。此次實測觸發 D7 的「網路層失敗」路徑（`navigator.onLine` 仍為 true）；`navigator.onLine` 為 false 的路徑由單元測試與 e2e spec 涵蓋，主代理未以瀏覽器離線模擬實測。**未在本機執行**：Playwright e2e（`offline-add.spec.ts`）與 Migration 0033 的 PostgreSQL 升降版，交由 CI；真實瀏覽器離線模式、私密視窗無 IndexedDB、儲存空間不足、375px 版面未以瀏覽器實測；分頁關閉期間不會同步；CI 結果 push 後由 CI 確認
+
+**同日維護項目（第二批）**：
+
+- Dependabot：合併 6 個檢查全綠的 PR——`github/codeql-action` 3→4、`docker/login-action` 3→4、`actions/setup-python` 5→7、`docker/setup-qemu-action` 3→4、`actions/setup-node` 4→7，以及 Python minor／patch 群組更新（含 `sqlalchemy` 2.0.35→2.1.8、`uvicorn` 0.30.6→0.54.0、`pydantic` 2.12.5→2.14.3、`pydantic-settings` 2.11.0→2.16.2、`alembic` 1.13.3→1.20.1、`asyncpg` 0.30.0→0.32.0、`python-multipart` 0.0.31→0.0.33、`pywebpush` 2.0.0→2.5.0、`pytest` 9.0.3→9.2.0、`aiosqlite` 0.20.0→0.22.1、`pypdfium2` 5.14.0→5.15.2）。仍開著未處理的：`vitest` 5、`eslint` 10、`tailwindcss` 4、`google-genai` 3（皆為 major，需個別評估）、npm minor／patch 群組（檢查未過）、`docker/setup-buildx-action` 4 與 `pytest-cov` 7（等 rebase）。併入後以新版本重跑 API 全套仍為 1534 passed，OpenAPI 輸出僅描述性差異、TypeScript 型別不變
+- codex 的使用額度在本輪用完；Phase 48–50 與維護項目的文件、以及本次文件更新由 opencode 完成
+
 ## [2.0.0-alpha.50] — Phase 50：清單分享唯讀連結
 
 - **分享範圍＝單一清單**：一條連結只對應一份清單，不會連帶揭露物品庫存、位置、其他清單或帳號資訊

@@ -282,6 +282,14 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 - Navigate 請求 network-first → fallback cache → `/offline`
 - `/scan` 排除在 navigate cache 外（相機頁離線無用）
 
+### 離線新增物品（Phase 51）
+
+- 已開著 App 時斷線仍可新增物品；資料先存在裝置上的 IndexedDB 佇列（`ims-offline`／`pending-items`），連線後自動同步
+- 同步時機：`online` 事件、App 載入、登入成功後、使用者按「立即同步」；single-flight 逐筆依建立順序送出
+- 冪等重送：每筆佇列項目以 `crypto.randomUUID()` 作為 `Idempotency-Key`，`POST /api/items` 同 key 重送回 `200` 且不會重複建立；伺服器端以 `idempotency_keys` 表（Migration 0033）在同一交易內記錄
+- 失敗處置：網路層失敗會自動重試；`401` 暫停等重新登入；`403`／`404`／`409`／`410`／`422` 等確定性錯誤標為 `failed`，使用者可編輯後重送或捨棄；`5xx` 最多自動重試 5 次
+- 限制：離線時圖片上傳與 AI 不可用；已上傳的 `image_id` 會保留；分頁關閉期間不會同步；從未開過 App 的離線啟動不保證可用；不做離線編輯／刪除
+
 ---
 
 ## 🌍 i18n（Phase 2）
@@ -295,9 +303,9 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## 🧪 測試
 
-- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1524 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
-- **Web**: vitest + @testing-library/react + jsdom。**926 passed across 148 files**。
-- **E2E**: Phase 47 為 **31 spec／99 情境**（含 ai-stub）；Phase 48–50 新增的情境由 CI 執行。
+- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1534 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
+- **Web**: vitest + @testing-library/react + jsdom。**975 passed across 154 files**（Node 22 與 Node 24 皆通過）。
+- **E2E**: Phase 47 為 **31 spec／99 情境**（含 ai-stub）；Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行。
 - **TS**: `tsc --noEmit` 嚴格模式乾淨；`next build` 成功。
 
 ---

@@ -12,8 +12,8 @@
 ![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![API Tests](https://img.shields.io/badge/API%20tests-1524%20passed-brightgreen.svg)
-![Web Tests](https://img.shields.io/badge/Web%20tests-926%20passed-brightgreen.svg)
+![API Tests](https://img.shields.io/badge/API%20tests-1534%20passed-brightgreen.svg)
+![Web Tests](https://img.shields.io/badge/Web%20tests-975%20passed-brightgreen.svg)
 
 [功能](#-核心功能) •
 [快速開始](#-快速開始) •
@@ -147,9 +147,9 @@ monorepo (pnpm workspace)
 
 - **資料庫**：PostgreSQL 16（正式環境）/ SQLite（測試）。跨後端欄位用自訂 `GUID`、`JSONType` decorator 統一抽象
 - **驗證**：JWT access token（15 min）+ httpOnly refresh cookie（7 day）
-- **遷移**：Alembic（目前在 `0028`）
+- **遷移**：Alembic（目前在 `0033`）
 - **OpenAPI**：FastAPI 自動產生，TS 型別由 `packages/api-types` 每次 regen 同步
-- **測試**：pytest-asyncio + FastAPI TestClient（1524 passed）、vitest + jsdom（926 passed across 148 files）
+- **測試**：pytest-asyncio + FastAPI TestClient（1534 passed）、vitest + jsdom（975 passed across 154 files）
 
 ---
 
@@ -201,16 +201,16 @@ monorepo (pnpm workspace)
 ```bash
 # API
 make test-api
-# → 1524 passed
+# → 1534 passed
 
 # Web
 make test-web
-# → 926 passed across 148 files
+# → 975 passed across 154 files
 ```
 
 ---
 
-既有 e2e 基線：Phase 47 為 **31 spec／99 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip），Phase 48–50 新增的情境由 CI 執行。
+既有 e2e 基線：Phase 47 為 **31 spec／99 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip），Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行。
 
 ## 🛠 貢獻
 

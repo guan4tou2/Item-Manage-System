@@ -1,6 +1,6 @@
 # 系統架構（v2）
 
-IMS v2 是 pnpm workspace monorepo。Web 使用 Next.js 15 App Router、React、Tailwind CSS 與 next-intl；API 使用 Python 3.13、FastAPI、Pydantic v2 與 SQLAlchemy async。正式資料庫為 PostgreSQL 16，Alembic migration 目前到 `0028`。
+IMS v2 是 pnpm workspace monorepo。Web 使用 Next.js 15 App Router、React、Tailwind CSS 與 next-intl；API 使用 Python 3.13、FastAPI、Pydantic v2 與 SQLAlchemy async。正式資料庫為 PostgreSQL 16，Alembic migration 目前到 `0033`。
 
 ## 程式碼分工
 

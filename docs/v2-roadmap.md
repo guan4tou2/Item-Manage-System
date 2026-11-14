@@ -1,6 +1,6 @@
 # v2 重構路線圖
 
-> **狀態：基礎子專案與後續 Phase 1–50 已完成實作。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
+> **狀態：基礎子專案與後續 Phase 1–51 已完成實作。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
 
 參見 [`docs/superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md`](superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md) 了解基礎決策。
 
@@ -19,7 +19,7 @@
 | 8 | 管理與設定 | ✅ 完成 |
 | 9 | 行動/PWA 體驗 | ✅ 完成（見下方 Phase 16 polish） |
 
-## 進階 Phase 1–50（v1 功能補齊 + 增強）
+## 進階 Phase 1–51（v1 功能補齊 + 增強）
 
 | Phase | 主題 | 狀態 | 關鍵能力 |
 |-------|------|------|----------|
@@ -72,24 +72,25 @@
 | 48 | 收據人工核對與整張收據視圖 | ✅ | Migration 0030 `ai_receipt_reviews`；以本人任一狀態草稿判定收據擁有權；`GET/PUT/DELETE /api/ai/receipts/{receipt_id}/review`；`DraftRead` 帶 `receipt_review`；群組標頭標記／取消核對；整張收據頁含算術拆解、全部品項行與狀態、第一頁影像；不寫稽核、不進備份；只保留第一頁影像 |
 | 49 | 批次成本 | ✅ | Migration 0031 `item_batches.unit_cost`；有效單價＝批次成本→退回 `item.cost`；啟用批次估值＝Σ未耗盡批次 quantity×有效單價；統計／報表共用 valuation；`BatchCreate/Update/Read` additive；備份相容；Web 批次對話框、列單價、物品詳情估值小計 |
 | 50 | 清單分享唯讀連結 | ✅ | Migration 0032 `list_shares`；256-bit token 只存雜湊與前 6 碼；`/share#{token}` fragment 不進 log；`X-Share-Token` 公開端點；預設不顯示價格、可選效期、可撤銷；白名單回應、no-store/noindex/no-referrer 標頭；非 http(s) 連結不渲染；`list.share_created/revoked` 稽核；不進備份 |
+| 51 | 離線新增物品 | ✅ | IndexedDB 佇列、`Idempotency-Key` 冪等、`online`／載入／登入／手動同步、失敗可編輯後重送或捨棄；不做背景同步、離線編輯／刪除、離線圖片／AI |
 
 ## 測試規模
 
-- API 測試：**1524 passed**（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28 passed／1 skipped（mock 模式）
-- Web 測試：**926 passed（148 檔**；vitest + @testing-library/react + jsdom）
-- Playwright e2e：Phase 47 為 **31 spec／99 情境**（含 `floor-plan.spec.ts` 3 情境，由 CI 執行）；Phase 48–50 新增的情境由 CI 執行
+- API 測試：**1534 passed**（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28 passed／1 skipped（mock 模式）
+- Web 測試：**975 passed（154 檔**；vitest + @testing-library/react + jsdom；Node 22 與 Node 24 皆通過）
+- Playwright e2e：Phase 47 為 **31 spec／99 情境**（含 `floor-plan.spec.ts` 3 情境，由 CI 執行）；Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行
 
 ## 下一輪（未排程）
 
-Phase 22–46 已完成實作；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-11-14-b.md`](progress-2026-11-14-b.md)（Phase 40–43 見 [`docs/progress-2026-10-23.md`](progress-2026-10-23.md)）。
+Phase 22–51 已完成實作；整體狀態、驗證基線與已知限制見 [`docs/progress-2026-11-14-c.md`](progress-2026-11-14-c.md)（Phase 40–43 見 [`docs/progress-2026-10-23.md`](progress-2026-10-23.md)）。
 
 候選項目（依建議優先序，粗估含測試與 i18n）：
 
 | # | 項目 | 說明 | 粗估 |
 |---|------|------|------|
-| 1 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
+| 1 | 離線編輯／刪除與分頁關閉後的背景同步 | 需衝突合併設計與 service worker 取得登入憑證的方案 | L |
 
-> 收據人工核對、批次成本、分享唯讀連結與 `AuthImage` blob 快取已於 Phase 48–50 與同日維護完成。只剩 **Background Sync** 列為未排程候選，成本較高，可另開里程碑。
+> Phase 51 已完成「開著 App 時的離線新增」。剩餘 **離線編輯／刪除與分頁關閉後的背景同步** 列為未排程候選，成本較高，可另開里程碑。
 
 ## 快速啟動（v2）
 

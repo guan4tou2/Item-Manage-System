@@ -1,6 +1,6 @@
 # Phase 51：離線新增物品
 
-- **狀態**：🚧 進行中
+- **狀態**：✅ 完成
 - **日期**：2026-11-14
 - **基線**：`main` `d3e258e`（Phase 47）；本期於獨立分支進行，與 Phase 48–50（Migration 0030–0032）平行，合併時接在其後
 - **來源**：roadmap 候選「Background Sync（離線新增）」
@@ -99,14 +99,27 @@ roadmap 原本寫「IndexedDB 佇列＋SW sync」。本期**刻意收斂**成可
 ### 已執行驗證
 
 - 先以指定 Python 在本 worktree 的 `apps/api` 印出 `app.__file__`，確認匯入本 worktree。
-- API：`ruff check .` 通過；`python -m pytest -q -p no:cacheprovider` 通過（待主代理填入）；`python -m pytest evals/ -q -p no:cacheprovider` 通過（待主代理填入）。
-- Web：`tsc --noEmit`、`vitest run`、`next lint` 皆通過（待主代理填入）；lint 無 error，warning 未超過基線。完整統計由主代理填入，既有測試斷言未放寬或刪除。
-- Playwright：以 `--list` 確認新 spec 可收集（待主代理填入），未執行 e2e。
+- API：`ruff check .` 通過；`python -m pytest -q -p no:cacheprovider` **1465 passed**；`python -m pytest evals/ -q -p no:cacheprovider` **28 passed／1 skipped**。完整統計由主代理填入，既有測試斷言未放寬或刪除。
+- Web：`tsc --noEmit` 0 error、`vitest run` **873 passed（144 檔）**、`next lint` 通過；lint 無 error，warning 未超過基線。
+- Playwright：以 `--list` 確認新 spec（`offline-add.spec.ts`）可收集，未執行 e2e。
 - `git diff --check` 與禁止路徑檢查；未安裝套件，未操作 commit／push／tag／分支。
+
+### 主代理的審查與實際操作
+
+- codex 的使用額度在本輪用完，未交出最終回報；主代理接手後確認實作已完整，執行驗證並合併。
+- 合併時 `messages/zh-TW.json`、`messages/en.json`、`components/shell/user-menu.test.tsx` 三處衝突皆為兩邊各自新增內容，已保留雙方內容解決；兩個語系檔的鍵集合一致（各 1382 個鍵）。
+- 合併 Phase 48–51 與全部維護項目後的 `main`：API **1534 passed**；golden eval **28 passed／1 skipped**；ruff 零違規；Web vitest **975 passed（154 檔）**，Node 22 與 Node 24 皆通過；typecheck 0 error；`next lint --max-warnings 0` 通過；`alembic heads` 為單一 `0033`；api-types 合併後以實際 API 重新產生。
+- 以本機 SQLite 暫時資料庫＋`next dev`、停止 API 行程模擬斷線：
+  - 同一 `Idempotency-Key` 連送兩次 `POST /api/items` → 第一次 `201`、第二次 `200`，清單中該物品只有一筆；非 UUID 的 key → `422`。
+  - 開著新增表單時停止 API → 送出 → toast「已存在這台裝置，連線後自動同步」，回到物品清單，出現「1 筆待同步」「立即同步」與導覽列「物品」旁的數量徽章。
+  - 重新啟動 API → 按「立即同步」→ toast「已同步 1 筆」，待同步區塊消失，清單出現該物品且只有一筆。
+- 本次實測觸發的是 D7 的「網路層失敗」路徑（`navigator.onLine` 仍為 true）；`navigator.onLine` 為 false 的路徑由單元測試與 e2e spec 涵蓋，主代理未以瀏覽器離線模擬實測。
 
 ### 未驗證與環境限制
 
-- PostgreSQL migration 升降版及 PostgreSQL 實際並行連線留待 CI；本 worktree 缺少 0030–0032 屬預期，未建立或修改那些 migration，也未以 `alembic heads` 作驗收。
-- 未執行完整 Playwright e2e。375px 與桌面實際版面／離線路由切換、真實瀏覽器 IndexedDB 持久化、私密視窗與 quota 行為仍待整合驗證；單元使用可注入記憶體儲存與錯誤替身。
-- 嘗試以隔離元件畫面驗證版面，但本機連接埠被 sandbox 拒絕，後續瀏覽器頁面讀值亦因核准政策 `never` 被工具拒絕，未取得可宣稱通過的視覺證據。
+- **Playwright e2e 未在本機執行**（本機 Docker 未啟動）：`offline-add.spec.ts` 與 Phase 48–50 新增的情境都交由 CI。
+- **Migration 0030–0033 的 PostgreSQL 升降版、PostgreSQL 上真正並行的冪等重送**，交由 CI／未實測。
+- 真實瀏覽器的離線模式（`navigator.onLine=false`）、私密視窗無 IndexedDB、儲存空間不足、375px 版面：未以瀏覽器實測（單元測試涵蓋邏輯）。
+- 分頁關閉期間不會同步；從未開過 App 的離線啟動不保證可用（設計上的限制）。
+- CI 結果在撰寫時尚未確認（push 後由 CI 確認）。
 

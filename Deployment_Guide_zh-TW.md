@@ -16,7 +16,7 @@ make up
 docker compose ps
 ```
 
-`make up` 先匯出 OpenAPI、產生 TypeScript 型別，再執行 `docker compose up -d --build`。API 容器會先執行 `alembic upgrade head`（目前到 `0028`），成功後才啟動 uvicorn。首次使用至 `/signup` 註冊；首位使用者可於設定頁啟用管理員。
+`make up` 先匯出 OpenAPI、產生 TypeScript 型別，再執行 `docker compose up -d --build`。API 容器會先執行 `alembic upgrade head`（目前到 `0033`），成功後才啟動 uvicorn。首次使用至 `/signup` 註冊；首位使用者可於設定頁啟用管理員。
 
 ## 環境設定
 
