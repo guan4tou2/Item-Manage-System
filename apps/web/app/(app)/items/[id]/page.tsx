@@ -149,8 +149,9 @@ export default function ItemDetailPage() {
       </Breadcrumb>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-semibold">{i.name}</h1>
+        {/* min-w-0＋overflow-wrap:anywhere：沒有斷字機會的長名稱（條碼、代號）在手機寬度也要能折行，不可撐出水平捲軸 */}
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 className="min-w-0 text-2xl font-semibold [overflow-wrap:anywhere]">{i.name}</h1>
           {isOwner ? (
             <EditableOnly>
               <FavoriteButton itemId={i.id} isFavorite={i.is_favorite} />

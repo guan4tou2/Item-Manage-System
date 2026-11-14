@@ -65,6 +65,9 @@ test("離線期間位置被刪除 → 顯示原因並確認捨棄", async ({ pag
   const location = await request.post("/api/locations", { headers, data: { name: "暫存櫃" } })
   expect(location.status()).toBe(201)
   const id = (await location.json()).id as number
+  // setup() 已載入過物品清單（位置樹被快取為空）；位置是之後才用 API 建立的，重新載入讓表單看得到它。
+  await page.reload()
+  await expect(page.getByText("還沒有任何物品")).toBeVisible()
   await openForm(page)
   await page.getByLabel("名稱").fill("待確認物品")
   await page.getByLabel("位置 1").click()
