@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 
-import { createReceipt } from "./ai-receipts"
+import { createReceipt, getReceipt, putReceiptReview, deleteReceiptReview } from "./ai-receipts"
 import type { ReceiptCreateResponse } from "./ai-receipts"
 
 const originalFetch = global.fetch
@@ -75,4 +75,28 @@ describe("ai-receipts api client", () => {
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit
     expect(new Headers(init.headers).get("authorization")).toBeNull()
   })
+
+  it("讀取整張收據並送出認證", async () => {
+    const detail = { receipt_id: "r1", lines: [], review: null }
+    const fetchMock = mockFetch(detail)
+    expect(await getReceipt("r1", "jwt")).toEqual(detail)
+    expect(requestOf(fetchMock).url).toBe("/api/ai/receipts/r1")
+    expect(new Headers(fetchMock.mock.calls[0]?.[1]?.headers).get("authorization")).toBe("Bearer jwt")
+  })
+
+  it("送出核對備註並回傳核對紀錄", async () => {
+    const review = { verified_at: "2026-11-14T00:00:00Z", note: "已查" }
+    const fetchMock = mockFetch(review)
+    expect(await putReceiptReview("r1", "已查", "jwt")).toEqual(review)
+    expect(requestOf(fetchMock)).toEqual({ url: "/api/ai/receipts/r1/review", method: "PUT", body: { note: "已查" } })
+  })
+
+  it("取消核對接受沒有 JSON body 的 204", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }))
+    global.fetch = fetchMock
+    await expect(deleteReceiptReview("r1", "jwt")).resolves.toBeUndefined()
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/ai/receipts/r1/review")
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("DELETE")
+  })
+
 })

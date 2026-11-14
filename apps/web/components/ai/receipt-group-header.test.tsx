@@ -1,5 +1,7 @@
 import { render, screen } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import type { ReceiptReview } from "@/lib/api/ai-receipts"
 import { describe, expect, it } from "vitest"
 
 import type { ReceiptSnapshot } from "@/lib/api/ai-receipts"
@@ -24,11 +26,14 @@ function snapshot(overrides: Partial<ReceiptSnapshot> = {}): ReceiptSnapshot {
 function renderHeader(props: {
   snapshot: ReceiptSnapshot | null
   itemCount: number
+  review?: ReceiptReview | null
 }) {
   return render(
+    <QueryClientProvider client={new QueryClient()}>
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <ReceiptGroupHeader {...props} />
-    </NextIntlClientProvider>,
+      <ReceiptGroupHeader receiptId="receipt-1" review={props.review ?? null} {...props} />
+    </NextIntlClientProvider>
+    </QueryClientProvider>,
   )
 }
 
@@ -138,5 +143,31 @@ describe("ReceiptGroupHeader", () => {
     expect(screen.getByText("Unlabeled merchant")).toBeInTheDocument()
     expect(screen.getByText("2 item(s)")).toBeInTheDocument()
     expect(screen.queryByText("Matches the receipt total")).not.toBeInTheDocument()
+  })
+})
+
+
+describe("人工核對呈現", () => {
+  it("取代警示與算術拆解，保留整張收據連結", () => {
+    renderHeader({ snapshot: snapshot({ balance_status: "discrepancy", calculated_total: "1240" }), itemCount: 2,
+      review: { verified_at: "2026-11-14T00:00:00Z", note: null } })
+    expect(screen.getByText("Manually verified")).toBeInTheDocument()
+    expect(screen.queryByText(/Items total/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Math:/)).not.toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "View entire receipt" })).toHaveAttribute("href", "/items/drafts/receipts/receipt-1")
+    expect(screen.getByRole("button", { name: "Cancel verification" })).toBeInTheDocument()
+  })
+
+  it("顯示備註並隱藏缺價與幣別旗標", () => {
+    renderHeader({ snapshot: snapshot({ balance_status: "incomplete", currency: "XXX", missing_price_count: 2 }), itemCount: 2,
+      review: { verified_at: "2026-11-14T00:00:00Z", note: "紙本已確認" } })
+    expect(screen.getByText("紙本已確認")).toBeInTheDocument()
+    expect(screen.queryByText("Currency to confirm")).not.toBeInTheDocument()
+    expect(screen.queryByText(/need a price/)).not.toBeInTheDocument()
+  })
+
+  it("未核對顯示標記動作", () => {
+    renderHeader({ snapshot: snapshot(), itemCount: 2 })
+    expect(screen.getByRole("button", { name: "Mark as verified" })).toBeInTheDocument()
   })
 })

@@ -652,6 +652,19 @@ describe("DraftsClient 收據群組（Phase 33）", () => {
     expect(names).toEqual(["Eggs", "Milk"])
   })
 
+  it("傳遞收據識別碼與人工核對狀態至標頭", async () => {
+    vi.mocked(aiApi.listDrafts).mockResolvedValue(listOf([{
+      ...receiptDraft("r1", 0, "Eggs"),
+      receipt_review: { verified_at: "2026-11-14T00:00:00Z", note: "已核對紙本" },
+    }]))
+    renderClient()
+    const header = await screen.findByTestId("receipt-group-header")
+    expect(within(header).getByText("Manually verified")).toBeInTheDocument()
+    expect(within(header).getByText("已核對紙本")).toBeInTheDocument()
+    expect(within(header).queryByText("Matches the receipt total")).not.toBeInTheDocument()
+    expect(within(header).getByRole("link", { name: "View entire receipt" })).toHaveAttribute("href", "/items/drafts/receipts/receipt-1")
+  })
+
   it("shows a per-item line total on receipt cards", async () => {
     vi.mocked(aiApi.listDrafts).mockResolvedValue(listOf([receiptDraft("r1", 0, "Eggs")]))
 

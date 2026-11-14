@@ -512,6 +512,48 @@
       },
       "item": {
         "subtotal": "Line total {amount}"
+      },
+      "review": {
+        "verified": "Manually verified",
+        "mark": "Mark as verified",
+        "cancel": "Cancel verification",
+        "note": "Note (optional)",
+        "count": "{count}/200 characters",
+        "confirm": "Confirm verification",
+        "description": "Check the receipt against the paper copy. Verification does not change the AI extraction.",
+        "failed": "Could not update verification. Changes were restored; please try again."
+      },
+      "detail": {
+        "view": "View entire receipt",
+        "title": "Entire receipt",
+        "back": "Back to draft queue",
+        "arithmetic": "Arithmetic breakdown",
+        "notFound": "Receipt not found",
+        "error": "Could not load this receipt. Please try again.",
+        "retry": "Retry",
+        "noSnapshot": "No snapshot is available for this receipt",
+        "empty": "No receipt lines. Return to the draft queue.",
+        "lines": "All items",
+        "unitPrice": "Unit price",
+        "subtotal": "Subtotal",
+        "statusLabel": "Status",
+        "status": {
+          "pending": "Pending",
+          "accepted": "Added to inventory",
+          "discarded": "Discarded"
+        },
+        "image": "First receipt page",
+        "firstPage": "{count} page(s); only the first page is retained",
+        "imageError": "Receipt image is unavailable",
+        "amounts": {
+          "item_total": "Items total",
+          "discount": "Discount",
+          "tax": "Tax",
+          "shipping": "Shipping",
+          "calculated_total": "Calculated total",
+          "total": "Receipt total",
+          "discrepancy": "Difference"
+        }
       }
     },
     "search": {

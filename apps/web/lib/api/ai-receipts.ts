@@ -31,3 +31,26 @@ export async function createReceipt(
   })
   return (await res.json()) as ReceiptCreateResponse
 }
+
+export type ReceiptRead =
+  paths["/api/ai/receipts/{receipt_id}"]["get"]["responses"]["200"]["content"]["application/json"]
+export type ReceiptReview = NonNullable<ReceiptRead["review"]>
+
+/** 讀取同張收據的所有草稿行，包含已處理的行。 */
+export async function getReceipt(id: string, accessToken: string | null): Promise<ReceiptRead> {
+  const res = await apiFetch(`/ai/receipts/${id}`, { accessToken })
+  return (await res.json()) as ReceiptRead
+}
+
+export async function putReceiptReview(
+  id: string, note: string | null, accessToken: string | null,
+): Promise<ReceiptReview> {
+  const res = await apiFetch(`/ai/receipts/${id}/review`, {
+    method: "PUT", accessToken, body: JSON.stringify({ note }),
+  })
+  return (await res.json()) as ReceiptReview
+}
+
+export async function deleteReceiptReview(id: string, accessToken: string | null): Promise<void> {
+  await apiFetch(`/ai/receipts/${id}/review`, { method: "DELETE", accessToken })
+}

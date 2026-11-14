@@ -40,6 +40,7 @@ export function useDraftCounts() {
 
 function invalidateDrafts(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: DRAFTS_KEY })
+  qc.invalidateQueries({ queryKey: ["ai-receipts"] })
 }
 
 export function useCreateDrafts() {

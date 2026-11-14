@@ -512,6 +512,48 @@
       },
       "item": {
         "subtotal": "小計 {amount}"
+      },
+      "review": {
+        "verified": "已人工核對",
+        "mark": "標記為已核對",
+        "cancel": "取消核對",
+        "note": "備註（選填）",
+        "count": "{count}/200 字",
+        "confirm": "確認核對",
+        "description": "請依紙本確認收據內容。核對不會修改 AI 辨識結果。",
+        "failed": "核對更新失敗，已還原，請再試一次"
+      },
+      "detail": {
+        "view": "查看整張收據",
+        "title": "整張收據",
+        "back": "回到草稿佇列",
+        "arithmetic": "算術拆解",
+        "notFound": "找不到這張收據",
+        "error": "無法載入收據，請稍後重試",
+        "retry": "重試",
+        "noSnapshot": "這張收據沒有快照資料",
+        "empty": "沒有品項行，請回到草稿佇列",
+        "lines": "所有品項",
+        "unitPrice": "單價",
+        "subtotal": "小計",
+        "statusLabel": "狀態",
+        "status": {
+          "pending": "待處理",
+          "accepted": "已入庫",
+          "discarded": "已捨棄"
+        },
+        "image": "收據第一頁",
+        "firstPage": "共 {count} 頁，僅保留第一頁",
+        "imageError": "無法顯示收據影像",
+        "amounts": {
+          "item_total": "品項合計",
+          "discount": "折扣",
+          "tax": "稅",
+          "shipping": "運費",
+          "calculated_total": "算術值",
+          "total": "收據總額",
+          "discrepancy": "差額"
+        }
       }
     },
     "search": {

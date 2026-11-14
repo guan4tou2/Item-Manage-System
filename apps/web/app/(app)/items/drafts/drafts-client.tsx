@@ -280,7 +280,7 @@ function DraftsQueue() {
           {groups.map((group) => (
             <div key={group.receiptId ?? `single-${group.drafts[0]?.id}`} className="space-y-3">
               {group.receiptId !== null ? (
-                <ReceiptGroupHeader snapshot={group.snapshot} itemCount={group.drafts.length} />
+                <ReceiptGroupHeader receiptId={group.receiptId} review={group.drafts[0]?.receipt_review ?? null} snapshot={group.snapshot} itemCount={group.drafts.length} />
               ) : null}
               {group.drafts.map((draft: DraftRead) => (
                 <DraftCard

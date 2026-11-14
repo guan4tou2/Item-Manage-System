@@ -295,6 +295,8 @@ describe("i18n messages", () => {
       "app/(app)/items/drafts/drafts-client.tsx",
       "components/ai/draft-upload-zone.tsx",
       "components/ai/receipt-group-header.tsx",
+      "components/ai/receipt-review-actions.tsx",
+      "components/ai/receipt-detail.tsx",
       "components/ai/draft-card.tsx",
     ]
       .map((relative) => fs.readFileSync(path.resolve(__dirname, "..", "..", relative), "utf8"))
