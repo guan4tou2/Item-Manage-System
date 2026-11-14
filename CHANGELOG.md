@@ -22,6 +22,8 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 - **Service worker**：未更動快取策略；從未開過 App／頁面的離線啟動不保證可用
 - **明確不做**：分頁關閉後背景同步（Background Sync API）、離線編輯／刪除既有物品、離線上傳圖片、離線 AI、預先快取所有頁面、跨裝置同步佇列
 - 測試：API 1524 → **1534 passed**；Web 926 → **975 passed（154 檔）**；typecheck 0 error；lint `next lint --max-warnings 0` 通過。主代理以本機 SQLite 暫時資料庫＋`next dev`、停止 API 行程模擬斷線實際操作：同一 `Idempotency-Key` 連送兩次 `POST /api/items` → 第一次 `201`、第二次 `200`，清單只有一筆；非 UUID key → `422`；開著新增表單停止 API → 送出出現「1 筆待同步」「立即同步」與導覽列徽章；重新啟動 API 按「立即同步」→ toast「已同步 1 筆」、清單出現該物品且只有一筆。此次實測觸發 D7 的「網路層失敗」路徑（`navigator.onLine` 仍為 true）；`navigator.onLine` 為 false 的路徑由單元測試與 e2e spec 涵蓋，主代理未以瀏覽器離線模擬實測。**未在本機執行**：Playwright e2e（`offline-add.spec.ts`）與 Migration 0033 的 PostgreSQL 升降版，交由 CI；真實瀏覽器離線模式、私密視窗無 IndexedDB、儲存空間不足、375px 版面未以瀏覽器實測；分頁關閉期間不會同步；CI 結果 push 後由 CI 確認
+- **修正物品詳情頁長名稱撐破手機版面（既有問題）**：標題遇到沒有斷字機會的長名稱（代號、條碼式名稱）不會折行，375px 下出現水平捲軸；由批次成本的 e2e 在 CI 暴露。標題改為可任意斷行
+- **CI 確認**：`a2ba6a0` 的 `api`／`web`／`audit`／`docker`／`e2e` 五個 job 全數通過（含 Migration 0030–0033 的 PostgreSQL 升降版與 Phase 48–51 新增的 e2e 情境）
 
 **同日維護項目（第二批）**：
 

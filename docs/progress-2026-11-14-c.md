@@ -73,7 +73,7 @@
 ## 五、未驗證與已知限制
 
 - **Playwright e2e 未在本機執行**（本機 Docker 未啟動）：Phase 47 為 31 spec／99 情境，Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行。
-- **Migration 0030／0031／0032／0033 的 PostgreSQL 升降版未在本機執行**，交由 CI。
+- Migration 0030／0031／0032／0033 的 PostgreSQL 升降版未在本機執行，已由 CI 確認通過。
 - Phase 48：只保留收據第一頁影像（既有限制）。
 - Phase 49：報表期初估值為近似值（以目前加權平均單價反推）。
 - Phase 50：公開存取沒有速率限制（token 為 256 bit，無法猜測；濫用防護交由前置代理）；本機實測用的是 SQLite，時間欄位在本機顯示為無時區（正式環境為 PostgreSQL timestamptz）。
@@ -81,7 +81,7 @@
   - 真實瀏覽器的離線模式（`navigator.onLine=false`）、私密視窗無 IndexedDB、儲存空間不足、375px 版面：未以瀏覽器實測（單元測試涵蓋邏輯）。
   - 分頁關閉期間不會同步；從未開過 App／頁面的離線啟動不保證可用（設計上的限制）。
   - 超過七天保留期的 `Idempotency-Key` 重送視為新請求。
-- CI 結果在撰寫時尚未確認（push 後由 CI 確認）。
+- **CI 已確認**（run 43578011792，commit `a2ba6a0`）：`api`（含 ruff、golden eval、Migration 0030–0033 在 PostgreSQL 的 `upgrade head → downgrade -1 → upgrade head`）、`web`、`audit`、`docker`、`e2e`（chromium 與 ai-stub）五個 job 全數通過。第一次推送（`9bb3e86`）時 e2e 有 2 個情境失敗：(1) 批次成本情境在 375px 的水平溢出檢查——原因是物品詳情頁標題遇到沒有斷字機會的長名稱不折行，屬**既有的版面問題**，已修正（標題可任意斷行）；(2) 離線情境的 spec 在位置由 API 建立後沒有重新載入頁面，表單拿到舊的位置快取，屬測試前置問題，已修正。修正前後另在本機以「SQLite＋正式建置＋反向代理」的方式實跑：離線 3 情境、AI stub 5 情境（含收據人工核對）、批次成本、清單分享、平面圖皆通過。
 
 ---
 
