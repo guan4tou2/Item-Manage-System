@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl"
 import { ChevronDown } from "lucide-react"
 import { useState } from "react"
 
+import { PendingBadge } from "@/components/offline/offline-status"
 import { cn } from "@/lib/utils"
 
 import type { NavGroup as NavGroupDef } from "./nav-items"
@@ -58,7 +59,7 @@ export function NavGroup({ group, pathname, onSelect }: Props) {
                     : "hover:bg-accent hover:text-accent-foreground",
                 )}
               >
-                {t(item.labelKey as never)}
+                {t(item.labelKey as never)}{item.key === "items" && <PendingBadge />}
               </button>
             )
           })}

@@ -3,7 +3,8 @@ from __future__ import annotations
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user
@@ -72,12 +73,29 @@ async def toggle_favorite(
     return await items_service.toggle_favorite(session, user.id, item_id)
 
 
-@router.post("", response_model=ItemRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=ItemRead, status_code=status.HTTP_201_CREATED,
+    responses={200: {"model": ItemRead}, 410: {"description": "物品已刪除"}},
+)
 async def create_item(
     body: ItemCreate,
+    response: Response,
+    idempotency_key: UUID | None = Header(default=None),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
-) -> ItemRead:
+) -> ItemRead | JSONResponse:
+    if idempotency_key is not None:
+        try:
+            result, created = await items_service.create_item_idempotent(
+                session, user.id, body, idempotency_key
+            )
+        except HTTPException as exc:
+            if exc.status_code == 410:
+                return JSONResponse(status_code=410, content=exc.detail)
+            raise
+        if not created:
+            response.status_code = status.HTTP_200_OK
+        return result
     return await items_service.create_item(session, user.id, body)
 
 

@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { PendingBadge } from "@/components/offline/offline-status"
 import { cn } from "@/lib/utils"
 
 import { InstallPwaButton } from "@/components/pwa/install-pwa-button"
@@ -80,7 +81,7 @@ export function AppHeader() {
                   : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
               )}
             >
-              {t(item.labelKey as never)}
+              {t(item.labelKey as never)}{item.key === "items" && <PendingBadge />}
             </Link>
           )
         })}

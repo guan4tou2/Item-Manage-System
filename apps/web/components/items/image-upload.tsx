@@ -8,18 +8,19 @@ import { uploadImage } from "@/lib/api/images"
 import { useAccessToken } from "@/lib/auth/use-auth"
 
 interface Props {
+  disabled?: boolean
   imageId: string | null
   onChange: (imageId: string | null) => void
 }
 
-export function ImageUpload({ imageId, onChange }: Props) {
+export function ImageUpload({ imageId, onChange, disabled = false }: Props) {
   const t = useTranslations()
   const token = useAccessToken()
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
 
   const onFile = async (file: File | undefined) => {
-    if (!file) return
+    if (!file || disabled) return
     setBusy(true)
     try {
       const meta = await uploadImage(file, token)
@@ -48,7 +49,7 @@ export function ImageUpload({ imageId, onChange }: Props) {
           type="button"
           size="sm"
           variant="outline"
-          disabled={busy}
+          disabled={busy || disabled}
           onClick={() => inputRef.current?.click()}
         >
           {busy ? t("items.form.uploading") : t("items.form.uploadImage")}
@@ -62,6 +63,7 @@ export function ImageUpload({ imageId, onChange }: Props) {
       <input
         ref={inputRef}
         type="file"
+        disabled={disabled}
         accept="image/jpeg,image/png,image/webp,image/gif"
         className="hidden"
         onChange={(e) => onFile(e.target.files?.[0])}

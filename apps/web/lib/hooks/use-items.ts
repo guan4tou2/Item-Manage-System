@@ -39,11 +39,11 @@ export function useItem(id: string | undefined) {
   })
 }
 
-export function useCreateItem() {
+export function useCreateItem(idempotencyKey?: string) {
   const token = useAccessToken()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: ItemCreate) => api.createItem(body, token),
+    mutationFn: (body: ItemCreate) => api.createItem(body, token, idempotencyKey),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["items"] })
       qc.invalidateQueries({ queryKey: ["tags"] })
