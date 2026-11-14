@@ -6485,7 +6485,9 @@ export interface operations {
     create_item_api_items_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -6495,6 +6497,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemRead"];
+                };
+            };
             /** @description Successful Response */
             201: {
                 headers: {
@@ -6503,6 +6514,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ItemRead"];
                 };
+            };
+            /** @description 物品已刪除 */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
