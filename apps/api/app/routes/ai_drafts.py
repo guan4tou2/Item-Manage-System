@@ -30,15 +30,16 @@ from app.schemas.ai_draft import (
     DraftPayload,
     DraftRead,
     DraftStatus,
+    ReceiptReviewRead,
 )
-from app.services import ai_drafts_service
+from app.services import ai_drafts_service, ai_receipts_service
 
 router = APIRouter(
     route_class=WriterGuardRoute, prefix="/api/ai/drafts", tags=["ai"]
 )
 
 
-def to_read(row: AiDraftItem) -> DraftRead:
+def to_read(row: AiDraftItem, review: ReceiptReviewRead | None = None) -> DraftRead:
     return DraftRead(
         id=row.id,
         source=row.source,
@@ -50,6 +51,7 @@ def to_read(row: AiDraftItem) -> DraftRead:
         processed_at=row.processed_at,
         created_at=row.created_at,
         receipt_id=row.receipt_id,
+        receipt_review=review if row.source == "receipt" else None,
     )
 
 
@@ -79,9 +81,12 @@ async def list_drafts(
     rows, total = await ai_drafts_service.list_drafts(
         session, user.id, status=status_filter, limit=limit, offset=offset
     )
+    reviews = await ai_receipts_service.reviews_for(
+        session, user.id, [row.receipt_id for row in rows]
+    )
     counts = await ai_drafts_service.counts(session, user.id)
     return DraftListResponse(
-        items=[to_read(row) for row in rows],
+        items=[to_read(row, reviews.get(row.receipt_id)) for row in rows],
         total=total,
         counts=DraftCounts(**counts),
     )
@@ -94,7 +99,8 @@ async def process_draft(
     session: AsyncSession = Depends(get_db),
 ) -> DraftRead:
     draft = await ai_drafts_service.process_draft(session, user.id, draft_id)
-    return to_read(draft)
+    reviews = await ai_receipts_service.reviews_for(session, user.id, [draft.receipt_id])
+    return to_read(draft, reviews.get(draft.receipt_id))
 
 
 @router.post("/{draft_id}/accept", response_model=DraftAcceptResponse)
@@ -105,7 +111,8 @@ async def accept_draft(
     session: AsyncSession = Depends(get_db),
 ) -> DraftAcceptResponse:
     draft, item = await ai_drafts_service.accept_draft(session, user.id, draft_id, body)
-    return DraftAcceptResponse(draft=to_read(draft), item=item)
+    reviews = await ai_receipts_service.reviews_for(session, user.id, [draft.receipt_id])
+    return DraftAcceptResponse(draft=to_read(draft, reviews.get(draft.receipt_id)), item=item)
 
 
 @router.post("/{draft_id}/discard", response_model=DraftRead)
@@ -115,7 +122,8 @@ async def discard_draft(
     session: AsyncSession = Depends(get_db),
 ) -> DraftRead:
     draft = await ai_drafts_service.discard_draft(session, user.id, draft_id)
-    return to_read(draft)
+    reviews = await ai_receipts_service.reviews_for(session, user.id, [draft.receipt_id])
+    return to_read(draft, reviews.get(draft.receipt_id))
 
 
 @router.post("/discard", response_model=DraftDiscardResponse)

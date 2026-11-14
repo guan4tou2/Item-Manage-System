@@ -40,6 +40,38 @@ class DraftCreate(BaseModel):
     image_ids: list[UUID] = Field(min_length=1, max_length=10)
 
 
+class ReceiptReviewRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    verified_at: datetime
+    note: Optional[str] = None
+
+
+class ReceiptReviewWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    note: Optional[str] = Field(default=None, max_length=200)
+
+
+class ReceiptLineRead(BaseModel):
+    draft_id: UUID
+    index: int
+    name: Optional[str] = None
+    quantity: Optional[int] = None
+    unit_price: Optional[Decimal] = None
+    subtotal: Optional[Decimal] = None
+    status: DraftStatus
+    item_id: Optional[UUID] = None
+
+
+class ReceiptRead(BaseModel):
+    receipt_id: UUID
+    snapshot: Optional[ReceiptSnapshot] = None
+    review: Optional[ReceiptReviewRead] = None
+    image_id: Optional[UUID] = None
+    lines: list[ReceiptLineRead]
+
+
 class DraftRead(BaseModel):
     id: UUID
     source: DraftSource
@@ -51,6 +83,7 @@ class DraftRead(BaseModel):
     processed_at: Optional[datetime]
     created_at: datetime
     receipt_id: Optional[UUID] = None
+    receipt_review: Optional[ReceiptReviewRead] = None
 
 
 class DraftCreateResponse(BaseModel):
