@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
 
+import { OfflineStatus } from "@/components/offline/offline-status"
 import { AppShell } from "@/components/shell/app-shell"
 import { MeSync } from "@/components/shell/me-sync"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -43,6 +44,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AppShell>
       <MeSync />
+      <OfflineStatus />
       {children}
     </AppShell>
   )

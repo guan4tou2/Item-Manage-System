@@ -9,6 +9,10 @@ export class ApiError extends Error {
   }
 }
 
+export class NetworkError extends Error {
+  constructor(public cause: unknown) { super("network request failed") }
+}
+
 type RequestInitWithToken = RequestInit & { accessToken?: string | null }
 
 // 進行中的 refresh（single-flight）：多個請求同時 401 時共用，避免後端 cookie 被重複輪替
@@ -35,7 +39,7 @@ function refreshAccessToken(): Promise<string | null> {
   return refreshInFlight
 }
 
-function sendRequest(path: string, init: RequestInitWithToken, token: string | null | undefined): Promise<Response> {
+async function sendRequest(path: string, init: RequestInitWithToken, token: string | null | undefined): Promise<Response> {
   const { accessToken: _ignored, ...rest } = init
   const headers = new Headers(init.headers)
   // Only set JSON content-type when body is not FormData (browser sets boundary for FormData)
@@ -45,7 +49,11 @@ function sendRequest(path: string, init: RequestInitWithToken, token: string | n
   if (token) {
     headers.set('authorization', `Bearer ${token}`)
   }
-  return fetch(`${API_BASE}${path}`, { ...rest, headers, credentials: 'include' })
+  try {
+    return await fetch(`${API_BASE}${path}`, { ...rest, headers, credentials: 'include' })
+  } catch (error) {
+    throw new NetworkError(error)
+  }
 }
 
 export async function apiFetch(path: string, init: RequestInitWithToken = {}): Promise<Response> {

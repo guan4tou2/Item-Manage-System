@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
+import { PendingItems } from "@/components/offline/pending-items"
 import { EditableOnly } from "@/components/common/editable-only"
 import { AiAskPanel } from "@/components/items/ai-ask-panel"
 import { AiSearchBar } from "@/components/items/ai-search-bar"
@@ -194,9 +195,11 @@ export function ItemsListClient() {
         <ItemsFilterPanel filters={filters} onChange={writeFilters} />
       </aside>
 
-      <section className="space-y-3">
-        <div className="flex gap-2">
+      <section className="min-w-0 space-y-3">
+        <PendingItems />
+        <div className="flex flex-wrap gap-2">
           <Input
+            className="min-w-0 flex-1 basis-40"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder={t("items.list.searchPlaceholder")}

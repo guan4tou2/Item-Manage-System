@@ -1,10 +1,15 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
+from sqlalchemy import delete
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.base import _utcnow
+from app.models.idempotency_key import IdempotencyKey
 
 from app.models.item import Item
 from app.repositories import (
@@ -203,7 +208,50 @@ async def get_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> Item
     return await _read_with_location(session, item)
 
 
-async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -> ItemRead:
+async def _idempotent_result(
+    session: AsyncSession, owner_id: UUID, key: str
+) -> ItemRead | None:
+    record = await session.get(IdempotencyKey, (owner_id, key))
+    if record is None:
+        return None
+    item = await items_repository.get_owned(session, owner_id, record.item_id)
+    if item is None:
+        raise HTTPException(status_code=410, detail={"code": "idempotent_item_deleted"})
+    result = await _read_with_location(session, item)
+    # SQLite 的 DateTime 不保留時區；重送的序列化須與首次建立一致。
+    if result.created_at.tzinfo is None:
+        result.created_at = result.created_at.replace(tzinfo=UTC)
+    if result.updated_at.tzinfo is None:
+        result.updated_at = result.updated_at.replace(tzinfo=UTC)
+    return result
+
+
+async def create_item_idempotent(
+    session: AsyncSession, owner_id: UUID, body: ItemCreate, key: UUID
+) -> tuple[ItemRead, bool]:
+    # 先寫入清理：SQLite 取得寫鎖後才查詢，避免讀取快照升級寫入的競爭。
+    # PostgreSQL 另以複合主鍵收斂並行請求；失敗者整筆 rollback。
+    await session.execute(
+        delete(IdempotencyKey).where(IdempotencyKey.created_at < _utcnow() - timedelta(days=7))
+    )
+    existing = await _idempotent_result(session, owner_id, str(key))
+    if existing is not None:
+        await session.commit()
+        return existing, False
+    try:
+        result = await create_item(session, owner_id, body, idempotency_key=str(key))
+    except IntegrityError:
+        await session.rollback()
+        existing = await _idempotent_result(session, owner_id, str(key))
+        if existing is None:
+            raise
+        return existing, False
+    return result, True
+
+
+async def create_item(
+    session: AsyncSession, owner_id: UUID, body: ItemCreate, *, idempotency_key: str | None = None
+) -> ItemRead:
     await _validate_refs(session, owner_id, body.category_id, body.location_id)
     tags = await tags_repository.get_or_create_many(session, owner_id, body.tag_names)
     item = Item(
@@ -221,6 +269,10 @@ async def create_item(session: AsyncSession, owner_id: UUID, body: ItemCreate) -
         image_id=body.image_id,
         tags=tags,
     )
+    if idempotency_key is not None:
+        session.add(item)
+        await session.flush()
+        session.add(IdempotencyKey(owner_id=owner_id, key=idempotency_key, item_id=item.id))
     created = await items_repository.create(session, item)
     if (
         created.min_quantity is not None

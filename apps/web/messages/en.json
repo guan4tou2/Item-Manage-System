@@ -1699,5 +1699,40 @@
     "budget": "Budget",
     "price": "Price",
     "quantity": "Quantity"
+  },
+  "offline": {
+    "banner": "You are offline. New items will be saved on this device.",
+    "saved": "Saved on this device. Sync will resume when connected.",
+    "count": "{count} items waiting to sync",
+    "synced": "Synced {count} items",
+    "syncFailed": "Some items could not sync. Check the pending items.",
+    "partial": "Item created. Open the item page to complete batches or custom fields.",
+    "openItem": "Open item",
+    "syncNow": "Sync now",
+    "details": "View pending items",
+    "pending": "Pending",
+    "syncing": "Syncing",
+    "failed": "Failed",
+    "edit": "Edit and resend",
+    "discard": "Discard",
+    "discardTitle": "Discard this offline item?",
+    "discardDescription": "This item exists only on this device and cannot be recovered after discarding.",
+    "cancel": "Cancel",
+    "unavailable": "This browser cannot save offline. Keep the form open and reconnect to retry.",
+    "quota": "Device storage is full. Free up space or reconnect to retry.",
+    "requiresConnection": "Image uploads and AI require a connection and are currently unavailable.",
+    "logoutWarning": "This device has pending items. They will be kept and synced when you sign in to this account again. Sign out anyway?",
+    "reason": {
+      "location": "The location no longer exists. Edit and select another location.",
+      "category": "The category no longer exists. Edit and select another category.",
+      "403": "Your account cannot create items. Check editing permissions.",
+      "404": "Related data no longer exists. Edit and resend.",
+      "409": "Data conflict. Edit and resend.",
+      "410": "This item was deleted. Discard this record.",
+      "idempotent_item_deleted": "This item was deleted. Discard this record.",
+      "422": "Validation failed. Edit and resend.",
+      "server": "The server failed five times. Edit and resend later.",
+      "unknown": "Sync could not complete. Check the data and resend."
+    }
   }
 }

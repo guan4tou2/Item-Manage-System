@@ -15,10 +15,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import { usePendingItems } from "@/lib/offline/runtime"
 import { useLogoutAll } from "@/lib/auth/use-auth"
 
 export function LogoutAllSection() {
   const t = useTranslations("settings.password.logoutAll")
+  const offline = useTranslations("offline")
+  const pending = usePendingItems()
   const router = useRouter()
   const logoutAll = useLogoutAll()
 
@@ -45,7 +48,7 @@ export function LogoutAllSection() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("confirmTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("confirmBody")}</AlertDialogDescription>
+            <AlertDialogDescription>{t("confirmBody")}{pending.length > 0 && <span className="mt-2 block">{offline("logoutWarning")}</span>}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>

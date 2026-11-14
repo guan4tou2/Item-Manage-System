@@ -69,8 +69,9 @@ export async function getItem(id: string, accessToken: string | null): Promise<I
   return (await res.json()) as ItemRead
 }
 
-export async function createItem(body: ItemCreate, accessToken: string | null): Promise<ItemRead> {
+export async function createItem(body: ItemCreate, accessToken: string | null, idempotencyKey?: string): Promise<ItemRead> {
   const res = await apiFetch("/items", {
+    headers: idempotencyKey ? { "Idempotency-Key": idempotencyKey } : undefined,
     method: "POST", body: JSON.stringify(body), accessToken,
   })
   return (await res.json()) as ItemRead

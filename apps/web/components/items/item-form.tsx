@@ -9,6 +9,7 @@ import { useForm, type Path } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { useOnline } from "@/lib/offline/runtime"
 import { LocationSelect } from "@/components/locations/location-select"
 
 import { CategorySelect } from "@/components/categories/category-select"
@@ -104,6 +105,7 @@ export function ItemForm({
   barcodePrefill = null,
 }: Props) {
   const t = useTranslations()
+  const online = useOnline()
   const token = useAccessToken()
   const prefs = usePreferences()
   const currency = prefs.data?.currency ?? "TWD"
@@ -582,15 +584,17 @@ export function ItemForm({
       <div>
         <Label>{t("items.form.image")}</Label>
         <ImageUpload
+          disabled={!online}
           imageId={form.watch("image_id") ?? null}
           onChange={(id) => form.setValue("image_id", id)}
         />
+        {!online && <p className="mt-2 text-sm text-muted-foreground">{t("offline.requiresConnection")}</p>}
         <div className="mt-2">
           <Button
             type="button"
             size="sm"
             variant="outline"
-            disabled={aiBusy || !form.watch("image_id")}
+            disabled={!online || aiBusy || !form.watch("image_id")}
             onClick={runAiSuggest}
           >
             {aiBusy ? t("items.form.aiRecognizing") : <><Sparkles className="mr-1 h-4 w-4" />{t("items.form.aiRecognize")}</>}
