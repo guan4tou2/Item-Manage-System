@@ -1,5 +1,6 @@
 "use client"
 
+import { useQueryClient } from "@tanstack/react-query"
 import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
 import { useState } from "react"
@@ -22,10 +23,11 @@ export function PendingItems() {
   const readOnly = useReadOnly()
   const router = useRouter()
   const sync = useOfflineSync()
+  const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
   if (!rows.length) return null
   return (
-    <section className="min-w-0 rounded-lg border bg-muted/50 p-4" aria-label={t("count", { count: rows.length })}>
+    <section aria-live="polite" className="min-w-0 rounded-lg border bg-muted/50 p-4" aria-label={t("count", { count: rows.length })}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-semibold tabular-nums">{t("count", { count: rows.length })}</h2>
         <Button variant="outline" className="min-h-11" disabled={!online || busy} onClick={async () => { setBusy(true); try { await sync() } finally { setBusy(false) } }}>{t("syncNow")}</Button>
@@ -35,19 +37,38 @@ export function PendingItems() {
         <ul className="divide-y">
           {rows.map((row) => (
             <li key={row.client_id} className="min-w-0 space-y-2 py-3">
-              <p className="break-words text-sm font-medium [overflow-wrap:anywhere]">{row.values.name}</p>
+              <p className="break-words text-sm font-medium [overflow-wrap:anywhere]">{row.item_name ?? row.values.name}</p>
+              <p className="text-xs text-muted-foreground">{t(`action.${row.kind ?? "create"}`)}</p>
               <p className="text-xs text-muted-foreground">{new Date(row.created_at).toLocaleString(locale)}</p>
               <Badge variant={row.status === "failed" ? "destructive" : "secondary"}>{t(row.status)}</Badge>
-              {row.status === "failed" && <p className="break-words text-sm text-destructive">{t(`reason.${["location", "category", "403", "404", "409", "410", "422", "idempotent_item_deleted", "server"].includes(row.error_code ?? "") ? row.error_code : "unknown"}` as never)}</p>}
+              {row.status === "failed" && <p className="break-words text-sm text-destructive">{t(`reason.${["item_gone", "item_modified", "location", "category", "403", "404", "409", "410", "422", "idempotent_item_deleted", "server"].includes(row.error_code ?? "") ? row.error_code : "unknown"}` as never)}</p>}
+              {row.status === "conflict" && <p className="break-words text-sm text-destructive">{t("reason.item_modified")}</p>}
               <div className="flex flex-wrap gap-2">
-                {!readOnly && <Button variant="outline" className="min-h-11" disabled={row.status === "syncing"} onClick={() => { editPending(row); router.push("/items/new") }}>{t("edit")}</Button>}
+                {row.status === "conflict" && <>
+                  <Button variant="outline" className="min-h-11" onClick={() => {
+                    if (row.server) qc.setQueryData(["items", row.item_id], row.server)
+                    void qc.invalidateQueries({ queryKey: ["items", row.item_id] })
+                    router.push(`/items/${row.item_id}`)
+                  }}>{t("viewCurrent")}</Button>
+                  {!readOnly && <Button variant="outline" className="min-h-11" disabled={!online || busy} onClick={async () => {
+                    setBusy(true)
+                    try { await offlineQueue.resolveConflict(row); await sync() }
+                    catch { toast.error(t("unavailable")) }
+                    finally { setBusy(false) }
+                  }}>{t(row.kind === "delete" ? "deleteAnyway" : "useMine")}</Button>}
+                </>}
+                {!readOnly && row.kind !== "delete" && row.status !== "conflict" && <Button variant="outline" className="min-h-11" disabled={row.status === "syncing"} onClick={() => { editPending(row); router.push(row.kind === "update" ? `/items/${row.item_id}/edit` : "/items/new") }}>{t("edit")}</Button>}
                 <AlertDialog>
                   <AlertDialogTrigger asChild><Button variant="ghost" className="min-h-11" disabled={row.status === "syncing"}>{t("discard")}</Button></AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader><AlertDialogTitle>{t("discardTitle")}</AlertDialogTitle><AlertDialogDescription>{t("discardDescription")}</AlertDialogDescription></AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => { void offlineQueue.remove(row.client_id).catch(() => toast.error(t("unavailable"))) }}>{t("discard")}</AlertDialogAction>
+                      <AlertDialogAction onClick={() => { void offlineQueue.remove(row.client_id).then(async () => {
+                        if (row.kind === "update" || row.kind === "delete") {
+                          await qc.invalidateQueries({ queryKey: ["items"], refetchType: "all" })
+                        }
+                      }).catch(() => toast.error(t("unavailable"))) }}>{t("discard")}</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

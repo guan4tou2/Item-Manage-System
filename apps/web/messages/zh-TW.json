@@ -1701,7 +1701,20 @@
     "quantity": "數量"
   },
   "offline": {
-    "banner": "目前離線——新增的物品會先存在這台裝置",
+    "banner": "目前離線——新增、修改與刪除會先存在這台裝置",
+    "conflict": "需要確認",
+    "unsyncedChanges": "有尚未同步的修改",
+    "trackingRequiresConnection": "啟用批次追蹤需要連線，目前無法使用",
+    "viewCurrent": "查看目前內容",
+    "useMine": "用我的版本",
+    "deleteAnyway": "仍要刪除",
+    "action": {
+      "create": "新增",
+      "update": "修改",
+      "delete": "刪除"
+    },
+    "pendingDeletion": "這個物品已排入刪除，連線後就會刪除。想反悔，可以到物品清單的「待同步」捨棄這次刪除。",
+    "partialSaved": "物品已儲存，請到物品頁補上批次或自訂欄位",
     "saved": "已存在這台裝置，連線後自動同步",
     "count": "{count} 筆待同步",
     "synced": "已同步 {count} 筆",
@@ -1723,6 +1736,8 @@
     "requiresConnection": "圖片上傳與 AI 功能需要連線，目前無法使用",
     "logoutWarning": "這台裝置還有待同步物品。登出後會保留，登入原帳號後繼續同步。仍要登出嗎？",
     "reason": {
+      "item_gone": "這個物品已被刪除，無法儲存修改，請捨棄這筆紀錄",
+      "item_modified": "這個物品在你離線期間被修改過",
       "location": "原位置已不存在，請編輯並重新選擇位置",
       "category": "原分類已不存在，請編輯並重新選擇分類",
       "403": "帳號目前無法新增物品，請確認編輯權限",

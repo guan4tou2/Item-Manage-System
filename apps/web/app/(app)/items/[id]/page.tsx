@@ -36,6 +36,9 @@ import { useDeleteItem, useItem } from "@/lib/hooks/use-items"
 import { formatCurrency } from "@/lib/format/currency"
 import { truncatePath } from "@/lib/locations/tree"
 import { usePreferences } from "@/lib/preferences/use-preferences"
+import { offlineQueue, usePendingItems } from "@/lib/offline/runtime"
+import { shouldQueue } from "@/lib/offline/queue"
+import { OfflineStorageError } from "@/lib/offline/storage"
 import { BatchSection } from "@/components/items/batch-section"
 
 function templatePayloadFromItem(item: ItemRead, customValues: ItemCustomValueRead[]) {
@@ -66,6 +69,7 @@ export default function ItemDetailPage() {
   const queryClient = useQueryClient()
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ""
+  const pending = usePendingItems().find((row) => row.item_id === id)
   const item = useItem(id)
   const del = useDeleteItem()
   const token = useAccessToken()
@@ -105,11 +109,30 @@ export default function ItemDetailPage() {
 
   async function handleDelete() {
     try {
-      await del.mutateAsync(id)
+      // 離線時留在本頁顯示「已排入刪除」；導回清單需要連線。
+      const enqueue = async (reachable: boolean) => {
+        if (!item.data || !currentUserId) throw new Error("missing item or owner")
+        const i = item.data
+        await offlineQueue.save({
+          kind: "delete", item_id: id, item_name: i.name, base_updated_at: i.updated_at,
+          client_id: crypto.randomUUID(), owner_user_id: currentUserId, created_at: new Date().toISOString(),
+          status: "pending", error_code: null, attempts: 0,
+          values: { name: i.name, quantity: i.quantity, category_id: i.category?.id ?? null, location_id: i.location?.id ?? null, tag_names: [], custom_values: {} },
+          trackBatches: i.track_batches, customFields: [],
+        })
+        toast.success(t("offline.saved"))
+        if (reachable) router.push("/items")
+      }
+      if (!navigator.onLine || pending) { await enqueue(navigator.onLine); return }
+      try { await del.mutateAsync(id) }
+      catch (error) {
+        if (shouldQueue(error, true)) { await enqueue(false); return }
+        throw error
+      }
       toast.success(t("items.toast.deleted"))
       router.push("/items")
-    } catch {
-      toast.error(t("items.toast.saveFailed"))
+    } catch (error) {
+      toast.error(t(error instanceof OfflineStorageError ? `offline.${error.code}` : "items.toast.saveFailed"))
     }
   }
 
@@ -120,6 +143,10 @@ export default function ItemDetailPage() {
     } catch {
       toast.error(t("items.detail.barcodeCopyFailed"))
     }
+  }
+
+  if (pending?.kind === "delete" && pending.status !== "conflict") {
+    return <section className="space-y-4 p-6"><p role="status" className="text-sm text-muted-foreground">{t("offline.pendingDeletion")}</p><Link href="/items" className="inline-flex min-h-11 items-center text-primary underline">{t("viewer.notice.backToList")}</Link></section>
   }
 
   if (item.isLoading) {
@@ -152,13 +179,13 @@ export default function ItemDetailPage() {
         {/* min-w-0＋overflow-wrap:anywhere：沒有斷字機會的長名稱（條碼、代號）在手機寬度也要能折行，不可撐出水平捲軸 */}
         <div className="flex min-w-0 items-center gap-2">
           <h1 className="min-w-0 text-2xl font-semibold [overflow-wrap:anywhere]">{i.name}</h1>
-          {isOwner ? (
+          {isOwner && pending?.kind !== "delete" ? (
             <EditableOnly>
               <FavoriteButton itemId={i.id} isFavorite={i.is_favorite} />
             </EditableOnly>
           ) : null}
         </div>
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+        {pending?.kind !== "delete" && <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
           {isOwner ? (
             <>
               <EditableOnly>
@@ -191,8 +218,10 @@ export default function ItemDetailPage() {
           ) : (
             <ReadonlyBadge ownerUsername={i.owner_username} />
           )}
-        </div>
+        </div>}
       </div>
+
+      {pending?.kind === "update" && <p role="status" className="text-sm text-muted-foreground">{t("offline.unsyncedChanges")}</p>}
 
       {i.image_id ? (
         <AuthImage
@@ -273,17 +302,19 @@ export default function ItemDetailPage() {
         </div>
       </dl>
 
-      {i.track_batches ? <BatchSection itemId={i.id} canEdit={isOwner && !readOnly} defaultCost={i.cost} currency={currency} /> : null}
+      {i.track_batches ? <BatchSection itemId={i.id} canEdit={isOwner && !readOnly && pending?.kind !== "delete"} defaultCost={i.cost} currency={currency} /> : null}
 
       {isOwner ? (
         <ItemCustomValuesDetail
           customFields={customFields.data ?? []}
-          values={customValues.data ?? []}
+          values={pending?.kind === "update" && pending.status !== "conflict"
+            ? Object.entries(pending.values.custom_values).map(([field, value]) => ({ custom_field_id: Number(field), value })) as ItemCustomValueRead[]
+            : customValues.data ?? []}
           loading={customFields.isLoading || customValues.isLoading}
         />
       ) : null}
 
-      {isOwner && !readOnly ? (
+      {isOwner && !readOnly && pending?.kind !== "delete" ? (
         <div className="max-w-2xl">
           <LoanCard itemId={i.id} />
         </div>

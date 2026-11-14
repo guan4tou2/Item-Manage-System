@@ -1,11 +1,13 @@
 "use client"
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
+import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
+import { useOfflineSync } from "@/components/offline/offline-status"
 import { ViewerNotice } from "@/components/common/viewer-notice"
 import { ItemForm, type ItemFormValues } from "@/components/items/item-form"
 import {
@@ -30,7 +32,12 @@ import { useCategories } from "@/lib/hooks/use-categories"
 import { useItem, useUpdateItem } from "@/lib/hooks/use-items"
 import { useLocations } from "@/lib/hooks/use-locations"
 import { useTags } from "@/lib/hooks/use-tags"
-import { itemCostPayload } from "@/lib/items/cost"
+import { useAuthStore } from "@/lib/auth/auth-store"
+import { clearEditingPending, getEditingPending, offlineQueue, useOnline, usePendingItems } from "@/lib/offline/runtime"
+import { shouldQueue } from "@/lib/offline/queue"
+import { OfflineStorageError } from "@/lib/offline/storage"
+import { updateBody } from "@/lib/offline/steps"
+import { optimisticItem } from "@/lib/offline/optimistic"
 
 export default function EditItemPage() {
   const t = useTranslations()
@@ -38,8 +45,17 @@ export default function EditItemPage() {
   const params = useParams<{ id: string }>()
   const id = params?.id ?? ""
   const token = useAccessToken()
+  const owner = useAuthStore((s) => s.user?.id)
+  const online = useOnline()
+  const pending = usePendingItems().find((row) => row.item_id === id && (row.kind === "update" || row.kind === "delete"))
+  const [editing] = useState(() => {
+    const row = getEditingPending(owner)
+    return row?.kind === "update" && row.item_id === id ? row : null
+  })
+  useEffect(() => () => clearEditingPending(), [])
   const readOnly = useReadOnly()
   const queryClient = useQueryClient()
+  const sync = useOfflineSync()
   const [saving, setSaving] = useState(false)
   const [trackingOverride, setTrackingOverride] = useState<boolean | null>(null)
   const item = useItem(id)
@@ -58,6 +74,10 @@ export default function EditItemPage() {
     queryFn: () => listItemCustomValues(id, token),
     enabled: token !== null && !!id,
   })
+
+  if (pending?.kind === "delete") {
+    return <section className="space-y-4 p-6"><p role="status" className="text-sm text-muted-foreground">{t("offline.pendingDeletion")}</p><Link href="/items" className="inline-flex min-h-11 items-center text-primary underline">{t("viewer.notice.backToList")}</Link></section>
+  }
 
   if (item.isError) {
     return (
@@ -109,7 +129,7 @@ export default function EditItemPage() {
     {},
   )
 
-  const defaults: ItemFormValues = {
+  const defaults: ItemFormValues = editing?.values ?? pending?.values ?? {
     name: item.data.name,
     description: item.data.description ?? "",
     barcode: item.data.barcode ?? "",
@@ -123,9 +143,10 @@ export default function EditItemPage() {
     custom_values: customValueDefaults,
   }
 
-  const tracking = trackingOverride ?? item.data.track_batches
+  const tracking = trackingOverride ?? editing?.trackBatches ?? pending?.trackBatches ?? item.data.track_batches
 
   async function enableTracking() {
+    if (!navigator.onLine) return
     // 編輯既有物品：開啟當下即 POST batches（省略 quantity → 沿用既有數量併入第一批）
     try {
       await enableBatches.mutateAsync({})
@@ -139,25 +160,41 @@ export default function EditItemPage() {
   async function handleSubmit(values: ItemFormValues) {
     setSaving(true)
     try {
-      await update.mutateAsync({
-        name: values.name,
-        description: values.description || null,
-        barcode: values.barcode || null,
-        cost: itemCostPayload(values.cost),
-        category_id: values.category_id,
-        location_id: values.location_id,
-        // tracked 物品不得改 quantity（API 409）；追蹤中一律略過
-        ...(tracking ? {} : { quantity: values.quantity }),
-        notes: values.notes || null,
-        image_id: values.image_id ?? null,
-        tag_names: values.tag_names,
-      })
+      // 離線時導頁需要向伺服器抓頁面資料，會失敗；只有確定連得上才導回詳情頁。
+      const enqueue = async (reachable: boolean) => {
+        if (!owner || !item.data) throw new Error("missing item or owner")
+        await offlineQueue.save({
+          kind: "update", item_id: id, item_name: values.name,
+          base_updated_at: editing?.base_updated_at ?? item.data.updated_at,
+          client_id: editing?.client_id ?? crypto.randomUUID(), owner_user_id: owner,
+          created_at: editing?.created_at ?? new Date().toISOString(),
+          status: "pending", error_code: null, attempts: 0,
+          values, trackBatches: tracking, customFields: customFields.data ?? editing?.customFields ?? [],
+        })
+        await queryClient.cancelQueries({ queryKey: ["items", id] })
+        queryClient.setQueryData(["items", id], optimisticItem(item.data, values, cats.data ?? [], locs.data ?? []))
+        queryClient.setQueryData(["items", id, "custom-values"], Object.entries(values.custom_values).map(([field, value]) => ({ custom_field_id: Number(field), value })))
+        clearEditingPending()
+        toast.success(t("offline.saved"))
+        if (reachable) {
+          router.push(`/items/${id}`)
+          void sync()
+        }
+      }
+      // Resending a failed draft must replace its queued record, retaining its original base.
+      if (!navigator.onLine || editing || pending) { await enqueue(navigator.onLine); return }
+      try {
+        await update.mutateAsync(updateBody(values, tracking))
+      } catch (error) {
+        if (shouldQueue(error, true)) { await enqueue(false); return }
+        throw error
+      }
       await saveItemCustomValues(id, customFields.data ?? [], values.custom_values, token)
       await queryClient.invalidateQueries({ queryKey: ["items", id, "custom-values"] })
       toast.success(t("items.toast.updated"))
       router.push(`/items/${id}`)
-    } catch {
-      toast.error(t("items.toast.saveFailed"))
+    } catch (error) {
+      toast.error(t(error instanceof OfflineStorageError ? `offline.${error.code}` : "items.toast.saveFailed"))
     } finally {
       setSaving(false)
     }
@@ -181,6 +218,7 @@ export default function EditItemPage() {
         </BreadcrumbList>
       </Breadcrumb>
       <h1 className="text-2xl font-semibold">{t("items.detail.edit")}</h1>
+      {pending && <p role="status" className="text-sm text-muted-foreground">{t("offline.unsyncedChanges")}</p>}
       <ItemForm
         defaultValues={defaults}
         onSubmit={handleSubmit}
@@ -192,8 +230,9 @@ export default function EditItemPage() {
         customFields={customFields.data ?? []}
         trackBatches={tracking}
         trackBatchesLocked={tracking}
+        disableEnableTracking={!online}
         onTrackBatchesChange={(next) => {
-          if (next) void enableTracking()
+          if (next && online) void enableTracking()
         }}
       />
     </section>

@@ -49,13 +49,14 @@ export function ImageUpload({ imageId, onChange, disabled = false }: Props) {
           type="button"
           size="sm"
           variant="outline"
+          className="min-h-11"
           disabled={busy || disabled}
           onClick={() => inputRef.current?.click()}
         >
           {busy ? t("items.form.uploading") : t("items.form.uploadImage")}
         </Button>
         {imageId ? (
-          <Button type="button" size="sm" variant="ghost" onClick={() => onChange(null)}>
+          <Button type="button" size="sm" variant="ghost" className="min-h-11" onClick={() => onChange(null)}>
             {t("items.form.removeImage")}
           </Button>
         ) : null}

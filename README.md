@@ -12,8 +12,8 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
-![API Tests](https://img.shields.io/badge/API%20tests-1534%20passed-brightgreen.svg)
-![Web Tests](https://img.shields.io/badge/Web%20tests-975%20passed-brightgreen.svg)
+![API Tests](https://img.shields.io/badge/API%20tests-1593%20passed-brightgreen.svg)
+![Web Tests](https://img.shields.io/badge/Web%20tests-1034%20passed-brightgreen.svg)
 
 [功能](#-核心功能) •
 [快速開始](#-快速開始) •
@@ -90,6 +90,8 @@
 - 📱 **安裝到主畫面** — 完整 PWA manifest（Android + iOS）
 - ⚡ **Home-screen shortcuts** — 長按 icon 直跳 掃碼 / 新增物品 / 儀表板
 - 🌐 **離線頁** — service worker 快取 + fallback
+- 🌐 **離線操作** — 開著 App 時可離線新增，也能修改與刪除已經開著的物品；先存在這台裝置，連線後同步，別人改過時會問你要用哪一版
+- 🔄 **背景同步** — Chromium 系瀏覽器支援關閉分頁後同步；Safari、Firefox（含 iOS）下次開 App 時同步。離線修改／刪除後留在原頁，背景衝突與失敗下次開 App 查看；瀏覽器恢復連線時自行觸發同步與真實 Android Chrome 尚未實測
 - 🎨 **深色模式** — 跟隨系統或手動切換
 - 🌍 **i18n** — 繁體中文 + English
 
@@ -149,7 +151,7 @@ monorepo (pnpm workspace)
 - **驗證**：JWT access token（15 min）+ httpOnly refresh cookie（7 day）
 - **遷移**：Alembic（目前在 `0033`）
 - **OpenAPI**：FastAPI 自動產生，TS 型別由 `packages/api-types` 每次 regen 同步
-- **測試**：pytest-asyncio + FastAPI TestClient（1534 passed）、vitest + jsdom（975 passed across 154 files）
+- **測試**：pytest-asyncio + FastAPI TestClient（1593 passed）、vitest + jsdom（1034 passed across 160 files）
 
 ---
 
@@ -201,16 +203,16 @@ monorepo (pnpm workspace)
 ```bash
 # API
 make test-api
-# → 1534 passed
+# → 1593 passed
 
 # Web
 make test-web
-# → 975 passed across 154 files
+# → 1034 passed across 160 files
 ```
 
 ---
 
-既有 e2e 基線：Phase 47 為 **31 spec／99 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip），Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行。
+Phase 52 e2e：主代理以 Docker Compose 重建的完整 stack（PostgreSQL）跑 Playwright chromium，涵蓋離線修改（1280px／375px）、衝突後選「用我的版本」、離線刪除與關閉分頁後 CDP 觸發 `sync` 五個情境；完整結果：**104 passed／1 skipped**（Docker Compose 完整 stack，chromium）。
 
 ## 🛠 貢獻
 

@@ -1,10 +1,18 @@
+import type { OfflineStep } from "./engine"
 import type { ItemSubmission } from "./submission"
 
 export interface PendingItem extends ItemSubmission {
+  kind?: "create" | "update" | "delete"
+  item_id?: string
+  item_name?: string
+  base_updated_at?: string
+  steps?: OfflineStep[]
+  api_base?: string
+  server?: unknown
   client_id: string
   owner_user_id: string
   created_at: string
-  status: "pending" | "syncing" | "failed"
+  status: "pending" | "syncing" | "failed" | "conflict"
   error_code: string | null
   attempts: number
 }

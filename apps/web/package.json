@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
+    "gen:offline-engine": "node scripts/build-offline-engine.mjs",
     "gen:types": "echo 'api-types generated in packages/api-types'"
   },
   "dependencies": {
@@ -69,6 +70,7 @@
     "@vitejs/plugin-react": "6.3.0",
     "eslint": "10.15.0",
     "eslint-config-next": "16.4.6",
+    "fake-indexeddb": "^6.2.8",
     "jsdom": "^31.0.1",
     "postcss": "8.5.33",
     "tailwindcss": "4.3.5",

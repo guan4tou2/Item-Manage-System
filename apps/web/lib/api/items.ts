@@ -77,9 +77,10 @@ export async function createItem(body: ItemCreate, accessToken: string | null, i
   return (await res.json()) as ItemRead
 }
 
-export async function updateItem(id: string, body: ItemUpdate, accessToken: string | null): Promise<ItemRead> {
+export async function updateItem(id: string, body: ItemUpdate, accessToken: string | null, ifMatch?: string): Promise<ItemRead> {
   const res = await apiFetch(`/items/${id}`, {
     method: "PATCH", body: JSON.stringify(body), accessToken,
+    headers: ifMatch ? { "If-Match": ifMatch } : undefined,
   })
   return (await res.json()) as ItemRead
 }
@@ -104,6 +105,6 @@ export async function bulkDeleteItems(
   return (await res.json()) as ItemBulkResult
 }
 
-export async function deleteItem(id: string, accessToken: string | null): Promise<void> {
-  await apiFetch(`/items/${id}`, { method: "DELETE", accessToken })
+export async function deleteItem(id: string, accessToken: string | null, ifMatch?: string): Promise<void> {
+  await apiFetch(`/items/${id}`, { method: "DELETE", accessToken, headers: ifMatch ? { "If-Match": ifMatch } : undefined })
 }

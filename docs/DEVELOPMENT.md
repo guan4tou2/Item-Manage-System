@@ -47,6 +47,10 @@ NEXT_PUBLIC_API_BASE=http://localhost:8000/api make dev
 
 API schema 異動後，在 repo 根目錄執行 `make gen-types`。此指令使用 `apps/api/.venv/bin/python` 匯出 OpenAPI，再執行 `pnpm --filter @ims/api-types gen:types`。資料庫異動需在 `apps/api/alembic/versions/` 新增 migration，並驗證升降版；`make migrate` 對目前 `DATABASE_URL` 執行 `alembic upgrade head`。
 
+## 離線重放引擎同步
+
+修改 `apps/web/lib/offline/engine.ts` 後，在 repo 根目錄執行 `pnpm --filter @ims/web gen:offline-engine`，以 `scripts/build-offline-engine.mjs` 重新產生供 service worker 使用的 `apps/web/public/offline-engine.js`。產物需與原始碼一起提交進版本庫；測試會檢查兩者是否同步。
+
 ## 驗證入口
 
 ```bash
@@ -60,7 +64,9 @@ make audit
 ```
 
 - `make test` 串接 API 與 Web 單元測試。API 測試使用每個 test 獨立的 in-memory SQLite，不需正式資料庫。
-- 既有基線：API **1534 passed**；Web **975 passed（154 檔）**（Node 22 與 Node 24 皆通過）；Playwright e2e：Phase 47 為 **31 spec／99 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip），Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行。這些數字是既有基線，不代表每次執行的結果。
+- Phase 52 基線（2026-11-14）：API **1593 passed**；Web **1034 passed（160 檔）**（Node 22 與 Node 24 皆通過）；typecheck 0 error、lint 0 warning。沒有新增 migration，Alembic head 仍為 `0033`。這些數字是已回報的基線，不代表每次執行的結果。
+- 主代理以 Docker Compose 重建完整 stack（PostgreSQL），Playwright chromium 跑 `tests/offline-edit.spec.ts` 五個情境：離線修改後自動同步（1280px／375px）、API 修改造成衝突後選「用我的版本」、離線刪除後 API 為 `404`、關閉分頁後以 CDP 觸發 `sync` 事件由 service worker 送出。完整 e2e 結果：**104 passed／1 skipped**（Docker Compose 完整 stack，chromium）。
+- 背景同步排程尚未實測：測試 Chromium 的 `sync.register` 回報 disabled，僅驗證 `sync` 事件發生後的處理；未驗證恢復連線時瀏覽器自行觸發，也未在真實 Android Chrome 實測。
 - e2e 需要已啟動的完整服務與 Playwright 瀏覽器；預設網址為 `http://localhost`，可透過 `E2E_BASE_URL` 覆寫。AI 成功情境另需 dev API 使用 `AI_MODE=stub`，再執行 `E2E_AI_STUB=1 pnpm --filter @ims/web test:e2e --project=ai-stub`。
 - `make audit` 會稽核 Python lockfile 與 Node 正式依賴，需要網路；`make lint` 同時執行 API ruff（F＋E9）與 Web ESLint。Web 為 ESLint 10 flat config（`apps/web/eslint.config.mjs`），指令是 `eslint . --max-warnings 0`；樣式為 Tailwind CSS 4（`@tailwindcss/postcss`，設定仍在 `apps/web/tailwind.config.ts`）。
 - pre-commit 僅保留空白、檔尾、YAML／JSON／TOML、merge conflict、大檔案與換行格式檢查。

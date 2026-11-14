@@ -2,7 +2,7 @@ import type { ItemFormValues } from "@/components/items/item-form"
 import { createBatch } from "@/lib/api/batches"
 import { saveItemCustomValues, type CustomFieldRead } from "@/lib/api/customization"
 import { createItem, type ItemCreate, type ItemRead } from "@/lib/api/items"
-import { itemCostPayload } from "@/lib/items/cost"
+import { createBody } from "./steps"
 
 export interface ItemSubmission {
   values: ItemFormValues
@@ -18,18 +18,7 @@ export async function submitItem(
   create: (body: ItemCreate) => Promise<ItemRead> = (body) => createItem(body, token, key),
 ) {
   const { values } = draft
-  const item = await create({
-    name: values.name,
-    description: values.description || undefined,
-    barcode: values.barcode || undefined,
-    cost: itemCostPayload(values.cost),
-    category_id: values.category_id ?? undefined,
-    location_id: values.location_id ?? undefined,
-    quantity: values.quantity,
-    notes: values.notes || undefined,
-    image_id: values.image_id ?? undefined,
-    tag_names: values.tag_names,
-  })
+  const item = await create(createBody(values))
   let partial: "batch" | "custom" | null = null
   try {
     if (draft.trackBatches) {

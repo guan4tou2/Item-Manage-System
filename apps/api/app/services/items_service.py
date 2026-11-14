@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID
 
 from fastapi import HTTPException
@@ -295,12 +295,39 @@ async def create_item(
     return result
 
 
+def _as_utc(value: datetime) -> datetime:
+    # SQLite 不保留時區；資料庫中的 naive 時間一律視為 UTC。
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+async def _check_if_match(session: AsyncSession, item: Item, if_match: str | None) -> None:
+    if if_match is None:
+        return
+    value = if_match.strip()
+    if value.startswith("W/"):
+        value = value[2:]
+    if value.startswith('"') and value.endswith('"'):
+        value = value[1:-1]
+    try:
+        expected = _as_utc(datetime.fromisoformat(value))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="invalid If-Match timestamp") from None
+    if expected != _as_utc(item.updated_at):
+        current = await _read_with_location(session, item)
+        raise HTTPException(
+            status_code=412,
+            detail={"code": "item_modified", "current": current.model_dump(mode="json")},
+        )
+
+
 async def update_item(
-    session: AsyncSession, owner_id: UUID, item_id: UUID, body: ItemUpdate
+    session: AsyncSession, owner_id: UUID, item_id: UUID, body: ItemUpdate,
+    *, if_match: str | None = None,
 ) -> ItemRead:
     item = await items_repository.get_owned(session, owner_id, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
+    await _check_if_match(session, item, if_match)
     fields = body.model_dump(exclude_unset=True)
     if "barcode" in fields:
         fields["barcode"] = barcode_service.canonicalize(fields["barcode"]) or None
@@ -338,6 +365,8 @@ async def update_item(
         item.tags = await tags_repository.get_or_create_many(session, owner_id, new_names or [])
     for k, v in fields.items():
         setattr(item, k, v)
+    # 關聯表或同值更新不會觸發 onupdate，且時鐘相同／回撥時仍須推進版本。
+    item.updated_at = max(_utcnow(), _as_utc(item.updated_at) + timedelta(microseconds=1))
     saved = await items_repository.save(session, item)
     if quantity_changing and saved.quantity != old_quantity:
         await item_history_service.log_quantity_change(
@@ -464,10 +493,13 @@ async def bulk_delete_items(
     return ItemBulkResult(deleted=len(items))
 
 
-async def delete_item(session: AsyncSession, owner_id: UUID, item_id: UUID) -> None:
+async def delete_item(
+    session: AsyncSession, owner_id: UUID, item_id: UUID, *, if_match: str | None = None
+) -> None:
     item = await items_repository.get_owned(session, owner_id, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="item not found")
+    await _check_if_match(session, item, if_match)
     await items_repository.soft_delete(session, item)
     # 刪除後名稱就查不到了，留在稽核；webhook 之前寫，避免等外部 HTTP
     await audit_service.log(

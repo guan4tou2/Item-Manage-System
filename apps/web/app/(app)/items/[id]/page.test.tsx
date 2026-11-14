@@ -7,10 +7,16 @@ import * as customizationApi from "@/lib/api/customization"
 import enMessages from "@/messages/en.json"
 
 import ItemDetailPage from "./page"
+import { offlineQueue, useOfflineState } from "@/lib/offline/runtime"
+import { ApiError, NetworkError } from "@/lib/api/client"
+import { toast } from "sonner"
+
+const push = vi.hoisted(() => vi.fn())
+const deleteMock = vi.hoisted(() => vi.fn())
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "item-1" }),
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push }),
 }))
 
 vi.mock("@/components/collaboration/loan-card", () => ({
@@ -19,10 +25,6 @@ vi.mock("@/components/collaboration/loan-card", () => ({
 
 vi.mock("@/components/collaboration/new-transfer-dialog", () => ({
   NewTransferDialog: () => <button type="button">Transfer</button>,
-}))
-
-vi.mock("@/components/items/delete-item-dialog", () => ({
-  DeleteItemDialog: () => <button type="button">Delete</button>,
 }))
 
 vi.mock("@/components/items/favorite-button", () => ({
@@ -47,7 +49,7 @@ vi.mock("@/lib/auth/use-auth", () => ({
 }))
 
 vi.mock("@/lib/hooks/use-items", () => ({
-  useDeleteItem: () => ({ isPending: false, mutateAsync: vi.fn() }),
+  useDeleteItem: () => ({ isPending: false, mutateAsync: deleteMock }),
   useItem: () => ({
     data: {
       id: "item-1",
@@ -226,5 +228,43 @@ describe("ItemDetailPage read-only viewer (Phase 30)", () => {
     expect(screen.getByText("Loan card")).toBeInTheDocument()
     expect(screen.getByTestId("batch-section")).toHaveAttribute("data-can-edit", "true")
     expect(screen.queryByTestId("viewer-item-notice")).not.toBeInTheDocument()
+  })
+})
+
+
+describe("Phase 52 offline delete", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    authState.user = { id: "owner-1", is_read_only: false }
+    useOfflineState.setState({ rows: [], error: null })
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(false)
+  })
+  afterEach(() => { vi.restoreAllMocks(); useOfflineState.setState({ rows: [], error: null }) })
+  async function confirmDelete() {
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }))
+    const dialog = screen.getByRole("alertdialog")
+    fireEvent.click(dialog.querySelector("button:last-child")!)
+  }
+  it("queues deletion only after confirmation and stays on the page while offline", async () => {
+    const save = vi.spyOn(offlineQueue, "save").mockResolvedValue()
+    renderPage()
+    fireEvent.click(await screen.findByRole("button", { name: "Delete" }))
+    expect(save).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }))
+    expect(save).not.toHaveBeenCalled()
+    await confirmDelete()
+    await waitFor(() => expect(save).toHaveBeenCalledWith(expect.objectContaining({ kind: "delete", item_id: "item-1", item_name: "Network switch", base_updated_at: "2026-06-19T00:00:00Z", owner_user_id: "owner-1" })))
+    expect(deleteMock).not.toHaveBeenCalled()
+    expect(toast.success).toHaveBeenCalledWith(enMessages.offline.saved)
+    expect(push).not.toHaveBeenCalled()
+  })
+  it.each(["network", "http"])("online %s delete error respects the queue boundary", async (kind) => {
+    vi.spyOn(navigator, "onLine", "get").mockReturnValue(true)
+    deleteMock.mockRejectedValueOnce(kind === "network" ? new NetworkError("offline") : new ApiError(403, null))
+    const save = vi.spyOn(offlineQueue, "save").mockResolvedValue()
+    renderPage()
+    await confirmDelete()
+    if (kind === "network") await waitFor(() => expect(save).toHaveBeenCalled())
+    else { await waitFor(() => expect(toast.error).toHaveBeenCalledWith(enMessages.items.toast.saveFailed)); expect(save).not.toHaveBeenCalled() }
   })
 })

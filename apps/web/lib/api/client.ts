@@ -1,7 +1,7 @@
 import type { paths } from '@ims/api-types'
 import { useAuthStore } from '@/lib/auth/auth-store'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? '/api'
+export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? '/api'
 
 export class ApiError extends Error {
   constructor(public status: number, public body: unknown) {

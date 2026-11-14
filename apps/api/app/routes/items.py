@@ -130,17 +130,19 @@ async def get_item(
 async def update_item(
     item_id: UUID,
     body: ItemUpdate,
+    if_match: str | None = Header(default=None, alias="If-Match"),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> ItemRead:
-    return await items_service.update_item(session, user.id, item_id, body)
+    return await items_service.update_item(session, user.id, item_id, body, if_match=if_match)
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, response_class=Response)
 async def delete_item(
     item_id: UUID,
+    if_match: str | None = Header(default=None, alias="If-Match"),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> Response:
-    await items_service.delete_item(session, user.id, item_id)
+    await items_service.delete_item(session, user.id, item_id, if_match=if_match)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

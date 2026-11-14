@@ -34,5 +34,6 @@ export default defineConfig([
     "playwright-report/**",
     "coverage/**",
     "public/sw.js",
+    "public/offline-engine.js",
   ]),
 ])

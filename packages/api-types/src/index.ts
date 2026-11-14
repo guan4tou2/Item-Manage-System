@@ -6664,7 +6664,9 @@ export interface operations {
     delete_item_api_items__item_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
             path: {
                 item_id: string;
             };
@@ -6693,7 +6695,9 @@ export interface operations {
     update_item_api_items__item_id__patch: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
             path: {
                 item_id: string;
             };

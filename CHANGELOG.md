@@ -6,6 +6,20 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 
 ## [Unreleased]
 
+## [2.0.0-alpha.52] — Phase 52：離線編輯／刪除與背景同步
+
+- **日期與範圍**：2026-11-14；離線時也能修改與刪除已經開著的物品，資料先存在這台裝置，連線後同步；加入整筆衝突詢問與 Chromium 系瀏覽器的分頁關閉後背景同步
+- **無新增 migration**：沿用物品的 `updated_at` 作為版本；Alembic head 仍為 `0033`
+- **API 版本檢查**：`PATCH`／`DELETE /api/items/{item_id}` 接受選填 `If-Match`，值為物品的 `updated_at`；不符回 `412`，`detail = {"code":"item_modified","current": ItemRead}`；格式錯誤回 `422`；沒帶標頭行為不變。`update_item` 每次成功都推進 `updated_at`，包含只改標籤
+- **佇列與共用引擎**：新增 `update`／`delete` 動作與 `conflict` 狀態；同一物品只留一筆待送動作，保留最早的 `base_updated_at`。頁面與 service worker 共用 `lib/offline/engine.ts`，由 `scripts/build-offline-engine.mjs` 產生 `public/offline-engine.js`；產物提交進版本庫，測試檢查原始碼與產物同步。刪除遇 `404` 視為完成，修改遇 `404` 標為失敗
+- **介面與衝突處理**：編輯頁可離線儲存、詳情頁可離線刪除；待同步區塊顯示新增／修改／刪除。別人改過時會問你要用哪一版，可「查看目前內容」「用我的版本」（刪除則為「仍要刪除」）或「捨棄」；不自動合併。離線時編輯表單停用圖片上傳、AI、啟用批次追蹤
+- **離線時不導頁**：儲存修改後留在編輯表單，顯示「有尚未同步的修改」；刪除後留在詳情頁，顯示「已排入刪除」。主代理以 Docker stack 跑 e2e 時發現，原實作儲存後導回詳情頁會因 Next.js 換頁需要連線抓頁面資料而出現載入失敗畫面，已修正為留在原頁
+- **多個分頁**：頁面與 service worker 以 Web Locks 確保同一時間只有一方在送出；一個分頁同步完會以 `BroadcastChannel` 通知同瀏覽器的其他分頁更新待同步區塊（主代理以兩個分頁實測時發現另一個分頁不會更新，已補上）
+- **背景同步**：`sync` 事件（tag `ims-offline-sync`）→ Web Locks → 以 httpOnly refresh cookie 換 access token → 只處理 token `sub` 與項目擁有者相同的項目 → 完成後以 `postMessage` 通知開著的頁面。只有 Chromium 系瀏覽器支援 Background Sync API；Safari、Firefox（含 iOS）維持下次開啟 App 時同步。背景同步的衝突與失敗不發系統通知，下次開 App 在待同步區塊查看
+- **明確不做**：離線瀏覽未曾載入的物品、預先快取所有資料、欄位層級自動合併、離線批次操作／收藏／batch／清單／盤點／圖片上傳／AI、Safari／Firefox／iOS 的背景同步、背景同步結果的系統通知
+- **測試與實測**：API 1534 → **1593 passed**（新增 `tests/test_items_if_match.py` 56 個）；Web 975 → **1034 passed（160 檔）**（Node 22 與 24）；typecheck 0 error、lint 0 warning。主代理以 Docker Compose 重建完整 stack（PostgreSQL），Playwright chromium 跑 `tests/offline-edit.spec.ts` 五個情境：離線修改後自動同步（1280px 與 375px）、離線期間由 API 修改同一物品造成衝突後選「用我的版本」、離線刪除後 API 為 `404`、關掉分頁後以 CDP 觸發 `sync` 事件由 service worker 送出。完整 e2e 結果：**104 passed／1 skipped**（Docker Compose 完整 stack，chromium）
+- **未驗證與已知限制**：測試 Chromium 停用了 Background Sync 排程（`sync.register` 回報 disabled），僅驗證事件發生後的處理，未實測瀏覽器恢復連線時自行觸發 `sync`；真實 Android Chrome 未實測。只能離線編輯／刪除已經開著的物品；衝突整筆詢問。收藏、批次操作、盤點等其他寫入若推進 `updated_at`，會保守地視為衝突；標籤以外的關聯資料（自訂欄位值、batch）變更不會被偵測為衝突。`If-Match` 檢查與寫入間沒有列鎖，極短時間內的並行寫入仍可能後寫覆蓋先寫
+
 ## [2.0.0-alpha.51] — Phase 51：離線新增物品
 
 - **範圍收斂**：已開著 App 時斷線仍可「新增物品」，資料先存在裝置上，連線後自動同步；不做離線編輯／刪除、不做分頁關閉後的背景同步、不做離線上傳圖片或 AI

@@ -74,6 +74,7 @@ interface Props {
   customFields?: CustomFieldRead[]
   itemTemplates?: ItemTemplateRead[]
   trackBatches?: boolean
+  disableEnableTracking?: boolean
   trackBatchesLocked?: boolean
   onTrackBatchesChange?: (value: boolean) => void
   /** 由 /scan 流程帶入的條碼（`?barcode=`）：自動查詢並只填空白欄位。 */
@@ -101,7 +102,7 @@ function valuesEqual(a: unknown, b: unknown) {
 export function ItemForm({
   defaultValues, onSubmit, onCancel, submitting,
   categories, locations, tagSuggestions, customFields = [], itemTemplates = [],
-  trackBatches = false, trackBatchesLocked = false, onTrackBatchesChange,
+  trackBatches = false, trackBatchesLocked = false, disableEnableTracking = false, onTrackBatchesChange,
   barcodePrefill = null,
 }: Props) {
   const t = useTranslations()
@@ -452,10 +453,11 @@ export function ItemForm({
             id="track-batches"
             checked={trackBatches}
             onCheckedChange={(checked) => onTrackBatchesChange?.(checked)}
-            disabled={trackBatchesLocked}
+            disabled={trackBatchesLocked || disableEnableTracking}
             aria-describedby="track-batches-hint"
           />
         </div>
+        {disableEnableTracking && <p className="mt-2 text-sm text-muted-foreground">{t("offline.trackingRequiresConnection")}</p>}
         {trackBatches && trackBatchesLocked ? (
           <p className="mt-2 text-xs text-muted-foreground">
             {t("items.form.trackBatchesLockedHint")}
@@ -594,6 +596,7 @@ export function ItemForm({
             type="button"
             size="sm"
             variant="outline"
+            className="min-h-11"
             disabled={!online || aiBusy || !form.watch("image_id")}
             onClick={runAiSuggest}
           >

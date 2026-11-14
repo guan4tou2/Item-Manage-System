@@ -282,13 +282,20 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 - Navigate 請求 network-first → fallback cache → `/offline`
 - `/scan` 排除在 navigate cache 外（相機頁離線無用）
 
-### 離線新增物品（Phase 51）
+### 離線新增／編輯／刪除與背景同步（Phase 51–52）
 
 - 已開著 App 時斷線仍可新增物品；資料先存在裝置上的 IndexedDB 佇列（`ims-offline`／`pending-items`），連線後自動同步
 - 同步時機：`online` 事件、App 載入、登入成功後、使用者按「立即同步」；single-flight 逐筆依建立順序送出
-- 冪等重送：每筆佇列項目以 `crypto.randomUUID()` 作為 `Idempotency-Key`，`POST /api/items` 同 key 重送回 `200` 且不會重複建立；伺服器端以 `idempotency_keys` 表（Migration 0033）在同一交易內記錄
-- 失敗處置：網路層失敗會自動重試；`401` 暫停等重新登入；`403`／`404`／`409`／`410`／`422` 等確定性錯誤標為 `failed`，使用者可編輯後重送或捨棄；`5xx` 最多自動重試 5 次
-- 限制：離線時圖片上傳與 AI 不可用；已上傳的 `image_id` 會保留；分頁關閉期間不會同步；從未開過 App 的離線啟動不保證可用；不做離線編輯／刪除
+- 冪等重送：每筆新增佇列項目以 `crypto.randomUUID()` 作為 `Idempotency-Key`，`POST /api/items` 同 key 重送回 `200` 且不會重複建立；伺服器端以 `idempotency_keys` 表（Migration 0033）在同一交易內記錄
+- 失敗處置：網路層失敗會在下次同步時重試；`401` 暫停等重新登入；`412` 進入 `conflict`；刪除遇 `404` 視為完成，修改遇 `404` 標為失敗；其他確定性 4xx 標為 `failed`，新增／修改可編輯後重送或捨棄；`5xx` 連續 5 次後標為失敗
+- 離線時也能修改與刪除已經開著的物品；儲存修改後留在編輯表單，顯示「有尚未同步的修改」；刪除後留在詳情頁，顯示「已排入刪除」。離線時不導頁，避免 Next.js 換頁抓取資料失敗
+- API 版本檢查：`PATCH`／`DELETE /api/items/{item_id}` 支援選填 `If-Match`（物品的 `updated_at`）；不符回 `412`，`detail = {"code":"item_modified","current": ItemRead}`；格式錯誤 `422`，沒帶標頭行為不變；`update_item` 每次成功都推進 `updated_at`。沒有新增 migration，head 仍為 `0033`
+- 佇列新增 `update`／`delete` 與 `conflict`；同一物品只留一筆，保留最早版本。待同步區塊顯示動作種類；別人改過時會問你要用哪一版，可「查看目前內容」「用我的版本」（或「仍要刪除」）／「捨棄」。刪除遇 `404` 視為完成，修改遇 `404` 標為失敗
+- 頁面與 service worker 共用 `lib/offline/engine.ts`；`scripts/build-offline-engine.mjs` 產生 `public/offline-engine.js`，產物提交進版本庫並以測試檢查同步
+- 背景同步：Chromium 系瀏覽器的 `sync` 事件（tag `ims-offline-sync`）經 Web Locks 取得同步鎖，以 httpOnly refresh cookie 換 access token，只處理 token `sub` 與擁有者相同的項目；完成後 `postMessage` 通知開著的頁面。Safari、Firefox（含 iOS）維持下次開啟 App 時同步；衝突與失敗不發系統通知，下次開 App 在待同步區塊查看
+- 限制：只能離線編輯／刪除已經開著的物品；不做欄位合併、離線批次操作／收藏／batch／清單／盤點／圖片上傳／AI。離線時編輯表單停用圖片上傳、AI 與啟用批次追蹤；已上傳的 `image_id` 保留；從未開過 App 的離線啟動不保證可用
+- 衝突偵測限制：其他寫入若推進 `updated_at`，會保守地視為衝突；標籤以外的關聯資料（自訂欄位值、batch）變更不會被偵測為衝突；`If-Match` 檢查與寫入間沒有列鎖，極短時間內的並行寫入仍可能後寫覆蓋先寫
+- 背景同步驗證範圍：已在關閉分頁後以 CDP 觸發 `sync` 事件驗證 service worker 送出；測試 Chromium 的排程停用，未實測恢復連線時瀏覽器自行觸發 `sync`，也未在真實 Android Chrome 實測
 
 ---
 
@@ -303,9 +310,9 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## 🧪 測試
 
-- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1534 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
-- **Web**: vitest + @testing-library/react + jsdom。**975 passed across 154 files**（Node 22 與 Node 24 皆通過）。
-- **E2E**: Phase 47 為 **31 spec／99 情境**（含 ai-stub）；Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行。
+- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1593 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
+- **Web**: vitest + @testing-library/react + jsdom。**1034 passed across 160 files**（Node 22 與 Node 24 皆通過）。
+- **E2E**: 主代理以 Docker Compose 重建的完整 PostgreSQL stack 跑 Playwright chromium，涵蓋 Phase 52 離線修改（1280px／375px）、衝突後用我的版本、離線刪除與關閉分頁後 CDP 觸發 `sync` 五個情境；完整結果：**104 passed／1 skipped**（Docker Compose 完整 stack，chromium）。
 - **TS**: `tsc --noEmit` 嚴格模式乾淨；`next build` 成功。
 
 ---

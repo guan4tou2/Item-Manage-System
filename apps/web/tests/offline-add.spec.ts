@@ -38,7 +38,7 @@ for (const width of [1280, 375]) {
     await page.getByLabel("數量").fill("3")
     // 必須在線上把新增頁載入完成，再模擬斷線。
     await page.context().setOffline(true)
-    await expect(page.getByText("目前離線——新增的物品會先存在這台裝置")).toBeVisible()
+    await expect(page.getByText("目前離線——新增、修改與刪除會先存在這台裝置")).toBeVisible()
     await expect(page.getByRole("button", { name: "上傳圖片" })).toBeDisabled()
     await expect(page.getByRole("button", { name: "使用 AI 辨識填入" })).toBeDisabled()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)

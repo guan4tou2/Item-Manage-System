@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { create } from "zustand"
 import { useAuthStore } from "@/lib/auth/auth-store"
 import { OfflineQueue } from "./queue"
@@ -33,7 +33,7 @@ export const offlineQueue = new OfflineQueue(new IndexedDBStorage(), refreshOffl
 export function usePendingItems() {
   const owner = useAuthStore((s) => s.user?.id)
   const rows = useOfflineState((s) => s.rows)
-  return rows.filter((row) => row.owner_user_id === owner)
+  return useMemo(() => rows.filter((row) => row.owner_user_id === owner), [rows, owner])
 }
 
 export function useOnline() {

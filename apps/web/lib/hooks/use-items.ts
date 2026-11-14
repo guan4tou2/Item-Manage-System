@@ -1,7 +1,12 @@
 "use client"
 
+import { useMemo } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
+import type { CategoryTreeNode } from "@/lib/api/categories"
+import type { LocationRead } from "@/lib/api/locations"
+import { usePendingItems } from "@/lib/offline/runtime"
+import { optimisticItem } from "@/lib/offline/optimistic"
 import * as api from "@/lib/api/items"
 import type {
   ItemBulkDelete,
@@ -23,20 +28,31 @@ function invalidateItemWorkflowSurfaces(qc: ReturnType<typeof useQueryClient>) {
 
 export function useItems(filters: ItemFilters) {
   const token = useAccessToken()
-  return useQuery({
+  const pending = usePendingItems()
+  const query = useQuery({
     queryKey: ["items", filters],
     queryFn: () => api.listItems(filters, token),
     enabled: token !== null,
   })
+  const data = useMemo(() => {
+    if (!query.data) return undefined
+    const deleted = new Set(pending.filter((row) => row.kind === "delete").map((row) => row.item_id))
+    return deleted.size ? { ...query.data, items: query.data.items.filter((item) => !deleted.has(item.id)) } : query.data
+  }, [query.data, pending])
+  return { ...query, data }
 }
 
 export function useItem(id: string | undefined) {
   const token = useAccessToken()
-  return useQuery({
+  const qc = useQueryClient()
+  const pending = usePendingItems().find((row) => row.item_id === id && row.kind === "update" && row.status !== "conflict")
+  const query = useQuery({
     queryKey: ["items", id],
     queryFn: () => api.getItem(id as string, token),
     enabled: token !== null && !!id,
   })
+  const data = useMemo(() => query.data && pending ? optimisticItem({ ...query.data, track_batches: pending.trackBatches }, pending.values, qc.getQueryData<CategoryTreeNode[]>(["categories"]), qc.getQueryData<LocationRead[]>(["locations"])) : query.data, [query.data, pending, qc])
+  return { ...query, data }
 }
 
 export function useCreateItem(idempotencyKey?: string) {

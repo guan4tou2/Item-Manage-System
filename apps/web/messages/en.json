@@ -1701,7 +1701,20 @@
     "quantity": "Quantity"
   },
   "offline": {
-    "banner": "You are offline. New items will be saved on this device.",
+    "banner": "You are offline. Additions, edits and deletions will be saved on this device.",
+    "conflict": "Needs review",
+    "unsyncedChanges": "There are unsynced changes",
+    "trackingRequiresConnection": "Enabling batch tracking requires a connection.",
+    "viewCurrent": "View current item",
+    "useMine": "Use my version",
+    "deleteAnyway": "Delete anyway",
+    "action": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete"
+    },
+    "pendingDeletion": "This item is queued for deletion and will be removed once you are back online. To keep it, discard the deletion under pending items on the items list.",
+    "partialSaved": "Item saved. Open the item page to complete batches or custom fields.",
     "saved": "Saved on this device. Sync will resume when connected.",
     "count": "{count} items waiting to sync",
     "synced": "Synced {count} items",
@@ -1723,6 +1736,8 @@
     "requiresConnection": "Image uploads and AI require a connection and are currently unavailable.",
     "logoutWarning": "This device has pending items. They will be kept and synced when you sign in to this account again. Sign out anyway?",
     "reason": {
+      "item_gone": "This item was deleted. Discard these changes.",
+      "item_modified": "This item was changed while you were offline.",
       "location": "The location no longer exists. Edit and select another location.",
       "category": "The category no longer exists. Edit and select another category.",
       "403": "Your account cannot create items. Check editing permissions.",
