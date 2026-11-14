@@ -31,7 +31,7 @@ export function ReportsPanel() {
 
   if (prefs.isError || !prefs.data) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded border border-dashed p-12 text-center">
+      <div className="flex flex-col items-center justify-center gap-3 rounded-[0.25rem] border border-dashed p-12 text-center">
         <p className="text-muted-foreground text-sm">{t("loadError")}</p>
         <Button variant="outline" size="sm" onClick={() => void prefs.refetch()}>
           {t("retry")}

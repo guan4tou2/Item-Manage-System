@@ -40,7 +40,7 @@ export function ExpiryBadge({ date, className, fallback = "date" }: Props) {
       <span
         data-status="expired"
         className={cn(
-          "inline-flex items-center rounded bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive",
+          "inline-flex items-center rounded-[0.25rem] bg-destructive/10 px-1.5 py-0.5 text-xs font-medium text-destructive",
           className,
         )}
       >
@@ -54,7 +54,7 @@ export function ExpiryBadge({ date, className, fallback = "date" }: Props) {
       <span
         data-status="expiring"
         className={cn(
-          "inline-flex items-center rounded bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning",
+          "inline-flex items-center rounded-[0.25rem] bg-warning/10 px-1.5 py-0.5 text-xs font-medium text-warning",
           className,
         )}
       >

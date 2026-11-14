@@ -106,13 +106,13 @@ export function BatchSection({ itemId, canEdit, defaultCost = null, currency = "
       </p>
 
       {rows.length === 0 ? (
-        <div className="rounded border p-4 text-sm text-muted-foreground">
+        <div className="rounded-[0.25rem] border p-4 text-sm text-muted-foreground">
           <p>{t("items.batches.empty")}</p>
           {canEdit ? <p className="mt-1">{t("items.batches.emptyHint")}</p> : null}
         </div>
       ) : (
         <>
-          <ul className="divide-y rounded border">
+          <ul className="divide-y rounded-[0.25rem] border">
             {active.map((batch) => (
               <li
                 key={batch.id}
@@ -163,7 +163,7 @@ export function BatchSection({ itemId, canEdit, defaultCost = null, currency = "
                 {t("items.batches.depletedToggle", { count: depleted.length })}
               </Button>
               {showDepleted ? (
-                <ul className="mt-1 divide-y rounded border text-sm text-muted-foreground">
+                <ul className="mt-1 divide-y rounded-[0.25rem] border text-sm text-muted-foreground">
                   {depleted.map((batch) => (
                     <li key={batch.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
                       <span>{t("items.batches.exhausted")}</span>

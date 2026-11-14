@@ -108,7 +108,7 @@ export function TreeNodeRow({
       onClick={onFocusRow}
       onFocus={onFocusRow}
       className={cn(
-        "flex min-h-11 items-center gap-1 rounded px-2",
+        "flex min-h-11 items-center gap-1 rounded-[0.25rem] px-2",
         selected && "bg-muted",
         dropTarget && "ring-2 ring-ring",
         dropInvalid && "cursor-not-allowed opacity-50",
@@ -178,7 +178,7 @@ export function TreeNodeRow({
       )}
 
       {node.item_count > 0 ? (
-        <span className="shrink-0 rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+        <span className="shrink-0 rounded-[0.25rem] bg-muted px-2 py-0.5 text-xs text-muted-foreground">
           {t("locations.tree.itemCount", { count: node.item_count })}
         </span>
       ) : null}

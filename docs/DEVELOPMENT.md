@@ -62,7 +62,7 @@ make audit
 - `make test` 串接 API 與 Web 單元測試。API 測試使用每個 test 獨立的 in-memory SQLite，不需正式資料庫。
 - 既有基線：API **1534 passed**；Web **975 passed（154 檔）**（Node 22 與 Node 24 皆通過）；Playwright e2e：Phase 47 為 **31 spec／99 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip），Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行。這些數字是既有基線，不代表每次執行的結果。
 - e2e 需要已啟動的完整服務與 Playwright 瀏覽器；預設網址為 `http://localhost`，可透過 `E2E_BASE_URL` 覆寫。AI 成功情境另需 dev API 使用 `AI_MODE=stub`，再執行 `E2E_AI_STUB=1 pnpm --filter @ims/web test:e2e --project=ai-stub`。
-- `make audit` 會稽核 Python lockfile 與 Node 正式依賴，需要網路；`make lint` 同時執行 API ruff（F＋E9）與 Web ESLint。
+- `make audit` 會稽核 Python lockfile 與 Node 正式依賴，需要網路；`make lint` 同時執行 API ruff（F＋E9）與 Web ESLint。Web 為 ESLint 10 flat config（`apps/web/eslint.config.mjs`），指令是 `eslint . --max-warnings 0`；樣式為 Tailwind CSS 4（`@tailwindcss/postcss`，設定仍在 `apps/web/tailwind.config.ts`）。
 - pre-commit 僅保留空白、檔尾、YAML／JSON／TOML、merge conflict、大檔案與換行格式檢查。
 
 完整 targets 見 `make help`。架構見[系統架構](ARCHITECTURE.md)，排程見[排程與到期提醒](scheduling.md)。

@@ -40,7 +40,7 @@ export function TagRow({
   const isMerging = edit.kind === "merge" && edit.id === tag.id
 
   return (
-    <li className="flex items-center justify-between gap-2 rounded border px-3 py-2">
+    <li className="flex items-center justify-between gap-2 rounded-[0.25rem] border px-3 py-2">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {isRenaming ? (
           <Input
@@ -57,7 +57,7 @@ export function TagRow({
         ) : (
           <span className="truncate font-medium">{tag.name}</span>
         )}
-        <span className="flex-shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+        <span className="shrink-0 rounded-[0.25rem] bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
           {t("taxonomy.tags.itemCount", { count: tag.item_count })}
         </span>
       </div>

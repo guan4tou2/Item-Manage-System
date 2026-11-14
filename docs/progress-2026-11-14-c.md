@@ -28,6 +28,7 @@
 | ESLint 零警告 | 警告 30 → 0；`lint` script 改為 `next lint --max-warnings 0` |
 | 依賴升級 | `next-intl` 3.21.1 → 4.15.1、`next-themes` 0.3.0 → 0.4.6；`pnpm audit --prod` 無已知漏洞 |
 | Dependabot 第二批 | 合併 6 個檢查全綠的 PR：GitHub Actions（codeql-action 3→4、docker/login-action 3→4、setup-python 5→7、setup-qemu-action 3→4、setup-node 4→7）與 Python minor／patch 群組 |
+| 大版本升級（第三批） | Gemini 模型改為設定值 `GEMINI_MODEL`（預設 `gemini-3.6-flash`，原 `gemini-2.0-flash` 已停用）＋`google-genai` 3.1；`vitest` 5、npm 群組 28 個套件；Next.js 16＋ESLint 10 flat config（`middleware.ts`→`proxy.ts`）；Tailwind CSS 4.3.5（保留 v3 相容層，畫面不變） |
 
 ---
 
@@ -40,7 +41,7 @@
 | ruff | 零違規（`All checks passed!`） |
 | Web vitest | **975 passed（154 檔）**（Node 22 與 Node 24 皆通過） |
 | Web typecheck | 0 error |
-| Web lint | `next lint --max-warnings 0` 通過 |
+| Web lint | `eslint . --max-warnings 0` 通過（ESLint 10 flat config；Next 16 已移除 `next lint`） |
 | `next build` | 成功 |
 | api-types | 合併後以實際 API 重新產生 |
 | `alembic heads` | 單一 `0033` |
@@ -72,6 +73,8 @@
 
 ## 五、未驗證與已知限制
 
+- **Gemini 模型修正未以真實金鑰實測**：本機與 CI 都沒有 `GEMINI_API_KEY`，只驗證了送給 SDK 的模型名稱；部署後需實際跑一次 AI 辨識。
+- **Tailwind 4 的瀏覽器基準**：Safari 16.4+、Chrome 111+、Firefox 128+；更舊的瀏覽器版面可能不正確。視覺比對只涵蓋 9 個主要頁面與登入頁（明暗 × 1280／375px）及對話框／選單／抽屜，其餘頁面由 e2e 的功能斷言間接涵蓋，未逐頁截圖。
 - **Playwright e2e 未在本機執行**（本機 Docker 未啟動）：Phase 47 為 31 spec／99 情境，Phase 48–51 新增的情境（含 `offline-add.spec.ts`）由 CI 執行。
 - Migration 0030／0031／0032／0033 的 PostgreSQL 升降版未在本機執行，已由 CI 確認通過。
 - Phase 48：只保留收據第一頁影像（既有限制）。

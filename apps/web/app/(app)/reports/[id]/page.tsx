@@ -64,7 +64,7 @@ export default function ReportDetailPage() {
 
     if (notFound) {
       return (
-        <div className="flex flex-col items-center justify-center gap-3 rounded border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-[0.25rem] border border-dashed p-12 text-center">
           <p className="text-muted-foreground text-sm">{t("detail.notFound")}</p>
           {renderBack()}
         </div>
@@ -73,7 +73,7 @@ export default function ReportDetailPage() {
 
     if (report.isError || !report.data) {
       return (
-        <div className="flex flex-col items-center justify-center gap-3 rounded border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-[0.25rem] border border-dashed p-12 text-center">
           <p className="text-muted-foreground text-sm">{t("detail.loadError")}</p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => void report.refetch()}>

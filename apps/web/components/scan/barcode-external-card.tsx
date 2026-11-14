@@ -29,7 +29,7 @@ export function BarcodeExternalCard({ result, onRetry }: Props) {
           ? t("scan.external.sourceNames.openlibrary")
           : external.source
     return (
-      <div data-testid="barcode-external-card" className="space-y-3 rounded border p-3">
+      <div data-testid="barcode-external-card" className="space-y-3 rounded-[0.25rem] border p-3">
         <p
           data-testid="barcode-external-source"
           className="text-xs text-muted-foreground"
@@ -42,7 +42,7 @@ export function BarcodeExternalCard({ result, onRetry }: Props) {
             <img
               src={external.image_url}
               alt=""
-              className="h-16 w-16 shrink-0 rounded object-cover"
+              className="h-16 w-16 shrink-0 rounded-[0.25rem] object-cover"
             />
           ) : null}
           <div className="min-w-0">
@@ -65,7 +65,7 @@ export function BarcodeExternalCard({ result, onRetry }: Props) {
 
   if (result.external_status === "not_found") {
     return (
-      <div data-testid="barcode-external-card" className="space-y-3 rounded border p-3">
+      <div data-testid="barcode-external-card" className="space-y-3 rounded-[0.25rem] border p-3">
         <p className="text-sm">{t("scan.external.notFound")}</p>
         <Button asChild variant="outline">
           <Link href={createHref}>{t("scan.external.createWithBarcode")}</Link>
@@ -76,7 +76,7 @@ export function BarcodeExternalCard({ result, onRetry }: Props) {
 
   if (result.external_status === "unavailable") {
     return (
-      <div data-testid="barcode-external-card" className="space-y-3 rounded border p-3">
+      <div data-testid="barcode-external-card" className="space-y-3 rounded-[0.25rem] border p-3">
         <p className="text-sm">{t("scan.external.unavailable")}</p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={onRetry}>{t("scan.lookup.retry")}</Button>
@@ -90,7 +90,7 @@ export function BarcodeExternalCard({ result, onRetry }: Props) {
 
   // unsupported（或未知狀態）：僅提供以條碼新增
   return (
-    <div data-testid="barcode-external-card" className="space-y-3 rounded border p-3">
+    <div data-testid="barcode-external-card" className="space-y-3 rounded-[0.25rem] border p-3">
       <p className="text-sm">{t("scan.external.unsupported")}</p>
       <Button asChild variant="outline">
         <Link href={createHref}>{t("scan.external.createWithBarcode")}</Link>

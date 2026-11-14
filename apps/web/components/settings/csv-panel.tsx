@@ -63,7 +63,7 @@ export function CsvPanel() {
         <div className="space-y-1 text-sm text-muted-foreground">
           <p>
             {t("settings.csv.exportDescription")}
-            <code className="mx-1 rounded bg-muted px-1">id, name, description, barcode, quantity, min_quantity, cost, currency, category_name, location_path, warehouse_name, tag_names, notes, is_favorite, created_at, updated_at</code>
+            <code className="mx-1 rounded-[0.25rem] bg-muted px-1">id, name, description, barcode, quantity, min_quantity, cost, currency, category_name, location_path, warehouse_name, tag_names, notes, is_favorite, created_at, updated_at</code>
           </p>
           <p>
             {t("settings.csv.importDescription")}
@@ -98,7 +98,7 @@ export function CsvPanel() {
         </div>
 
         {summary ? (
-          <div className="rounded border bg-muted/30 p-3 text-sm">
+          <div className="rounded-[0.25rem] border bg-muted/30 p-3 text-sm">
             <div>
               {t("settings.csv.summary.totalRows")}<strong>{summary.total_rows}</strong>
               {" "}{t("settings.csv.summary.created")}<strong>{summary.created_count}</strong>

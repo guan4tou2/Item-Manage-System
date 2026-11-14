@@ -24,7 +24,7 @@ export function AdminOnly({ children }: { children: ReactNode }) {
 
   if (me.isError) {
     return (
-      <div className="space-y-2 rounded border border-dashed p-4">
+      <div className="space-y-2 rounded-[0.25rem] border border-dashed p-4">
         <p className="text-sm text-muted-foreground">{t("settings.adminOnly.error")}</p>
         <Button size="sm" variant="outline" onClick={() => me.refetch()}>
           {t("settings.adminOnly.retry")}
@@ -35,7 +35,7 @@ export function AdminOnly({ children }: { children: ReactNode }) {
 
   if (me.data?.is_admin !== true) {
     return (
-      <div className="space-y-2 rounded border border-dashed p-4">
+      <div className="space-y-2 rounded-[0.25rem] border border-dashed p-4">
         <p className="text-sm text-muted-foreground">{t("settings.adminOnly.prompt")}</p>
         <Button asChild size="sm" variant="outline">
           <Link href="/settings">{t("settings.adminOnly.back")}</Link>

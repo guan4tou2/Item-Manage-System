@@ -552,7 +552,7 @@ export function WebhookPanel() {
                     <button
                       type="button"
                       onClick={() => setSelectedId(webhook.id)}
-                      className="focus-visible:ring-ring min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+                      className="focus-visible:ring-ring min-w-0 flex-1 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2"
                     >
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium">{webhook.name}</p>

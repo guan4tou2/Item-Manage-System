@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@config '../tailwind.config.ts';
 
 @layer base {
   :root {
@@ -77,12 +76,78 @@
     --ring: 217 91% 60%;
   }
 
-  * {
+  *,
+  ::before,
+  ::after {
     @apply border-border;
+    /* 保留 v3 未指定外框顏色時的預設值，仍可由 ring-ring 覆寫。 */
+    --tw-ring-color: rgb(59 130 246 / 0.5);
+  }
+
+  /* 保留 v3 的按鈕游標與未指定顏色的輸入提示文字。 */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+}
+
+/* 保留 v3 的單一容器斷點與內距，覆蓋 v4 內建的各級最大寬度。 */
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  max-width: none;
+
+  @media (min-width: 1400px) {
+    max-width: 1400px;
+  }
+}
+
+/* 延續 v3 的 hover 行為，包含觸控裝置模擬的滑鼠狀態。 */
+@custom-variant hover (&:hover);
+
+/* v3 以可見兄弟的上／左邊距排版，避免 v4 改到下／右邊距後影響折疊內容。 */
+@utility space-y-* {
+  & > :where(:not(:last-child)) {
+    margin-block: 0;
+  }
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(--spacing(--value(number)) * (1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(--spacing(--value(number)) * var(--tw-space-y-reverse));
+  }
+}
+
+@utility space-x-* {
+  & > :where(:not(:last-child)) {
+    margin-inline: 0;
+  }
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 0;
+    margin-right: calc(--spacing(--value(number)) * var(--tw-space-x-reverse));
+    margin-left: calc(--spacing(--value(number)) * (1 - var(--tw-space-x-reverse)));
+  }
+}
+
+@utility divide-y {
+  & > :where(:not(:last-child)) {
+    border-top-width: 0;
+    border-bottom-width: 0;
+  }
+  & > :not([hidden]) ~ :not([hidden]) {
+    --tw-divide-y-reverse: 0;
+    border-top-width: calc(1px * (1 - var(--tw-divide-y-reverse)));
+    border-bottom-width: calc(1px * var(--tw-divide-y-reverse));
   }
 }

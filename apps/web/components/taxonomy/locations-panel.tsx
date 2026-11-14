@@ -300,7 +300,7 @@ export function LocationsPanel() {
 
   if (tree.isError) {
     return (
-      <div className="space-y-2 rounded border p-3 text-sm" role="alert">
+      <div className="space-y-2 rounded-[0.25rem] border p-3 text-sm" role="alert">
         <p>{t("locations.tree.loadFailed")}</p>
         <Button type="button" size="sm" onClick={() => void tree.refetch()}>
           {t("scan.lookup.retry")}
@@ -370,7 +370,7 @@ export function LocationsPanel() {
       ) : null}
 
       {searchEmpty ? (
-        <div className="space-y-2 rounded border p-3 text-sm">
+        <div className="space-y-2 rounded-[0.25rem] border p-3 text-sm">
           <p>{t("locations.tree.noSearchResult")}</p>
           <EditableOnly>
             <Button
@@ -403,7 +403,7 @@ export function LocationsPanel() {
         ref={containerRef}
         role="tree"
         aria-label={t("nav.locations")}
-        className="rounded border p-1"
+        className="rounded-[0.25rem] border p-1"
         onKeyDown={onKeyDown}
         onDragOver={readOnly ? undefined : (event) => {
           if (dragId !== null && canMove(flat, dragId, null)) event.preventDefault()

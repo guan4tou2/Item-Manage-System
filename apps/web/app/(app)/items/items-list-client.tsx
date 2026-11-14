@@ -270,7 +270,7 @@ export function ItemsListClient() {
         {isLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : !data || data.items.length === 0 ? (
-          <div className="rounded border p-6 text-center text-muted-foreground">
+          <div className="rounded-[0.25rem] border p-6 text-center text-muted-foreground">
             {data && data.total === 0 && !filters.q && !filters.categoryId && !filters.locationId && !filters.tagIds && !filters.expiry ? (
               <>
                 <p>{t("items.list.empty")}</p>
@@ -289,7 +289,7 @@ export function ItemsListClient() {
             {selectedCount > 0 ? (
               <div
                 aria-busy={bulkPending}
-                className="sticky bottom-3 z-20 rounded-md border bg-background/95 p-3 shadow-lg shadow-black/5 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+                className="sticky bottom-3 z-20 rounded-md border bg-background/95 p-3 shadow-lg shadow-black/5 backdrop-blur-sm supports-[backdrop-filter]:bg-background/85"
               >
                 <div className="grid gap-3 xl:grid-cols-[auto_minmax(18rem,1fr)_minmax(14rem,18rem)_auto] xl:items-end">
                   <div className="flex items-center justify-between gap-3 xl:block">
@@ -370,7 +370,7 @@ export function ItemsListClient() {
                         value={targetLocationId}
                         onChange={(event) => setTargetLocationId(event.target.value)}
                         aria-label={t("items.bulk.moveTo")}
-                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={bulkPending}
                       >
                         <option value="">{t("items.bulk.selectLocation")}</option>

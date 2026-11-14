@@ -77,7 +77,7 @@ export function CategoriesPanel() {
       ) : (
         <ul className="space-y-1">
           {flat.map((c) => (
-            <li key={c.id} className="flex items-center justify-between border rounded px-3 py-2">
+            <li key={c.id} className="flex items-center justify-between border rounded-[0.25rem] px-3 py-2">
               <span>{c.label}</span>
               <EditableOnly>
                 <Button

@@ -163,7 +163,7 @@ function SessionRow({
       type="button"
       onClick={onSelect}
       className={cn(
-        'w-full rounded-lg border p-4 text-left transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        'w-full rounded-lg border p-4 text-left transition-colors hover:bg-accent/60 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         active && 'border-primary bg-primary/5',
       )}
     >

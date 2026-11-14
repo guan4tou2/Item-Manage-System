@@ -80,7 +80,7 @@ export default function ListsPage() {
           <Skeleton className="h-32 w-full" />
         </div>
       ) : isEmpty ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded border border-dashed p-12 text-center">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-[0.25rem] border border-dashed p-12 text-center">
           <p className="text-sm font-medium">{t("lists.empty.title")}</p>
         </div>
       ) : (

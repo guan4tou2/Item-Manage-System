@@ -31,7 +31,7 @@ export function ReportCard({ report }: Props) {
   return (
     <Link
       href={`/reports/${report.id}`}
-      className="focus-visible:ring-ring block rounded-lg focus-visible:ring-2 focus-visible:outline-none"
+      className="focus-visible:ring-ring block rounded-lg focus-visible:ring-2 focus-visible:outline-hidden"
     >
       <Card className="hover:bg-accent/50 transition-colors">
         <CardContent className="flex items-center justify-between gap-4 py-4">

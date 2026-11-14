@@ -149,7 +149,7 @@ export default function BulkItemLabelsPage() {
             return (
               <div
                 key={item.itemId}
-                className="box-border flex min-h-[4cm] w-[6cm] break-inside-avoid flex-col items-center justify-center gap-1.5 rounded border border-black/20 bg-white p-2 text-center text-black print:inline-flex print:rounded-none print:border print:border-black/20"
+                className="box-border flex min-h-[4cm] w-[6cm] break-inside-avoid flex-col items-center justify-center gap-1.5 rounded-[0.25rem] border border-black/20 bg-white p-2 text-center text-black print:inline-flex print:rounded-none print:border print:border-black/20"
               >
                 {qrUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -159,7 +159,7 @@ export default function BulkItemLabelsPage() {
                     className="h-[2.65cm] w-[2.65cm]"
                   />
                 ) : (
-                  <div className="h-[2.65cm] w-[2.65cm] rounded bg-neutral-100" />
+                  <div className="h-[2.65cm] w-[2.65cm] rounded-[0.25rem] bg-neutral-100" />
                 )}
                 <div className="w-full truncate text-[0.75rem] font-semibold leading-tight">
                   {item.label.name}

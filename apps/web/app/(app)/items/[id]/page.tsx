@@ -198,7 +198,7 @@ export default function ItemDetailPage() {
         <AuthImage
           imageId={i.image_id}
           alt={i.name}
-          className="max-h-64 max-w-full rounded border object-contain"
+          className="max-h-64 max-w-full rounded-[0.25rem] border object-contain"
         />
       ) : null}
 
@@ -293,7 +293,7 @@ export default function ItemDetailPage() {
         <p
           role="status"
           data-testid="viewer-item-notice"
-          className="sticky bottom-3 max-w-2xl rounded-md border bg-background/95 px-4 py-3 text-sm text-muted-foreground shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85"
+          className="sticky bottom-3 max-w-2xl rounded-md border bg-background/95 px-4 py-3 text-sm text-muted-foreground shadow-xs backdrop-blur-sm supports-[backdrop-filter]:bg-background/85"
         >
           {t("viewer.itemNotice")}
         </p>

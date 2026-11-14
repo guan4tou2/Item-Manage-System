@@ -85,12 +85,12 @@ export function LowStockCard({ items, loading }: Props) {
                 >
                   {row.name}
                 </Link>
-                <span className="ml-2 flex-shrink-0 text-sm">
+                <span className="ml-2 shrink-0 text-sm">
                   <span className="font-semibold text-destructive">
                     {row.quantity}
                   </span>
                   <span className="text-muted-foreground"> / {row.min_quantity}</span>
-                  <span className="ml-2 rounded bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
+                  <span className="ml-2 rounded-[0.25rem] bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
                     -{row.deficit}
                   </span>
                 </span>

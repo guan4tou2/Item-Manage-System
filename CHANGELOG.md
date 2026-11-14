@@ -30,6 +30,16 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 - Dependabot：合併 6 個檢查全綠的 PR——`github/codeql-action` 3→4、`docker/login-action` 3→4、`actions/setup-python` 5→7、`docker/setup-qemu-action` 3→4、`actions/setup-node` 4→7，以及 Python minor／patch 群組更新（含 `sqlalchemy` 2.0.35→2.1.8、`uvicorn` 0.30.6→0.54.0、`pydantic` 2.12.5→2.14.3、`pydantic-settings` 2.11.0→2.16.2、`alembic` 1.13.3→1.20.1、`asyncpg` 0.30.0→0.32.0、`python-multipart` 0.0.31→0.0.33、`pywebpush` 2.0.0→2.5.0、`pytest` 9.0.3→9.2.0、`aiosqlite` 0.20.0→0.22.1、`pypdfium2` 5.14.0→5.15.2）。仍開著未處理的：`vitest` 5、`eslint` 10、`tailwindcss` 4、`google-genai` 3（皆為 major，需個別評估）、npm minor／patch 群組（檢查未過）、`docker/setup-buildx-action` 4 與 `pytest-cov` 7（等 rebase）。併入後以新版本重跑 API 全套仍為 1534 passed，OpenAPI 輸出僅描述性差異、TypeScript 型別不變
 - codex 的使用額度在本輪用完；Phase 48–50 與維護項目的文件、以及本次文件更新由 opencode 完成
 
+**同日維護項目（第三批：大版本升級）**：
+
+- **修正 AI 功能使用已停用的模型**：`gemini-2.0-flash` 已於 2026-06-01 被 Google 關閉，原本四處寫死該模型的呼叫都會失敗。改為設定值 `GEMINI_MODEL`（預設 `gemini-3.6-flash`），並新增測試確認送給 SDK 的模型名稱來自設定、原始碼不再寫死。`google-genai` 2.x → 3.1.0。**未以真實 API 金鑰實測**（本機與 CI 都沒有金鑰），部署後請實際跑一次 AI 辨識確認
+- `pytest-cov` 6 → 7.1.0、`docker/setup-buildx-action` 3 → 4
+- `vitest` 2 → 5.1.0（連帶 `vite` 8.3.8、`@vitejs/plugin-react` 6.3.0）；npm minor／patch 群組 28 個套件（含 `@tanstack/react-query` 5.107）。react-query 新版的通知時機讓 4 個「資料還沒載入就操作」的測試露餡，已改為先等資料載入；產品程式未變
+- **Next.js 15 → 16.4.6、ESLint 9 → 10.15.0**：`.eslintrc.json` 改為 flat config（`eslint.config.mjs`），`lint` script 由 `next lint` 改為 `eslint . --max-warnings 0`（Next 16 已移除 `next lint`）；`middleware.ts` 依 Next 16 慣例改名為 `proxy.ts`，邏輯與 matcher 不變
+- **Tailwind CSS 3.4 → 4.3.5**：PostCSS 外掛改為 `@tailwindcss/postcss`、移除 `autoprefixer`；`globals.css` 改用 `@import 'tailwindcss'`＋`@config` 沿用既有 `tailwind.config.ts`（色彩與字型 token 落點不變）。為了讓畫面不變，在 `globals.css` 保留 v3 的預設邊框色、預設 ring 色、按鈕游標、placeholder 色、`container`、`space-*`／`divide-y` 與 `hover` 行為；v4 改名的類別一併調整（`shadow-sm`→`shadow-xs`、`backdrop-blur`→`backdrop-blur-sm`、`outline-none`→`outline-hidden`、裸 `rounded`→`rounded-[0.25rem]`、`flex-shrink-*`→`shrink-*`），`cn()` 補上新語法的合併規則
+- **瀏覽器基準提高**：Tailwind 4 需要 Safari 16.4+、Chrome 111+、Firefox 128+；更舊的瀏覽器版面可能不正確
+- 驗證：遷移前後以正式建置各拍 40 張截圖（9 個頁面＋登入頁 × 明暗 × 1280／375px）逐張比對，容許差異 0.05% 下 36 張一致；統計頁 4 張的差異經查為圖表進場動畫的截圖時機（同一頁在遷移前自我比對就不穩定），以等待動畫結束的截圖目視確認與遷移前一致。另以瀏覽器實際操作確認對話框／下拉選單／側邊抽屜的進場動畫、鍵盤 focus ring、暗色模式與 375px 版面正常。Web 975 passed（154 檔，Node 22 與 24）、typecheck 0 error、lint 0 warning、`next build` 成功；本機 e2e（SQLite 暫時資料庫＋正式建置，chromium）93 passed／1 skipped，另 6 個 `reminders`／`reports` 情境需要 Docker 內的 PostgreSQL，本機無法執行，由 CI 確認
+
 ## [2.0.0-alpha.50] — Phase 50：清單分享唯讀連結
 
 - **分享範圍＝單一清單**：一條連結只對應一份清單，不會連帶揭露物品庫存、位置、其他清單或帳號資訊

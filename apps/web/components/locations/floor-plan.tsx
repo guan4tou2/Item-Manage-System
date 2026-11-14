@@ -102,7 +102,7 @@ export function FloorPlan({ locationId }: { locationId: number }) {
     setPreview(null)
   }
   const imageError = (
-    <div role="alert" className="space-y-3 rounded border p-4">
+    <div role="alert" className="space-y-3 rounded-[0.25rem] border p-4">
       <p>{t("loadError")}</p>
       <Button
         variant="outline"
@@ -208,7 +208,7 @@ export function FloorPlan({ locationId }: { locationId: number }) {
             </div>
           )}
           {!node.floor_plan_image_id ? (
-            <div className="space-y-2 rounded border p-4">
+            <div className="space-y-2 rounded-[0.25rem] border p-4">
               <p>{t("noPlan")}</p>
               {!readOnly && <p className="text-muted-foreground text-sm">{t("uploadHint")}</p>}
             </div>
@@ -299,7 +299,7 @@ export function FloorPlan({ locationId }: { locationId: number }) {
                     if (!region) return null
                     const label = t("regionLabel", { name: child.name, count: totalItems(child) })
                     const className = cn(
-                      "absolute flex items-start justify-start overflow-hidden border-[1.5px] border-primary bg-primary/10 p-0.5 text-left text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      "absolute flex items-start justify-start overflow-hidden border-[1.5px] border-primary bg-primary/10 p-0.5 text-left text-xs font-semibold focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                       edit
                         ? selected === child.id
                           ? "border-2"
