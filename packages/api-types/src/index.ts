@@ -1662,6 +1662,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/receipts/{receipt_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Receipt */
+        get: operations["get_receipt_api_ai_receipts__receipt_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/receipts/{receipt_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Review */
+        put: operations["put_review_api_ai_receipts__receipt_id__review_put"];
+        post?: never;
+        /** Delete Review */
+        delete: operations["delete_review_api_ai_receipts__receipt_id__review_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/search": {
         parameters: {
             query?: never;
@@ -3144,6 +3179,7 @@ export interface components {
             created_at: string;
             /** Receipt Id */
             receipt_id?: string | null;
+            receipt_review?: components["schemas"]["ReceiptReviewRead"] | null;
         };
         /** ExpiryItem */
         ExpiryItem: {
@@ -4387,6 +4423,60 @@ export interface components {
             unit_price: string | null;
             /** Subtotal */
             subtotal: string | null;
+        };
+        /** ReceiptLineRead */
+        ReceiptLineRead: {
+            /**
+             * Draft Id
+             * Format: uuid
+             */
+            draft_id: string;
+            /** Index */
+            index: number;
+            /** Name */
+            name?: string | null;
+            /** Quantity */
+            quantity?: number | null;
+            /** Unit Price */
+            unit_price?: string | null;
+            /** Subtotal */
+            subtotal?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "processing" | "ready" | "failed" | "accepted" | "discarded";
+            /** Item Id */
+            item_id?: string | null;
+        };
+        /** ReceiptRead */
+        ReceiptRead: {
+            /**
+             * Receipt Id
+             * Format: uuid
+             */
+            receipt_id: string;
+            snapshot?: components["schemas"]["ReceiptSnapshot"] | null;
+            review?: components["schemas"]["ReceiptReviewRead"] | null;
+            /** Image Id */
+            image_id?: string | null;
+            /** Lines */
+            lines: components["schemas"]["ReceiptLineRead"][];
+        };
+        /** ReceiptReviewRead */
+        ReceiptReviewRead: {
+            /**
+             * Verified At
+             * Format: date-time
+             */
+            verified_at: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** ReceiptReviewWrite */
+        ReceiptReviewWrite: {
+            /** Note */
+            note?: string | null;
         };
         /**
          * ReceiptSnapshot
@@ -8704,6 +8794,101 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ReceiptCreateResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_receipt_api_ai_receipts__receipt_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_review_api_ai_receipts__receipt_id__review_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiptReviewWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceiptReviewRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_review_api_ai_receipts__receipt_id__review_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                receipt_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
