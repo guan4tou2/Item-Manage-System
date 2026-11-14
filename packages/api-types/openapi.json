@@ -3474,6 +3474,55 @@
         }
       }
     },
+    "/api/public/list": {
+      "get": {
+        "tags": [
+          "public lists"
+        ],
+        "summary": "Read Public List",
+        "operationId": "read_public_list_api_public_list_get",
+        "parameters": [
+          {
+            "name": "X-Share-Token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Share-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/lists": {
       "get": {
         "tags": [
@@ -4005,6 +4054,165 @@
             }
           }
         },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lists/{list_id}/shares": {
+      "post": {
+        "tags": [
+          "lists"
+        ],
+        "summary": "Create Share",
+        "operationId": "create_share_api_lists__list_id__shares_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListShareCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListShareCreated"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "lists"
+        ],
+        "summary": "List Shares",
+        "operationId": "list_shares_api_lists__list_id__shares_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "List Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListShareRead"
+                  },
+                  "title": "Response List Shares Api Lists  List Id  Shares Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lists/{list_id}/shares/{share_id}": {
+      "delete": {
+        "tags": [
+          "lists"
+        ],
+        "summary": "Revoke Share",
+        "operationId": "revoke_share_api_lists__list_id__shares__share_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "List Id"
+            }
+          },
+          {
+            "name": "share_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Share Id"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": "Successful Response"
@@ -12354,6 +12562,164 @@
         ],
         "title": "ListListResponse"
       },
+      "ListShareCreate": {
+        "properties": {
+          "expires_in_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "enum": [
+                  1,
+                  7,
+                  30
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires In Days"
+          },
+          "show_prices": {
+            "type": "boolean",
+            "title": "Show Prices",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "expires_in_days"
+        ],
+        "title": "ListShareCreate"
+      },
+      "ListShareCreated": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "token_prefix": {
+            "type": "string",
+            "title": "Token Prefix"
+          },
+          "show_prices": {
+            "type": "boolean",
+            "title": "Show Prices"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_accessed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Accessed At"
+          },
+          "access_count": {
+            "type": "integer",
+            "title": "Access Count"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "token_prefix",
+          "show_prices",
+          "expires_at",
+          "created_at",
+          "last_accessed_at",
+          "access_count",
+          "token"
+        ],
+        "title": "ListShareCreated"
+      },
+      "ListShareRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "token_prefix": {
+            "type": "string",
+            "title": "Token Prefix"
+          },
+          "show_prices": {
+            "type": "boolean",
+            "title": "Show Prices"
+          },
+          "expires_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expires At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_accessed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Accessed At"
+          },
+          "access_count": {
+            "type": "integer",
+            "title": "Access Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "token_prefix",
+          "show_prices",
+          "expires_at",
+          "created_at",
+          "last_accessed_at",
+          "access_count"
+        ],
+        "title": "ListShareRead"
+      },
       "ListSummary": {
         "properties": {
           "id": {
@@ -13915,6 +14281,165 @@
           "deleted_count"
         ],
         "title": "PruneOrphansResult"
+      },
+      "PublicList": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "travel",
+              "shopping",
+              "collection",
+              "generic"
+            ],
+            "title": "Kind"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "start_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start Date"
+          },
+          "end_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Date"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/PublicListEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "title",
+          "description",
+          "start_date",
+          "end_date",
+          "entries"
+        ],
+        "title": "PublicList"
+      },
+      "PublicListEntry": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "is_done": {
+            "type": "boolean",
+            "title": "Is Done"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "quantity",
+          "note",
+          "link",
+          "is_done"
+        ],
+        "title": "PublicListEntry"
       },
       "QuantityLogRead": {
         "properties": {

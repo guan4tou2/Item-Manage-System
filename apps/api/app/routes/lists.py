@@ -20,6 +20,8 @@ from app.schemas.list import (
     ListUpdate,
     ReorderRequest,
 )
+from app.schemas.list_share import ListShareCreate, ListShareCreated, ListShareRead
+from app.services import list_shares_service as shares
 from app.services import lists_service as svc
 
 router = APIRouter(route_class=WriterGuardRoute, prefix="/api/lists", tags=["lists"])
@@ -141,3 +143,33 @@ async def delete_entry(
 ) -> Response:
     await svc.delete_entry(session, user.id, list_id, entry_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/{list_id}/shares", response_model=ListShareCreated, status_code=201)
+async def create_share(
+    list_id: UUID,
+    body: ListShareCreate,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> ListShareCreated:
+    return await shares.create_share(session, user.id, list_id, body)
+
+
+@router.get("/{list_id}/shares", response_model=list[ListShareRead])
+async def list_shares(
+    list_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> list[ListShareRead]:
+    return await shares.list_shares(session, user.id, list_id)
+
+
+@router.delete("/{list_id}/shares/{share_id}", status_code=204, response_class=Response)
+async def revoke_share(
+    list_id: UUID,
+    share_id: UUID,
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> Response:
+    await shares.revoke_share(session, user.id, list_id, share_id)
+    return Response(status_code=204)

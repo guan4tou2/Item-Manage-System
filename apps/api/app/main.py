@@ -29,6 +29,7 @@ from app.routes import (
     loans,
     locations,
     notifications,
+    public_lists,
     reports,
     stats,
     stocktake,
@@ -73,6 +74,7 @@ def create_app() -> FastAPI:
     app.include_router(stats.router)
     app.include_router(notifications.router)
     app.include_router(reports.router)
+    app.include_router(public_lists.router)
     app.include_router(lists.router)
     app.include_router(groups.router)
     app.include_router(loans.router)

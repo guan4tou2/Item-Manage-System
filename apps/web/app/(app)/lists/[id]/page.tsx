@@ -20,6 +20,7 @@ import { useTranslations } from "next-intl"
 
 import { EditableOnly } from "@/components/common/editable-only"
 import { KindBadge } from "@/components/lists/kind-badge"
+import { ShareDialog } from "@/components/lists/share-dialog"
 import { SortableEntry } from "@/components/lists/sortable-entry"
 import {
   AlertDialog,
@@ -134,7 +135,7 @@ export default function ListDetailPage() {
       </Breadcrumb>
 
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2 break-words">
           <h1 className="text-2xl font-semibold">{list.title}</h1>
           <div className="flex items-center gap-2">
             <KindBadge kind={kind} />
@@ -171,6 +172,8 @@ export default function ListDetailPage() {
         </div>
 
         <EditableOnly>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+          <ShareDialog listId={listId} />
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -197,6 +200,7 @@ export default function ListDetailPage() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          </div>
         </EditableOnly>
       </div>
 
