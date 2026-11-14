@@ -79,11 +79,11 @@ curl -fsS -X POST "$IMS_BASE_URL/api/jobs/expiry-scan/run" \
 - 以 `make logs` 檢查服務日誌；`make down` 停止服務並保留 volumes。
 - `pgdata` 保存資料庫、`media` 保存圖片。備份需涵蓋資料庫與圖片；不要使用 `docker compose down -v`，除非確定要刪除資料。
 
-## Release images
+## 版本發佈
 
-`release.yml` 在 `v*.*.*` tag 推送時建置並推送 `ghcr.io/<owner>/<repo>-api` 與 `ghcr.io/<owner>/<repo>-web`，各自產生 SBOM artifact。Image tags 包含完整版本與 `major.minor`；只有不含 `-` 的正式版加上 `latest`。預發佈版的 GitHub Release 標為 prerelease。
+本專案**不發佈 container image**；部署一律照上方流程從原始碼以 `docker compose` 建置。
 
-現有 Compose 使用本機 `build`，不會自動改用 GHCR image；上方部署流程仍從原始碼建置。v1 歷史快照請查 `v1-final` tag。
+`release.yml` 在 `v*.*.*` tag 推送時只建立 GitHub Release：說明先附上 `CHANGELOG.md` 中該版本的段落，再接自動產生的 PR 清單；帶 `-` 的版本（如 `v2.0.0-alpha.52`）標為 prerelease。要部署某個版本，checkout 對應的 tag 後建置即可。v1 歷史快照請查 `v1-final` tag。
 
 ## 升級注意（Phase 46）
 
