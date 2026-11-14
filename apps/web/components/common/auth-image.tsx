@@ -55,7 +55,11 @@ export function AuthImage({ imageId, placeholder, fallback = null, ...imgProps }
 
   if (url !== null) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} {...imgProps} />
+    return <img src={url} {...imgProps} onError={(event) => {
+      setUrl(null)
+      setFailed(true)
+      imgProps.onError?.(event)
+    }} />
   }
   if (failed) return <>{fallback}</>
   return <>{placeholder ?? fallback}</>

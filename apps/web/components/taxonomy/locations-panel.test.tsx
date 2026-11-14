@@ -443,3 +443,17 @@ describe("LocationsPanel read-only viewer (Phase 30)", () => {
     expect(await screen.findByText("Add child")).toBeInTheDocument()
   })
 })
+
+describe("平面圖入口", () => {
+  beforeEach(() => { stubHooks() })
+  it("更多操作提供平面圖連結", async () => {
+    renderPanel()
+    await userEvent.setup().click(screen.getByRole("button", { name: "More actions for 1F" }))
+    expect(await screen.findByRole("menuitem", { name: "Floor plan" })).toHaveAttribute("href", "/locations/1/plan")
+  })
+  it("有圖的列提供有 aria-label 的直接入口", () => {
+    hooks.tree.mockReturnValue({ data: [{ ...treeData[0], floor_plan_image_id: "image" }], isLoading: false, isError: false })
+    renderPanel()
+    expect(screen.getByRole("link", { name: "Floor plan for 1F" })).toHaveAttribute("href", "/locations/1/plan")
+  })
+})

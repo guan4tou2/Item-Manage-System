@@ -1,6 +1,8 @@
 "use client"
 
-import { ChevronDown, ChevronRight, MoreHorizontal, Plus, Printer, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronRight, Map, MoreHorizontal, Plus, Printer, Trash2 } from "lucide-react"
+import type { Route } from "next"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
@@ -181,6 +183,9 @@ export function TreeNodeRow({
         </span>
       ) : null}
 
+      {node.floor_plan_image_id && <Button asChild variant="ghost" size="icon" className="h-11 w-11 shrink-0">
+        <Link href={`/locations/${node.id}/plan` as Route} aria-label={t("locations.plan.imageAlt", { name: node.name })} onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}><Map className="h-4 w-4" /></Link>
+      </Button>}
       {readOnly ? null : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -196,6 +201,9 @@ export function TreeNodeRow({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link href={`/locations/${node.id}/plan` as Route} onKeyDown={(event) => event.stopPropagation()}>{t("locations.plan.title")}</Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={onAddChild}>
             <Plus className="mr-2 h-4 w-4" />
             {t("locations.tree.addChild")}

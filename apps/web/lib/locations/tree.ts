@@ -10,6 +10,7 @@ export interface TreeFlatNode {
   sort_order: number
   path: string
   item_count: number
+  floor_plan_image_id?: string | null
 }
 
 export function flattenTree(nodes: LocationTreeNode[]): TreeFlatNode[] {
@@ -23,6 +24,7 @@ export function flattenTree(nodes: LocationTreeNode[]): TreeFlatNode[] {
       sort_order: node.sort_order,
       path: node.path,
       item_count: node.item_count ?? 0,
+      floor_plan_image_id: node.floor_plan_image_id,
     })
     for (const child of node.children ?? []) visit(child)
   }
@@ -40,6 +42,7 @@ export function flattenList(nodes: LocationRead[]): TreeFlatNode[] {
     sort_order: node.sort_order,
     path: node.path,
     item_count: 0,
+    floor_plan_image_id: node.floor_plan_image_id,
   }))
 }
 

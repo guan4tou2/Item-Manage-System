@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import * as client from "@/lib/api/client"
@@ -113,4 +113,15 @@ describe("AuthImage", () => {
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:authed-1")
     expect(fetchSpy).toHaveBeenLastCalledWith("/images/img-2", { accessToken: "jwt" })
   })
+})
+
+
+it("圖片解碼失敗時顯示 fallback 並通知呼叫端", async () => {
+  vi.spyOn(client, "apiFetch").mockResolvedValue(okResponse())
+  const onError = vi.fn()
+  render(<AuthImage imageId="broken" alt="plan" fallback={<span>retry image</span>} onError={onError} />)
+  fireEvent.error(await screen.findByRole("img", { name: "plan" }))
+  expect(screen.getByText("retry image")).toBeInTheDocument()
+  expect(screen.queryByRole("img")).not.toBeInTheDocument()
+  expect(onError).toHaveBeenCalledOnce()
 })
