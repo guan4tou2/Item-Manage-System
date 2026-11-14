@@ -286,6 +286,8 @@ export function StocktakesClient() {
     enabled: token !== null && selectedId !== null,
   })
 
+  // 保留無資料時每次渲染建立空陣列、重建索引的既有行為，避免改變參照更新時機。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const items = itemsQuery.data?.items ?? []
   const itemsById = useMemo(() => new Map(items.map((item) => [item.id, item])), [items])
   const selectedStocktake =
