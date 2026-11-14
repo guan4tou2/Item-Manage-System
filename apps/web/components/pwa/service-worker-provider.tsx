@@ -48,6 +48,8 @@ export function ServiceWorkerProvider() {
     return () => {
       cleanup?.()
     }
+  // 僅於掛載時註冊；加入 t 會在語系切換時重新註冊並重設更新接受狀態。
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return null
