@@ -156,6 +156,18 @@ calculated_total = Σ 品項小計 − 折扣 + 稅 + 運費
 
 `subtotal`／`discount`／`tax`／`shipping`／`calculated_total`／`balance_status`／`missing_price_count`／`uncertain_fields`
 
+### 人工核對與整張收據視圖（Phase 48）
+
+- `GET /api/ai/receipts/{receipt_id}`：回傳 `snapshot`、`review`、第一頁 `image_id` 與全部狀態的 `lines`（依 `receipt_item.index` 排序）。名稱為 `payload.ai.name`，數量與金額為收據原始值，不含卡片上尚未送出的編輯。已接受行的 `item_id` 可連到建立的物品；物品已刪除則為 `null`。
+- `PUT /api/ai/receipts/{receipt_id}/review`：body `{note?: string | null}`，備註最多 200 字；首次建立核對紀錄，重複呼叫只更新備註、保留原 `verified_at`，省略備註會清空。
+- `DELETE /api/ai/receipts/{receipt_id}/review`：取消核對；原本沒有紀錄也回 `204`。
+- 三個端點皆限制 writer（viewer `403`）；本人名下至少有一列相同 `receipt_id` 的草稿（任何狀態）才具有收據擁有權，不存在與他人的收據一律 `404`。
+- `DraftRead.receipt_review` 為 `{verified_at, note}` 或 `null`；清單以單次額外查詢取得當頁所有收據的核對紀錄，非收據草稿為 `null`。單筆接受／捨棄回應也包含最新核對狀態。
+- 草稿群組可「標記為已核對」（選填備註）或立即「取消核對」；樂觀更新佇列與整張收據快取，失敗還原並提示。已核對時標頭以中性「已人工核對」取代對帳警示、旗標與算術拆解，不修改 AI 快照，也不阻擋逐品項接受。
+- 「查看整張收據」進入 `/items/drafts/receipts/{receiptId}`：持續顯示原始算術拆解、全部品項與處理狀態、物品去向及第一頁影像；手機改用收據行。
+- **限制（D6）**：核對是本人暫存資料的註記，不寫入稽核，也不納入備份（AI 草稿本來即不在備份範圍）。
+- **限制（D7）**：既有草稿只保留第一頁 `image_id`，其他頁面對應未保存；頁面標示「共 N 頁，僅保留第一頁」，本期不補存其他頁影像。
+
 ### 錯誤代碼（`detail` 為代碼字串）
 
 | HTTP | `detail` | 意義 |
