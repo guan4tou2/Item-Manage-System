@@ -1,6 +1,6 @@
 # Phase 48：收據人工核對與整張收據視圖
 
-- **狀態**：🚧 進行中
+- **狀態**：✅ 完成
 - **日期**：2026-11-14
 - **基線**：`main` `d3e258e`（Phase 47）；API 1455 passed、Web 824 passed（138 檔）、e2e 31 spec／99 情境、Migration `0029 (head)`
 - **來源**：roadmap 候選「收據人工核對流程」（概念借自 itemly 的「使用者確認收據」）
@@ -95,16 +95,22 @@
 - middleware 已涵蓋 `/items/:path*`，不需修改。i18n 既有「不得有未使用收據鍵」測試只擴充新元件來源清單，保留原斷言。
 - 本機 server 被 sandbox 以 `listen EPERM` 拒絕綁定連接埠；改以實際元件輸出的 HTML 與專案 Tailwind CSS 做瀏覽器版面量測，這不等同 stub 端到端操作。
 
+### 主代理的審查與實際操作
+
+- 審查調整：整張收據頁重用群組標頭時，隱藏指向自己的「查看整張收據」連結。
+- 以 AI stub 模式在本機（SQLite 暫時資料庫＋`next dev`）實際操作：上傳收據後群組標頭出現「標記為已核對」與「查看整張收據」；標記並填備註後標頭改顯示「已人工核對＋備註」與「取消核對」；整張收據頁顯示算術拆解、兩個品項行，其中一個接受後顯示「已入庫」；375px 寬度無水平溢出；console 無錯誤。
+
 ### 已做驗證
 
-- API：pytest 全套通過（待主代理填入）；evals 通過（待主代理填入）；ruff 零違規（待主代理填入）。新增測試包含權限、冪等／時間戳、備註限制、六態與排序、原始名稱、刪除物品、舊資料、清單及單筆核對狀態；以 SQLAlchemy event 斷言小頁／大頁 SELECT 總次數相同、核對表僅查一次。另以 AI stub 經多頁上傳、抽取、核對、接受與取消完成 API 整合驗證。
+- API：**1465 passed**；golden eval **28 passed／1 skipped**；ruff 零違規。新增測試包含權限、冪等／時間戳、備註限制、六態與排序、原始名稱、刪除物品、舊資料、清單及單筆核對狀態；以 SQLAlchemy event 斷言小頁／大頁 SELECT 總次數相同、核對表僅查一次。另以 AI stub 經多頁上傳、抽取、核對、接受與取消完成 API 整合驗證。
 - Migration：`alembic heads` 為單一 `0030 (head)`；PostgreSQL 離線升版與降版 SQL 均成功產生。
-- Web：tsc 零錯誤（待主代理填入）；vitest 全套通過（待主代理填入）；lint 零 error、warning 未增加（待主代理填入）。涵蓋標頭三態、備註、動作與 toast、跨分頁與詳情快取樂觀更新／回滾、頁面各狀態與舊快照、API client 與佇列 props 傳遞。
+- Web：typecheck **0 error**；vitest **848 passed（140 檔）**；lint **0 error／30 warning**。涵蓋標頭三態、備註、動作與 toast、跨分頁與詳情快取樂觀更新／回滾、頁面各狀態與舊快照、API client 與佇列 props 傳遞。
 - 瀏覽器版面：實際元件標記＋專案 CSS，長商家名、長品項名、長備註及大金額，在未核對／已核對兩態下量測 375px 與 1280px；`scrollWidth` 皆等於視窗寬。量測中找到並修正物品連結長名稱溢出。
-- Playwright：`ai-stub` 專案可列出包含新增人工核對情境的測試（待主代理填入），未執行 e2e。
+- Playwright：`ai-stub` 專案已列出包含新增人工核對情境的測試；本機未執行 e2e。
 
 ### 未驗證項目
 
-- PostgreSQL 實際升降版待 CI；離線 SQL 產生不能取代實際資料庫驗證。
-- Playwright e2e 及本機 AI stub 的完整瀏覽器操作旅程未執行（無網路、無 Docker，且 sandbox 不允許本機 server 監聽）。375px 檢查限於實際元件的靜態瀏覽器排版，不含完整 app shell 或互動對話框。
+- Playwright e2e 未在本機執行（本機 Docker 未啟動）：Phase 48 在 `ai-stub.spec.ts` 新增的情境交由 CI 的 `e2e` job。
+- **Migration 0030 的 PostgreSQL 升降版未在本機執行**，交由 CI。
+- 只保留收據第一頁影像（既有限制）。
 

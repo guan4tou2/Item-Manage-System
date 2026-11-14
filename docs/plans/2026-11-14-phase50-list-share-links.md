@@ -1,6 +1,6 @@
 # Phase 50：清單分享唯讀連結
 
-- **狀態**：🚧 進行中
+- **狀態**：✅ 完成
 - **日期**：2026-11-14
 - **基線**：`main` `d3e258e`（Phase 47）；本期於獨立分支進行，與 Phase 48（Migration 0030）、Phase 49（Migration 0031）平行，合併時接在其後
 - **來源**：roadmap 候選「分享唯讀連結」——roadmap 註明「隱私設計需先定案」，本文件即為定案
@@ -90,17 +90,23 @@
 - 主工作樹 venv 的 editable import 路徑會影響直接執行匯出腳本，因此以 `PYTHONPATH=.` 搭配指定直譯器，從本 worktree 的 `apps/api` 匯出；未修改腳本或依賴。
 - Vitest 預設並行執行曾使既有測試 timeout；兩個 worker 重跑仍有既有測試超時，最後以 `--maxWorkers=1 --minWorkers=1` 執行全套。未調整任何既有斷言或 timeout。
 
+### 主代理的審查與實際操作
+
+- 以 API 建立清單（含預算、一個帶價格的條目、一個 `javascript:` 連結的條目）與分享連結 → 公開端點回應只含白名單欄位、沒有 `budget`／`price`、`javascript:` 連結為 null、三個標頭（`Cache-Control: no-store`、`X-Robots-Tag: noindex, nofollow`、`Referrer-Policy: no-referrer`）都在；沒帶 token 與錯誤 token 都是 404；**伺服器 log 中搜尋不到 token**。
+- 未登入的瀏覽器以 375px 開啟 `/share#token` 正常顯示、無水平溢出、有 `noindex` meta、合法連結帶 `rel="noopener noreferrer nofollow"`、惡意連結未成為超連結；清單頁的分享對話框顯示效期選擇、顯示價格開關與既有連結（前 6 碼、建立／到期時間、存取次數、撤銷）。
+
 ### 驗證
 
 - 已確認 `app.__file__` 指向本 worktree。
-- API 測試涵蓋 CRUD、四種效期、過期清理、一次性 token／直接查表雜湊、欄位白名單（整份序列化文字否定斷言）、價格 opt-in、危險連結、權限、上限、FK CASCADE、成功／404 標頭、存取計數與 fail-soft、稽核與 access log 不含 token，以及備份匯出／匯入排除憑證。測試數字：（待主代理填入）。
-- Web 單元涵蓋對話框各狀態、一次性網址與 mutation cache、複製與後備、撤銷確認／失敗、公開頁各狀態與重試、連結安全／價格隱藏、公開 fetch 不附登入憑證／不 refresh／不清除 store，以及 middleware 與 Provider 的公開頁隔離。測試數字：（待主代理填入）。
-- 指定的 pytest、evals、ruff、tsc、Vitest、Next lint 與 `git diff --check` 均已通過。全套 API 測試啟動後補增的安全案例，已另以分享測試檔全數驗證；最終統計：（待主代理填入）。
+- API 測試涵蓋 CRUD、四種效期、過期清理、一次性 token／直接查表雜湊、欄位白名單（整份序列化文字否定斷言）、價格 opt-in、危險連結、權限、上限、FK CASCADE、成功／404 標頭、存取計數與 fail-soft、稽核與 access log 不含 token，以及備份匯出／匯入排除憑證。**API 1474 passed**。
+- Web 單元涵蓋對話框各狀態、一次性網址與 mutation cache、複製與後備、撤銷確認／失敗、公開頁各狀態與重試、連結安全／價格隱藏、公開 fetch 不附登入憑證／不 refresh／不清除 store，以及 middleware 與 Provider 的公開頁隔離。**Web 859 passed（144 檔）**。
+- 指定的 pytest、evals、ruff、tsc、Vitest、Next lint 與 `git diff --check` 均已通過。全套 API 測試啟動後補增的安全案例，已另以分享測試檔全數驗證；合併 Phase 48＋49＋50＋維護項目後的 main：**API 1524 passed、Web 926 passed（148 檔）**。
 
 ### 未驗證項目
 
-- 未執行 Playwright e2e；`playwright test tests/list-share.spec.ts --list` 已成功載入並列舉案例。已撰寫建立分享 → 全新未登入 context 讀取 → 撤銷後重新整理失效流程，並包含 375px 對話框／公開頁無水平溢出檢查。
-- 桌面／375px 實際畫面與鍵盤操作尚未驗證：啟動 Next dev 時，環境對 `0.0.0.0:3100` 與 `127.0.0.1:3100` 皆回 `listen EPERM`，無法提供可操作的本機頁面。
-- PostgreSQL Migration 0032 升降版交由 CI；本機無 PostgreSQL／Docker，且 0030／0031 在本 worktree 缺席，未執行 `alembic heads`、未建立或改動其 migration。SQLite 開啟 FK 的測試已驗證清單／帳號刪除的 CASCADE。
-- access log 的 token 排除已用 ASGI 實際請求與完整 log record 斷言固定；未做真實 nginx／伺服器部署的 log 檢查。
+- Playwright e2e 未在本機執行（本機 Docker 未啟動）：Phase 50 的 `list-share.spec.ts` 交由 CI 的 `e2e` job。
+- **Migration 0032 的 PostgreSQL 升降版未在本機執行**，交由 CI。
+- 公開存取沒有速率限制（token 為 256 bit，無法猜測；濫用防護交由前置代理）。
+- 本機實測用的是 SQLite，時間欄位在本機顯示為無時區（正式環境為 PostgreSQL timestamptz）。
+- CI 結果在撰寫時尚未確認，push 後由 CI 確認。
 

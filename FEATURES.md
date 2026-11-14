@@ -16,6 +16,13 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 - `POST /api/items/{id}/favorite` 切換收藏
 - `GET /api/items/{id}/history` 觀看 quantity log + version snapshot 合併時序
 
+### 批次成本（Phase 49）
+
+- 啟用批次管理（`track_batches`）的物品，每個批次可選填 `unit_cost`；未填時退回物品層級的 `cost`（即「預設單價」）
+- 估值口徑：未啟用批次維持 `cost × quantity`；啟用批次改為 `Σ 未耗盡批次（quantity × 有效單價）`，未定價批次以 0 計
+- `GET /api/stats/value` 的總值、未定價數與三個分布，以及月報／週報期末估值，都使用同一個 valuation 定義；期初估值以目前加權平均單價反推（近似值）
+- Web：批次新增／編輯對話框加選填「單位成本」；批次列有成本時顯示單價；物品詳情顯示批次估值小計
+
 ---
 
 ## 🏷 分類體系
@@ -60,6 +67,13 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
   - `GEMINI_API_KEY` 未設：回 `503 Service Unavailable`
   - 上游 Gemini 錯誤：回 `502 Bad Gateway`，不洩漏內部 trace
 
+### AI 收據辨識與人工核對（Phase 33、38、48）
+
+- `POST /api/ai/receipts` 多頁一次抽取：商家、日期、幣別、總額、品項、折扣、稅、運費；失敗不落地；一次呼叫＝1 次配額
+- 金額補齊與對帳四態：相符／差額／無法判斷／舊資料；差額警示**不阻擋接受**
+- 人工核對（Phase 48）：群組標頭可「標記為已核對」（附 ≤200 字備註），已核對後不再顯示差額／無法判斷警示；writer 可「取消核對」
+- 整張收據頁 `/items/drafts/receipts/{receiptId}`：算術拆解、全部品項行（待處理／已入庫／已捨棄／失敗）與物品連結、第一頁影像。核對紀錄不寫稽核、不進備份
+
 ---
 
 ## 🤝 借出 / 協作
@@ -74,6 +88,15 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 - 跨用戶分享物品可見性
 - 權限：`admin` / `member`
 - 轉移紀錄：位置 / 倉庫變更進 `item_transfers` 表
+
+### 清單分享唯讀連結（Phase 50）
+
+- 一份清單（旅行／購物／收藏／一般）可產生一條對外唯讀連結 `/share#{token}`，無需登入即可查看
+- **連結只顯示一次**：建立後回傳完整 token，之後僅存 SHA-256 雜湊，遺失只能撤銷重建
+- **預設不顯示價格**：`budget` 與條目 `price` 預設不揭露，建立時可開啟「顯示價格」
+- **效期**：1 天／7 天／30 天／永久，預設 7 天；過期、撤銷、不存在一律回 `404`
+- **可撤銷**：擁有者隨時可撤銷；刪除清單時連結一併刪除（FK CASCADE）
+- 公開回應為白名單欄位，不含擁有者身分、內部 id、建立／更新時間；非 `http:`/`https:` 的條目 `link` 不渲染成超連結
 
 ---
 
@@ -272,11 +295,10 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## 🧪 測試
 
-- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1455 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
-- **Web**: vitest + @testing-library/react + jsdom。**824 passed across 138 files**。
-- **E2E**: Playwright chromium **91 passed／1 skipped**（`--workers=1`；Phase 46 實跑的 30 spec／96 情境含 ai-stub；Phase 47 另新增 `floor-plan.spec.ts` 3 情境，由 CI 執行）＋ ai-stub 4 passed。
+- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1524 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
+- **Web**: vitest + @testing-library/react + jsdom。**926 passed across 148 files**。
+- **E2E**: Phase 47 為 **31 spec／99 情境**（含 ai-stub）；Phase 48–50 新增的情境由 CI 執行。
 - **TS**: `tsc --noEmit` 嚴格模式乾淨；`next build` 成功。
-- Phase 44 新增 `session-security.spec.ts`（2 情境）並改寫 `webhooks.spec.ts`，已於全新 docker stack 實跑通過；skip 的 1 個情境是 `locations-tree.spec.ts` 的「真實遷移後的位置樹」依賴舊 dev 庫的 `phase26_demo` 遷移 fixture，全新資料庫不存在 → 改為明確 skip（原本會登入逾時失敗；與本期無關）。
 
 ---
 

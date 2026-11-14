@@ -1,6 +1,6 @@
 # v2 重構路線圖
 
-> **狀態：基礎子專案與後續 Phase 1–47 已完成實作。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
+> **狀態：基礎子專案與後續 Phase 1–50 已完成實作。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
 
 參見 [`docs/superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md`](superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md) 了解基礎決策。
 
@@ -19,7 +19,7 @@
 | 8 | 管理與設定 | ✅ 完成 |
 | 9 | 行動/PWA 體驗 | ✅ 完成（見下方 Phase 16 polish） |
 
-## 進階 Phase 1–47（v1 功能補齊 + 增強）
+## 進階 Phase 1–50（v1 功能補齊 + 增強）
 
 | Phase | 主題 | 狀態 | 關鍵能力 |
 |-------|------|------|----------|
@@ -69,12 +69,15 @@
 | 45 | v1 下線與發佈管線 | ✅ | 移除 v1，保留 v1-final 快照；release 發佈 API／Web images 與 SBOM；Makefile、pre-commit 與文件對齊 v2；補 ESLint 與依賴稽核修補、uv lockfile 稽核與 Dependabot uv 生態系 |
 | 46 | 部署強化與可觀測 | ✅ 實作 | 非 root 多階段 images、uv.lock、移除 Redis／worker；readiness、request id、JSON／text 日誌；CSP／條件式 HSTS／Permissions-Policy、文件頁開關；ruff／eval／migration／e2e CI；UTC 時間修正。Docker／nginx／e2e／CI 未驗證，計畫狀態維持進行中 |
 | 47 | 樓層平面圖互動 | ✅ | Migration 0029 `locations.plan_region`（父位置平面圖上的正規化矩形）；伺服器端一致性（父需有圖／搬移清除／移除圖片清除子區域／更換保留）；圖片擁有者驗證；API additive、無新端點；備份含區域；`/locations/{id}/plan` 檢視（區域連結＋含子孫物品數＋子位置清單）與編輯（拖曳、鍵盤調整、樂觀更新）；位置樹入口；viewer 唯讀 |
+| 48 | 收據人工核對與整張收據視圖 | ✅ | Migration 0030 `ai_receipt_reviews`；以本人任一狀態草稿判定收據擁有權；`GET/PUT/DELETE /api/ai/receipts/{receipt_id}/review`；`DraftRead` 帶 `receipt_review`；群組標頭標記／取消核對；整張收據頁含算術拆解、全部品項行與狀態、第一頁影像；不寫稽核、不進備份；只保留第一頁影像 |
+| 49 | 批次成本 | ✅ | Migration 0031 `item_batches.unit_cost`；有效單價＝批次成本→退回 `item.cost`；啟用批次估值＝Σ未耗盡批次 quantity×有效單價；統計／報表共用 valuation；`BatchCreate/Update/Read` additive；備份相容；Web 批次對話框、列單價、物品詳情估值小計 |
+| 50 | 清單分享唯讀連結 | ✅ | Migration 0032 `list_shares`；256-bit token 只存雜湊與前 6 碼；`/share#{token}` fragment 不進 log；`X-Share-Token` 公開端點；預設不顯示價格、可選效期、可撤銷；白名單回應、no-store/noindex/no-referrer 標頭；非 http(s) 連結不渲染；`list.share_created/revoked` 稽核；不進備份 |
 
 ## 測試規模
 
-- API 測試：1455 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28 passed／1 skipped（mock 模式）
-- Web 測試：824 passed（138 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：**31 spec／99 情境**（Phase 47 新增 `floor-plan.spec.ts` 3 情境，由 CI 執行）（Phase 44 實跑：chromium 91 passed／1 skipped、ai-stub 4 passed；skip 為依賴舊 dev 庫 `phase26_demo` fixture 的位置樹情境）（`chromium` 專案 29 spec／92 情境：**改密碼與登出所有裝置**／登入／**登入鎖定**／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／**週報**／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／位置 QR 標籤／標籤條碼／**標籤 PDF 下載**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／**稽核查詢台**／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
+- API 測試：**1524 passed**（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28 passed／1 skipped（mock 模式）
+- Web 測試：**926 passed（148 檔**；vitest + @testing-library/react + jsdom）
+- Playwright e2e：Phase 47 為 **31 spec／99 情境**（含 `floor-plan.spec.ts` 3 情境，由 CI 執行）；Phase 48–50 新增的情境由 CI 執行
 
 ## 下一輪（未排程）
 
@@ -84,13 +87,9 @@ Phase 22–46 已完成實作；整體狀態、驗證基線與已知限制見 [`
 
 | # | 項目 | 說明 | 粗估 |
 |---|------|------|------|
-| 1 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
-| 2 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
-| 3 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
-| 4 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
-| 5 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
+| 1 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
 
-> 建議從 **#1 收據人工核對** 或 **#2 批次成本** 開始，先定案設計決策；#5 Background Sync 成本較高，可另開里程碑；#6 圖片快取可併入收尾。Phase 46 的部署與 CI 實際驗證仍待具備 Docker／網路的環境完成。
+> 收據人工核對、批次成本、分享唯讀連結與 `AuthImage` blob 快取已於 Phase 48–50 與同日維護完成。只剩 **Background Sync** 列為未排程候選，成本較高，可另開里程碑。
 
 ## 快速啟動（v2）
 

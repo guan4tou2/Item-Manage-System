@@ -6,6 +6,60 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 
 ## [Unreleased]
 
+## [2.0.0-alpha.50] — Phase 50：清單分享唯讀連結
+
+- **分享範圍＝單一清單**：一條連結只對應一份清單，不會連帶揭露物品庫存、位置、其他清單或帳號資訊
+- **Migration 0032**：`list_shares` 表（`list_id` FK CASCADE、`owner_id` FK CASCADE、`token_hash` char 64 unique、`token_prefix` varchar 6、`show_prices` bool 預設 false、`expires_at` timestamptz nullable、`access_count` int 預設 0 等）；downgrade 刪表
+- **Token 設計**：`secrets.token_urlsafe(32)`（256 bit）；資料庫只存 SHA-256 雜湊與前 6 碼；完整連結**只在建立當下顯示一次**，遺失就撤銷重建
+- **Token 不進 URL 路徑或 query**：分享網址為 `/share#{token}`，fragment 不會送到伺服器，因此 token 不會出現在 nginx／應用程式 access log，也不會經由 `Referer` 外洩；公開頁以 JavaScript 讀取 fragment，再用 **`X-Share-Token` 標頭**呼叫 API
+- **預設不揭露金額**：`budget` 與條目 `price` 預設不出現在公開回應；建立連結時可開啟「顯示價格」
+- **不揭露擁有者身分**：公開回應白名單只含 `kind`、`title`、`description`、`start_date`、`end_date`、條目（`name`、`quantity`、`note`、`link`、`is_done`），以及 `show_prices=true` 時的 `budget`、條目 `price` 與帳號幣別；不含任何 UUID、使用者名稱、email、建立／更新時間
+- **效期與撤銷**：建立時必選 1 天／7 天／30 天／永久，預設 7 天；過期、已撤銷、不存在一律回同樣的 `404`（不區分）；每份清單最多 5 條有效連結，超過回 `409`
+- **公開端點回應標頭**：`Cache-Control: no-store`、`X-Robots-Tag: noindex, nofollow`、`Referrer-Policy: no-referrer`
+- **條目連結安全**：公開回應中，非 `http:`／`https:` 的 `link` 一律設為 null；公開頁再次檢查，只有 http(s) 才渲染成超連結（`rel="noopener noreferrer nofollow"`、`target="_blank"`），避免 `javascript:` 等 scheme
+- **API**：管理端點 `POST|GET|DELETE /api/lists/{list_id}/shares`（需登入）；公開端點 `GET /api/public/list`（不需登入，token 由 `X-Share-Token` 標頭帶入）
+- **Web 管理**：清單詳情頁「分享」按鈕 → 對話框：效期選擇、顯示價格開關、一次性網址與複製、既有連結列表（前 6 碼、建立／到期時間、最後存取、存取次數、撤銷）；viewer 不渲染入口
+- **公開頁 `/share`**：獨立於登入區外的路由，不套用 app 導覽列；唯讀呈現清單標題、說明、日期與條目；完成狀態同時以文字與刪除線標示；設 `noindex` meta 與 `no-referrer`；狀態涵蓋載入中、缺 token、無效／過期、網路錯誤重試
+- **稽核**：建立與撤銷各寫一筆稽核（`list.share_created`／`list.share_revoked`）；`meta` 只記清單 id、效期、是否顯示價格與 token 前 6 碼，**不記 token 或其雜湊**。公開存取不寫稽核，只原子更新 `last_accessed_at` 與 `access_count`（fail-soft）
+- **不進備份**：分享連結屬憑證性質，不納入備份匯出／匯入
+- **明確不做**：分享物品庫存／位置／報表、密碼保護連結、允許對方編輯或勾選、公開存取速率限制、Open Graph 連結預覽
+- 測試：API 1487 → **1474 passed**；Web 856 → **859 passed（144 檔）**；typecheck 0 error；lint 0 error／0 warning，`next lint --max-warnings 0` 通過；`next build` 成功。以 API 與未登入瀏覽器實際操作驗證白名單、三標頭、token 不進 log、375px 公開頁。**未在本機執行**：Playwright e2e（`list-share.spec.ts`）與 Migration 0032 的 PostgreSQL 升降版，交由 CI；公開存取沒有速率限制；本機 SQLite 時間欄位顯示為無時區
+
+**同日維護項目**：
+
+- `AuthImage` 記憶體 blob 快取：以 `imageId` 為 key、併發去重、引用計數、上限 50 筆的 LRU 淘汰、失敗不快取、登出時清空（token refresh 不清）。審查時修正：元件取消載入時會把同一次取得釋放兩次，在 React StrictMode 下會讓顯示中的圖片被回收；已修並加回歸測試
+- 前端 ESLint 警告 30 → 0，`lint` script 改為 `next lint --max-warnings 0`（零警告門檻）
+- `next-intl` 3.21.1 → 4.15.1、`next-themes` 0.3.0 → 0.4.6：清掉剩下的 2 個 moderate advisory，`pnpm audit --prod` 回報 **No known vulnerabilities found**；兩者的 React 19／Next 15 peer 警告消失
+- Phase 47 的 CI（run 43568435431）五個 job 全數通過，含 `floor-plan.spec.ts` 三個 e2e 情境與 Migration 0029 在 PostgreSQL 的升降版
+- Dependabot：關閉 6 個已被涵蓋的 PR（#8–#13），5 個基底過舊的要求 rebase
+
+## [2.0.0-alpha.49] — Phase 49：批次成本
+
+- **Migration 0031**：`item_batches.unit_cost`（`NUMERIC(12,2)`、nullable、`>= 0` check constraint）；downgrade 刪欄
+- **有效單價**：批次的有效單價＝`batch.unit_cost`，為 null 時退回 `item.cost`；兩者皆 null → 該批次「未定價」。`items.cost` 定位變成「預設單價」
+- **物品估值（單一定義）**：未啟用批次維持 `item.cost × item.quantity`；啟用批次改為 `Σ 未耗盡批次（quantity × 有效單價）`，未定價批次以 0 計
+- **「未定價」物品數**：未啟用批次 → `cost` 為 null；啟用批次 → 有任何未耗盡批次未定價；數量 0 的批次物品不算未定價
+- **統計與報表共用**：`GET /api/stats/value` 的總值、未定價數與三個分布，以及月報／週報期末估值，都改用同一個 valuation 定義；期初估值以「目前加權平均單價」反推（近似值，文件明示）
+- **API additive**：`BatchCreate`／`BatchUpdate`／`BatchRead` 新增 `unit_cost`；`BatchUpdate` 區分未提供與明確設為 null（清除）。不新增端點
+- **備份**：匯出的批次列加上 `unit_cost`，匯入時還原；舊備份沒有此欄位照常匯入。`format_version` 不變
+- **Web**：批次新增／編輯對話框加選填「單位成本」（顯示帳號幣別、預設單價提示）；批次列有成本時顯示單價，無時不顯示；物品表單成本欄位補提示「批次未填成本時使用此值」；物品詳情啟用批次時顯示估值小計
+- **不受影響的流程**：FEFO 消耗、盤點調整、停用批次管理只動數量；CSV 匯入／匯出仍只處理物品層級
+- **明確不做**：移動平均／FIFO 成本法、批次層級幣別與匯率、CSV 匯入／匯出批次、收據辨識入庫時自動建立帶成本的批次
+- 測試：API 1465 → **1487 passed**；Web 848 → **856 passed（139 檔）**；typecheck 0 error；lint 0 error／30 warning。主代理實際操作：預設單價 50 的物品＋三批（2 個＠45、3 個＠60、1 個未填成本）→ `GET /api/stats/value` 的 `total_value` 為 320.00，詳情批次區塊顯示單價與「估值 NT$320」，未填批次不顯示單價。codex 回報既有估值／報表測試的預期金額全部未修改。**未在本機執行**：Playwright e2e（`items-batches.spec.ts` 新增情境）與 Migration 0031 的 PostgreSQL 升降版，交由 CI；報表期初估值為近似值
+
+## [2.0.0-alpha.48] — Phase 48：收據人工核對與整張收據視圖
+
+- **Migration 0030**：新表 `ai_receipt_reviews`（`receipt_id` GUID PK、`owner_id` FK users CASCADE、`verified_at` timestamptz NOT NULL、`note` varchar 200 nullable）。列存在＝已核對，取消核對＝刪除列；不改寫草稿的 `payload.receipt` 快照
+- **收據擁有權**：以「本人名下至少有一列相同 `receipt_id` 的草稿（任何狀態）」判定；否則一律 `404`（不區分不存在與他人的）
+- **端點**（皆在 `/api/ai/receipts` 之下；viewer `403`）：`GET /api/ai/receipts/{receipt_id}` 回整張收據（snapshot、review、image_id、lines[]）；`PUT /api/ai/receipts/{receipt_id}/review`（body `{note?: string ≤ 200}`）冪等 upsert，保留首次 `verified_at`；`DELETE /api/ai/receipts/{receipt_id}/review` 回 `204`
+- **lines[]**：該收據全部狀態的草稿，依 `receipt_item.index` 排序；每行含 `draft_id`、`index`、原始名稱／數量／金額、`status`、已接受時的 `item_id`（物品已刪除則 `null`）
+- **佇列帶出核對狀態**：`DraftRead` 新增 `receipt_review`（非收據草稿為 `null`）；清單端點以一次查詢取回當頁所有 `receipt_id` 的核對紀錄，不逐列查
+- **群組標頭**：未核對維持既有呈現，writer 多「標記為已核對」；已核對以「已人工核對」取代差額／無法判斷警示，有備註時顯示備註；任何狀態都有「查看整張收據」連結；已核對時 writer 可「取消核對」。審查時調整：整張收據頁重用群組標頭時隱藏指向自己的「查看整張收據」連結
+- **整張收據頁** `/items/drafts/receipts/{receiptId}`：頂部商家／日期／頁數／核對狀態；算術拆解明細表（品項合計 − 折扣 + 稅 + 運費 = 算術值 vs 收據總額 vs 差額）；桌面表格／手機收據行顯示全部品項行與狀態；第一頁影像（附「共 N 頁，僅保留第一頁」說明）；404／錯誤重試／viewer 狀態
+- **不寫稽核、不進備份**：核對是使用者對自己暫存資料的註記；AI 草稿本來就不在備份範圍內
+- **明確不做**：在收據層編輯總額／折扣／稅並重新計算對帳、保留並顯示收據的所有頁面影像、收據歷史清單頁、把核對紀錄寫入稽核或備份、自動核對
+- 測試：API 1455 → **1465 passed**；Web 824 → **848 passed（140 檔）**；typecheck 0 error；lint 0 error／30 warning。主代理以 AI stub 在本機實際操作：上傳收據後標頭出現「標記為已核對」與「查看整張收據」；標記並填備註後顯示「已人工核對＋備註」與「取消核對」；整張收據頁顯示算術拆解、兩個品項行，接受一個後顯示「已入庫」；375px 無水平溢出；console 無錯誤。**未在本機執行**：Playwright e2e（`ai-stub.spec.ts` 新增情境）與 Migration 0030 的 PostgreSQL 升降版，交由 CI；只保留收據第一頁影像
+
 ## [2.0.0-alpha.47] — Phase 47：樓層平面圖互動
 
 - **把既有但無介面的欄位做成功能**：`locations.floor_plan_image_id` 自 Phase 11 起存在於 API，但前端從未有任何平面圖介面。本期新增 `/locations/{id}/plan`：上傳／更換／移除平面圖、在圖上為直接子位置畫區域、點區域查看該位置的物品

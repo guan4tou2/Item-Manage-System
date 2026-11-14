@@ -1,6 +1,6 @@
 # Phase 49：批次成本
 
-- **狀態**：🚧 進行中
+- **狀態**：✅ 完成
 - **日期**：2026-11-14
 - **基線**：`main` `d3e258e`（Phase 47）；本期於獨立分支進行，與 Phase 48（Migration 0030）平行，合併時接在其後
 - **來源**：roadmap 候選「批次成本（per-batch cost）」；Phase 27（成本與估值）與 Phase 22（批次庫存）的延伸
@@ -81,17 +81,22 @@
 - 停用追蹤的既有確認文案補上批次成本也會刪除，對齊原本刪除批次列的行為；未新增確認步驟。
 - 無資料定義、端點、版本或 Migration 串接決策變更。
 
+### 主代理的審查與實際操作
+
+- codex 回報既有估值／報表測試的預期金額**全部未修改**（未啟用批次成本的物品數字與原本完全相同）。
+- 實際操作：建立預設單價 50 的物品，三個批次（2 個＠45、3 個＠60、1 個未填成本）→ `GET /api/stats/value` 的 `total_value` 為 320.00（＝2×45＋3×60＋1×50），物品詳情的批次區塊顯示各批單價與「估值 NT$320」，未填成本的批次不顯示單價。
+
 ### 已執行驗證
 
 - 已確認 `app.__file__` 指向本 worktree；Python 檢查使用主工作樹的 `.venv`。匯出 OpenAPI 時加上 `PYTHONPATH=.`，避免直接執行腳本時沿用主工作樹的 import 路徑。
 - API 新測試涵蓋驗證／省略／清除、估值與未定價組合、三種分布對帳、FEFO 耗盡、盤點與停用追蹤、週／月報與零數量回退、備份往返與舊備份、DB 約束及 viewer 403。
-- 已執行 ruff、完整 pytest、evals、tsc、完整 vitest 與 Next lint；測試統計：（待主代理填入）。Web 高併發重跑曾在既有 Webhook／Audit 測試遇到等待逾時；兩檔獨立重跑通過，完整 vitest 改以 `--maxWorkers=2 --minWorkers=1` 限制執行資源，不改動測試斷言或 timeout。
+- 已執行 ruff、完整 pytest、evals、tsc、完整 vitest 與 Next lint；**API 1487 passed、Web 856 passed（139 檔）**。Web 高併發重跑曾在既有 Webhook／Audit 測試遇到等待逾時；兩檔獨立重跑通過，完整 vitest 改以 `--maxWorkers=2 --minWorkers=1` 限制執行資源，不改動測試斷言或 timeout。
 - 既有 API 估值與報表測試未調整預期金額。既有 Web「進貨表單送出建立批次」維持完整 payload 比對，僅新增 `unit_cost: null`，固定 D11 的留白語義；既有 batch schema 的 `SimpleNamespace` fixture 補上 `unit_cost=None` 並新增 null 斷言，原有到期狀態斷言全部保留。停用追蹤的對話框文案斷言同步納入成本刪除說明。
 - 離線瀏覽器以實際批次元件、既有 Tailwind／token、模擬 fetch 資料操作：1280px 與 375px 新增對話框皆無水平溢出；負數與三位小數即時阻擋、零成本可送出；編輯預填後清除，估值由 85 更新為 80。375px 長備註批次列與 dark 模式亦檢查無水平溢出。
 
 ### 未驗證項目與限制
 
-- D3／D4 SQL 已通過 PostgreSQL／SQLite 方言編譯，Migration 0031 升降版已通過 PostgreSQL DDL 離線產生；實際 PostgreSQL Migration 升降版留待 CI；本 worktree 依規劃缺少 0030，未執行 `alembic heads`，未建立或修改其他 migration。
-- e2e spec 已撰寫，並以 Playwright `--list` 成功收集批次 spec；未執行 e2e。本機 Next.js server 監聽連接埠遭沙箱 `EPERM` 阻擋，因此上述瀏覽器驗證使用離線元件頁與模擬 API，未驗證完整 Next.js＋FastAPI 串接流程。
-- 本機 Node 為 26；未直接在 CI 的 Node 22 上執行。新增單元測試未使用 jsdom `Blob` 作為 fetch body 或依賴 `instanceof Blob`。
+- **Migration 0031 的 PostgreSQL 升降版未在本機執行**，交由 CI。
+- Playwright e2e 未在本機執行：Phase 49 在 `items-batches.spec.ts` 新增的情境交由 CI 的 `e2e` job。
+- 報表期初估值為近似值（以目前加權平均單價反推）。
 
