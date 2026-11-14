@@ -62,7 +62,7 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 - `POST /api/ai/suggest` — 請求 body 帶 `image_id`，回傳 `{ name, description, category_hint, tags[] }`
 - 實作細節：
-  - `google-genai>=1.0` SDK、模型 `gemini-2.0-flash`
+  - `google-genai` 3.1 SDK；模型由 `GEMINI_MODEL` 設定（預設 `gemini-3.6-flash`）。原本寫死的 `gemini-2.0-flash` 已於 2026-06-01 被 Google 關閉
   - 提示語為繁體中文，限定 JSON 結構輸出
   - `GEMINI_API_KEY` 未設：回 `503 Service Unavailable`
   - 上游 Gemini 錯誤：回 `502 Bad Gateway`，不洩漏內部 trace

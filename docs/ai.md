@@ -9,6 +9,7 @@ Web：`apps/web/app/(app)/items/drafts/`、`apps/web/components/ai/`。
 | 環境變數 | 預設 | 說明 |
 |----------|------|------|
 | `GEMINI_API_KEY` | 空字串 | 未設定＝**AI 停用**。影像辨識一律失敗（`error_code=ai_disabled`）；歷史規則與手動填寫不受影響 |
+| `GEMINI_MODEL` | `gemini-3.6-flash` | 使用的 Gemini 模型代號。Google 會定期停用舊模型（原本寫死的 `gemini-2.0-flash` 已於 2026-06-01 關閉）；被停用時改這個值即可，不必改程式。目前可用的模型見 Google 的 [deprecations 頁面](https://ai.google.dev/gemini-api/docs/deprecations) |
 | `AI_DAILY_QUOTA` | `50` | 每位使用者每日 LLM 呼叫上限（Asia/Taipei 換日）；`<= 0` 表示不設限 |
 | `AI_MODE` | `live` | `live`＝走真實 Gemini（需 `GEMINI_API_KEY`）；`stub`＝走確定性 stub 供應器（見「AI stub 模式」章節） |
 

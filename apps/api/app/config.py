@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Public web base URL (used for encoding QR codes and deep links)
     public_web_url: str = Field(default="http://localhost:3000")
     gemini_api_key: str = Field(default="")
+    # 模型代號不寫死：Google 會定期停用舊模型（gemini-2.0-flash 已於 2026-06-01 關閉），
+    # 以 GEMINI_MODEL 覆寫即可換代，不必改程式。預設為官方停用頁建議的替代模型。
+    gemini_model: str = Field(default="gemini-3.6-flash")
     # Phase 35：AI 模式開關（live/stub）；非 dev 環境不得啟用 stub
     ai_mode: AiMode = Field(default="live")
     # AI 每日配額（per-user，Asia/Taipei 換日；<= 0 表示不設限）

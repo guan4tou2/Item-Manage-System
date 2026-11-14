@@ -283,7 +283,7 @@ async def call_gemini_receipt(
 
     try:
         result = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model=settings.gemini_model,
             contents=parts,
             config=genai_types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -394,7 +394,7 @@ async def call_gemini_search_filters(
     client = genai.Client(api_key=settings.gemini_api_key)
     try:
         result = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model=settings.gemini_model,
             contents=prompt,
             config=genai_types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -458,7 +458,7 @@ async def call_gemini_suggest(
 
     try:
         result = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model=settings.gemini_model,
             contents=parts,
             config=genai_types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -580,7 +580,7 @@ async def call_gemini_ask(question: str, context: list[dict[str, Any]]) -> tuple
     client = genai.Client(api_key=settings.gemini_api_key)
     try:
         result = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model=settings.gemini_model,
             contents=prompt,
             config=genai_types.GenerateContentConfig(
                 response_mime_type="application/json",
