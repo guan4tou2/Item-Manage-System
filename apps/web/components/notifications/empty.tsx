@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 export function NotificationsEmpty() {
   const t = useTranslations()
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-[0.25rem] border border-dashed p-12 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-12 text-center">
       <p className="text-sm font-medium">{t("notifications.empty.title")}</p>
       <Button asChild variant="outline" size="sm">
         <Link href="/dashboard">{t("notifications.empty.cta")}</Link>

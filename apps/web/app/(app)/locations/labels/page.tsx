@@ -116,7 +116,7 @@ export default function LocationLabelsPage() {
       </div>
 
       {showPicker ? (
-        <div className="rounded-[0.25rem] border p-3 print:hidden">
+        <div className="rounded-sm border p-3 print:hidden">
           <p className="mb-2 text-sm font-medium">{t("locations.labels.pickerTitle")}</p>
           {locations.isLoading ? (
             <Skeleton className="h-24 w-full" />
@@ -171,7 +171,7 @@ export default function LocationLabelsPage() {
               <div
                 key={key}
                 data-testid={`location-label-${bundle.locationId}`}
-                className="box-border flex min-h-[4cm] w-[6cm] break-inside-avoid flex-col items-center justify-center gap-1.5 rounded-[0.25rem] border border-black/20 bg-white p-2 text-center text-black print:inline-flex print:rounded-none print:border print:border-black/20"
+                className="box-border flex min-h-[4cm] w-[6cm] break-inside-avoid flex-col items-center justify-center gap-1.5 rounded-sm border border-black/20 bg-white p-2 text-center text-black print:inline-flex print:rounded-none print:border print:border-black/20"
               >
                 {qrUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -181,7 +181,7 @@ export default function LocationLabelsPage() {
                     className="h-[2.65cm] w-[2.65cm]"
                   />
                 ) : (
-                  <div className="h-[2.65cm] w-[2.65cm] rounded-[0.25rem] bg-neutral-100" />
+                  <div className="h-[2.65cm] w-[2.65cm] rounded-sm bg-neutral-100" />
                 )}
                 <div className="w-full truncate text-[0.75rem] font-semibold leading-tight">
                   {bundle.label.name}

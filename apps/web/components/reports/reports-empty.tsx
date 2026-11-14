@@ -34,7 +34,7 @@ export function ReportsEmpty({
       : t("firstMonth")
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-[0.25rem] border border-dashed p-12 text-center">
+    <div className="flex flex-col items-center justify-center gap-3 rounded-sm border border-dashed p-12 text-center">
       <FileText className="text-muted-foreground h-8 w-8" aria-hidden="true" />
       <p className="text-sm font-medium">{title}</p>
       <p className="text-muted-foreground text-sm">{hint}</p>

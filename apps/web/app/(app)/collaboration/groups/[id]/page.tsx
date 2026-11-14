@@ -86,7 +86,7 @@ export default function GroupDetailPage() {
           </div>
           {canManage ? <AddMemberDialog groupId={id} /> : null}
         </div>
-        <ul className="divide-y rounded-[0.25rem] border">
+        <ul className="divide-y rounded-sm border">
           {g.members.map((m) => (
             <li key={m.user_id} className="flex items-center justify-between gap-3 p-3">
               <span className="min-w-0 truncate font-medium">{m.username}</span>

@@ -49,6 +49,12 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 - **TypeScript 7 暫不升**：`typescript-eslint` 目前只支援到 `<6.1.0`、`openapi-typescript` 只宣告支援 5.x，等這兩個工具支援後再評估。`@types/node` 維持 22（對應 CI 與正式環境的 Node 22）
 - 驗證：Web 975 passed（154 檔，Node 22 與 24）、typecheck 0 error、lint 0 warning、`next build` 成功、`pnpm audit --prod` 無已知漏洞；本機 e2e（SQLite 暫時資料庫＋正式建置，chromium）93 passed／1 skipped，與升級前相同，另 6 個需要 Docker 內 PostgreSQL 的 `reminders`／`reports` 情境由 CI 確認
 
+**同日維護項目（第五批：收尾）**：
+
+- 小版本：`@playwright/test` 1.65.1、`postcss` 8.5.33、`prettier` 3.10.1、`turbo` 2.11.11
+- Tailwind 4 遷移時保留的 71 處 `rounded-[0.25rem]` 改回設計 token `rounded-sm`（`calc(var(--radius) - 4px)`，預設字級下同為 4px）
+- **以 Docker Compose 實際部署驗證**（本輪所有升級後的程式碼，沿用既有資料 volume）：`docker compose down --remove-orphans` 後 `up --build`，五個服務健康檢查通過；既有 PostgreSQL 資料升到 Alembic `0033`；`media` 以非 root（uid 10001）可寫；nginx 回應帶 CSP 等安全標頭。對這個 stack 跑完整 Playwright（chromium）**99 passed／1 skipped**，包含先前本機無法執行的 `reminders`／`reports` 情境
+
 ## [2.0.0-alpha.50] — Phase 50：清單分享唯讀連結
 
 - **分享範圍＝單一清單**：一條連結只對應一份清單，不會連帶揭露物品庫存、位置、其他清單或帳號資訊

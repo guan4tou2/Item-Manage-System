@@ -102,7 +102,7 @@ export function FloorPlan({ locationId }: { locationId: number }) {
     setPreview(null)
   }
   const imageError = (
-    <div role="alert" className="space-y-3 rounded-[0.25rem] border p-4">
+    <div role="alert" className="space-y-3 rounded-sm border p-4">
       <p>{t("loadError")}</p>
       <Button
         variant="outline"
@@ -208,7 +208,7 @@ export function FloorPlan({ locationId }: { locationId: number }) {
             </div>
           )}
           {!node.floor_plan_image_id ? (
-            <div className="space-y-2 rounded-[0.25rem] border p-4">
+            <div className="space-y-2 rounded-sm border p-4">
               <p>{t("noPlan")}</p>
               {!readOnly && <p className="text-muted-foreground text-sm">{t("uploadHint")}</p>}
             </div>

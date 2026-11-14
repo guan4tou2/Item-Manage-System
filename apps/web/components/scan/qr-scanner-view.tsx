@@ -170,7 +170,7 @@ export function QrScannerView() {
 
   return (
     <div className="space-y-4">
-      <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-[0.25rem] border bg-black">
+      <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden rounded-sm border bg-black">
         <video
           ref={videoRef}
           className="h-full w-full object-cover"
@@ -179,7 +179,7 @@ export function QrScannerView() {
         />
         {status === "scanning" ? (
           <div
-            className="pointer-events-none absolute inset-8 rounded-[0.25rem] border-2 border-white/70"
+            className="pointer-events-none absolute inset-8 rounded-sm border-2 border-white/70"
             aria-hidden
           />
         ) : null}
@@ -195,13 +195,13 @@ export function QrScannerView() {
       </div>
 
       {lookupCode && lookup.isFetching ? (
-        <div data-testid="barcode-lookup-loading" className="rounded-[0.25rem] border p-3 text-sm">
+        <div data-testid="barcode-lookup-loading" className="rounded-sm border p-3 text-sm">
           {t("scan.lookup.loading")}
         </div>
       ) : null}
 
       {lookupCode && lookup.isError && !lookup.isFetching ? (
-        <div data-testid="barcode-lookup-error" className="space-y-3 rounded-[0.25rem] border p-3">
+        <div data-testid="barcode-lookup-error" className="space-y-3 rounded-sm border p-3">
           <p className="text-sm">{t("scan.lookup.error")}</p>
           <Button onClick={() => void lookup.refetch()}>{t("scan.lookup.retry")}</Button>
         </div>
@@ -217,7 +217,7 @@ export function QrScannerView() {
       ) : null}
 
       {lastResult ? (
-        <div className="rounded-[0.25rem] border bg-muted/30 p-3 text-xs">
+        <div className="rounded-sm border bg-muted/30 p-3 text-xs">
           <div className="text-muted-foreground">{t("scan.result.label")}</div>
           <code className="block break-all font-mono">{lastResult.payload}</code>
           {extractItemIdFromPayload(lastResult.payload) ? (

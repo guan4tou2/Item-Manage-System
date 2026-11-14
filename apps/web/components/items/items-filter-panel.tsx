@@ -101,7 +101,7 @@ export function ItemsFilterPanel({ filters, onChange }: Props) {
                     : [...(filters.tagIds ?? []), tag.id]
                   onChange({ ...filters, tagIds: next.length ? next : undefined, page: 1 })
                 }}
-                className={`rounded-[0.25rem] px-2 py-0.5 text-xs ${on ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                className={`rounded-sm px-2 py-0.5 text-xs ${on ? "bg-primary text-primary-foreground" : "bg-muted"}`}
               >
                 {tag.name}
               </button>

@@ -42,7 +42,7 @@ export function ActivityFeed({ entries, loading }: Props) {
                 key={`${entry.kind}-${entry.at}-${idx}`}
                 className="flex items-start gap-3 py-2"
               >
-                <span className="mt-0.5 shrink-0 rounded-[0.25rem] bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                <span className="mt-0.5 shrink-0 rounded-sm bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                   {KIND_LABEL[entry.kind] ?? entry.kind}
                 </span>
                 <div className="min-w-0 flex-1">

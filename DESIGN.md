@@ -101,7 +101,7 @@ Notion／Linear 血統、資料優先、零裝飾；情緒「篤定」。把「�
 
 - 4px base（Tailwind 現況）；卡片內 16、區塊間 24、行動頁邊 16、桌面頁邊 24–32。
 - 觸控目標 ≥ 44×44px（roadmap §5.7）。
-- 圓角：`--radius: 0.5rem`（lg 8／md 6／sm 4）；徽章與頭像用 pill。新寫的 4px 圓角用 `rounded-sm`；既有的 `rounded-[0.25rem]` 是 Tailwind 4 遷移時為了維持 v3 裸 `rounded` 的數值而保留的寫法。
+- 圓角：`--radius: 0.5rem`（lg 8／md 6／sm 4）；徽章與頭像用 pill。4px 圓角一律用 `rounded-sm`，不要用裸 `rounded`（Tailwind 4 下裸 `rounded` 的數值與 v3 不同）。
 - Tailwind CSS 4（2026-11-14 起）：`globals.css` 以 `@import 'tailwindcss'`＋`@config '../tailwind.config.ts'` 載入，token 落點不變。`globals.css` 內有一段 v3 相容層（預設邊框色、預設 ring 色、按鈕游標、placeholder 色、`container`、`space-*`／`divide-y`、`hover`），刪改前先確認視覺不變。v4 改名的類別：`shadow-sm`→`shadow-xs`、`backdrop-blur`→`backdrop-blur-sm`、`outline-none`→`outline-hidden`、`flex-shrink-*`→`shrink-*`、CSS 變數用小括號（`max-h-(--var)`）。
 - 層級：**邊框優先、陰影克制**；shadow 僅用於 popover／dialog／dropdown／FAB。
 

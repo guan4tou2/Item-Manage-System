@@ -36,11 +36,11 @@ export function ImageUpload({ imageId, onChange, disabled = false }: Props) {
         <AuthImage
           imageId={imageId}
           alt=""
-          className="h-40 w-40 rounded-[0.25rem] border object-cover"
-          placeholder={<div className="h-40 w-40 animate-pulse rounded-[0.25rem] border bg-muted" />}
+          className="h-40 w-40 rounded-sm border object-cover"
+          placeholder={<div className="h-40 w-40 animate-pulse rounded-sm border bg-muted" />}
         />
       ) : (
-        <div className="flex h-40 w-40 items-center justify-center rounded-[0.25rem] border border-dashed text-xs text-muted-foreground">
+        <div className="flex h-40 w-40 items-center justify-center rounded-sm border border-dashed text-xs text-muted-foreground">
           {t("items.form.noImage")}
         </div>
       )}

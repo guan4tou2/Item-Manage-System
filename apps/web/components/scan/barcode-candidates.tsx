@@ -17,7 +17,7 @@ export function BarcodeCandidates({ matches }: Props) {
   if (matches.length === 0) return null
 
   return (
-    <div data-testid="barcode-candidates" className="rounded-[0.25rem] border p-3">
+    <div data-testid="barcode-candidates" className="rounded-sm border p-3">
       <p className="mb-2 text-sm font-medium">
         {t("scan.candidates.title", { count: matches.length })}
       </p>
@@ -26,17 +26,17 @@ export function BarcodeCandidates({ matches }: Props) {
           <li key={match.id}>
             <Link
               href={`/items/${match.id}` as never}
-              className="flex items-center gap-3 rounded-[0.25rem] p-2 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex items-center gap-3 rounded-sm p-2 hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
             >
               {match.image_id ? (
                 <AuthImage
                   imageId={match.image_id}
                   alt=""
-                  className="h-10 w-10 shrink-0 rounded-[0.25rem] object-cover"
+                  className="h-10 w-10 shrink-0 rounded-sm object-cover"
                   fallback={
                     <span
                       aria-hidden
-                      className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.25rem] bg-muted text-muted-foreground"
+                      className="grid h-10 w-10 shrink-0 place-items-center rounded-sm bg-muted text-muted-foreground"
                     >
                       <Package className="h-5 w-5" />
                     </span>
@@ -45,7 +45,7 @@ export function BarcodeCandidates({ matches }: Props) {
               ) : (
                 <span
                   aria-hidden
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-[0.25rem] bg-muted text-muted-foreground"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-sm bg-muted text-muted-foreground"
                 >
                   <Package className="h-5 w-5" />
                 </span>

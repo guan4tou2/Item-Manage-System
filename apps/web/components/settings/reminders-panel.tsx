@@ -95,7 +95,7 @@ export function RemindersPanel() {
             <p>{warning}</p>
             <div className="text-muted-foreground space-y-1.5 text-xs">
               <p>{t("setupCronHint")}</p>
-              <code className="bg-muted block overflow-x-auto rounded-[0.25rem] px-2 py-1">
+              <code className="bg-muted block overflow-x-auto rounded-sm px-2 py-1">
                 {CRON_LINE}
               </code>
               <p>

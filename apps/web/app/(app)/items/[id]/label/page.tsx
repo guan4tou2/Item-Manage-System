@@ -46,7 +46,7 @@ export default function ItemLabelPage() {
         CSS `break-inside: avoid` keeps it from splitting across pages.
       */}
       <div
-        className="mx-auto box-border flex w-[6cm] flex-col items-center gap-2 break-inside-avoid rounded-[0.25rem] border border-black/20 bg-white p-2 text-center text-black print:mx-0 print:border-0"
+        className="mx-auto box-border flex w-[6cm] flex-col items-center gap-2 break-inside-avoid rounded-sm border border-black/20 bg-white p-2 text-center text-black print:mx-0 print:border-0"
         style={{ minHeight: "4cm" }}
       >
         {qrUrl ? (

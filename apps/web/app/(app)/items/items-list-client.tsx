@@ -270,7 +270,7 @@ export function ItemsListClient() {
         {isLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : !data || data.items.length === 0 ? (
-          <div className="rounded-[0.25rem] border p-6 text-center text-muted-foreground">
+          <div className="rounded-sm border p-6 text-center text-muted-foreground">
             {data && data.total === 0 && !filters.q && !filters.categoryId && !filters.locationId && !filters.tagIds && !filters.expiry ? (
               <>
                 <p>{t("items.list.empty")}</p>

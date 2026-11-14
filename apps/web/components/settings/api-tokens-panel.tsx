@@ -38,9 +38,9 @@ export function ApiTokensPanel() {
   return (
     <div className="max-w-2xl space-y-4">
       {newToken ? (
-        <div className="rounded-[0.25rem] border border-amber-500 bg-amber-50 p-3 text-sm dark:bg-amber-950">
+        <div className="rounded-sm border border-amber-500 bg-amber-50 p-3 text-sm dark:bg-amber-950">
           <p className="font-medium">{t("settings.tokens.created")}</p>
-          <code className="mt-1 block break-all rounded-[0.25rem] bg-background p-2 font-mono text-xs">
+          <code className="mt-1 block break-all rounded-sm bg-background p-2 font-mono text-xs">
             {newToken}
           </code>
           <Button size="sm" variant="outline" className="mt-2" onClick={() => setNewToken(null)}>
@@ -60,7 +60,7 @@ export function ApiTokensPanel() {
         </Button>
       </div>
 
-      <ul className="divide-y rounded-[0.25rem] border">
+      <ul className="divide-y rounded-sm border">
         {(list.data ?? []).length === 0 ? (
           <li className="p-3 text-sm text-muted-foreground">{t("settings.tokens.empty")}</li>
         ) : (

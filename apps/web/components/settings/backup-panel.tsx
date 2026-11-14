@@ -342,7 +342,7 @@ export function BackupPanel() {
               {dryRunResult.entities.length > 0 ? (
                 <ul data-testid="backup-summary-cards" className="space-y-2 md:hidden">
                   {dryRunResult.entities.map((row) => (
-                    <li key={row.entity} className="rounded-[0.25rem] border p-3 text-sm">
+                    <li key={row.entity} className="rounded-sm border p-3 text-sm">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-medium">{entityLabel(row.entity)}</span>
                         <span className="text-muted-foreground">
@@ -407,7 +407,7 @@ export function BackupPanel() {
               ) : null}
 
               {dryRunResult.reconciliation.length > 0 ? (
-                <div className="space-y-1 rounded-[0.25rem] border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+                <div className="space-y-1 rounded-sm border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
                   <p className="font-medium text-amber-700 dark:text-amber-400">
                     {t("settings.backup.import.reconciliationTitle")}
                   </p>
@@ -428,7 +428,7 @@ export function BackupPanel() {
               {renderRowErrors(dryRunResult.errors, dryRunResult.errors_total)}
 
               {mode === "replace" ? (
-                <div className="space-y-2 rounded-[0.25rem] border border-destructive/50 bg-destructive/10 p-3">
+                <div className="space-y-2 rounded-sm border border-destructive/50 bg-destructive/10 p-3">
                   <p className="text-sm font-medium text-destructive">
                     {t("settings.backup.replace.warning", {
                       count: dryRunResult.deleted_total,
@@ -483,7 +483,7 @@ export function BackupPanel() {
                 <div
                   role="status"
                   data-status={result.status}
-                  className={`space-y-2 rounded-[0.25rem] border p-3 ${
+                  className={`space-y-2 rounded-sm border p-3 ${
                     result.status === "ok"
                       ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
                       : result.status === "partial"

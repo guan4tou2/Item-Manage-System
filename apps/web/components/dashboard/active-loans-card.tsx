@@ -47,7 +47,7 @@ export function ActiveLoansCard({ loans, loading }: Props) {
                   </div>
                 </div>
                 {loan.is_overdue ? (
-                  <span className="shrink-0 rounded-[0.25rem] bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
+                  <span className="shrink-0 rounded-sm bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive">
                     {t("dashboard.activeLoans.overdue")}
                   </span>
                 ) : null}

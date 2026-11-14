@@ -379,7 +379,7 @@ export function AuditLogPanel() {
                         <TableCell colSpan={5}>
                           <pre
                             data-testid="audit-meta-json"
-                            className="max-h-64 overflow-auto rounded-[0.25rem] bg-muted p-3 text-xs"
+                            className="max-h-64 overflow-auto rounded-sm bg-muted p-3 text-xs"
                           >
                             {JSON.stringify(row.meta, null, 2)}
                           </pre>
@@ -414,7 +414,7 @@ export function AuditLogPanel() {
                     <summary className="cursor-pointer text-xs text-muted-foreground">
                       {t("settings.audit.colMeta")}
                     </summary>
-                    <pre className="mt-1 max-h-40 overflow-auto rounded-[0.25rem] bg-muted p-2 text-xs">
+                    <pre className="mt-1 max-h-40 overflow-auto rounded-sm bg-muted p-2 text-xs">
                       {JSON.stringify(row.meta, null, 2)}
                     </pre>
                   </details>

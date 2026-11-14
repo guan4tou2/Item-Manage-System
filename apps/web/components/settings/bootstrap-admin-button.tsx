@@ -20,7 +20,7 @@ export function BootstrapAdminButton() {
   }
   if (me.data?.is_admin) return null
   return (
-    <div className="rounded-[0.25rem] border border-dashed p-4 space-y-2">
+    <div className="rounded-sm border border-dashed p-4 space-y-2">
       <p className="text-sm text-muted-foreground">{t("settings.bootstrap.prompt")}</p>
       <Button size="sm" onClick={onClick} disabled={bootstrap.isPending}>
         {t("settings.bootstrap.confirm")}

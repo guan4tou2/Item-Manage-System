@@ -198,7 +198,7 @@ export default function ItemDetailPage() {
         <AuthImage
           imageId={i.image_id}
           alt={i.name}
-          className="max-h-64 max-w-full rounded-[0.25rem] border object-contain"
+          className="max-h-64 max-w-full rounded-sm border object-contain"
         />
       ) : null}
 

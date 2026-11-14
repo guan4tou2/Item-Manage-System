@@ -45,7 +45,7 @@ export function AdminUsersPanel() {
   }
 
   return (
-    <div className="rounded-[0.25rem] border">
+    <div className="rounded-sm border">
       <Table>
         <TableHeader>
           <TableRow>
