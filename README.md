@@ -149,7 +149,7 @@ monorepo (pnpm workspace)
 - **驗證**：JWT access token（15 min）+ httpOnly refresh cookie（7 day）
 - **遷移**：Alembic（目前在 `0028`）
 - **OpenAPI**：FastAPI 自動產生，TS 型別由 `packages/api-types` 每次 regen 同步
-- **測試**：pytest-asyncio + FastAPI TestClient（1425 passed）、vitest + jsdom（805 passed）
+- **測試**：pytest-asyncio + FastAPI TestClient（1455 passed）、vitest + jsdom（824 passed）
 
 ---
 
@@ -205,12 +205,12 @@ make test-api
 
 # Web
 make test-web
-# → 805 passed across 135 files
+# → 824 passed across 138 files
 ```
 
 ---
 
-既有 e2e 基線：**30 spec／96 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip）。
+既有 e2e 基線：**31 spec／99 情境**（含 ai-stub；1 個位置樹情境依賴舊 fixture 而 skip）。
 
 ## 🛠 貢獻
 

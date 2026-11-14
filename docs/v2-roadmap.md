@@ -1,6 +1,6 @@
 # v2 重構路線圖
 
-> **狀態：基礎子專案與後續 Phase 1–46 已完成實作。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
+> **狀態：基礎子專案與後續 Phase 1–47 已完成實作。** v2 已於 `main` 分支進入維護期。逐 phase 變更請看 [CHANGELOG.md](../CHANGELOG.md)。
 
 參見 [`docs/superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md`](superpowers/specs/2026-04-21-ims-rewrite-foundation-design.md) 了解基礎決策。
 
@@ -19,7 +19,7 @@
 | 8 | 管理與設定 | ✅ 完成 |
 | 9 | 行動/PWA 體驗 | ✅ 完成（見下方 Phase 16 polish） |
 
-## 進階 Phase 1–46（v1 功能補齊 + 增強）
+## 進階 Phase 1–47（v1 功能補齊 + 增強）
 
 | Phase | 主題 | 狀態 | 關鍵能力 |
 |-------|------|------|----------|
@@ -68,12 +68,13 @@
 | 44 | 安全收斂（依賴、SSRF、session 撤銷） | ✅ | `next` 15.0.0 → 15.5.29（React2Shell CVE-2025-55182／66478）、`react` 19.3.1、`zustand` 5.1.0；`python-jose` → `pyjwt`、`passlib` → `argon2-cffi`（既有雜湊免遷移）；Migration 0028 `users.token_version`＋token `ver` claim（舊 token 視為 0），改密碼遞增並重新簽發目前裝置 token，新增 `POST /api/auth/logout-all`（稽核 `auth.logout_all`，共 13 種 action）；PAT 不受影響；Web `apiFetch` 401 時 single-flight refresh＋重試一次（修正原本 15 分鐘被踢回登入頁）、「登出所有裝置」區塊；Webhook 出站 URL 防護（寫入時＋送出時兩道、DNS 全部結果須為全域位址、釘 IP、不跟隨 redirect、`WEBHOOK_ALLOW_PRIVATE_HOSTS` 逃生口）；Web Push endpoint 同樣納管；`dependabot.yml`＋CI `audit` job（未實跑）；e2e 未執行 |
 | 45 | v1 下線與發佈管線 | ✅ | 移除 v1，保留 v1-final 快照；release 發佈 API／Web images 與 SBOM；Makefile、pre-commit 與文件對齊 v2；補 ESLint 與依賴稽核修補、uv lockfile 稽核與 Dependabot uv 生態系 |
 | 46 | 部署強化與可觀測 | ✅ 實作 | 非 root 多階段 images、uv.lock、移除 Redis／worker；readiness、request id、JSON／text 日誌；CSP／條件式 HSTS／Permissions-Policy、文件頁開關；ruff／eval／migration／e2e CI；UTC 時間修正。Docker／nginx／e2e／CI 未驗證，計畫狀態維持進行中 |
+| 47 | 樓層平面圖互動 | ✅ | Migration 0029 `locations.plan_region`（父位置平面圖上的正規化矩形）；伺服器端一致性（父需有圖／搬移清除／移除圖片清除子區域／更換保留）；圖片擁有者驗證；API additive、無新端點；備份含區域；`/locations/{id}/plan` 檢視（區域連結＋含子孫物品數＋子位置清單）與編輯（拖曳、鍵盤調整、樂觀更新）；位置樹入口；viewer 唯讀 |
 
 ## 測試規模
 
-- API 測試：1440 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28 passed／1 skipped（mock 模式）
-- Web 測試：805 passed（135 檔；vitest + @testing-library/react + jsdom）
-- Playwright e2e：**30 spec／96 情境**（Phase 44 實跑：chromium 91 passed／1 skipped、ai-stub 4 passed；skip 為依賴舊 dev 庫 `phase26_demo` fixture 的位置樹情境）（`chromium` 專案 29 spec／92 情境：**改密碼與登出所有裝置**／登入／**登入鎖定**／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／**週報**／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／位置 QR 標籤／標籤條碼／**標籤 PDF 下載**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／**稽核查詢台**／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
+- API 測試：1455 passed（pytest-asyncio + FastAPI TestClient + aiosqlite）＋ golden eval 28 passed／1 skipped（mock 模式）
+- Web 測試：824 passed（138 檔；vitest + @testing-library/react + jsdom）
+- Playwright e2e：**31 spec／99 情境**（Phase 47 新增 `floor-plan.spec.ts` 3 情境，由 CI 執行）（Phase 44 實跑：chromium 91 passed／1 skipped、ai-stub 4 passed；skip 為依賴舊 dev 庫 `phase26_demo` fixture 的位置樹情境）（`chromium` 專案 29 spec／92 情境：**改密碼與登出所有裝置**／登入／**登入鎖定**／物品／批次到期／清單／通知／通知偏好／提醒排程／月報／**週報**／AI 批次入庫／AI 收據辨識／AI 自然語言搜尋與問答／位置 QR 標籤／標籤條碼／**標籤 PDF 下載**／掃碼／位置樹／估值／webhook 管理／備份還原／成員角色權限／**稽核查詢台**／主題等關鍵流程；`ai-stub` 專案 1 spec／4 情境：Phase 35 新增的 **AI 成功路徑**——收據品項→對帳→入庫、搜尋「理解為」chip、問答引用連結、批次入庫）
 
 ## 下一輪（未排程）
 
@@ -86,9 +87,8 @@ Phase 22–46 已完成實作；整體狀態、驗證基線與已知限制見 [`
 | 1 | 收據人工核對流程 | 借 itemly 的「使用者確認收據」概念：群組層可標記已人工核對（差額不再警示）＋整張收據視圖 | M |
 | 2 | 批次成本（per-batch cost） | Phase 27 延伸；需 migration 與估值口徑調整 | M |
 | 3 | 分享唯讀連結 | 對外展示清單；**隱私設計需先定案**（token 範圍／到期／撤銷） | M |
-| 4 | 樓層平面圖互動 | 點熱區篩選位置物品（`floor_plan_image_id` 已存在） | S–M |
-| 5 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
-| 6 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
+| 4 | Background Sync（離線新增） | IndexedDB 佇列＋SW sync；衝突處理複雜 | L |
+| 5 | `AuthImage` blob 快取 | 記憶體快取避免同一圖片重複下載 | S |
 
 > 建議從 **#1 收據人工核對** 或 **#2 批次成本** 開始，先定案設計決策；#5 Background Sync 成本較高，可另開里程碑；#6 圖片快取可併入收尾。Phase 46 的部署與 CI 實際驗證仍待具備 Docker／網路的環境完成。
 

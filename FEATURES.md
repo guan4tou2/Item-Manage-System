@@ -21,7 +21,7 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 ## 🏷 分類體系
 
 - **分類（Categories）** — 單層，依名稱唯一 per 用戶
-- **位置（Locations）** — 樓層 / 房間 / 區域；`sort_order` 支援手動排序；`floor_plan_image_id` 可附樓層平面圖
+- **位置（Locations）** — 樓層 / 房間 / 區域；`sort_order` 支援手動排序；可附樓層平面圖並在圖上標示子位置的區域（Phase 47）：`/locations/{id}/plan` 檢視時點區域即可看到該位置（含子孫）的物品；編輯時拖曳畫矩形或用鍵盤調整。區域存於子位置的 `plan_region`（相對父位置圖片的 0–1 矩形），搬移位置或移除圖片時由伺服器自動清除
 - **倉庫（Warehouses）** — 跨實體場所隔離，`(owner_id, name)` 唯一
 - **標籤（Tags）** — 多對多，同時支援物品間共用
 - **自訂欄位（Custom Fields）** — `item_types` 定義某類物品有哪些自訂欄位；`item_templates` 定義預設值組合；每件物品可在 `custom_values` JSON 存值
@@ -272,9 +272,9 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 ## 🧪 測試
 
-- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1440 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
-- **Web**: vitest + @testing-library/react + jsdom。**805 passed across 135 files**。
-- **E2E**: Playwright chromium **91 passed／1 skipped**（`--workers=1`；30 spec／96 情境含 ai-stub）＋ ai-stub 4 passed。
+- **API**: pytest-asyncio + FastAPI TestClient + aiosqlite（每個 test 一個乾淨 in-memory DB）。**1455 passed**；golden eval **28 passed／1 skipped**；`ruff check` 零違規（`All checks passed!`）。
+- **Web**: vitest + @testing-library/react + jsdom。**824 passed across 138 files**。
+- **E2E**: Playwright chromium **91 passed／1 skipped**（`--workers=1`；Phase 46 實跑的 30 spec／96 情境含 ai-stub；Phase 47 另新增 `floor-plan.spec.ts` 3 情境，由 CI 執行）＋ ai-stub 4 passed。
 - **TS**: `tsc --noEmit` 嚴格模式乾淨；`next build` 成功。
 - Phase 44 新增 `session-security.spec.ts`（2 情境）並改寫 `webhooks.spec.ts`，已於全新 docker stack 實跑通過；skip 的 1 個情境是 `locations-tree.spec.ts` 的「真實遷移後的位置樹」依賴舊 dev 庫的 `phase26_demo` 遷移 fixture，全新資料庫不存在 → 改為明確 skip（原本會登入逾時失敗；與本期無關）。
 

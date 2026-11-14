@@ -6,6 +6,23 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 
 ## [Unreleased]
 
+## [2.0.0-alpha.47] — Phase 47：樓層平面圖互動
+
+- **把既有但無介面的欄位做成功能**：`locations.floor_plan_image_id` 自 Phase 11 起存在於 API，但前端從未有任何平面圖介面。本期新增 `/locations/{id}/plan`：上傳／更換／移除平面圖、在圖上為直接子位置畫區域、點區域查看該位置的物品
+- **Migration 0029**：`locations.plan_region`（JSON、nullable）＝該位置在**父位置平面圖**上的正規化矩形 `{x,y,w,h}`（0–1、最小 0.02、不得超出邊界、儲存到小數 4 位）；不合格 → `422`。downgrade 刪欄
+- **一致性由伺服器強制**：設定區域時父位置必須有平面圖（否則 `422 parent_has_no_floor_plan`）；位置搬到別的父位置自動清除區域（除非同一請求明確給了新區域）；父位置移除平面圖 → 清除所有直接子位置的區域；更換平面圖 → 保留區域
+- **圖片擁有者驗證（補既有缺口）**：設定 `floor_plan_image_id` 時驗證圖片存在且為本人所有，否則 `422 invalid_floor_plan_image`（原本完全不驗證）
+- **API 僅 additive、無新端點**：`LocationRead`／`LocationTreeNode`／`LocationUpdate` 新增 `plan_region`；檢視頁資料全部來自既有的 `GET /api/locations/tree`
+- **備份**：匯出的位置列含 `plan_region`，匯入時還原（不合格的值略過並記 warning）；`format_version` 不變。備份不含圖片檔，還原後需重新上傳平面圖
+- **檢視模式**：區域是連結（`/items?location={id}`），標籤為「名稱＋含子孫的物品數」；圖下方一律附子位置清單，作為小區域與螢幕閱讀器的等價入口，並列出尚未放置的子位置
+- **編輯模式**（viewer 不渲染）：圖片上方選取子位置 → 拖曳畫矩形（pointer events，滑鼠與觸控共用）；選取的區域可用方向鍵移動、`Shift`＋方向鍵縮放、`Delete`／`Backspace` 清除；每次變更立即儲存（樂觀更新，失敗回滾）
+- **入口**：位置樹的更多操作選單加「平面圖」；已有平面圖的節點在列上顯示地圖連結
+- **狀態**：載入 skeleton、沒有平面圖（writer／viewer 分流）、沒有子位置、尚未標示任何區域、樹／圖片載入失敗可重試、位置不存在
+- **視覺與無障礙**：依 `DESIGN.md`——區域為 primary 邊框＋低透明度底，標籤用不透明底確保在任何圖片上可讀；`aria-label`「名稱，n 件物品」；觸控目標 44px；zh-TW／en
+- **實際操作時修正**：隱藏的檔案輸入造成的頁面水平溢出、區域標籤可讀性與位置、編輯時選取列改到圖片上方
+- **明確不做**：多邊形／旋轉區域、圖上顯示個別物品圖釘、自訂縮放／平移手勢、巢狀平面圖的串接導覽
+- 測試：API 1440 → **1455 passed**；Web 805 → **824 passed（138 檔）**（Node 22 與 24）；typecheck 0 error；lint 0 error／30 warning；golden eval 28 passed／1 skipped；ruff 零違規；api-types 重新產生。以瀏覽器實際操作驗證檢視、拖曳編輯、375px 版面。**未在本機執行**：Playwright e2e（新增 `floor-plan.spec.ts` 3 情境）與 Migration 0029 的 PostgreSQL 升降版，交由 CI
+
 ## [2.0.0-alpha.46] — Phase 46：部署強化與可觀測
 
 - **Image 與 Compose**：API 改以 `uv sync --frozen --no-dev` 依 `uv.lock` 多階段建置，runtime 無編譯工具，以 uid 10001 執行，包含 Alembic、scripts 與內附字型，可寫 `/app/media`；新增 API `.dockerignore`。Web runner 改用 `node`。移除未使用的 Redis／worker／redisdata 與設定；API readiness healthcheck，Web／nginx 等待 API healthy。
