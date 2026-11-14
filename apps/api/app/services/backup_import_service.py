@@ -14,6 +14,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Literal, Optional
 from uuid import UUID, uuid4
 
+from pydantic import ValidationError
 from sqlalchemy import delete, func, insert, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,6 +39,7 @@ from app.schemas.backup import (
     BackupImportResult,
     BackupReconciliationItem,
 )
+from app.schemas.location import PlanRegion
 from app.schemas.preferences import currency_from_raw
 from app.services import audit_service
 from app.services.backup_service import FORMAT_VERSION
@@ -647,17 +649,24 @@ def _parse_category(raw: dict[str, Any]) -> dict[str, Any]:
     return {"src_id": src, "name": name, "parent_src": parent_src}
 
 
-def _parse_location(raw: dict[str, Any]) -> dict[str, Any]:
+def _parse_location(raw: dict[str, Any], ctx: _Ctx) -> dict[str, Any]:
     src = _int_(raw, "id", required=True, min_value=1)
     name = _str_(raw, "name", required=True, max_len=50)
     parent_src = _int_(raw, "parent_id", min_value=1)
     if parent_src == src:
         raise _RowError("parent_id 不可指向自己")
+    region = None
+    if raw.get("plan_region") is not None:
+        try:
+            region = PlanRegion.model_validate(raw["plan_region"]).model_dump()
+        except ValidationError:
+            ctx.text(f"位置「{name}」的 plan_region 不合格，已略過區域")
     return {
         "src_id": src,
         "name": name,
         "parent_src": parent_src,
         "extra": {
+            "plan_region": region,
             "kind": _str_(raw, "kind", max_len=20),
             "sort_order": _int_(raw, "sort_order", default=0, min_value=0) or 0,
         },
@@ -737,7 +746,7 @@ async def build_plan(
         for row in loc_rows
     }
     resolved_locations = _resolve_hierarchy(
-        ctx, "locations", lists["locations"], parse_fn=_parse_location,
+        ctx, "locations", lists["locations"], parse_fn=lambda raw: _parse_location(raw, ctx),
         existing_keys=existing_loc_keys,
     )
 
@@ -1460,7 +1469,7 @@ async def _insert_hierarchy(
             "name": rec["name"],
             "parent_id": parent_id,
         }
-        for key in ("kind", "sort_order"):
+        for key in ("kind", "sort_order", "plan_region"):
             if key in rec:
                 kwargs[key] = rec[key]
         row = model(**kwargs)

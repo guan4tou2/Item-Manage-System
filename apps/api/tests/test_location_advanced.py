@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from uuid import UUID
+
 import pytest
 from sqlalchemy import select
 
 from app.models.location import Location
+from app.models.image import Image
 
 
 @pytest.fixture
@@ -45,9 +48,15 @@ async def test_list_orders_by_sort_order_then_name(client, auth):
     assert [row["name"] for row in rows] == ["1F", "A", "B", "C"]
 
 
-async def test_patch_floor_plan_image_id(client, auth):
+async def test_patch_floor_plan_image_id(client, auth, db_session):
     node = await _create(client, auth, name="1F")
-    image_id = "11111111-1111-4111-8111-111111111111"
+    # D4：成功情境使用實際存在且屬於本人的圖片，保留原有成功斷言。
+    owner_id = (await client.get("/api/users/me", headers=auth)).json()["id"]
+    image = Image(owner_id=UUID(owner_id), filename="plan.png", mime_type="image/png",
+                  size_bytes=1, storage_path="plan.png")
+    db_session.add(image)
+    await db_session.commit()
+    image_id = str(image.id)
 
     r = await client.patch(
         f"/api/locations/{node['id']}",

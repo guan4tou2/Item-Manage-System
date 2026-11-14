@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.location import Location
+from app.models.image import Image
 from app.repositories import locations_repository as repo
 from app.schemas.location import LocationCreate, LocationUpdate
 
@@ -19,6 +20,7 @@ def _view(loc: Location, path: str | None, item_count: int = 0) -> dict[str, Any
         "kind": loc.kind,
         "sort_order": loc.sort_order,
         "floor_plan_image_id": loc.floor_plan_image_id,
+        "plan_region": loc.plan_region,
         "path": path or loc.name,
         "item_count": item_count,
     }
@@ -130,9 +132,17 @@ async def path_of(
     }
 
 
+async def _validate_image(session: AsyncSession, owner_id: UUID, image_id: UUID | None) -> None:
+    if image_id is not None:
+        image = await session.get(Image, image_id)
+        if image is None or image.owner_id != owner_id:
+            raise HTTPException(status_code=422, detail={"code": "invalid_floor_plan_image"})
+
+
 async def create(
     session: AsyncSession, owner_id: UUID, body: LocationCreate
 ) -> dict[str, Any]:
+    await _validate_image(session, owner_id, body.floor_plan_image_id)
     await _require_parent(session, owner_id, body.parent_id)
     await _assert_no_duplicate_sibling(session, owner_id, body.parent_id, body.name)
     fields = body.model_dump()
@@ -162,6 +172,19 @@ async def update(
             exclude_id=location_id,
         )
 
+    if "floor_plan_image_id" in fields:
+        await _validate_image(session, owner_id, fields["floor_plan_image_id"])
+    if fields.get("plan_region") is not None:
+        parent = await repo.get_owned(session, owner_id, target_parent) if target_parent is not None else None
+        if parent is None or parent.floor_plan_image_id is None:
+            raise HTTPException(status_code=422, detail={"code": "parent_has_no_floor_plan"})
+    # 搬到別的父位置：舊區域是相對於舊父位置的圖，一律清除；除非這次請求同時明確給了新區域
+    # （上面已驗證新父位置有平面圖）。
+    if target_parent != loc.parent_id and "plan_region" not in fields:
+        fields["plan_region"] = None
+    if "floor_plan_image_id" in fields and fields["floor_plan_image_id"] is None:
+        for child in await repo.children_of(session, owner_id, location_id):
+            child.plan_region = None
     loc = await repo.update(session, loc, **fields)
     locations = await repo.fetch_all(session, owner_id)
     return _view(loc, repo.path_for(locations, loc.id))

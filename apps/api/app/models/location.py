@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, Integer, String, text
@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.models.user import GUID
+from app.models.favorite_audit_token import JSONType
 
 if TYPE_CHECKING:
     from app.models.item import Item
@@ -54,6 +55,8 @@ class Location(Base):
     floor_plan_image_id: Mapped[Optional[UUID]] = mapped_column(
         GUID(), ForeignKey("images.id", ondelete="SET NULL"), nullable=True
     )
+
+    plan_region: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
 
     parent: Mapped[Optional["Location"]] = relationship(
         "Location", remote_side=[id], back_populates="children"

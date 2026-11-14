@@ -228,7 +228,7 @@ async def export_full(session: AsyncSession, owner_id: UUID) -> dict[str, Any]:
         "locations": [
             _row_to_dict(
                 loc,
-                ["id", "parent_id", "name", "kind", "sort_order", "floor_plan_image_id"],
+                ["id", "parent_id", "name", "kind", "sort_order", "floor_plan_image_id", "plan_region"],
             )
             for loc in locations
         ],
