@@ -258,7 +258,7 @@ async def export_full(session: AsyncSession, owner_id: UUID) -> dict[str, Any]:
             _row_to_dict(
                 b,
                 ["id", "item_id", "quantity", "expiry_date", "received_at",
-                 "note", "is_depleted", "created_at"],
+                 "note", "unit_cost", "is_depleted", "created_at"],
             )
             for b in batches
         ],

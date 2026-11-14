@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Optional
 from uuid import UUID
 
@@ -13,6 +14,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     Text,
     text,
 )
@@ -32,6 +34,7 @@ class ItemBatch(Base):
     __tablename__ = "item_batches"
     __table_args__ = (
         CheckConstraint("quantity >= 0", name="ck_item_batches_quantity_nonneg"),
+        CheckConstraint("unit_cost IS NULL OR unit_cost >= 0", name="ck_item_batches_unit_cost_nonneg"),
         Index("ix_item_batches_item_depleted", "item_id", "is_depleted"),
     )
 
@@ -43,6 +46,7 @@ class ItemBatch(Base):
         index=True,
     )
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_cost: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
     expiry_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
     received_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

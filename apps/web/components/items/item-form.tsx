@@ -28,6 +28,7 @@ import type { LocationRead } from "@/lib/api/locations"
 import { useAccessToken } from "@/lib/auth/use-auth"
 import { CURRENCY_SYMBOLS, type Currency } from "@/lib/format/currency"
 import { useBarcodeLookup } from "@/lib/hooks/use-barcode-lookup"
+import { COST_PATTERN } from "@/lib/items/cost"
 import { usePreferences } from "@/lib/preferences/use-preferences"
 import { canonicalizeBarcode, isBarcodeLike } from "@/lib/scan/barcode"
 
@@ -40,7 +41,7 @@ export const itemFormSchema = z.object({
   cost: z
     .string()
     .trim()
-    .regex(/^(?:\d{1,10}(?:\.\d{1,2})?)?$/, "costInvalid")
+    .regex(COST_PATTERN, "costInvalid")
     .optional(),
   category_id: z.number().nullable(),
   location_id: z.number().nullable(),
@@ -486,6 +487,7 @@ export function ItemForm({
 
       <div>
         <Label htmlFor="cost">{t("items.form.cost")}</Label>
+        {trackBatches ? <p className="text-xs text-muted-foreground">{t("items.form.batchCostHint")}</p> : null}
         <Input
           id="cost"
           inputMode="decimal"

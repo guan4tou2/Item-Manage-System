@@ -52,6 +52,7 @@ async def create_batch(
         expiry_date=body.expiry_date,
         received_at=body.received_at,
         note=body.note,
+        unit_cost=body.unit_cost,
     )
     return BatchRead.from_batch(batch)
 

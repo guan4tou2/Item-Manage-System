@@ -50,14 +50,14 @@ function batch(overrides: Partial<BatchRead> = {}): BatchRead {
   } as BatchRead
 }
 
-function renderSection(canEdit = true) {
+function renderSection(canEdit = true, defaultCost: string | null = null, currency = "TWD") {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
     <QueryClientProvider client={queryClient}>
       <NextIntlClientProvider locale="zh-TW" messages={zhMessages}>
-        <BatchSection itemId="item-1" canEdit={canEdit} />
+        <BatchSection itemId="item-1" canEdit={canEdit} defaultCost={defaultCost} currency={currency} />
       </NextIntlClientProvider>
     </QueryClientProvider>,
   )
@@ -184,7 +184,7 @@ describe("BatchSection", () => {
 
     const dialog = await screen.findByRole("alertdialog")
     expect(
-      within(dialog).getByText("批次將合併為單一數量，所有到期日資訊將被刪除。"),
+      within(dialog).getByText("批次將合併為單一數量，所有批次到期日與成本資訊將被刪除。"),
     ).toBeInTheDocument()
 
     fireEvent.click(within(dialog).getByRole("button", { name: "關閉追蹤" }))
@@ -215,7 +215,7 @@ describe("BatchSection", () => {
     await waitFor(() =>
       expect(api.createBatch).toHaveBeenCalledWith(
         "item-1",
-        { quantity: 3, expiry_date: "2026-12-01", note: null },
+        { quantity: 3, expiry_date: "2026-12-01", note: null, unit_cost: null },
         "jwt",
       ),
     )
@@ -230,5 +230,83 @@ describe("BatchSection", () => {
     expect(screen.queryByRole("button", { name: "進貨／調整" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /消耗 1/ })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "關閉追蹤" })).not.toBeInTheDocument()
+  })
+})
+
+
+describe("批次成本", () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it.each(["-1", "1.234", "NaN", "10000000000"])("成本 %s 即時提示且阻擋新增", async (cost) => {
+    vi.mocked(api.listBatches).mockResolvedValue([])
+    renderSection()
+    fireEvent.click(await screen.findByRole("button", { name: "進貨／調整" }))
+    fireEvent.change(screen.getByLabelText("數量"), { target: { value: "3" } })
+    fireEvent.change(screen.getByLabelText("單位成本（NT$）"), { target: { value: cost } })
+    expect(screen.getByRole("alert")).toHaveTextContent("成本需為數字")
+    expect(screen.getByRole("button", { name: "建立" })).toBeDisabled()
+    fireEvent.click(screen.getByRole("button", { name: "建立" }))
+    expect(api.createBatch).not.toHaveBeenCalled()
+  })
+
+  it("新增可送出有效成本，提示帳號幣別與預設單價", async () => {
+    vi.mocked(api.listBatches).mockResolvedValue([])
+    vi.mocked(api.createBatch).mockResolvedValue(batch())
+    renderSection(true, "10", "USD")
+    fireEvent.click(await screen.findByRole("button", { name: "進貨／調整" }))
+    expect(screen.getByText(/留白時使用物品的預設單價（US\$10）/)).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText("數量"), { target: { value: "3" } })
+    fireEvent.change(screen.getByLabelText("單位成本（US$）"), { target: { value: "12.30" } })
+    fireEvent.click(screen.getByRole("button", { name: "建立" }))
+    await waitFor(() => expect(api.createBatch).toHaveBeenCalledWith("item-1", {
+      quantity: 3, expiry_date: null, note: null, unit_cost: "12.30",
+    }, "jwt"))
+  })
+
+  it("編輯預填成本，清空送出 null 並保留數量到期與備註", async () => {
+    vi.mocked(api.listBatches).mockResolvedValue([batch({ unit_cost: "12.30", expiry_date: "2027-01-01", note: "保留" })])
+    vi.mocked(api.updateBatch).mockResolvedValue(batch({ unit_cost: null }))
+    renderSection(true, "10")
+    fireEvent.click(await screen.findByRole("button", { name: "編輯" }))
+    const input = screen.getByLabelText("單位成本（NT$）")
+    expect(input).toHaveValue("12.30")
+    fireEvent.change(input, { target: { value: "-1" } })
+    expect(screen.getByRole("button", { name: "儲存" })).toBeDisabled()
+    fireEvent.change(input, { target: { value: "  " } })
+    fireEvent.click(screen.getByRole("button", { name: "儲存" }))
+    await waitFor(() => expect(api.updateBatch).toHaveBeenCalledWith("item-1", "batch-1", {
+      quantity: 5, expiry_date: "2027-01-01", note: "保留", unit_cost: null,
+    }, "jwt"))
+  })
+
+  it("批次單價含零且不重複預設單價，小計忽略耗盡批次", async () => {
+    vi.mocked(api.listBatches).mockResolvedValue([
+      batch({ id: "a", quantity: 2, unit_cost: "3" }),
+      batch({ id: "b", quantity: 2, unit_cost: null }),
+      batch({ id: "c", quantity: 1, unit_cost: "0" }),
+      batch({ id: "d", quantity: 0, is_depleted: true, unit_cost: "99" }),
+    ])
+    renderSection(false, "10")
+    expect(await screen.findByText("NT$3")).toHaveClass("tabular-nums")
+    expect(screen.getByText("NT$0")).toBeInTheDocument()
+    expect(screen.queryByText("NT$10")).not.toBeInTheDocument()
+    expect(screen.getByTestId("batch-valuation")).toHaveTextContent("估值 NT$26")
+    expect(screen.queryByRole("button", { name: "編輯" })).not.toBeInTheDocument()
+  })
+
+  it("沒有批次成本不顯示小計", async () => {
+    vi.mocked(api.listBatches).mockResolvedValue([batch({ unit_cost: null })])
+    renderSection(true, "10")
+    await screen.findByText("剩 5")
+    expect(screen.queryByTestId("batch-valuation")).not.toBeInTheDocument()
+  })
+
+  it("載入錯誤提供重試而不呈現空狀態", async () => {
+    vi.mocked(api.listBatches).mockRejectedValueOnce(new Error("離線")).mockResolvedValue([batch()])
+    renderSection()
+    expect(await screen.findByRole("alert")).toHaveTextContent("無法載入批次")
+    expect(screen.queryByText("尚未建立任何批次。")).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "重試" }))
+    expect(await screen.findByText("剩 5")).toBeInTheDocument()
   })
 })

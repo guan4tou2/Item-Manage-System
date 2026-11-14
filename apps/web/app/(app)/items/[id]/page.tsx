@@ -272,7 +272,7 @@ export default function ItemDetailPage() {
         </div>
       </dl>
 
-      {i.track_batches ? <BatchSection itemId={i.id} canEdit={isOwner && !readOnly} /> : null}
+      {i.track_batches ? <BatchSection itemId={i.id} canEdit={isOwner && !readOnly} defaultCost={i.cost} currency={currency} /> : null}
 
       {isOwner ? (
         <ItemCustomValuesDetail

@@ -707,7 +707,8 @@
         "quantityInteger": "Quantity must be a whole number",
         "quantityMin": "Quantity cannot be negative",
         "costInvalid": "Cost must be a number with up to 2 decimals (e.g. 12.30)"
-      }
+      },
+      "batchCostHint": "Used when a batch has no unit cost."
     },
     "detail": {
       "edit": "Edit",
@@ -760,9 +761,20 @@
       "emptyHint": "Use “Receive / Adjust” to create the first batch.",
       "disable": "Disable tracking",
       "disableTitle": "Disable batch tracking?",
-      "disableBody": "Batches will be merged into a single quantity and all expiry information will be deleted.",
+      "disableBody": "Batches will be merged into a single quantity and all batch expiry dates and unit costs will be deleted.",
       "disabled": "Batch tracking disabled",
-      "disableFailed": "Could not disable tracking"
+      "disableFailed": "Could not disable tracking",
+      "edit": "Edit",
+      "editTitle": "Edit batch",
+      "save": "Save",
+      "updated": "Batch updated",
+      "updateFailed": "Failed to update batch",
+      "unitCost": "Unit cost ({symbol})",
+      "costFallback": "Leave blank to use the item’s default cost; unpriced if no default is set.",
+      "costFallbackAmount": "Leave blank to use the item’s default cost ({amount}).",
+      "subtotal": "Value {amount}",
+      "loadFailed": "Unable to load batches.",
+      "retry": "Retry"
     },
     "toast": {
       "created": "Created",

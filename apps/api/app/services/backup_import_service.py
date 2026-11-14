@@ -1012,6 +1012,7 @@ async def build_plan(
             quantity = _int_(row, "quantity", required=True, min_value=0)
             expiry_date = _date_(row, "expiry_date")
             received_at = _date_(row, "received_at")
+            unit_cost = _decimal_(row, "unit_cost")
             note = _str_(row, "note")
             is_depleted = _bool_(row, "is_depleted", default=False)
             created_at = _dt_(row, "created_at", default=now)
@@ -1027,6 +1028,7 @@ async def build_plan(
                 "quantity": quantity,
                 "expiry_date": expiry_date,
                 "received_at": received_at,
+                "unit_cost": unit_cost,
                 "note": note,
                 "is_depleted": is_depleted,
                 "created_at": created_at,
@@ -1589,6 +1591,7 @@ async def _insert_item_children(
                 quantity=rec["quantity"],
                 expiry_date=rec["expiry_date"],
                 received_at=rec["received_at"],
+                unit_cost=rec["unit_cost"],
                 note=rec["note"],
                 is_depleted=rec["is_depleted"],
                 created_at=rec["created_at"],
