@@ -42,7 +42,7 @@ export function WarehouseChart({ buckets, loading }: Props) {
                 ))}
               </Pie>
               <Tooltip />
-              <Legend />
+              <Legend iconType="circle" />
             </PieChart>
           </ResponsiveContainer>
         )}

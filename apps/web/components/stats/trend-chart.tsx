@@ -38,7 +38,7 @@ export function TrendChart({ points, loading }: Props) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="day" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+              <XAxis dataKey="day" tick={{ fontSize: 12 }} interval="preserveStartEnd" minTickGap={12} />
               <YAxis allowDecimals={false} tick={{ fontSize: 12 }} width={30} />
               <Tooltip />
               <Area

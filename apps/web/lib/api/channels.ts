@@ -91,7 +91,7 @@ export async function testChannel(
   ).json()
 }
 
-function vapidPublicKeyToUint8Array(publicKey: string): Uint8Array {
+function vapidPublicKeyToUint8Array(publicKey: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (publicKey.length % 4)) % 4)
   const base64 = `${publicKey}${padding}`.replace(/-/g, '+').replace(/_/g, '/')
   const raw = window.atob(base64)

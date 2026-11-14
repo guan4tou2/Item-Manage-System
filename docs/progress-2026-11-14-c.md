@@ -29,6 +29,7 @@
 | 依賴升級 | `next-intl` 3.21.1 → 4.15.1、`next-themes` 0.3.0 → 0.4.6；`pnpm audit --prod` 無已知漏洞 |
 | Dependabot 第二批 | 合併 6 個檢查全綠的 PR：GitHub Actions（codeql-action 3→4、docker/login-action 3→4、setup-python 5→7、setup-qemu-action 3→4、setup-node 4→7）與 Python minor／patch 群組 |
 | 大版本升級（第三批） | Gemini 模型改為設定值 `GEMINI_MODEL`（預設 `gemini-3.6-flash`，原 `gemini-2.0-flash` 已停用）＋`google-genai` 3.1；`vitest` 5、npm 群組 28 個套件；Next.js 16＋ESLint 10 flat config（`middleware.ts`→`proxy.ts`）；Tailwind CSS 4.3.5（保留 v3 相容層，畫面不變） |
+| 大版本升級（第四批） | `tailwind-merge` 3、`lucide-react` 1.x、`@hookform/resolvers` 7、`jsdom` 31、`jest-dom` 7、`recharts` 3（圖例與刻度調回原樣）、TypeScript 6.0.3；TypeScript 7 因 `typescript-eslint`／`openapi-typescript` 尚未支援而暫緩 |
 
 ---
 

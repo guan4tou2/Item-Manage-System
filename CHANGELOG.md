@@ -40,6 +40,15 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 - **瀏覽器基準提高**：Tailwind 4 需要 Safari 16.4+、Chrome 111+、Firefox 128+；更舊的瀏覽器版面可能不正確
 - 驗證：遷移前後以正式建置各拍 40 張截圖（9 個頁面＋登入頁 × 明暗 × 1280／375px）逐張比對，容許差異 0.05% 下 36 張一致；統計頁 4 張的差異經查為圖表進場動畫的截圖時機（同一頁在遷移前自我比對就不穩定），以等待動畫結束的截圖目視確認與遷移前一致。另以瀏覽器實際操作確認對話框／下拉選單／側邊抽屜的進場動畫、鍵盤 focus ring、暗色模式與 375px 版面正常。Web 975 passed（154 檔，Node 22 與 24）、typecheck 0 error、lint 0 warning、`next build` 成功；本機 e2e（SQLite 暫時資料庫＋正式建置，chromium）93 passed／1 skipped，另 6 個 `reminders`／`reports` 情境需要 Docker 內的 PostgreSQL，本機無法執行，由 CI 確認
 
+**同日維護項目（第四批：其餘大版本）**：
+
+- `tailwind-merge` 2.5 → 3.7.0：原生支援 Tailwind 4，移除第三批在 `cn()` 補的暫時合併規則
+- `lucide-react` 0.447 → 1.73.0、`@hookform/resolvers` 5 → 7.0.6、`jsdom` 29 → 31、`@testing-library/jest-dom` 6 → 7：程式不需修改
+- **`recharts` 2 → 3.10.1**：統計頁七張圖。新版圓餅圖圖例預設由圓點變成方塊、趨勢圖日期刻度變密，分別以 `iconType="circle"` 與 `minTickGap` 調回原本的樣子；長條、圓餅、面積與 tooltip 以瀏覽器實際操作確認正常（明亮 1280px、暗色 375px）。趨勢圖尾端刻度與升級前略有不同（多顯示一個日期），不影響閱讀
+- **TypeScript 5.6 → 6.0.3**：三處 `Uint8Array` 型別需標明為 `Uint8Array<ArrayBuffer>`（Web Push 金鑰轉換與兩個測試）。`openapi-typescript` 的 peer 範圍仍寫 `^5.x`（安裝時有警告），實測以 TS 6 重新產生 API 型別只差一處註解空白
+- **TypeScript 7 暫不升**：`typescript-eslint` 目前只支援到 `<6.1.0`、`openapi-typescript` 只宣告支援 5.x，等這兩個工具支援後再評估。`@types/node` 維持 22（對應 CI 與正式環境的 Node 22）
+- 驗證：Web 975 passed（154 檔，Node 22 與 24）、typecheck 0 error、lint 0 warning、`next build` 成功、`pnpm audit --prod` 無已知漏洞；本機 e2e（SQLite 暫時資料庫＋正式建置，chromium）93 passed／1 skipped，與升級前相同，另 6 個需要 Docker 內 PostgreSQL 的 `reminders`／`reports` 情境由 CI 確認
+
 ## [2.0.0-alpha.50] — Phase 50：清單分享唯讀連結
 
 - **分享範圍＝單一清單**：一條連結只對應一份清單，不會連帶揭露物品庫存、位置、其他清單或帳號資訊

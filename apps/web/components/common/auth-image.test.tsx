@@ -16,7 +16,7 @@ vi.mock("@/lib/auth/use-auth", () => ({
 const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
 const PNG2_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x48])
 
-function okResponse(bytes: Uint8Array = PNG_BYTES): Response {
+function okResponse(bytes: Uint8Array<ArrayBuffer> = PNG_BYTES): Response {
   return new Response(bytes, { status: 200, headers: { "content-type": "image/png" } })
 }
 

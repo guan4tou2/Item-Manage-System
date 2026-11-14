@@ -2051,7 +2051,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Status  */
+        /** Status */
         get: operations["status__api_channels_status_get"];
         put?: never;
         post?: never;

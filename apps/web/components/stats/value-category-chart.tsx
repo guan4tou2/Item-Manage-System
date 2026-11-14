@@ -70,7 +70,7 @@ export function ValueCategoryChart({ buckets, currency, loading }: Props) {
                   })
                 }}
               />
-              <Legend />
+              <Legend iconType="circle" />
             </PieChart>
           </ResponsiveContainer>
         )}
