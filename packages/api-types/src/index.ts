@@ -1073,6 +1073,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/public/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Public List */
+        get: operations["read_public_list_api_public_list_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lists": {
         parameters: {
             query?: never;
@@ -1174,6 +1191,41 @@ export interface paths {
         /** Reorder Entries */
         post: operations["reorder_entries_api_lists__list_id__entries_reorder_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lists/{list_id}/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Shares */
+        get: operations["list_shares_api_lists__list_id__shares_get"];
+        put?: never;
+        /** Create Share */
+        post: operations["create_share_api_lists__list_id__shares_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lists/{list_id}/shares/{share_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Share */
+        delete: operations["revoke_share_api_lists__list_id__shares__share_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3847,6 +3899,64 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** ListShareCreate */
+        ListShareCreate: {
+            /** Expires In Days */
+            expires_in_days: (1 | 7 | 30) | null;
+            /**
+             * Show Prices
+             * @default false
+             */
+            show_prices: boolean;
+        };
+        /** ListShareCreated */
+        ListShareCreated: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Token Prefix */
+            token_prefix: string;
+            /** Show Prices */
+            show_prices: boolean;
+            /** Expires At */
+            expires_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Last Accessed At */
+            last_accessed_at: string | null;
+            /** Access Count */
+            access_count: number;
+            /** Token */
+            token: string;
+        };
+        /** ListShareRead */
+        ListShareRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Token Prefix */
+            token_prefix: string;
+            /** Show Prices */
+            show_prices: boolean;
+            /** Expires At */
+            expires_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Last Accessed At */
+            last_accessed_at: string | null;
+            /** Access Count */
+            access_count: number;
+        };
         /** ListSummary */
         ListSummary: {
             /**
@@ -4363,6 +4473,43 @@ export interface components {
         PruneOrphansResult: {
             /** Deleted Count */
             deleted_count: number;
+        };
+        /** PublicList */
+        PublicList: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "travel" | "shopping" | "collection" | "generic";
+            /** Title */
+            title: string;
+            /** Description */
+            description: string | null;
+            /** Start Date */
+            start_date: string | null;
+            /** End Date */
+            end_date: string | null;
+            /** Entries */
+            entries: components["schemas"]["PublicListEntry"][];
+            /** Budget */
+            budget?: string | null;
+            /** Currency */
+            currency?: string | null;
+        };
+        /** PublicListEntry */
+        PublicListEntry: {
+            /** Name */
+            name: string;
+            /** Quantity */
+            quantity: number | null;
+            /** Note */
+            note: string | null;
+            /** Link */
+            link: string | null;
+            /** Is Done */
+            is_done: boolean;
+            /** Price */
+            price?: string | null;
         };
         /** QuantityLogRead */
         QuantityLogRead: {
@@ -7374,6 +7521,37 @@ export interface operations {
             };
         };
     };
+    read_public_list_api_public_list_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Share-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_lists_api_lists_get: {
         parameters: {
             query?: {
@@ -7682,6 +7860,102 @@ export interface operations {
                 "application/json": components["schemas"]["ReorderRequest"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_shares_api_lists__list_id__shares_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListShareRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_share_api_lists__list_id__shares_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListShareCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListShareCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_share_api_lists__list_id__shares__share_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+                share_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             204: {

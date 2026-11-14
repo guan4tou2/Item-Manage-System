@@ -14,6 +14,7 @@ from app.models.item_batch import ItemBatch
 from app.models.item_history import ItemVersion, QuantityLog
 from app.models.job_run import JobRun
 from app.models.list import List, ListEntry
+from app.models.list_share import ListShare
 from app.models.loan import ItemLoan
 from app.models.login_attempt import LoginAttempt
 from app.models.location import Location
@@ -39,6 +40,7 @@ __all__ = [
     "NotificationPreference",
     "List",
     "ListEntry",
+    "ListShare",
     "Group",
     "GroupMember",
     "ItemLoan",

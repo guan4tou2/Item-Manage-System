@@ -1,6 +1,7 @@
 "use client"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { usePathname } from "next/navigation"
 import { ThemeProvider } from "next-themes"
 import { useState, type ReactNode } from "react"
 
@@ -16,6 +17,8 @@ function GlobalSyncers() {
 }
 
 export function Providers({ children }: { children: ReactNode }) {
+  const pathname = usePathname()
+  const isPublicShare = pathname === "/share"
   const [client] = useState(
     () =>
       new QueryClient({
@@ -42,9 +45,11 @@ export function Providers({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <GlobalSyncers />
-        <ThemeSync />
-        <LocaleSync />
+        {!isPublicShare && <>
+          <GlobalSyncers />
+          <ThemeSync />
+          <LocaleSync />
+        </>}
         {children}
         <Toaster richColors closeButton />
       </ThemeProvider>

@@ -88,6 +88,7 @@ describe("ListDetailPage read-only viewer (Phase 30)", () => {
     // 無刪除清單、無新增項目表單、無項目刪除、無拖放把手
     expect(screen.queryAllByRole("button", { name: "Delete list" })).toHaveLength(0)
     expect(screen.queryByRole("button", { name: "Create" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Share" })).not.toBeInTheDocument()
     expect(screen.queryByLabelText("Drag to reorder")).not.toBeInTheDocument()
   })
 
