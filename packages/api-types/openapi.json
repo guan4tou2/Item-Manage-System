@@ -30,6 +30,26 @@
         }
       }
     },
+    "/api/health/ready": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Readiness",
+        "description": "只確認資料庫可回應，不對外揭露連線錯誤。",
+        "operationId": "readiness_api_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/register": {
       "post": {
         "tags": [
@@ -12872,6 +12892,16 @@
       },
       "LocationRead": {
         "properties": {
+          "plan_region": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanRegion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "type": "integer",
             "title": "Id"
@@ -12962,6 +12992,16 @@
       },
       "LocationTreeNode": {
         "properties": {
+          "plan_region": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanRegion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "id": {
             "type": "integer",
             "title": "Id"
@@ -13036,6 +13076,16 @@
       },
       "LocationUpdate": {
         "properties": {
+          "plan_region": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PlanRegion"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "parent_id": {
             "anyOf": [
               {
@@ -13631,6 +13681,44 @@
         ],
         "title": "PasswordChangeResponse",
         "description": "Phase 44：改密碼會撤銷所有 session，回應重新簽發目前裝置的 access token\n（refresh cookie 同時重設）。`success` 為既有欄位，保留相容。"
+      },
+      "PlanRegion": {
+        "properties": {
+          "x": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "X"
+          },
+          "y": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Y"
+          },
+          "w": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.02,
+            "title": "W"
+          },
+          "h": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.02,
+            "title": "H"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "title": "PlanRegion",
+        "description": "相對父位置平面圖的正規化矩形。"
       },
       "PreferencesRead": {
         "properties": {

@@ -18,6 +18,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Readiness
+         * @description 只確認資料庫可回應，不對外揭露連線錯誤。
+         */
+        get: operations["readiness_api_health_ready_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/register": {
         parameters: {
             query?: never;
@@ -3952,6 +3972,7 @@ export interface components {
         };
         /** LocationRead */
         LocationRead: {
+            plan_region?: components["schemas"]["PlanRegion"] | null;
             /** Id */
             id: number;
             /** Parent Id */
@@ -3979,6 +4000,7 @@ export interface components {
         };
         /** LocationTreeNode */
         LocationTreeNode: {
+            plan_region?: components["schemas"]["PlanRegion"] | null;
             /** Id */
             id: number;
             /** Parent Id */
@@ -4006,6 +4028,7 @@ export interface components {
         };
         /** LocationUpdate */
         LocationUpdate: {
+            plan_region?: components["schemas"]["PlanRegion"] | null;
             /** Parent Id */
             parent_id?: number | null;
             /** Name */
@@ -4214,6 +4237,20 @@ export interface components {
              * @default bearer
              */
             token_type: string;
+        };
+        /**
+         * PlanRegion
+         * @description 相對父位置平面圖的正規化矩形。
+         */
+        PlanRegion: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /** W */
+            w: number;
+            /** H */
+            h: number;
         };
         /** PreferencesRead */
         PreferencesRead: {
@@ -5081,6 +5118,26 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    readiness_api_health_ready_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
