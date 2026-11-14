@@ -19,7 +19,7 @@ export function writeTokenCookie(hasToken: boolean): void {
  *
  * 必須等 Zustand persist 完成 localStorage 重建後才寫 cookie，
  * 否則 cold load 會誤把還沒 rehydrate 的 null token 當成登出狀態，
- * 把 cookie 清掉並害 middleware 把使用者踢回 /login。
+ * 把 cookie 清掉並害 proxy 把使用者踢回 /login。
  */
 export function useTokenCookieSync(): void {
   useEffect(() => {

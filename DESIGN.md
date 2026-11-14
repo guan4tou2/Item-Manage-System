@@ -5,7 +5,7 @@
 
 ## 1. 產品脈絡
 
-- 自架家庭物品管理（Next.js 15 + FastAPI；Docker；PWA）。
+- 自架家庭物品管理（Next.js 16 + FastAPI；Docker；PWA）。
 - 使用者：家庭成員（含 viewer 長輩）＋小型工作室；主要情境＝廚房裡用手機。
 - 語言 zh-TW／en；light／dark。
 - **記憶點（北極星）：「快」**——掃了就進去、家人一學就會、零摩擦輸入。

@@ -1,6 +1,6 @@
 # 🏠 物品管理系統 v2
 
-> **v2 全面重寫已完成**：Next.js 15 + FastAPI + PostgreSQL 16。v1（Flask + Jinja2）已下線，歷史快照保留於 `v1-final` tag。
+> **v2 全面重寫已完成**：Next.js 16 + FastAPI + PostgreSQL 16。v1（Flask + Jinja2）已下線，歷史快照保留於 `v1-final` tag。
 
 家庭與小型團隊的物品管理：記錄放在哪裡、誰借走了、什麼快過期、什麼庫存不足。含相機 QR 掃描、AI 辨識、可安裝 PWA、webhook、LINE/Telegram/Email/Web Push 通知。
 
@@ -9,7 +9,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.13+-green.svg)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.162.6-009688.svg)
-![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)
+![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-blue.svg)
 ![Docker](https://img.shields.io/badge/docker-ready-blue.svg)
 ![API Tests](https://img.shields.io/badge/API%20tests-1534%20passed-brightgreen.svg)
@@ -137,7 +137,7 @@ make up
 monorepo (pnpm workspace)
 ├── apps/
 │   ├── api/          FastAPI 0.162.6 + SQLAlchemy 2.0 async + Pydantic v2 + Alembic
-│   └── web/          Next.js 15 App Router + shadcn/ui + Tailwind + next-intl
+│   └── web/          Next.js 16 App Router + shadcn/ui + Tailwind + next-intl
 ├── packages/
 │   └── api-types/    OpenAPI schema → TS types (產生器在 generate.mjs)
 ├── docs/             架構、開發、排程與路線圖

@@ -97,7 +97,9 @@ export function DraftCard({
 
   // 回報目前編輯值給佇列頁（批量接受用）
   const reportRef = useRef(onValuesChange)
-  reportRef.current = onValuesChange
+  useEffect(() => {
+    reportRef.current = onValuesChange
+  })
   useEffect(() => {
     reportRef.current?.(draft.id, acceptBodyFrom(values))
   }, [draft.id, values])

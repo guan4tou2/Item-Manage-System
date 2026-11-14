@@ -82,7 +82,10 @@ function DraftsQueue() {
   // 卡片回報的編輯值（批量接受時優先採用）
   const bodiesRef = useRef<Map<string, DraftAcceptRequest>>(new Map())
   const processRef = useRef(process.mutateAsync)
-  processRef.current = process.mutateAsync
+  // 以 effect 同步最新的 mutateAsync（渲染期間不可寫入 ref）
+  useEffect(() => {
+    processRef.current = process.mutateAsync
+  })
 
   const handleValuesChange = useCallback((id: string, body: DraftAcceptRequest) => {
     bodiesRef.current.set(id, body)

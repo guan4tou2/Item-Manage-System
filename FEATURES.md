@@ -296,7 +296,7 @@ v1 的「記錄物品放在哪裡」本質沒有變，但 v2 在此之上重建�
 
 - next-intl 處理訊息字典
 - `messages/zh-TW.json` / `messages/en.json`
-- Cookie `ims_locale` 存偏好（middleware 讀取並注入到 server components）
+- Cookie `ims_locale` 存偏好（由 `lib/i18n/request.ts` 在伺服器端讀取並注入到 server components）
 - 設定頁提供切換，自動呼叫 `/api/preferences` 同步到後端
 
 ---
