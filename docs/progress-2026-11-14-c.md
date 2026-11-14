@@ -54,6 +54,7 @@
 | Phase 51 實際操作 | 本機 SQLite 暫時資料庫＋`next dev`，停止 API 行程模擬斷線：同一 `Idempotency-Key` 連送兩次 `POST /api/items` → 第一次 `201`、第二次 `200`，清單只有一筆；非 UUID key → `422`；開著新增表單停止 API → 送出後出現「1 筆待同步」「立即同步」與導覽列徽章；重新啟動 API 按「立即同步」→ toast「已同步 1 筆」、清單出現該物品且只有一筆 |
 | Phase 52 實際操作 | 主代理以 Docker Compose 重建完整 stack（PostgreSQL），Playwright chromium 跑 `tests/offline-edit.spec.ts` 五個情境：離線修改後自動同步（1280px／375px）、API 修改造成衝突後選「用我的版本」、離線刪除後 API 為 `404`、關閉分頁後以 CDP 觸發 `sync` 事件由 service worker 送出 |
 | 完整 e2e（Phase 52 stack） | **104 passed／1 skipped**（Docker Compose 完整 stack，chromium） |
+| Release 管線 | 推送 `v2.0.0-alpha.52`（run 43604445803）：映像建置發佈（amd64＋arm64）、SBOM、GitHub prerelease 三個 job 全數通過 |
 | Phase 51 分支內（合併前） | API 1465 passed、Web 873 passed（144 檔） |
 | Phase 47 CI | run 43568435431：`api`、`web`、`audit`、`docker`、`e2e` 五個 job 全數通過 |
 | Dependabot Python 群組更新後重跑 | 本次撰寫時尚未填入 |

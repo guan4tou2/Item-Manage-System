@@ -18,6 +18,7 @@ v2 為全面重寫版（Next.js + FastAPI monorepo，位於 `apps/`）。v1（Fl
 - **背景同步**：`sync` 事件（tag `ims-offline-sync`）→ Web Locks → 以 httpOnly refresh cookie 換 access token → 只處理 token `sub` 與項目擁有者相同的項目 → 完成後以 `postMessage` 通知開著的頁面。只有 Chromium 系瀏覽器支援 Background Sync API；Safari、Firefox（含 iOS）維持下次開啟 App 時同步。背景同步的衝突與失敗不發系統通知，下次開 App 在待同步區塊查看
 - **明確不做**：離線瀏覽未曾載入的物品、預先快取所有資料、欄位層級自動合併、離線批次操作／收藏／batch／清單／盤點／圖片上傳／AI、Safari／Firefox／iOS 的背景同步、背景同步結果的系統通知
 - **測試與實測**：API 1534 → **1593 passed**（新增 `tests/test_items_if_match.py` 56 個）；Web 975 → **1034 passed（160 檔）**（Node 22 與 24）；typecheck 0 error、lint 0 warning。主代理以 Docker Compose 重建完整 stack（PostgreSQL），Playwright chromium 跑 `tests/offline-edit.spec.ts` 五個情境：離線修改後自動同步（1280px 與 375px）、離線期間由 API 修改同一物品造成衝突後選「用我的版本」、離線刪除後 API 為 `404`、關掉分頁後以 CDP 觸發 `sync` 事件由 service worker 送出。完整 e2e 結果：**104 passed／1 skipped**（Docker Compose 完整 stack，chromium）
+- **Release 管線首次實測**：推送 `v2.0.0-alpha.52` 後 Release 工作流程三個 job 全數通過——`api`、`web` 兩個映像以 `linux/amd64`＋`linux/arm64` 推上 `ghcr.io`（標籤 `2.0.0-alpha.52` 與 `2.0`；prerelease 不推 `latest`），兩份 CycloneDX SBOM 上傳為 artifact，GitHub Release 標為 prerelease。實測發現自動產生的發佈說明只列出 Dependabot 的 PR（功能直接提交到 main），已改為先附上 CHANGELOG 中該版本的段落；這項修改要到下一次打 tag 才會實際執行
 - **未驗證與已知限制**：測試 Chromium 停用了 Background Sync 排程（`sync.register` 回報 disabled），僅驗證事件發生後的處理，未實測瀏覽器恢復連線時自行觸發 `sync`；真實 Android Chrome 未實測。只能離線編輯／刪除已經開著的物品；衝突整筆詢問。收藏、批次操作、盤點等其他寫入若推進 `updated_at`，會保守地視為衝突；標籤以外的關聯資料（自訂欄位值、batch）變更不會被偵測為衝突。`If-Match` 檢查與寫入間沒有列鎖，極短時間內的並行寫入仍可能後寫覆蓋先寫
 
 ## [2.0.0-alpha.51] — Phase 51：離線新增物品

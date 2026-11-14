@@ -115,4 +115,11 @@ jobs:
           if [[ "$GITHUB_REF_NAME" == *-* ]]; then
             args+=(--prerelease)
           fi
+          # 功能多半直接提交到 main，自動產生的說明只會列出 PR；
+          # 先附上 CHANGELOG 中這個版本的段落（找不到就只用自動產生的）。
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" 'index($0, "## [" v "]") == 1 {on=1; next} on && /^## \[/ {exit} on' CHANGELOG.md > release-notes.md
+          if [[ -s release-notes.md ]]; then
+            args+=(--notes-file release-notes.md)
+          fi
           gh release create "$GITHUB_REF_NAME" "${args[@]}"
