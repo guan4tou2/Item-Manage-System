@@ -8,3 +8,10 @@ export function itemCostPayload(raw: string | null | undefined): string | null {
   const text = (raw ?? "").trim()
   return text === "" ? null : text
 }
+
+/** 與 API COST_FIELD 對齊：非負、最多十位整數與兩位小數。 */
+export const COST_PATTERN = /^(?:\d{1,10}(?:\.\d{1,2})?)?$/
+
+export function isValidCost(raw: string): boolean {
+  return COST_PATTERN.test(raw.trim())
+}

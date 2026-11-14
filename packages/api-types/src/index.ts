@@ -2881,6 +2881,8 @@ export interface components {
             received_at?: string | null;
             /** Note */
             note?: string | null;
+            /** Unit Cost */
+            unit_cost?: number | string | null;
         };
         /** BatchRead */
         BatchRead: {
@@ -2902,6 +2904,8 @@ export interface components {
             received_at: string | null;
             /** Note */
             note: string | null;
+            /** Unit Cost */
+            unit_cost?: string | null;
             /** Is Depleted */
             is_depleted: boolean;
             /** Days Left */
@@ -2930,6 +2934,8 @@ export interface components {
             expiry_date?: string | null;
             /** Note */
             note?: string | null;
+            /** Unit Cost */
+            unit_cost?: number | string | null;
         };
         /** Body_bulk_import_items_api_items_bulk_import_post */
         Body_bulk_import_items_api_items_bulk_import_post: {

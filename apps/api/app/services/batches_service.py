@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -91,6 +92,7 @@ async def create_batch(
     expiry_date: date | None = None,
     received_at: date | None = None,
     note: str | None = None,
+    unit_cost: Decimal | None = None,
 ) -> ItemBatch:
     item = await _get_owned_for_update(session, owner_id, item_id)
     first_batch = not item.track_batches
@@ -109,6 +111,7 @@ async def create_batch(
         expiry_date=expiry_date,
         received_at=received_at if received_at is not None else today_taipei(),
         note=note,
+        unit_cost=unit_cost,
     )
     session.add(batch)
     await session.flush()
@@ -133,6 +136,7 @@ async def update_batch(
     quantity: Any = UNSET,
     expiry_date: Any = UNSET,
     note: Any = UNSET,
+    unit_cost: Any = UNSET,
 ) -> ItemBatch:
     item = await _get_owned_for_update(session, owner_id, item_id)
     batch = await batches_repository.get(session, item_id, batch_id)
@@ -148,6 +152,8 @@ async def update_batch(
         batch.quantity = quantity
     if expiry_date is not UNSET:
         batch.expiry_date = expiry_date
+    if unit_cost is not UNSET:
+        batch.unit_cost = unit_cost
     if note is not UNSET:
         batch.note = note
 

@@ -18,6 +18,7 @@ def _batch(**overrides) -> SimpleNamespace:
         expiry_date=None,
         received_at=None,
         note=None,
+        unit_cost=None,
         is_depleted=False,
         created_at=datetime.now(),
         updated_at=datetime.now(),
@@ -30,6 +31,7 @@ def test_batch_read_derives_days_left_and_status():
     today = date(2026, 10, 15)
 
     expiring = BatchRead.from_batch(_batch(expiry_date=date(2026, 10, 22)), today=today)
+    assert expiring.unit_cost is None
     assert expiring.days_left == 7
     assert expiring.status == "expiring"
 

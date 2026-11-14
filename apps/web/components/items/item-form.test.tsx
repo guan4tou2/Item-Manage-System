@@ -589,3 +589,16 @@ describe("ItemForm cost field", () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 })
+
+
+it("批次物品顯示預設單價提示，一般物品不顯示", () => {
+  const defaults: ItemFormValues = {
+    name: "物品", description: "", category_id: null, location_id: null,
+    quantity: 1, notes: "", tag_names: [], custom_values: {},
+  }
+  const normal = renderItemForm(defaults)
+  expect(screen.queryByText("Used when a batch has no unit cost.")).not.toBeInTheDocument()
+  normal.unmount()
+  renderItemForm(defaults, vi.fn(), [], { trackBatches: true })
+  expect(screen.getByText("Used when a batch has no unit cost.")).toBeInTheDocument()
+})

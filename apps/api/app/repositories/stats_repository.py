@@ -17,6 +17,7 @@ from app.models.loan import ItemLoan
 from app.models.location import Location
 from app.models.tag import Tag, item_tags
 from app.models.warehouse import Warehouse
+from app.repositories.valuation import item_unpriced, item_value
 
 
 async def overview(session: AsyncSession, owner_id: UUID) -> dict[str, int]:
@@ -482,8 +483,8 @@ async def expiry(
 # ---------- 庫存估值（Phase 27） -----------------------------------------
 
 def _value_expr():
-    """Σ(cost × quantity)；cost null 以 0 計。"""
-    return func.coalesce(func.sum(Item.cost * Item.quantity), 0)
+    """依共用物品估值定義加總。"""
+    return func.coalesce(func.sum(item_value()), 0)
 
 
 async def value_totals(session: AsyncSession, owner_id: UUID) -> dict:
@@ -492,7 +493,7 @@ async def value_totals(session: AsyncSession, owner_id: UUID) -> dict:
             _value_expr().label("total_value"),
             func.count(Item.id).label("total_items"),
             func.coalesce(
-                func.sum(case((Item.cost.is_(None), 1), else_=0)), 0
+                func.sum(case((item_unpriced(), 1), else_=0)), 0
             ).label("unpriced_items"),
         )
         .select_from(Item)

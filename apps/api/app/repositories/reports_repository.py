@@ -19,6 +19,7 @@ from app.models.item_batch import ItemBatch
 from app.models.item_history import QuantityLog
 from app.models.loan import ItemLoan
 from app.models.report import Report
+from app.repositories.valuation import item_unpriced, item_value
 
 
 async def create(
@@ -199,28 +200,32 @@ async def valuation_parts(
 ) -> tuple[object, object, object, object, int]:
     """回傳 (end, created, deleted, log_delta, unpriced_items)。
 
-    - end：目前存活物品 cost×qty
+    - end：目前存活物品依 D3 估值
     - created：期間內建立且目前存活
     - deleted：期間內軟刪除（以 updated_at 近似）
-    - log_delta：期間前已存在物品的 quantity_log delta×cost（用於反推月初）
+    - log_delta：期間前已存在物品的 quantity_log delta×目前加權平均單價（反推期初的近似值；數量為 0 退回預設單價）
     """
-    value = Item.cost * Item.quantity
-    priced = (Item.owner_id.in_(owner_ids), Item.cost.is_not(None))
+    value = item_value()
+    scope = (Item.owner_id.in_(owner_ids),)
+    unit_price = case(
+        (Item.quantity > 0, value / func.nullif(Item.quantity, 0)),
+        else_=func.coalesce(Item.cost, 0),
+    )
 
     async def _scalar(stmt) -> object:
         return (await session.execute(stmt)).scalar_one()
 
     end_stmt = select(func.coalesce(func.sum(value), 0)).where(
-        *priced, Item.is_deleted.is_(False)
+        *scope, Item.is_deleted.is_(False)
     )
     created_stmt = select(func.coalesce(func.sum(value), 0)).where(
-        *priced,
+        *scope,
         Item.is_deleted.is_(False),
         Item.created_at >= start,
         Item.created_at < end,
     )
     deleted_stmt = select(func.coalesce(func.sum(value), 0)).where(
-        *priced,
+        *scope,
         Item.is_deleted.is_(True),
         # 期間內「建立又刪除」的物品對月初估值淨影響為 0，排除
         Item.created_at < start,
@@ -231,7 +236,7 @@ async def valuation_parts(
         select(
             func.coalesce(
                 func.sum(
-                    (QuantityLog.new_quantity - QuantityLog.old_quantity) * Item.cost
+                    (QuantityLog.new_quantity - QuantityLog.old_quantity) * unit_price
                 ),
                 0,
             )
@@ -239,7 +244,7 @@ async def valuation_parts(
         .select_from(QuantityLog)
         .join(Item, Item.id == QuantityLog.item_id)
         .where(
-            *priced,
+            *scope,
             Item.created_at < start,
             QuantityLog.created_at >= start,
             QuantityLog.created_at < end,
@@ -248,7 +253,7 @@ async def valuation_parts(
     unpriced_stmt = select(func.count(Item.id)).where(
         Item.owner_id.in_(owner_ids),
         Item.is_deleted.is_(False),
-        Item.cost.is_(None),
+        item_unpriced(),
     )
 
     return (

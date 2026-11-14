@@ -749,7 +749,8 @@
         "quantityInteger": "數量必須為整數",
         "quantityMin": "數量不可小於 0",
         "costInvalid": "成本需為數字，最多 2 位小數（例：12.30）"
-      }
+      },
+      "batchCostHint": "批次未填成本時使用此值"
     },
     "detail": {
       "edit": "編輯",
@@ -802,9 +803,20 @@
       "emptyHint": "按「進貨／調整」建立第一批。",
       "disable": "關閉追蹤",
       "disableTitle": "關閉批次追蹤？",
-      "disableBody": "批次將合併為單一數量，所有到期日資訊將被刪除。",
+      "disableBody": "批次將合併為單一數量，所有批次到期日與成本資訊將被刪除。",
       "disabled": "已關閉批次追蹤",
-      "disableFailed": "關閉追蹤失敗"
+      "disableFailed": "關閉追蹤失敗",
+      "edit": "編輯",
+      "editTitle": "編輯批次",
+      "save": "儲存",
+      "updated": "批次已更新",
+      "updateFailed": "更新批次失敗",
+      "unitCost": "單位成本（{symbol}）",
+      "costFallback": "留白時使用物品的預設單價；若未設定，則為未定價。",
+      "costFallbackAmount": "留白時使用物品的預設單價（{amount}）。",
+      "subtotal": "估值 {amount}",
+      "loadFailed": "無法載入批次。",
+      "retry": "重試"
     },
     "toast": {
       "created": "已建立",
