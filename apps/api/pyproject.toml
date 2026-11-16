@@ -17,7 +17,7 @@ dependencies = [
     "python-multipart==0.0.33",
     "httpx==0.28.1",
     "fastapi-mail==1.6.8",
-    "google-genai==3.1.0",
+    "google-genai==3.3.0",
     "pywebpush==2.5.0",
     "qrcode[pil]>=7.4",
     # Phase 41：伺服器端標籤 PDF（BSD-3；純 wheel）
