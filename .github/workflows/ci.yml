@@ -65,7 +65,7 @@ jobs:
           . .venv/bin/activate
           uv pip install -e ".[test]"
           python scripts/export_openapi.py > ../../packages/api-types/openapi.json
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.12.0
       - uses: actions/setup-node@v7
@@ -95,7 +95,7 @@ jobs:
           uv lock --check
           uv export --extra test --no-hashes --no-emit-project -q > "$RUNNER_TEMP/requirements-audit.txt"
           uvx pip-audit -r "$RUNNER_TEMP/requirements-audit.txt" --no-deps --disable-pip
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.12.0
       - uses: actions/setup-node@v7
@@ -151,7 +151,7 @@ jobs:
           cd apps/api
           uv sync --frozen --extra test
           .venv/bin/python scripts/export_openapi.py > ../../packages/api-types/openapi.json
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 9.12.0
       - uses: actions/setup-node@v7
