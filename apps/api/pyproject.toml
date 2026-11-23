@@ -4,20 +4,20 @@ version = "2.0.0a0"
 description = "Item Management System v2 API"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]==0.162.6",
+    "fastapi[standard]==0.165.0",
     "uvicorn[standard]==0.54.0",
-    "pydantic==2.14.3",
-    "pydantic-settings==2.16.2",
-    "sqlalchemy[asyncio]==2.1.8",
+    "pydantic==2.14.4",
+    "pydantic-settings==2.16.3",
+    "sqlalchemy[asyncio]==2.1.9",
     "asyncpg==0.32.0",
     "alembic==1.20.1",
     # Phase 44：python-jose → PyJWT、passlib → argon2-cffi（汰換無人維護／有 CVE 的依賴）
     "pyjwt==2.15.1",
     "argon2-cffi==25.1.0",
-    "python-multipart==0.0.33",
+    "python-multipart==0.0.34",
     "httpx==0.28.1",
     "fastapi-mail==1.6.8",
-    "google-genai==3.1.0",
+    "google-genai==3.6.1",
     "pywebpush==2.5.0",
     "qrcode[pil]>=7.4",
     # Phase 41：伺服器端標籤 PDF（BSD-3；純 wheel）
@@ -37,7 +37,7 @@ test = [
     # Phase 41：PDF raster 後做條碼真值解碼（wheel，無系統 poppler）
     "pypdfium2==5.15.2",
     # Phase 46：lint（CI 只開 F＋E9，見 [tool.ruff]）
-    "ruff==0.17.5",
+    "ruff==0.17.6",
 ]
 
 [tool.uv]
